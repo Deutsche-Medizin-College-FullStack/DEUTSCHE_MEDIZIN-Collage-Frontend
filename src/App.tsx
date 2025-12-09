@@ -150,7 +150,6 @@ const ViceDepartmentDetail = React.lazy(
 const ManagerLayout = React.lazy(() => import("./layouts/ManagerLayout"));
 const ManagerDashboard = React.lazy(() => import("./pages/manager/Dashboard"));
 const ManagerReports = React.lazy(() => import("./pages/manager/Reports"));
-const ManagerSettings = React.lazy(() => import("./pages/manager/Settings"));
 const StudentCourseScoreTable = React.lazy(
   () => import("./pages/registrar/StudentCourseScoreTable")
 );
