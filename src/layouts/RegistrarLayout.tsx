@@ -55,7 +55,6 @@ export default function RegistrarLayout() {
       href: "/registrar/scores",
       icon: ClipboardList,
     },
-    { name: "Batches", href: "/registrar/batches", icon: Calendar },
     {
       name: "Registration Slips",
       href: "/registrar/registration-slips",

@@ -69,7 +69,6 @@ const RegistrarCourses = React.lazy(() => import("./pages/registrar/Courses"));
 const RegistrarAssessments = React.lazy(
   () => import("./pages/registrar/Assessments")
 );
-const RegistrarBatches = React.lazy(() => import("./pages/registrar/Batches"));
 const SingleBatchPage = React.lazy(
   () => import("./pages/registrar/settings/SingleBatchPage .tsx")
 );
@@ -150,6 +149,7 @@ const ViceDepartmentDetail = React.lazy(
 const ManagerLayout = React.lazy(() => import("./layouts/ManagerLayout"));
 const ManagerDashboard = React.lazy(() => import("./pages/manager/Dashboard"));
 const ManagerReports = React.lazy(() => import("./pages/manager/Reports"));
+const ManagerSettings = React.lazy(() => import("./pages/manager/Settings"));
 const StudentCourseScoreTable = React.lazy(
   () => import("./pages/registrar/StudentCourseScoreTable")
 );
@@ -332,7 +332,6 @@ function App() {
               <Route path="assessments" element={<RegistrarAssessments />} />
               <Route path="scores" element={<StudentCourseScoreTable />} />
 
-              <Route path="batches" element={<RegistrarBatches />} />
               <Route path="tables" element={<CustomStudentTable />} />
               <Route path="notifications" element={<NotificationsPage />} />
             </Route>
