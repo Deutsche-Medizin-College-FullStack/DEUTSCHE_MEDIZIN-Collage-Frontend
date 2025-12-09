@@ -69,7 +69,6 @@ const RegistrarCourses = React.lazy(() => import("./pages/registrar/Courses"));
 const RegistrarAssessments = React.lazy(
   () => import("./pages/registrar/Assessments")
 );
-const RegistrarBatches = React.lazy(() => import("./pages/registrar/Batches"));
 const SingleBatchPage = React.lazy(
   () => import("./pages/registrar/settings/SingleBatchPage .tsx")
 );
@@ -333,7 +332,6 @@ function App() {
               <Route path="assessments" element={<RegistrarAssessments />} />
               <Route path="scores" element={<StudentCourseScoreTable />} />
 
-              <Route path="batches" element={<RegistrarBatches />} />
               <Route path="tables" element={<CustomStudentTable />} />
               <Route path="notifications" element={<NotificationsPage />} />
             </Route>
