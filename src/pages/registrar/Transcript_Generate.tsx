@@ -89,6 +89,8 @@ type GradingSystem = {
 };
 export default function Transcript_Generate() {
   const [searchType, setSearchType] = useState<SearchType | null>(null);
+  const [loadingStudentCopy, setLoadingStudentCopy] = useState(false);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBatch, setSelectedBatch] = useState<string>(""); // "" = no batch selected yet
   const [selectedDepartment, setSelectedDepartment] = useState<string>("all"); // "all" = all departments
@@ -101,7 +103,7 @@ export default function Transcript_Generate() {
   const [deparment, setDepartment] = useState([]);
   const [studentReport, setStudentReport] = useState([]);
   const [studentReport1, setStudentReport1] = useState();
-
+  const [loadingReports, setLoadingReports] = useState(false);
   const [manyGradingSystem, setManyGradingSystem] = useState<string>("all");
   // === DEMO BATCH DATA ===
   const fakeResponse = {
@@ -146,50 +148,56 @@ export default function Transcript_Generate() {
   };
 
   // if studentReport should be an array of reports
-  useEffect(() => {
-    const fetchStudentCopy = async () => {
-      try {
-        // FAKE RESPONSE (server is down)
-        const response = fakeResponse;
-
-        console.log("FAKE RESPONSE:", response);
-
-        setStudentReport((prev) => [...prev, response]);
-        setStudentReport1(response);
-      } catch (error) {
-        console.log(error);
-      }
-    };
-
-    fetchStudentCopy();
-  }, []);
-
-  // or if you only ever have one report, make state a single object instead:
-  // const [studentReport, setStudentReport] = useState(null);
-  // setStudentReport(fakeResponse);
-
-  // or if you only ever have one report, make state a single object instead:
-  // const [studentReport, setStudentReport] = useState(null);
-  // setStudentReport(fakeResponse);
-
   // useEffect(() => {
-  //   const fetchStudentCopy = async () => {
+  //   const fetchAcutalCopy = async () => {
+  //     setLoadingStudentCopy(true);
+
   //     try {
-  //       const reponse = await apiService.post(endPoints.studentCopy, {
+  //       const response = await apiService.post(endPoints.studentCopy, {
   //         semesterId: "S1",
   //         classYearId: 1,
   //         studentId: 2,
   //       });
-  //       console.log(reponse);
-
-  //       //   setStudentReport((prev) => [...prev, reponse]);
-  //       console.log(studentReport);
+  //       setStudentReport((prev) => [...prev, response]);
   //     } catch (err) {
   //       console.log(err);
+  //     } finally {
+  //       setLoadingReports(false);
   //     }
   //   };
-  //   fetchStudentCopy();
+  //   fetchAcutalCopy();
   // }, []);
+  useEffect(() => {
+    // Only fetch real student report when we are in "report" mode
+    if (searchType !== "report") {
+      setStudentReport([]); // Clear old data when switching to transcript
+      return;
+    }
+
+    const fetchStudentReport = async () => {
+      setLoadingReports(true); // Show spinner
+      setError(null); // clear previous error
+      try {
+        const response = await apiService.post(endPoints.studentCopy, {
+          semesterId: "S1",
+          classYearId: 1,
+          studentId: 2,
+        });
+
+        // Make sure it's always an array
+        const data = Array.isArray(response) ? response : [response];
+        setStudentReport(data); // Replace, don't append!
+      } catch (err) {
+        console.error("Failed to fetch student report:", err);
+        setError(err?.message || "Something went wrong. Please try again.");
+        setStudentReport([]);
+      } finally {
+        setLoadingReports(false);
+      }
+    };
+
+    fetchStudentReport();
+  }, [searchType]); // Re-run only when switching to "report"
   useEffect(() => {
     const fetchGradingSystem = async () => {
       try {
@@ -844,23 +852,11 @@ export default function Transcript_Generate() {
               {isReport ? "Report Cards" : "Transcripts"} ({count} students)
             </h2>
 
-            {isReport ? (
+            {/* {isReport ? (
               <div className="space-y-8">
-                {/* {filteredReports.map((r) => (
-                  // <ReportCardView key={r.id} reportData={r} />
-                  <MyReport />
-                ))} */}
-                {/* {studentReport.map((r) => (
-                  // <ReportCardView key={r.id} reportData={r} />
-
-                  <MyReport reportData={r} />
-                ))} */}
-                {/* {studentReport && <MyReport reportData={studentReport} />} */}
-                {/* // or if it's an array: */}
                 {studentReport.map((r, i) => (
                   <MyReport key={i} reportData={r} />
                 ))}
-                {/* {studentReport1 && <MyReport reportData={studentReport1} />} */}
 
                 {filteredReports.length === 0 && (
                   <p className="text-center text-gray-600 dark:text-gray-300 mt-8">
@@ -869,6 +865,74 @@ export default function Transcript_Generate() {
                 )}
               </div>
             ) : (
+              <div className="space-y-8">
+                {filteredTranscripts.map((t) => (
+                  <TranscriptView key={t.student.id} transcript={t} />
+                ))}
+                {filteredTranscripts.length === 0 && (
+                  <p className="text-center text-gray-600 dark:text-gray-300 mt-8">
+                    No students found for current batch/department/search.
+                  </p>
+                )}
+              </div>
+            )} */}
+            {isReport ? (
+              <div className="space-y-8">
+                {loadingReports ? (
+                  <div className="flex flex-col items-center justify-center py-20">
+                    <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600"></div>
+                    <p className="mt-6 text-lg font-medium text-gray-700 dark:text-gray-300">
+                      Loading student reports...
+                    </p>
+                  </div>
+                ) : Error ? (
+                  <div className="text-center py-20">
+                    <div className="text-red-600 dark:text-red-400 mb-4">
+                      <svg
+                        className="w-16 h-16 mx-auto"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                    <p className="text-xl font-medium text-gray-800 dark:text-gray-200 mb-2">
+                      Failed to load student reports
+                    </p>
+                    <p className="text-gray-600 dark:text-gray-400 mb-6">
+                      {Error}
+                    </p>
+                    <button
+                      onClick={() => window.location.reload()} // or call your fetch function again
+                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition"
+                    >
+                      Try Again
+                    </button>
+                  </div>
+                ) : studentReport.length > 0 ? (
+                  studentReport.map((r, i) => (
+                    <MyReport key={i} reportData={r} />
+                  ))
+                ) : (
+                  <p className="text-center text-gray-600 dark:text-gray-300 mt-8">
+                    No real student reports found. (Demo report cards are shown
+                    below if any)
+                  </p>
+                )}
+
+                {/* Keep your fake/demo report cards visible always */}
+                {filteredReports.length === 0 && !loadingReports && (
+                  <p className="text-center text-gray-600 dark:text-gray-300 mt-8">
+                    No demo students found for current filters.
+                  </p>
+                )}
+              </div>
+            ) : (
+              // Transcripts remain unchanged
               <div className="space-y-8">
                 {filteredTranscripts.map((t) => (
                   <TranscriptView key={t.student.id} transcript={t} />
