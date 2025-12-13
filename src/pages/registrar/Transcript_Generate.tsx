@@ -156,6 +156,9 @@ export default function Transcript_Generate() {
   const [selectedStudents, setSelectedStudents] = useState<number[]>([]);
   const [loadingReports, setLoadingReports] = useState(false);
   const [manyGradingSystem, setManyGradingSystem] = useState<string>("all");
+  const [realTranscripts, setRealTranscripts] = useState<RealGradeReport[]>([]);
+
+  const [loadingTranscripts, setLoadingTranscripts] = useState(false);
   // === DEMO BATCH DATA ===
   const fakeResponse = {
     idNumber: "STUD-05",
@@ -802,7 +805,7 @@ export default function Transcript_Generate() {
       return;
 
     const doc = new jsPDF("p", "mm", "a4");
-    const reports = searchType === "report" ? realReports : transcriptBatch;
+    const reports = searchType === "report" ? realReports : realTranscripts;
 
     reports.forEach((item, index) => {
       if (index > 0) doc.addPage();
@@ -1349,11 +1352,166 @@ export default function Transcript_Generate() {
           </>
         ) : (
           // Existing transcript demo view (unchanged)
-          <div className="space-y-8">
-            {transcriptBatch.map((t) => (
-              <TranscriptView key={t.student.id} transcript={t} />
-            ))}
-          </div>
+          // <div className="space-y-8">
+          //   {transcriptBatch.map((t) => (
+          //     <TranscriptView key={t.student.id} transcript={t} />
+          //   ))}
+          // </div>
+          <>
+            <h2 className="text-2xl font-bold mb-4">
+              Select Students for Transcript
+            </h2>
+
+            <div className="mb-4 flex gap-4">
+              <input
+                type="text"
+                placeholder="Search students..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="flex-1 px-4 py-2 rounded-lg border"
+              />
+              <button
+                onClick={toggleAllVisible}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+              >
+                {filteredStudents.every((s) =>
+                  selectedStudents.includes(s.studentId)
+                )
+                  ? "Deselect"
+                  : "Select"}{" "}
+                All Visible
+              </button>
+            </div>
+
+            {/* Same student list table */}
+            {loadingStudents ? (
+              <div className="text-center py-20">
+                <Loader2 className="w-12 h-12 animate-spin mx-auto" />
+                <p>Loading students...</p>
+              </div>
+            ) : Error ? (
+              <div className="text-red-600 text-center py-10">{Error}</div>
+            ) : (
+              <div className="bg-white rounded-lg shadow overflow-hidden max-h-96 overflow-y-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-100 sticky top-0">
+                    <tr>
+                      <th className="p-3 text-left">Select</th>
+                      <th className="p-3 text-left">ID / Username</th>
+                      <th className="p-3 text-left">Name</th>
+                      <th className="p-3 text-left">Department</th>
+                      <th className="p-3 text-left">Batch</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredStudents.map((student) => (
+                      <tr
+                        key={student.studentId}
+                        className="border-t hover:bg-gray-50 cursor-pointer"
+                        onClick={() => toggleStudent(student.studentId)}
+                      >
+                        <td className="p-3">
+                          {selectedStudents.includes(student.studentId) ? (
+                            <CheckSquare className="text-blue-600" />
+                          ) : (
+                            <Square />
+                          )}
+                        </td>
+                        <td className="p-3">{student.username}</td>
+                        <td className="p-3">{student.fullNameENG}</td>
+                        <td className="p-3">{student.departmentName}</td>
+                        <td className="p-3">{student.bcysDisplayName}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div className="mt-6 flex items-center justify-between">
+              <div className="text-xl font-semibold">
+                Selected: {selectedCount} student
+                {selectedCount !== 1 ? "s" : ""}
+              </div>
+
+              <button
+                onClick={async () => {
+                  if (selectedStudents.length === 0) {
+                    setError("Please select at least one student");
+                    return;
+                  }
+
+                  setLoadingTranscripts(true);
+                  setError(null);
+
+                  try {
+                    const response = await apiService.post(
+                      endPoints.generateGradeReport,
+                      {
+                        studentIds: selectedStudents,
+                      }
+                    );
+
+                    console.log("Transcript Response:", response);
+
+                    const reportsArray = response?.gradeReports ?? [];
+                    setRealTranscripts(
+                      Array.isArray(reportsArray) ? reportsArray : []
+                    );
+                  } catch (err: any) {
+                    const message =
+                      err?.response?.data?.error ||
+                      err?.message ||
+                      "Failed to generate transcripts";
+                    setError(message);
+                    setRealTranscripts([]);
+                  } finally {
+                    setLoadingTranscripts(false);
+                  }
+                }}
+                disabled={selectedStudents.length === 0 || loadingTranscripts}
+                className={`px-8 py-4 rounded-xl font-bold text-white shadow-lg transition ${
+                  selectedStudents.length === 0 || loadingTranscripts
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-purple-600 hover:bg-purple-700"
+                }`}
+              >
+                {loadingTranscripts ? (
+                  <>
+                    <Loader2 className="w-6 h-6 animate-spin inline mr-3" />
+                    Generating Transcripts...
+                  </>
+                ) : (
+                  "Generate Transcripts"
+                )}
+              </button>
+            </div>
+
+            {Error && (
+              <div className="mt-4 p-4 bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-600 rounded-lg text-red-700 dark:text-red-300">
+                {Error}
+              </div>
+            )}
+
+            {loadingTranscripts && (
+              <div className="mt-8 text-center">
+                <Loader2 className="w-10 h-10 animate-spin mx-auto" />
+                <p className="mt-4">Loading real transcripts...</p>
+              </div>
+            )}
+
+            <div className="mt-8 space-y-8">
+              {realTranscripts.length > 0 ? (
+                realTranscripts.map((report, i) => (
+                  <DynamicTranscriptView key={i} report={report} />
+                ))
+              ) : selectedCount > 0 && !loadingTranscripts ? (
+                <p className="text-center text-gray-500 py-10">
+                  No transcripts generated yet.
+                </p>
+              ) : null}
+            </div>
+          </>
         )}
       </div>
     </div>
@@ -1757,7 +1915,146 @@ function ReportCardView({ reportData }: { reportData: ReportRecord }) {
     </div>
   );
 }
+function DynamicTranscriptView({ report }: { report: RealGradeReport }) {
+  return (
+    <div className="bg-white dark:bg-gray-800 shadow-2xl border-4 border-black dark:border-gray-600 font-mono text-xs sm:text-sm overflow-x-auto">
+      <div className="text-center py-4 bg-cyan-100 dark:bg-cyan-900 border-b-4 border-black dark:border-gray-600">
+        <h1 className="text-xl sm:text-2xl font-bold">
+          DEUTSCHE HOCHSCHULE FÜR MEDIZIN
+        </h1>
+        <h2 className="text-lg sm:text-xl font-bold">
+          STUDENT ACADEMIC TRANSCRIPT
+        </h2>
+        <p className="font-bold">OFFICE OF REGISTRAR</p>
+        {report.dateIssuedGC && (
+          <p className="text-sm mt-2 opacity-90">
+            Issued on: {report.dateIssuedGC}
+          </p>
+        )}
+      </div>
 
+      <div className="p-4">
+        <table className="w-full border-collapse mb-6">
+          <tbody>
+            <tr className="bg-cyan-100 dark:bg-cyan-900 border-2 border-black dark:border-gray-600">
+              <td className="px-3 py-2 font-bold">ID Number</td>
+              <td className="px-3 py-2">{report.idNumber}</td>
+              <td className="px-3 py-2 font-bold">Full Name</td>
+              <td colSpan={5} className="px-3 py-2">
+                {report.fullName}
+              </td>
+            </tr>
+            <tr className="bg-cyan-100 dark:bg-cyan-900 border-2 border-black dark:border-gray-600">
+              <td className="px-3 py-2 font-bold">Sex</td>
+              <td className="px-3 py-2">{report.gender}</td>
+              <td className="px-3 py-2 font-bold">Date of Birth</td>
+              <td className="px-3 py-2">{report.birthDateGC}</td>
+              <td className="px-3 py-2 font-bold">Program</td>
+              <td className="px-3 py-2">{report.programModality.name}</td>
+              <td className="px-3 py-2 font-bold">Faculty</td>
+              <td className="px-3 py-2">Faculty of Health Sciences</td>
+            </tr>
+            <tr className="bg-cyan-100 dark:bg-cyan-900 border-2 border-black dark:border-gray-600">
+              <td className="px-3 py-2 font-bold">Batch</td>
+              <td className="px-3 py-2">—</td>
+              <td className="px-3 py-2 font-bold">Department</td>
+              <td className="px-3 py-2">{report.department.name}</td>
+              <td className="px-3 py-2 font-bold">Date of Admission</td>
+              <td colSpan={3} className="px-3 py-2">
+                {report.dateEnrolledGC}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {report.studentCopies.map((copy, i) => {
+            const totalCH = copy.courses.reduce(
+              (sum, c) => sum + c.totalCrHrs,
+              0
+            );
+            const totalPoints = copy.courses.reduce(
+              (sum, c) => sum + c.gradePoint,
+              0
+            );
+
+            return (
+              <div
+                key={i}
+                className="border-4 border-black dark:border-gray-600"
+              >
+                <div className="bg-orange-500 dark:bg-orange-600 text-white font-bold px-3 py-2 text-center text-xs sm:text-sm">
+                  Academic Year: {copy.academicYear || "N/A"} G.C •{" "}
+                  {copy.semester.name} • Class Year {copy.classyear.name}
+                </div>
+                <table className="w-full border border-gray-600 dark:border-gray-500">
+                  <thead className="bg-gray-300 dark:bg-gray-700">
+                    <tr>
+                      <th className="border border-gray-600 dark:border-gray-500 px-2 py-1">
+                        Course Code
+                      </th>
+                      <th className="border border-gray-600 dark:border-gray-500 px-2 py-1">
+                        Course Title
+                      </th>
+                      <th className="border border-gray-600 dark:border-gray-500 px-2 py-1">
+                        CH
+                      </th>
+                      <th className="border border-gray-600 dark:border-gray-500 px-2 py-1">
+                        Grade
+                      </th>
+                      <th className="border border-gray-600 dark:border-gray-500 px-2 py-1">
+                        Point
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {copy.courses.map((c, j) => (
+                      <tr
+                        key={j}
+                        className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                      >
+                        <td className="border border-gray-400 dark:border-gray-600 px-2 py-1">
+                          {c.courseCode}
+                        </td>
+                        <td className="border border-gray-400 dark:border-gray-600 px-2 py-1">
+                          {c.courseTitle}
+                        </td>
+                        <td className="border border-gray-400 dark:border-gray-600 px-2 py-1 text-center">
+                          {c.totalCrHrs}
+                        </td>
+                        <td className="border border-gray-400 dark:border-gray-600 px-2 py-1 text-center font-bold text-blue-700 dark:text-blue-400">
+                          {c.letterGrade}
+                        </td>
+                        <td className="border border-gray-400 dark:border-gray-600 px-2 py-1 text-center">
+                          {c.gradePoint.toFixed(1)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="bg-orange-500 dark:bg-orange-600 text-white font-bold px-3 py-2 text-right text-xs sm:text-sm">
+                  TOTAL {totalCH} CH → {totalPoints.toFixed(1)} Points → GPA:{" "}
+                  {copy.semesterGPA.toFixed(2)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="grid grid-cols-2 gap-8 sm:gap-16 p-8 sm:p-12 border-t-4 border-black dark:border-gray-600 mt-8">
+          <div className="text-center">
+            <div className="h-28 sm:h-32 border-4 border-dashed rounded-xl mb-4 bg-gray-100 dark:bg-gray-700"></div>
+            <p className="font-bold text-base sm:text-lg">REGISTRAR OFFICE</p>
+          </div>
+          <div className="text-center">
+            <div className="h-28 sm:h-32 border-4 border-dashed rounded-xl mb-4 bg-gray-100 dark:bg-gray-700"></div>
+            <p className="font-bold text-base sm:text-lg">DEAN OFFICE</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 function TranscriptView({ transcript }: { transcript: TranscriptRecord }) {
   return (
     <div className="bg-white dark:bg-gray-800 shadow-2xl border-4 border-black dark:border-gray-600 font-mono text-xs sm:text-sm overflow-x-auto">
