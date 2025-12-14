@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import endPoints from "@/components/api/endPoints";
-import apiService from "@/components/api/apiService"; // Adjust if needed
+import apiService from "@/components/api/apiService";
 
 interface Course {
   courseCode: string;
