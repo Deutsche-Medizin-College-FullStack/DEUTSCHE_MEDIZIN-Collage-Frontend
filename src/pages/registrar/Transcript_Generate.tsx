@@ -1219,7 +1219,7 @@ export default function Transcript_Generate() {
                     try {
                       const response = await apiService.post(
                         // "/api/student-copy/generate",
-                        endPoints.generateGradeReport,
+                        endPoints.studentCopy,
 
                         {
                           semesterId: selectedSemesterId,
@@ -1227,16 +1227,52 @@ export default function Transcript_Generate() {
                           studentIds: selectedStudents,
                         }
                       );
-                      const reportsArray =
-                        response?.gradeReports ?? response ?? [];
-                      const data = Array.isArray(response)
+                      // const reportsArray =
+                      //   response?.gradeReports ?? response ?? [];
+                      // const data = Array.isArray(response)
+                      //   ? response
+                      //   : response?.data && Array.isArray(response.data)
+                      //   ? response.data
+                      //   : [];
+                      // setRealReports(
+                      //   Array.isArray(reportsArray) ? reportsArray : []
+                      // );
+                      const reportsArray = Array.isArray(response)
                         ? response
-                        : response?.data && Array.isArray(response.data)
-                        ? response.data
                         : [];
-                      setRealReports(
-                        Array.isArray(reportsArray) ? reportsArray : []
-                      );
+
+                      // Transform into RealGradeReport format expected by RealReportView
+                      const transformedReports: RealGradeReport[] =
+                        reportsArray.map((item: any) => ({
+                          idNumber: item.idNumber,
+                          fullName: item.fullName,
+                          gender: item.gender,
+                          birthDateGC: item.dateOfBirthGC,
+                          dateEnrolledGC: item.dateEnrolledGC,
+                          programModality: item.programModality,
+                          programLevel: item.programLevel,
+                          department: item.department,
+                          // Wrap the single semester data into studentCopies array
+                          studentCopies: [
+                            {
+                              classyear: item.classyear,
+                              semester: item.semester,
+                              academicYear: item.academicYear,
+                              courses: item.courses.map((c: any) => ({
+                                courseCode: c.courseCode,
+                                courseTitle: c.courseTitle,
+                                totalCrHrs: c.totalCrHrs,
+                                letterGrade: c.letterGrade,
+                                gradePoint: c.gradePoint,
+                              })),
+                              semesterGPA: item.semesterGPA,
+                              semesterCGPA: item.semesterCGPA,
+                              status: item.status,
+                            },
+                          ],
+                        }));
+
+                      setRealReports(transformedReports);
                     } catch (err: any) {
                       const message =
                         err?.response?.data?.error ||
