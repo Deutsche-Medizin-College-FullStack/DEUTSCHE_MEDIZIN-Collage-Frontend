@@ -11,6 +11,7 @@ const endPoints = {
   academicYears: "/academic-years",
   gradingSystem: "/grading-systems",
   studentCopy: "/student-copy/generate",
+  studentGradeReports: "/student/grade-reports",
   semesters: "/semesters",
   attritionCauses: "/attrition-causes",
   batchClassSemsterYear: "/bcsy",
