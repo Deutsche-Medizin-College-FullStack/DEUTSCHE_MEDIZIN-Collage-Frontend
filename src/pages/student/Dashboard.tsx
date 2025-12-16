@@ -9,44 +9,69 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { useNavigate } from "react-router-dom";
 import {
   BookOpen,
   Calendar,
-  Clock,
-  DollarSign,
   GraduationCap,
   TrendingUp,
-  AlertCircle,
+  AlertTriangle,
   CheckCircle,
+  User,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
-import { studentApi } from "@/lib/api";
-import type { Student } from "@/mocks/mockStudent";
-import type { Course } from "@/mocks/mockCourses";
-import type { PaymentsSummary } from "@/mocks/mockPayments";
+import endPoints from "@/components/api/endPoints";
+import apiService from "@/components/api/apiService";
+
+interface DashboardResponse {
+  profileSummary: {
+    studentId: number;
+    fullName: string;
+    department: string;
+    programModality: string;
+    currentClassYear: string;
+    currentSemester: string;
+    academicStatus: string;
+    profilePhoto: string | null;
+  };
+  academicProgress: {
+    totalCompletedCreditHours: number;
+    currentCGPA: number;
+    lastSemesterGPA: number | null;
+  };
+  currentSemesterCourses: {
+    courseCode: string;
+    courseTitle: string;
+    creditHours: number;
+  }[];
+  recentGrades: {
+    classYear: string;
+    semester: string;
+    courseCode: string;
+    courseTitle: string;
+    letterGrade: string | null;
+    gradePoint: number | null;
+  }[];
+  documentStatus: {
+    registrationDocumentStatus: string;
+    studentPhotoUploadStatus: string;
+  };
+}
 
 export default function StudentDashboard() {
+  const navigate = useNavigate();
   const { t } = useTranslation(["student", "common"]);
-  const [student, setStudent] = useState<Student | null>(null);
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [payments, setPayments] = useState<PaymentsSummary | null>(null);
+  const [data, setData] = useState<DashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadData = async () => {
+    const loadDashboard = async () => {
       try {
-        const [studentResponse, coursesResponse, paymentsResponse] =
-          await Promise.all([
-            studentApi.getProfile(),
-            studentApi.getCourses(),
-            studentApi.getPayments(),
-          ]);
-
-        if (studentResponse.success) setStudent(studentResponse.data);
-        if (coursesResponse.success) setCourses(coursesResponse.data);
-        if (paymentsResponse.success) setPayments(paymentsResponse.data);
+        const response = await apiService.get<DashboardResponse>(
+          endPoints.studentDashboard
+        );
+        setData(response);
       } catch (error) {
         console.error("Error loading dashboard data:", error);
       } finally {
@@ -54,98 +79,129 @@ export default function StudentDashboard() {
       }
     };
 
-    loadData();
+    loadDashboard();
   }, []);
-
-  const upcomingClasses = [
-    {
-      subject: "Human Anatomy",
-      time: "09:00 AM",
-      room: "Room 101",
-      professor: "Dr. Mueller",
-    },
-    {
-      subject: "Physiology",
-      time: "11:00 AM",
-      room: "Room 205",
-      professor: "Dr. Schmidt",
-    },
-    {
-      subject: "Biochemistry",
-      time: "02:00 PM",
-      room: "Lab 3",
-      professor: "Dr. Weber",
-    },
-  ];
-
-  const recentGrades = [
-    { subject: "Anatomy", grade: "A-", points: "1.3", date: "2024-01-15" },
-    { subject: "Physiology", grade: "B+", points: "1.7", date: "2024-01-12" },
-    { subject: "Chemistry", grade: "A", points: "1.0", date: "2024-01-10" },
-  ];
-
-  const announcements = [
-    {
-      title: "Midterm Exam Schedule Released",
-      date: "2024-01-16",
-      type: "exam",
-    },
-    { title: "Library Hours Extended", date: "2024-01-15", type: "info" },
-    {
-      title: "Payment Reminder: Spring Semester",
-      date: "2024-01-14",
-      type: "payment",
-    },
-  ];
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg">{t("common:loading")}</div>
+        <div className="text-lg">{t("common:loading") || "Loading..."}</div>
       </div>
     );
   }
 
+  if (!data) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg text-red-600">
+          Failed to load dashboard data
+        </div>
+      </div>
+    );
+  }
+
+  const {
+    profileSummary,
+    academicProgress,
+    currentSemesterCourses,
+    recentGrades,
+    documentStatus,
+  } = data;
+
+  const currentSemesterCredits = currentSemesterCourses.reduce(
+    (sum, course) => sum + course.creditHours,
+    0
+  );
+
+  const firstName = profileSummary.fullName.split(" ")[0];
+
+  const hasDocumentIssues =
+    documentStatus.registrationDocumentStatus === "INCOMPLETE" ||
+    documentStatus.studentPhotoUploadStatus === "NOT_UPLOADED";
+
   return (
     <div className="space-y-6">
-      {/* Welcome Section */}
+      {/* Welcome Header */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg p-6 text-white">
         <h1 className="text-2xl font-bold mb-2">
-          {t("dashboard.welcome", { name: student?.firstName || "Student" })}
+          {t("dashboard.welcome", { name: firstName }) ||
+            `Welcome back, ${firstName}`}
         </h1>
-        <p className="text-blue-100">{t("dashboard.subtitle")}</p>
+        <p className="text-blue-100">
+          {profileSummary.department} • Year {profileSummary.currentClassYear} •{" "}
+          {profileSummary.currentSemester}
+        </p>
       </div>
 
+      {/* Document Status Warning */}
+      {hasDocumentIssues && (
+        <Card className="border-yellow-500 bg-yellow-50">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-6 w-6 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-yellow-900">Action Required</p>
+                <p className="text-sm text-yellow-800 mt-1">
+                  {documentStatus.registrationDocumentStatus === "INCOMPLETE" &&
+                    "Your registration documents are incomplete. "}
+                  {documentStatus.studentPhotoUploadStatus === "NOT_UPLOADED" &&
+                    "Please upload your profile photo."}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {t("dashboard.currentGPA")}
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Current CGPA</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{student?.gpa || "0.0"}</div>
-            <p className="text-xs text-muted-foreground">
-              +0.1 from last semester
-            </p>
+            <div className="text-2xl font-bold">
+              {academicProgress.currentCGPA !== null
+                ? academicProgress.currentCGPA.toFixed(2)
+                : "N/A"}
+            </div>
+            {academicProgress.currentCGPA === null && (
+              <p className="text-xs text-muted-foreground mt-1">
+                No grades recorded yet
+              </p>
+            )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              {t("dashboard.creditsEarned")}
+              Completed Credits
             </CardTitle>
             <GraduationCap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {student?.totalCredits || 0}/180
+              {academicProgress.totalCompletedCreditHours}
+            </div>
+            <p className="text-xs text-muted-foreground">Credit hours earned</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Current Courses
+            </CardTitle>
+            <BookOpen className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {currentSemesterCourses.length}
             </div>
             <p className="text-xs text-muted-foreground">
-              {student?.completionRate || 0}% complete
+              {currentSemesterCredits} Cr this semester
             </p>
           </CardContent>
         </Card>
@@ -153,57 +209,96 @@ export default function StudentDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              {t("dashboard.currentCourses")}
+              Academic Status
             </CardTitle>
-            <BookOpen className="h-4 w-4 text-muted-foreground" />
+            <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {courses.filter((c) => c.status === "active").length}
+            <div className="text-2xl font-bold capitalize">
+              {profileSummary.academicStatus.toLowerCase()}
             </div>
             <p className="text-xs text-muted-foreground">
-              Spring 2024 semester
+              {profileSummary.programModality}
             </p>
           </CardContent>
         </Card>
       </div>
 
+      {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Today's Schedule */}
-
-        {/* Recent Grades */}
+        {/* Current Semester Courses */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <BookOpen className="mr-2 h-5 w-5" />
-              {t("dashboard.recentGrades")}
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Current Semester Courses
             </CardTitle>
-            <CardDescription>Your latest academic performance</CardDescription>
+            <CardDescription>{profileSummary.currentSemester}</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {recentGrades.map((grade, index) => (
+            <div className="space-y-3">
+              {currentSemesterCourses.map((course) => (
                 <div
-                  key={index}
-                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                  key={course.courseCode}
+                  className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
                 >
                   <div>
-                    <div className="font-medium">{grade.subject}</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      {grade.date}
-                    </div>
+                    <p className="font-medium text-sm">{course.courseCode}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {course.courseTitle}
+                    </p>
+                  </div>
+                  <Badge variant="secondary">{course.creditHours} Cr</Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Grades - FIXED HERE */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5" />
+              Recent Grades
+            </CardTitle>
+            <CardDescription>From previous semester</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {recentGrades.map((grade) => (
+                <div
+                  key={grade.courseCode}
+                  className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                >
+                  <div>
+                    {/* FIXED: was "course.courseCode" → now "grade.courseCode" */}
+                    <p className="font-medium text-sm">{grade.courseCode}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {grade.courseTitle}
+                    </p>
                   </div>
                   <div className="text-right">
-                    <Badge
-                      variant={
-                        grade.grade.startsWith("A") ? "default" : "secondary"
-                      }
-                    >
-                      {grade.grade}
-                    </Badge>
-                    <div className="text-sm text-gray-500 mt-1">
-                      {grade.points}
-                    </div>
+                    {grade.letterGrade ? (
+                      <>
+                        <Badge
+                          variant={
+                            grade.letterGrade.startsWith("A")
+                              ? "default"
+                              : "secondary"
+                          }
+                        >
+                          {grade.letterGrade}
+                        </Badge>
+                        {grade.gradePoint !== null && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {grade.gradePoint.toFixed(1)} pts
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <Badge variant="outline">Pending</Badge>
+                    )}
                   </div>
                 </div>
               ))}
@@ -212,60 +307,35 @@ export default function StudentDashboard() {
         </Card>
       </div>
 
-      {/* Progress and Announcements */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Academic Progress */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("dashboard.academicProgress")}</CardTitle>
-            <CardDescription>
-              Your journey through medical school
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span>{t("dashboard.overallCompletion")}</span>
-                <span>{student?.completionRate || 0}%</span>
-              </div>
-              <Progress value={student?.completionRate || 0} className="h-2" />
-            </div>
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span>{t("dashboard.currentSemester")}</span>
-                <span>60%</span>
-              </div>
-              <Progress value={60} className="h-2" />
-            </div>
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span>{t("dashboard.clinicalRotations")}</span>
-                <span>0%</span>
-              </div>
-              <Progress value={0} className="h-2" />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Announcements */}
-      </div>
-
       {/* Quick Actions */}
       <Card>
         <CardHeader>
-          <CardTitle>{t("dashboard.quickActions")}</CardTitle>
-          <CardDescription>Frequently used features</CardDescription>
+          <CardTitle>Quick Actions</CardTitle>
+          <CardDescription>Common tasks at a glance</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 ">
-            <Button variant="outline" className="h-20 flex-col bg-transparent">
-              <BookOpen className="h-6 w-6 mb-2" />
-              {t("dashboard.viewGrades")}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Button variant="outline" className="h-24 flex flex-col">
+              <BookOpen className="h-8 w-8 mb-2" />
+              <span className="text-sm">View Grades</span>
             </Button>
-
-            <Button variant="outline" className="h-20 flex-col bg-transparent">
-              <GraduationCap className="h-6 w-6 mb-2" />
-              {t("dashboard.courseCatalog")}
+            <Button variant="outline" className="h-24 flex flex-col">
+              <Calendar className="h-8 w-8 mb-2" />
+              <span className="text-sm">Schedule</span>
+            </Button>
+            <Button variant="outline" className="h-24 flex flex-col">
+              <GraduationCap className="h-8 w-8 mb-2" />
+              <span className="text-sm">My Courses</span>
+            </Button>
+            <Button
+              onClick={() => {
+                navigate("/student/grades");
+              }}
+              variant="outline"
+              className="h-24 flex flex-col"
+            >
+              <User className="h-8 w-8 mb-2" />
+              <span className="text-sm">Profile</span>
             </Button>
           </div>
         </CardContent>

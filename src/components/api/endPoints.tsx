@@ -8,9 +8,12 @@ const endPoints = {
     "https://deutschemedizin-collage-backend-production.up.railway.app/api/applicants/register",
   registrarApplicantRegister: "/auth/register/student",
   studentStatus: "/student-statuses",
+  studentDashboard: "/student/dashboard",
+  profile: "/students/profile",
   academicYears: "/academic-years",
   gradingSystem: "/grading-systems",
   studentCopy: "/student-copy/generate",
+  studentGradeReports: "/student/grade-reports",
   semesters: "/semesters",
   attritionCauses: "/attrition-causes",
   batchClassSemsterYear: "/bcsy",
@@ -56,17 +59,20 @@ const endPoints = {
   programLevels: "/program-levels",
   programLevelByCode: "/program-levels/:id",
   programModalities: "/program-modality",
+  generateGradeReport: "/grade-report/generate",
   programModalityByCode: "/program-modality/:id",
   studentsSlip: "/students/slip-production",
   lookupsDropdown: "/filters/options",
   slipPreview: "student-slips/preview",
   generateSlips: "/student-slips/generate",
   addCourse: "/student-course-scores/add",
-  updateScore: "/student-course-scores/score/:studentId/:courseId/:batchClassYearSemesterId",
-  updateReleaseStatus: "/student-course-scores/release/:studentId/:courseId/:batchClassYearSemesterId",
+  updateScore:
+    "/student-course-scores/score/:studentId/:courseId/:batchClassYearSemesterId",
+  updateReleaseStatus:
+    "/student-course-scores/release/:studentId/:courseId/:batchClassYearSemesterId",
   getGrade: "/student-course-scores/:scoreId/grade",
   getAll: "/student-course-scores/all",
-  bulkUpdate: "/student-course-scores/bulk-update"
+  bulkUpdate: "/student-course-scores/bulk-update",
 };
 
 export default endPoints;

@@ -7,11 +7,14 @@ import {
   FileText,
   ArrowLeft,
   Download,
+  CheckSquare, // ← ADD THIS LINE
 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import endPoints from "@/components/api/endPoints";
 import apiService from "@/components/api/apiService";
+import { Square } from "lucide-react";
+import { Loader2 } from "lucide-react";
 type ReportCourse = {
   code: string;
   title: string;
@@ -20,7 +23,16 @@ type ReportCourse = {
   point: number;
   gp: number;
 };
-
+type StudentForSelection = {
+  studentId: number;
+  username: string;
+  fullNameENG: string;
+  fullNameAMH?: string;
+  bcysDisplayName: string;
+  departmentName: string;
+  departmentId: number;
+  programModalityName: string;
+};
 type ReportRecord = {
   id: string;
   name: string;
@@ -37,6 +49,34 @@ type ReportRecord = {
   courses: ReportCourse[];
   batch: string;
   department: string;
+};
+type GradeReportCourse = {
+  courseCode: string;
+  courseTitle: string;
+  totalCrHrs: number;
+  letterGrade: string;
+  gradePoint: number;
+};
+type StudentCopy = {
+  classyear: { id: number; name: string };
+  semester: { id: string; name: string };
+  academicYear: string | null;
+  courses: GradeReportCourse[];
+  semesterGPA: number;
+  semesterCGPA: number;
+  status: string;
+};
+type RealGradeReport = {
+  idNumber: string;
+  fullName: string;
+  gender: string;
+  birthDateGC: string;
+  dateEnrolledGC: string;
+  dateIssuedGC?: string;
+  programModality: { id: string; name: string };
+  programLevel: { id: string | null; name: string | null };
+  department: { id: number; name: string };
+  studentCopies: StudentCopy[];
 };
 
 type TranscriptCourse = {
@@ -89,20 +129,36 @@ type GradingSystem = {
 };
 export default function Transcript_Generate() {
   const [searchType, setSearchType] = useState<SearchType | null>(null);
+  const [loadingStudentCopy, setLoadingStudentCopy] = useState(false);
+  const [realReports, setRealReports] = useState<RealGradeReport[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBatch, setSelectedBatch] = useState<string>(""); // "" = no batch selected yet
   const [selectedDepartment, setSelectedDepartment] = useState<string>("all"); // "all" = all departments
   // const [selectedDropDown, setSelectedDropDown] = useState<string>("all");
   const [selectedDropDown, setSelectedDropDown] = useState([]);
-
+  const [semesters, setSemesters] = useState<{ id: string; name: string }[]>(
+    []
+  );
+  const [classYears, setClassYears] = useState<{ id: number; name: string }[]>(
+    []
+  );
+  const [loadingDropdowns, setLoadingDropdowns] = useState(true);
   const [gradingSystems, setGradingSystem] = useState<GradingSystem[]>([]);
   const [Error, setError] = useState<string | null>(null);
   const [batch, setBatches] = useState([]);
   const [deparment, setDepartment] = useState([]);
   const [studentReport, setStudentReport] = useState([]);
   const [studentReport1, setStudentReport1] = useState();
-
+  const [selectedSemesterId, setSelectedSemesterId] = useState<string>("");
+  const [selectedClassYearId, setSelectedClassYearId] = useState<string>("");
+  const [loadingStudents, setLoadingStudents] = useState(true);
+  const [allStudents, setAllStudents] = useState<StudentForSelection[]>([]);
+  const [selectedStudents, setSelectedStudents] = useState<number[]>([]);
+  const [loadingReports, setLoadingReports] = useState(false);
   const [manyGradingSystem, setManyGradingSystem] = useState<string>("all");
+  const [realTranscripts, setRealTranscripts] = useState<RealGradeReport[]>([]);
+
+  const [loadingTranscripts, setLoadingTranscripts] = useState(false);
   // === DEMO BATCH DATA ===
   const fakeResponse = {
     idNumber: "STUD-05",
@@ -145,51 +201,6 @@ export default function Transcript_Generate() {
     status: "PASSED",
   };
 
-  // if studentReport should be an array of reports
-  useEffect(() => {
-    const fetchStudentCopy = async () => {
-      try {
-        // FAKE RESPONSE (server is down)
-        const response = fakeResponse;
-
-        console.log("FAKE RESPONSE:", response);
-
-        setStudentReport((prev) => [...prev, response]);
-        setStudentReport1(response);
-      } catch (error) {
-        console.log(error);
-      }
-    };
-
-    fetchStudentCopy();
-  }, []);
-
-  // or if you only ever have one report, make state a single object instead:
-  // const [studentReport, setStudentReport] = useState(null);
-  // setStudentReport(fakeResponse);
-
-  // or if you only ever have one report, make state a single object instead:
-  // const [studentReport, setStudentReport] = useState(null);
-  // setStudentReport(fakeResponse);
-
-  // useEffect(() => {
-  //   const fetchStudentCopy = async () => {
-  //     try {
-  //       const reponse = await apiService.post(endPoints.studentCopy, {
-  //         semesterId: "S1",
-  //         classYearId: 1,
-  //         studentId: 2,
-  //       });
-  //       console.log(reponse);
-
-  //       //   setStudentReport((prev) => [...prev, reponse]);
-  //       console.log(studentReport);
-  //     } catch (err) {
-  //       console.log(err);
-  //     }
-  //   };
-  //   fetchStudentCopy();
-  // }, []);
   useEffect(() => {
     const fetchGradingSystem = async () => {
       try {
@@ -199,8 +210,8 @@ export default function Transcript_Generate() {
         console.log(response);
         // setManyGradingSystem(response.map((e) => e.versionName));
       } catch (error) {
-        console.error("Failed to fetch impairments:", error);
-        setError("Failed to load impairments. Please try again later.");
+        console.error("Failed to fetch Grading System:", error);
+        setError("Failed to load Grading System. Please try again later.");
       }
     };
     const fetchBatches = async () => {
@@ -210,8 +221,8 @@ export default function Transcript_Generate() {
         setBatches(response);
         console.log(response);
       } catch (error) {
-        console.error("Failed to fetch impairments:", error);
-        setError("Failed to load impairments. Please try again later.");
+        console.error("Failed to fetch Batches:", error);
+        setError("Failed to load Batches. Please try again later.");
       }
     };
     const fetchDepartment = async () => {
@@ -219,13 +230,35 @@ export default function Transcript_Generate() {
         const deparments = await apiService.get(endPoints.departments);
         setDepartment(deparments);
       } catch (error) {
-        console.error("Failed to fetch impairments:", error);
-        setError("Failed to load impairments. Please try again later.");
+        console.error("Failed to fetch Depatments:", error);
+        setError("Failed to load Departments. Please try again later.");
       }
     };
     fetchDepartment();
     fetchGradingSystem();
     fetchBatches();
+  }, []);
+  useEffect(() => {
+    const fetchDropdownData = async () => {
+      setLoadingDropdowns(true);
+      try {
+        // Adjust these endpoints based on your actual API
+        const [semesterRes, classYearRes] = await Promise.all([
+          apiService.get(endPoints.semesters || "/api/semesters"), // e.g., returns [{ id: "S1", name: "First Semester" }]
+          apiService.get(endPoints.classYears || "/api/class-years"), // e.g., returns [{ id: 1, name: "Year 1" }]
+        ]);
+        console.log(semesterRes, classYearRes);
+        setSemesters(semesterRes || []);
+        setClassYears(classYearRes || []);
+      } catch (err) {
+        console.error("Failed to load semesters/class years:", err);
+        setError("Failed to load semester or class year options.");
+      } finally {
+        setLoadingDropdowns(false);
+      }
+    };
+
+    fetchDropdownData();
   }, []);
   const baseReport: ReportRecord = {
     id: "DHMC/MRT-1821-16",
@@ -486,7 +519,84 @@ export default function Transcript_Generate() {
       },
     },
   ];
+  useEffect(() => {
+    const fetchStudents = async () => {
+      setLoadingStudents(true);
+      try {
+        const students = await apiService.get(endPoints.studentsSlip); // Adjust endpoint name if needed
+        setAllStudents(students || []);
+        console.log(students);
+      } catch (err) {
+        setError(
+          "Failed to load students: " + (err?.message || "Unknown error")
+        );
+        console.error(err);
+      } finally {
+        setLoadingStudents(false);
+      }
+    };
+    fetchStudents();
+  }, []);
 
+  ///////////// NEEDED AN ATTENTION
+
+  // useEffect(() => {
+  //   if (searchType !== "report" || selectedStudents.length === 0) {
+  //     setRealReports([]);
+  //     return;
+  //   }
+  //   const fetchReports = async () => {
+  //     setLoadingReports(true);
+  //     setError(null);
+  //     try {
+  //       const response = await apiService.post(endPoints.generateGradeReport, {
+  //         studentIds: selectedStudents,
+  //       });
+  //       setRealReports(response.gradeReports || []);
+  //     } catch (err) {
+  //       setError(
+  //         "Failed to generate reports: " + (err.message || "Server error")
+  //       );
+  //       setRealReports([]);
+  //     } finally {
+  //       setLoadingReports(false);
+  //     }
+  //   };
+  //   fetchReports();
+  // }, []);
+  const toggleStudent = (id: number) => {
+    setSelectedStudents((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
+    );
+  };
+  const toggleAllVisible = () => {
+    const visibleIds = filteredStudents.map((s) => s.studentId);
+    const allSelected = visibleIds.every((id) => selectedStudents.includes(id));
+    if (allSelected) {
+      setSelectedStudents((prev) =>
+        prev.filter((id) => !visibleIds.includes(id))
+      );
+    } else {
+      setSelectedStudents((prev) => [...new Set([...prev, ...visibleIds])]);
+    }
+  };
+  const filteredStudents = useMemo(() => {
+    if (!searchTerm) return allStudents;
+    const term = searchTerm.toLowerCase();
+    return allStudents.filter(
+      (s) =>
+        s.fullNameENG.toLowerCase().includes(term) ||
+        s.idNumber?.toLowerCase().includes(term) ||
+        s.username.toLowerCase().includes(term)
+    );
+  }, [allStudents, searchTerm]);
+  const selectedCount = selectedStudents.length;
+  const handleBackToChoice = () => {
+    setSearchType(null);
+    setSelectedStudents([]);
+    setSearchTerm("");
+    setRealReports([]);
+  };
   // === BATCH & DEPARTMENT OPTIONS ===
 
   const allReportBatches = Array.from(new Set(reportBatch.map((r) => r.batch)));
@@ -560,135 +670,198 @@ export default function Transcript_Generate() {
     );
   }, [searchTerm, selectedBatch, selectedDepartment, transcriptBatch]);
 
-  const handleBackToChoice = () => {
-    setSearchType(null);
-    setSearchTerm("");
-    setSelectedBatch("");
-    setSelectedDepartment("all");
-  };
+  // const handleBackToChoice = () => {
+  //   setSearchType(null);
+  //   setSearchTerm("");
+  //   setSelectedBatch("");
+  //   setSelectedDepartment("all");
+  // };
 
+  // const exportToPDF = () => {
+  //   if (!searchType || !selectedBatch) return;
+
+  //   const isReport = searchType === "report";
+  //   const doc = new jsPDF("p", "mm", "a4");
+
+  //   const list = isReport ? filteredReports : filteredTranscripts;
+
+  //   if (list.length === 0) return;
+
+  //   list.forEach((item, index) => {
+  //     if (index > 0) {
+  //       doc.addPage();
+  //     }
+
+  //     if (isReport) {
+  //       const r = item as ReportRecord;
+
+  //       doc.setFontSize(14);
+  //       doc.text("DEUTSCHE HÖHERE MEDIZINISCHE HOCHSCHULE", 10, 15);
+  //       doc.setFontSize(11);
+  //       doc.text(`Report Card - ${r.academicYear} ${r.semester}`, 10, 22);
+
+  //       doc.setFontSize(10);
+  //       doc.text(`ID: ${r.id}`, 10, 30);
+  //       doc.text(`Name: ${r.name}`, 10, 36);
+  //       doc.text(`Program: ${r.program}`, 10, 42);
+  //       doc.text(`Batch: ${r.batch}`, 10, 48);
+  //       doc.text(`Department: ${r.department}`, 10, 54);
+  //       doc.text(`CGPA: ${r.cgpa}`, 120, 30);
+  //       doc.text(`Credits: ${r.earnedCredits}`, 120, 36);
+
+  //       const body = r.courses.map((c) => [
+  //         c.code,
+  //         c.title,
+  //         c.credit,
+  //         c.grade,
+  //         c.point.toFixed(2),
+  //         c.gp.toFixed(2),
+  //       ]);
+
+  //       autoTable(doc, {
+  //         startY: 60,
+  //         head: [["Code", "Title", "Credit", "Grade", "Point", "GP×CH"]],
+  //         body,
+  //         theme: "grid",
+  //         styles: { fontSize: 9 },
+  //       });
+
+  //       doc.text(
+  //         `Generated for batch ${selectedBatch}${
+  //           selectedDepartment !== "all" ? ` - ${selectedDepartment}` : ""
+  //         }`,
+  //         10,
+  //         290
+  //       );
+  //     } else {
+  //       const t = item as TranscriptRecord;
+
+  //       doc.setFontSize(14);
+  //       doc.text("DEUTSCHE HOCHSCHULE FÜR MEDIZIN", 10, 15);
+  //       doc.setFontSize(11);
+  //       doc.text("STUDENT ACADEMIC TRANSCRIPT", 10, 22);
+
+  //       doc.setFontSize(10);
+  //       doc.text(`ID: ${t.student.id}`, 10, 30);
+  //       doc.text(`Name: ${t.student.name}`, 10, 36);
+  //       doc.text(`Program: ${t.student.program}`, 10, 42);
+  //       doc.text(`Batch: ${t.student.batch}`, 10, 48);
+  //       doc.text(`Department: ${t.student.department}`, 10, 54);
+  //       doc.text(`Faculty: ${t.student.faculty}`, 10, 60);
+  //       doc.text(`Admission: ${t.student.admissionDate}`, 10, 66);
+
+  //       let currentY = 74;
+
+  //       t.semesters.forEach((s, sIndex) => {
+  //         if (sIndex > 0 && currentY > 220) {
+  //           doc.addPage();
+  //           currentY = 20;
+  //         }
+
+  //         doc.setFontSize(11);
+  //         doc.text(`${s.year} - ${s.semester} (GPA: ${s.gpa})`, 10, currentY);
+  //         currentY += 6;
+
+  //         const body = s.courses.map((c) => [
+  //           c.code,
+  //           c.title,
+  //           c.ch,
+  //           c.grade,
+  //           c.point,
+  //         ]);
+
+  //         autoTable(doc, {
+  //           startY: currentY,
+  //           head: [["Code", "Title", "CH", "Grade", "Point"]],
+  //           body,
+  //           theme: "grid",
+  //           styles: { fontSize: 9 },
+  //           margin: { left: 10, right: 10 },
+  //         });
+
+  //         // @ts-ignore: autoTable types
+  //         currentY = (doc as any).lastAutoTable.finalY + 10;
+  //       });
+
+  //       doc.text(
+  //         `Generated for batch ${selectedBatch}${
+  //           selectedDepartment !== "all" ? ` - ${selectedDepartment}` : ""
+  //         }`,
+  //         10,
+  //         290
+  //       );
+  //     }
+  //   });
+
+  //   const fileName =
+  //     searchType === "report"
+  //       ? "ReportCards-Filtered.pdf"
+  //       : "Transcripts-Filtered.pdf";
+
+  //   doc.save(fileName);
+  // };
   const exportToPDF = () => {
-    if (!searchType || !selectedBatch) return;
+    if (!searchType || (searchType === "report" && realReports.length === 0))
+      return;
 
-    const isReport = searchType === "report";
     const doc = new jsPDF("p", "mm", "a4");
+    const reports = searchType === "report" ? realReports : realTranscripts;
 
-    const list = isReport ? filteredReports : filteredTranscripts;
+    reports.forEach((item, index) => {
+      if (index > 0) doc.addPage();
 
-    if (list.length === 0) return;
-
-    list.forEach((item, index) => {
-      if (index > 0) {
-        doc.addPage();
-      }
-
-      if (isReport) {
-        const r = item as ReportRecord;
-
+      if (searchType === "report") {
+        const r = item as RealGradeReport;
         doc.setFontSize(14);
         doc.text("DEUTSCHE HÖHERE MEDIZINISCHE HOCHSCHULE", 10, 15);
         doc.setFontSize(11);
-        doc.text(`Report Card - ${r.academicYear} ${r.semester}`, 10, 22);
+        doc.text("Student Academic Grade Report", 10, 22);
 
+        // Student Info
         doc.setFontSize(10);
-        doc.text(`ID: ${r.id}`, 10, 30);
-        doc.text(`Name: ${r.name}`, 10, 36);
-        doc.text(`Program: ${r.program}`, 10, 42);
-        doc.text(`Batch: ${r.batch}`, 10, 48);
-        doc.text(`Department: ${r.department}`, 10, 54);
-        doc.text(`CGPA: ${r.cgpa}`, 120, 30);
-        doc.text(`Credits: ${r.earnedCredits}`, 120, 36);
+        doc.text(`ID: ${r.idNumber}`, 10, 30);
+        doc.text(`Name: ${r.fullName}`, 10, 36);
+        doc.text(`Department: ${r.department.name}`, 10, 42);
+        doc.text(`Program: ${r.programModality.name}`, 10, 48);
 
-        const body = r.courses.map((c) => [
-          c.code,
-          c.title,
-          c.credit,
-          c.grade,
-          c.point.toFixed(2),
-          c.gp.toFixed(2),
-        ]);
-
-        autoTable(doc, {
-          startY: 60,
-          head: [["Code", "Title", "Credit", "Grade", "Point", "GP×CH"]],
-          body,
-          theme: "grid",
-          styles: { fontSize: 9 },
-        });
-
-        doc.text(
-          `Generated for batch ${selectedBatch}${
-            selectedDepartment !== "all" ? ` - ${selectedDepartment}` : ""
-          }`,
-          10,
-          290
-        );
-      } else {
-        const t = item as TranscriptRecord;
-
-        doc.setFontSize(14);
-        doc.text("DEUTSCHE HOCHSCHULE FÜR MEDIZIN", 10, 15);
-        doc.setFontSize(11);
-        doc.text("STUDENT ACADEMIC TRANSCRIPT", 10, 22);
-
-        doc.setFontSize(10);
-        doc.text(`ID: ${t.student.id}`, 10, 30);
-        doc.text(`Name: ${t.student.name}`, 10, 36);
-        doc.text(`Program: ${t.student.program}`, 10, 42);
-        doc.text(`Batch: ${t.student.batch}`, 10, 48);
-        doc.text(`Department: ${t.student.department}`, 10, 54);
-        doc.text(`Faculty: ${t.student.faculty}`, 10, 60);
-        doc.text(`Admission: ${t.student.admissionDate}`, 10, 66);
-
-        let currentY = 74;
-
-        t.semesters.forEach((s, sIndex) => {
-          if (sIndex > 0 && currentY > 220) {
+        let y = 60;
+        r.studentCopies.forEach((copy) => {
+          if (y > 240) {
             doc.addPage();
-            currentY = 20;
+            y = 20;
           }
-
           doc.setFontSize(11);
-          doc.text(`${s.year} - ${s.semester} (GPA: ${s.gpa})`, 10, currentY);
-          currentY += 6;
+          doc.text(
+            `${copy.academicYear || "Current"} - ${
+              copy.semester.name
+            } (GPA: ${copy.semesterGPA.toFixed(2)})`,
+            10,
+            y
+          );
+          y += 8;
 
-          const body = s.courses.map((c) => [
-            c.code,
-            c.title,
-            c.ch,
-            c.grade,
-            c.point,
+          const body = copy.courses.map((c) => [
+            c.courseCode,
+            c.courseTitle,
+            c.totalCrHrs,
+            c.letterGrade,
+            c.gradePoint.toFixed(1),
           ]);
 
           autoTable(doc, {
-            startY: currentY,
-            head: [["Code", "Title", "CH", "Grade", "Point"]],
+            startY: y,
+            head: [["Code", "Title", "CrH", "Grade", "Point"]],
             body,
             theme: "grid",
             styles: { fontSize: 9 },
-            margin: { left: 10, right: 10 },
           });
-
-          // @ts-ignore: autoTable types
-          currentY = (doc as any).lastAutoTable.finalY + 10;
+          y = (doc as any).lastAutoTable.finalY + 10;
         });
-
-        doc.text(
-          `Generated for batch ${selectedBatch}${
-            selectedDepartment !== "all" ? ` - ${selectedDepartment}` : ""
-          }`,
-          10,
-          290
-        );
       }
+      // Transcript PDF logic remains same (you can update later)
     });
 
-    const fileName =
-      searchType === "report"
-        ? "ReportCards-Filtered.pdf"
-        : "Transcripts-Filtered.pdf";
-
-    doc.save(fileName);
+    doc.save(searchType === "report" ? "GradeReports.pdf" : "Transcripts.pdf");
   };
 
   // === TYPE SELECTION SCREEN ===
@@ -744,142 +917,636 @@ export default function Transcript_Generate() {
   const activeList = isReport ? filteredReports : filteredTranscripts;
   const count = selectedBatch ? activeList.length : 0;
 
-  return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8 transition-colors">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col gap-4 mb-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <button
-              onClick={handleBackToChoice}
-              className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-lg hover:underline"
-            >
-              <ArrowLeft className="w-5 h-5" /> Back to Type
-            </button>
+  // return (
+  //   <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8 transition-colors">
+  //     <div className="max-w-7xl mx-auto">
+  //       <div className="flex flex-col gap-4 mb-6">
+  //         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+  //           <button
+  //             onClick={handleBackToChoice}
+  //             className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-lg hover:underline"
+  //           >
+  //             <ArrowLeft className="w-5 h-5" /> Back to Type
+  //           </button>
 
-            <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center w-full sm:w-auto">
-              <div className="relative flex-1 min-w-[220px]">
-                <input
-                  type="text"
-                  placeholder={`Search by ID, name or program (${
-                    isReport ? "Report" : "Transcript"
-                  })`}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-11 pr-4 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm sm:text-base focus:border-blue-600 dark:focus:border-blue-500 outline-none transition"
-                  disabled={!selectedBatch}
-                />
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 dark:text-gray-400" />
+  //           <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center w-full sm:w-auto">
+  //             <div className="relative flex-1 min-w-[220px]">
+  //               <input
+  //                 type="text"
+  //                 placeholder={`Search by ID, name or program (${
+  //                   isReport ? "Report" : "Transcript"
+  //                 })`}
+  //                 value={searchTerm}
+  //                 onChange={(e) => setSearchTerm(e.target.value)}
+  //                 className="w-full pl-11 pr-4 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm sm:text-base focus:border-blue-600 dark:focus:border-blue-500 outline-none transition"
+  //                 disabled={!selectedBatch}
+  //               />
+  //               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 dark:text-gray-400" />
+  //             </div>
+
+  //             <button
+  //               onClick={exportToPDF}
+  //               disabled={!selectedBatch || activeList.length === 0}
+  //               className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl shadow text-sm sm:text-base font-semibold transition ${
+  //                 !selectedBatch || activeList.length === 0
+  //                   ? "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+  //                   : "bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white"
+  //               }`}
+  //             >
+  //               <Download className="w-5 h-5" /> Export Filtered (PDF)
+  //             </button>
+  //           </div>
+  //         </div>
+
+  //         <div className="flex flex-col sm:flex-row gap-3">
+  //           <select
+  //             value={selectedBatch}
+  //             onChange={(e) => setSelectedBatch(e.target.value)}
+  //             className="w-full sm:w-56 px-3 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm sm:text-base text-gray-800 dark:text-gray-100 focus:border-blue-600 dark:focus:border-blue-500 outline-none"
+  //           >
+  //             <option value="">Select batch to view records</option>
+  //             <option value="all">All Batches</option>
+  //             {batch.map((b) => (
+  //               <option key={b.id} value={b.id}>
+  //                 {b.batchName}
+  //               </option>
+  //             ))}
+  //           </select>
+  //           <select
+  //             value={selectedDepartment}
+  //             onChange={(e) => setSelectedDepartment(e.target.value)}
+  //             className="w-full sm:w-56 px-3 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm sm:text-base text-gray-800 dark:text-gray-100 focus:border-blue-600 dark:focus:border-blue-500 outline-none"
+  //           >
+  //             <option value="">Select deparment to view records</option>
+  //             <option value="all">All Department</option>
+  //             {deparment.map((b) => (
+  //               <option key={b.dptID} value={b.dptID}>
+  //                 {b.deptName}
+  //               </option>
+  //             ))}
+  //           </select>
+  //           <select
+  //             value={manyGradingSystem}
+  //             onChange={(e) => setManyGradingSystem(e.target.value)}
+  //             className="w-full sm:w-56 px-3 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm sm:text-base text-gray-800 dark:text-gray-100 focus:border-blue-600 dark:focus:border-blue-500 outline-none"
+  //             // disabled={!selectedBatch}
+  //           >
+  //             <option value="">Select Grading System</option>
+
+  //             {gradingSystems.map((d) => (
+  //               <option key={d.versionName} value={d.versionName}>
+  //                 {d.versionName}
+  //               </option>
+  //             ))}
+  //           </select>
+  //         </div>
+  //       </div>
+
+  //       {!selectedBatch && (
+  //         <div className="mt-12 text-center text-gray-600 dark:text-gray-300">
+  //           <p className="text-lg">
+  //             Please select a batch above to view student records.
+  //           </p>
+  //         </div>
+  //       )}
+
+  //       {selectedBatch && (
+  //         <>
+  //           <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">
+  //             {isReport ? "Report Cards" : "Transcripts"} ({count} students)
+  //           </h2>
+
+  //           {isReport ? (
+  //             <div className="space-y-8">
+  //               {loadingReports ? (
+  //                 <div className="flex flex-col items-center justify-center py-20">
+  //                   <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600"></div>
+  //                   <p className="mt-6 text-lg font-medium text-gray-700 dark:text-gray-300">
+  //                     Loading student reports...
+  //                   </p>
+  //                 </div>
+  //               ) : Error ? (
+  //                 <div className="text-center py-20">
+  //                   <div className="text-red-600 dark:text-red-400 mb-4">
+  //                     <svg
+  //                       className="w-16 h-16 mx-auto"
+  //                       fill="currentColor"
+  //                       viewBox="0 0 20 20"
+  //                     >
+  //                       <path
+  //                         fillRule="evenodd"
+  //                         d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+  //                         clipRule="evenodd"
+  //                       />
+  //                     </svg>
+  //                   </div>
+  //                   <p className="text-xl font-medium text-gray-800 dark:text-gray-200 mb-2">
+  //                     Failed to load student reports
+  //                   </p>
+  //                   <p className="text-gray-600 dark:text-gray-400 mb-6">
+  //                     {Error}
+  //                   </p>
+  //                   <button
+  //                     onClick={() => window.location.reload()} // or call your fetch function again
+  //                     className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition"
+  //                   >
+  //                     Try Again
+  //                   </button>
+  //                 </div>
+  //               ) : studentReport.length > 0 ? (
+  //                 studentReport.map((r, i) => (
+  //                   <MyReport key={i} reportData={r} />
+  //                 ))
+  //               ) : (
+  //                 <p className="text-center text-gray-600 dark:text-gray-300 mt-8">
+  //                   No real student reports found. (Demo report cards are shown
+  //                   below if any)
+  //                 </p>
+  //               )}
+
+  //               {/* Keep your fake/demo report cards visible always */}
+  //               {filteredReports.length === 0 && !loadingReports && (
+  //                 <p className="text-center text-gray-600 dark:text-gray-300 mt-8">
+  //                   No demo students found for current filters.
+  //                 </p>
+  //               )}
+  //             </div>
+  //           ) : (
+  //             // Transcripts remain unchanged
+  //             <div className="space-y-8">
+  //               {filteredTranscripts.map((t) => (
+  //                 <TranscriptView key={t.student.id} transcript={t} />
+  //               ))}
+  //               {filteredTranscripts.length === 0 && (
+  //                 <p className="text-center text-gray-600 dark:text-gray-300 mt-8">
+  //                   No students found for current batch/department/search.
+  //                 </p>
+  //               )}
+  //             </div>
+  //           )}
+  //         </>
+  //       )}
+  //     </div>
+  //   </div>
+  // );
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex justify-between items-center mb-6">
+          <button
+            onClick={handleBackToChoice}
+            className="flex items-center gap-2 text-blue-600 hover:underline"
+          >
+            <ArrowLeft /> Back
+          </button>
+          <button
+            onClick={exportToPDF}
+            disabled={
+              searchType === "report"
+                ? realReports.length === 0
+                : transcriptBatch.length === 0
+            }
+            className="flex items-center gap-2 px-5 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+          >
+            <Download /> Export PDF (
+            {searchType === "report"
+              ? realReports.length
+              : transcriptBatch.length}
+            )
+          </button>
+        </div>
+
+        {searchType === "report" ? (
+          <>
+            <h2 className="text-2xl font-bold mb-4">
+              Select Students for Grade Report
+            </h2>
+
+            <div className="mb-4 flex gap-4">
+              <input
+                type="text"
+                placeholder="Search students..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="flex-1 px-4 py-2 rounded-lg border"
+              />
+              <button
+                onClick={toggleAllVisible}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+              >
+                {filteredStudents.every((s) =>
+                  selectedStudents.includes(s.studentId)
+                )
+                  ? "Deselect"
+                  : "Select"}{" "}
+                All Visible
+              </button>
+            </div>
+            <div className="mt-6 space-y-6">
+              {/* Semester & Class Year Selection */}
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1">
+                  <label className="block text-sm font-medium mb-2">
+                    Semester
+                  </label>
+                  <select
+                    value={selectedSemesterId}
+                    onChange={(e) => setSelectedSemesterId(e.target.value)}
+                    disabled={loadingDropdowns}
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 disabled:opacity-50"
+                  >
+                    <option value="">
+                      {loadingDropdowns
+                        ? "Loading semesters..."
+                        : "Select Semester"}
+                    </option>
+                    {semesters.map((sem) => (
+                      <option
+                        key={sem.academicPeriodCode}
+                        value={sem.academicPeriodCode}
+                      >
+                        {sem.academicPeriodCode}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex-1">
+                  <label className="block text-sm font-medium mb-2">
+                    Class Year
+                  </label>
+                  <select
+                    value={selectedClassYearId}
+                    onChange={(e) => setSelectedClassYearId(e.target.value)}
+                    disabled={loadingDropdowns}
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 disabled:opacity-50"
+                  >
+                    <option value="">
+                      {loadingDropdowns
+                        ? "Loading class years..."
+                        : "Select Class Year"}
+                    </option>
+                    {classYears.map((cy) => (
+                      <option key={cy.id} value={cy.id}>
+                        {cy.classYear}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Selected count + Generate button */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+                <div className="text-xl font-semibold">
+                  Selected: {selectedCount} student
+                  {selectedCount !== 1 ? "s" : ""}
+                </div>
+
+                <button
+                  onClick={async () => {
+                    if (selectedStudents.length === 0) {
+                      setError("Please select at least one student");
+                      return;
+                    }
+                    if (!selectedSemesterId || !selectedClassYearId) {
+                      setError("Please select both Semester and Class Year");
+                      return;
+                    }
+
+                    setLoadingReports(true);
+                    setError(null);
+
+                    try {
+                      const response = await apiService.post(
+                        // "/api/student-copy/generate",
+                        endPoints.studentCopy,
+
+                        {
+                          semesterId: selectedSemesterId,
+                          classYearId: Number(selectedClassYearId),
+                          studentIds: selectedStudents,
+                        }
+                      );
+                      // const reportsArray =
+                      //   response?.gradeReports ?? response ?? [];
+                      // const data = Array.isArray(response)
+                      //   ? response
+                      //   : response?.data && Array.isArray(response.data)
+                      //   ? response.data
+                      //   : [];
+                      // setRealReports(
+                      //   Array.isArray(reportsArray) ? reportsArray : []
+                      // );
+                      const reportsArray = Array.isArray(response)
+                        ? response
+                        : [];
+
+                      // Transform into RealGradeReport format expected by RealReportView
+                      const transformedReports: RealGradeReport[] =
+                        reportsArray.map((item: any) => ({
+                          idNumber: item.idNumber,
+                          fullName: item.fullName,
+                          gender: item.gender,
+                          birthDateGC: item.dateOfBirthGC,
+                          dateEnrolledGC: item.dateEnrolledGC,
+                          programModality: item.programModality,
+                          programLevel: item.programLevel,
+                          department: item.department,
+                          // Wrap the single semester data into studentCopies array
+                          studentCopies: [
+                            {
+                              classyear: item.classyear,
+                              semester: item.semester,
+                              academicYear: item.academicYear,
+                              courses: item.courses.map((c: any) => ({
+                                courseCode: c.courseCode,
+                                courseTitle: c.courseTitle,
+                                totalCrHrs: c.totalCrHrs,
+                                letterGrade: c.letterGrade,
+                                gradePoint: c.gradePoint,
+                              })),
+                              semesterGPA: item.semesterGPA,
+                              semesterCGPA: item.semesterCGPA,
+                              status: item.status,
+                            },
+                          ],
+                        }));
+
+                      setRealReports(transformedReports);
+                    } catch (err: any) {
+                      const message =
+                        err?.response?.data?.error ||
+                        err?.message ||
+                        "Failed to generate student copies";
+                      setError(message);
+                      setRealReports([]);
+                    } finally {
+                      setLoadingReports(false);
+                    }
+                  }}
+                  disabled={
+                    selectedStudents.length === 0 ||
+                    !selectedSemesterId ||
+                    !selectedClassYearId ||
+                    loadingReports ||
+                    loadingDropdowns
+                  }
+                  className={`px-8 py-4 rounded-xl font-bold text-white shadow-lg transition ${
+                    selectedStudents.length === 0 ||
+                    !selectedSemesterId ||
+                    !selectedClassYearId ||
+                    loadingDropdowns
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700"
+                  }`}
+                >
+                  {loadingReports ? (
+                    <>
+                      <Loader2 className="w-6 h-6 animate-spin inline mr-3" />
+                      Generating Copies...
+                    </>
+                  ) : (
+                    "Generate Student Copies"
+                  )}
+                </button>
+              </div>
+
+              {/* Error Display */}
+              {Error && (
+                <div className="mt-4 p-4 bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-600 rounded-lg text-red-700 dark:text-red-300">
+                  {Error}
+                </div>
+              )}
+            </div>
+
+            {loadingStudents ? (
+              <div className="text-center py-20">
+                <Loader2 className="w-12 h-12 animate-spin mx-auto" />
+                <p>Loading students...</p>
+              </div>
+            ) : Error ? (
+              <div className="text-red-600 text-center py-10">{Error}</div>
+            ) : (
+              <div className="bg-white rounded-lg shadow overflow-hidden max-h-96 overflow-y-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-100 sticky top-0">
+                    <tr>
+                      <th className="p-3 text-left">Select</th>
+                      <th className="p-3 text-left">ID / Username</th>
+                      <th className="p-3 text-left">Name</th>
+                      <th className="p-3 text-left">Department</th>
+                      <th className="p-3 text-left">Batch</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredStudents.map((student) => (
+                      <tr
+                        key={student.studentId}
+                        className="border-t hover:bg-gray-50 cursor-pointer"
+                        onClick={() => toggleStudent(student.studentId)}
+                      >
+                        <td className="p-3">
+                          {selectedStudents.includes(student.studentId) ? (
+                            <CheckSquare className="text-blue-600" />
+                          ) : (
+                            <Square />
+                          )}
+                        </td>
+                        <td className="p-3">{student.username}</td>
+                        <td className="p-3">{student.fullNameENG}</td>
+                        <td className="p-3">{student.departmentName}</td>
+                        <td className="p-3">{student.bcysDisplayName}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div className="mt-6 text-xl font-semibold">
+              Selected: {selectedCount} student{selectedCount !== 1 ? "s" : ""}
+            </div>
+
+            {loadingReports && (
+              <div className="mt-8 text-center">
+                <Loader2 className="w-10 h-10 animate-spin mx-auto" />
+              </div>
+            )}
+
+            <div className="mt-8 space-y-8">
+              {realReports.map((report, i) => (
+                <RealReportView key={i} report={report} />
+              ))}
+              {realReports.length === 0 &&
+                !loadingReports &&
+                selectedCount > 0 && (
+                  <p className="text-center text-gray-500">
+                    No reports generated yet.
+                  </p>
+                )}
+            </div>
+          </>
+        ) : (
+          // Existing transcript demo view (unchanged)
+          // <div className="space-y-8">
+          //   {transcriptBatch.map((t) => (
+          //     <TranscriptView key={t.student.id} transcript={t} />
+          //   ))}
+          // </div>
+          <>
+            <h2 className="text-2xl font-bold mb-4">
+              Select Students for Transcript
+            </h2>
+
+            <div className="mb-4 flex gap-4">
+              <input
+                type="text"
+                placeholder="Search students..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="flex-1 px-4 py-2 rounded-lg border"
+              />
+              <button
+                onClick={toggleAllVisible}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+              >
+                {filteredStudents.every((s) =>
+                  selectedStudents.includes(s.studentId)
+                )
+                  ? "Deselect"
+                  : "Select"}{" "}
+                All Visible
+              </button>
+            </div>
+
+            {/* Same student list table */}
+            {loadingStudents ? (
+              <div className="text-center py-20">
+                <Loader2 className="w-12 h-12 animate-spin mx-auto" />
+                <p>Loading students...</p>
+              </div>
+            ) : Error ? (
+              <div className="text-red-600 text-center py-10">{Error}</div>
+            ) : (
+              <div className="bg-white rounded-lg shadow overflow-hidden max-h-96 overflow-y-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-100 sticky top-0">
+                    <tr>
+                      <th className="p-3 text-left">Select</th>
+                      <th className="p-3 text-left">ID / Username</th>
+                      <th className="p-3 text-left">Name</th>
+                      <th className="p-3 text-left">Department</th>
+                      <th className="p-3 text-left">Batch</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredStudents.map((student) => (
+                      <tr
+                        key={student.studentId}
+                        className="border-t hover:bg-gray-50 cursor-pointer"
+                        onClick={() => toggleStudent(student.studentId)}
+                      >
+                        <td className="p-3">
+                          {selectedStudents.includes(student.studentId) ? (
+                            <CheckSquare className="text-blue-600" />
+                          ) : (
+                            <Square />
+                          )}
+                        </td>
+                        <td className="p-3">{student.username}</td>
+                        <td className="p-3">{student.fullNameENG}</td>
+                        <td className="p-3">{student.departmentName}</td>
+                        <td className="p-3">{student.bcysDisplayName}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div className="mt-6 flex items-center justify-between">
+              <div className="text-xl font-semibold">
+                Selected: {selectedCount} student
+                {selectedCount !== 1 ? "s" : ""}
               </div>
 
               <button
-                onClick={exportToPDF}
-                disabled={!selectedBatch || activeList.length === 0}
-                className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl shadow text-sm sm:text-base font-semibold transition ${
-                  !selectedBatch || activeList.length === 0
-                    ? "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
-                    : "bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white"
+                onClick={async () => {
+                  if (selectedStudents.length === 0) {
+                    setError("Please select at least one student");
+                    return;
+                  }
+
+                  setLoadingTranscripts(true);
+                  setError(null);
+
+                  try {
+                    const response = await apiService.post(
+                      endPoints.generateGradeReport,
+                      {
+                        studentIds: selectedStudents,
+                      }
+                    );
+
+                    console.log("Transcript Response:", response);
+
+                    const reportsArray = response?.gradeReports ?? [];
+                    setRealTranscripts(
+                      Array.isArray(reportsArray) ? reportsArray : []
+                    );
+                  } catch (err: any) {
+                    const message =
+                      err?.response?.data?.error ||
+                      err?.message ||
+                      "Failed to generate transcripts";
+                    setError(message);
+                    setRealTranscripts([]);
+                  } finally {
+                    setLoadingTranscripts(false);
+                  }
+                }}
+                disabled={selectedStudents.length === 0 || loadingTranscripts}
+                className={`px-8 py-4 rounded-xl font-bold text-white shadow-lg transition ${
+                  selectedStudents.length === 0 || loadingTranscripts
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-purple-600 hover:bg-purple-700"
                 }`}
               >
-                <Download className="w-5 h-5" /> Export Filtered (PDF)
+                {loadingTranscripts ? (
+                  <>
+                    <Loader2 className="w-6 h-6 animate-spin inline mr-3" />
+                    Generating Transcripts...
+                  </>
+                ) : (
+                  "Generate Transcripts"
+                )}
               </button>
             </div>
-          </div>
 
-          {/* Batch + Department filters */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <select
-              value={selectedBatch}
-              onChange={(e) => setSelectedBatch(e.target.value)}
-              className="w-full sm:w-56 px-3 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm sm:text-base text-gray-800 dark:text-gray-100 focus:border-blue-600 dark:focus:border-blue-500 outline-none"
-            >
-              <option value="">Select batch to view records</option>
-              <option value="all">All Batches</option>
-              {batch.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.batchName}
-                </option>
-              ))}
-            </select>
-            <select
-              value={selectedDepartment}
-              onChange={(e) => setSelectedDepartment(e.target.value)}
-              className="w-full sm:w-56 px-3 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm sm:text-base text-gray-800 dark:text-gray-100 focus:border-blue-600 dark:focus:border-blue-500 outline-none"
-            >
-              <option value="">Select deparment to view records</option>
-              <option value="all">All Department</option>
-              {deparment.map((b) => (
-                <option key={b.dptID} value={b.dptID}>
-                  {b.deptName}
-                </option>
-              ))}
-            </select>
-            <select
-              value={manyGradingSystem}
-              onChange={(e) => setManyGradingSystem(e.target.value)}
-              className="w-full sm:w-56 px-3 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm sm:text-base text-gray-800 dark:text-gray-100 focus:border-blue-600 dark:focus:border-blue-500 outline-none"
-              // disabled={!selectedBatch}
-            >
-              <option value="">Select Grading System</option>
-
-              {gradingSystems.map((d) => (
-                <option key={d.versionName} value={d.versionName}>
-                  {d.versionName}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {!selectedBatch && (
-          <div className="mt-12 text-center text-gray-600 dark:text-gray-300">
-            <p className="text-lg">
-              Please select a batch above to view student records.
-            </p>
-          </div>
-        )}
-
-        {selectedBatch && (
-          <>
-            <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">
-              {isReport ? "Report Cards" : "Transcripts"} ({count} students)
-            </h2>
-
-            {isReport ? (
-              <div className="space-y-8">
-                {/* {filteredReports.map((r) => (
-                  // <ReportCardView key={r.id} reportData={r} />
-                  <MyReport />
-                ))} */}
-                {/* {studentReport.map((r) => (
-                  // <ReportCardView key={r.id} reportData={r} />
-
-                  <MyReport reportData={r} />
-                ))} */}
-                {/* {studentReport && <MyReport reportData={studentReport} />} */}
-                {/* // or if it's an array: */}
-                {studentReport.map((r, i) => (
-                  <MyReport key={i} reportData={r} />
-                ))}
-                {/* {studentReport1 && <MyReport reportData={studentReport1} />} */}
-
-                {filteredReports.length === 0 && (
-                  <p className="text-center text-gray-600 dark:text-gray-300 mt-8">
-                    No students found for current batch/department/search.
-                  </p>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-8">
-                {filteredTranscripts.map((t) => (
-                  <TranscriptView key={t.student.id} transcript={t} />
-                ))}
-                {filteredTranscripts.length === 0 && (
-                  <p className="text-center text-gray-600 dark:text-gray-300 mt-8">
-                    No students found for current batch/department/search.
-                  </p>
-                )}
+            {Error && (
+              <div className="mt-4 p-4 bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-600 rounded-lg text-red-700 dark:text-red-300">
+                {Error}
               </div>
             )}
+
+            {loadingTranscripts && (
+              <div className="mt-8 text-center">
+                <Loader2 className="w-10 h-10 animate-spin mx-auto" />
+                <p className="mt-4">Loading real transcripts...</p>
+              </div>
+            )}
+
+            <div className="mt-8 space-y-8">
+              {realTranscripts.length > 0 ? (
+                realTranscripts.map((report, i) => (
+                  <DynamicTranscriptView key={i} report={report} />
+                ))
+              ) : selectedCount > 0 && !loadingTranscripts ? (
+                <p className="text-center text-gray-500 py-10">
+                  No transcripts generated yet.
+                </p>
+              ) : null}
+            </div>
           </>
         )}
       </div>
@@ -888,57 +1555,107 @@ export default function Transcript_Generate() {
 }
 
 // === PRESENTATION COMPONENTS ===
-// function MyReport({ reportData }) {
-//   console.log(reportData, "testing testinig");
-//   return (
-//     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-//       <div className="bg-gradient-to-r from-blue-700 to-blue-900 dark:from-blue-800 dark:to-blue-950 text-white p-6 text-center">
-//         <h1 className="text-2xl sm:text-3xl font-bold">
-//           DEUTSCHE HÖHERE MEDIZINISCHE HOCHSCHULE
-//         </h1>
-//         <p className="text-lg opacity-90">
-//           Student Academic Record - Student Copy
-//         </p>
-//       </div>
-//       <div className="bg-yellow-50 dark:bg-yellow-900/30 border-2 border-yellow-400 dark:border-yellow-600 m-4 sm:m-8 rounded-lg overflow-hidden"></div>
-//       <table className="w-full text-sm">
-//         <tbody>
-//           <tr className="border-b border-yellow-300 dark:border-yellow-700">
-//             <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800">
-//               ID Number
-//             </td>
-//             <td className="px-4 py-3">{reportData.idNumber}</td>
-//             <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800">
-//               Date of Birth
-//             </td>
-//             <td className="px-4 py-3">{reportData.dateOfBirth}</td>
-//           </tr>
-//           <tr className="border-b border-yellow-300 dark:border-yellow-700">
-//             <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800">
-//               Gender
-//             </td>
-//             <td className="px-4 py-3">{reportData.gender}</td>
-//             <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800">
-//               Date of Enrolled
-//             </td>
-//             <td className="px-4 py-3">{reportData.dateEnrolled}</td>
-//           </tr>
+function RealReportView({ report }: { report: RealGradeReport }) {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border overflow-hidden">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-700 to-blue-900 text-white p-6 text-center">
+        <h1 className="text-3xl font-bold">
+          DEUTSCHE HÖHERE MEDIZINISCHE HOCHSCHULE
+        </h1>
+        <p className="text-lg">Student Academic Grade Report</p>
+        {report.dateIssuedGC && (
+          <p className="text-sm opacity-90 mt-2">
+            Issued: {report.dateIssuedGC}
+          </p>
+        )}
+      </div>
 
-//           <tr className="border-b border-yellow-300 dark:border-yellow-700">
-//             <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800">
-//               Name
-//             </td>
-//             <td className="px-4 py-3">{reportData.fullName}</td>
-//             <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800">
-//               Program
-//             </td>
-//             <td className="px-4 py-3">{reportData?.programModality?.name}</td>
-//           </tr>
-//         </tbody>
-//       </table>
-//     </div>
-//   );
-// }
+      {/* Student Basic Info Grid */}
+      <div className="p-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm bg-gray-50 dark:bg-gray-900/50">
+        <div>
+          <strong>ID:</strong> {report.idNumber}
+        </div>
+        <div>
+          <strong>Name:</strong> {report.fullName}
+        </div>
+        <div>
+          <strong>Gender:</strong> {report.gender}
+        </div>
+        <div>
+          <strong>Date of Birth:</strong> {report.birthDateGC}
+        </div>
+        <div>
+          <strong>Department:</strong> {report.department.name}
+        </div>
+        <div>
+          <strong>Program:</strong> {report.programModality.name}
+        </div>
+        <div>
+          <strong>Enrolled:</strong> {report.dateEnrolledGC}
+        </div>
+        <div className="md:col-span-4">
+          <strong>Program Level:</strong> {report.programLevel?.name || "N/A"}
+        </div>
+      </div>
+
+      {/* Semester Copies */}
+      {report.studentCopies.map((copy, idx) => (
+        <div key={idx} className="border-t pt-6 px-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-bold text-lg">
+              {copy.academicYear || "Current Year"} - {copy.semester.name}
+            </h3>
+            <div className="text-right">
+              <span className="text-sm text-gray-600">Class Year:</span>{" "}
+              <strong>{copy.classyear.name}</strong>
+              <br />
+              <span className="text-sm text-gray-600">Status:</span>{" "}
+              <strong
+                className={
+                  copy.status === "PASSED" ? "text-green-600" : "text-red-600"
+                }
+              >
+                {copy.status}
+              </strong>
+            </div>
+          </div>
+
+          <div className="mb-4 text-right">
+            <span className="text-lg font-semibold">
+              Semester GPA: {copy.semesterGPA.toFixed(2)} | Cumulative GPA:{" "}
+              {copy.semesterCGPA.toFixed(2)}
+            </span>
+          </div>
+
+          <table className="w-full text-sm border">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="p-2">Code</th>
+                <th className="p-2">Title</th>
+                <th className="p-2">CrH</th>
+                <th className="p-2">Grade</th>
+                <th className="p-2">Point</th>
+              </tr>
+            </thead>
+            <tbody>
+              {copy.courses.map((c, i) => (
+                <tr key={i}>
+                  <td className="p-2">{c.courseCode}</td>
+                  <td className="p-2">{c.courseTitle}</td>
+                  <td className="p-2 text-center">{c.totalCrHrs}</td>
+                  <td className="p-2 text-center font-bold">{c.letterGrade}</td>
+                  <td className="p-2 text-center">{c.gradePoint.toFixed(1)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function MyReport({ reportData }) {
   console.log(reportData, "testing testinig");
 
@@ -1234,7 +1951,146 @@ function ReportCardView({ reportData }: { reportData: ReportRecord }) {
     </div>
   );
 }
+function DynamicTranscriptView({ report }: { report: RealGradeReport }) {
+  return (
+    <div className="bg-white dark:bg-gray-800 shadow-2xl border-4 border-black dark:border-gray-600 font-mono text-xs sm:text-sm overflow-x-auto">
+      <div className="text-center py-4 bg-cyan-100 dark:bg-cyan-900 border-b-4 border-black dark:border-gray-600">
+        <h1 className="text-xl sm:text-2xl font-bold">
+          DEUTSCHE HOCHSCHULE FÜR MEDIZIN
+        </h1>
+        <h2 className="text-lg sm:text-xl font-bold">
+          STUDENT ACADEMIC TRANSCRIPT
+        </h2>
+        <p className="font-bold">OFFICE OF REGISTRAR</p>
+        {report.dateIssuedGC && (
+          <p className="text-sm mt-2 opacity-90">
+            Issued on: {report.dateIssuedGC}
+          </p>
+        )}
+      </div>
 
+      <div className="p-4">
+        <table className="w-full border-collapse mb-6">
+          <tbody>
+            <tr className="bg-cyan-100 dark:bg-cyan-900 border-2 border-black dark:border-gray-600">
+              <td className="px-3 py-2 font-bold">ID Number</td>
+              <td className="px-3 py-2">{report.idNumber}</td>
+              <td className="px-3 py-2 font-bold">Full Name</td>
+              <td colSpan={5} className="px-3 py-2">
+                {report.fullName}
+              </td>
+            </tr>
+            <tr className="bg-cyan-100 dark:bg-cyan-900 border-2 border-black dark:border-gray-600">
+              <td className="px-3 py-2 font-bold">Sex</td>
+              <td className="px-3 py-2">{report.gender}</td>
+              <td className="px-3 py-2 font-bold">Date of Birth</td>
+              <td className="px-3 py-2">{report.birthDateGC}</td>
+              <td className="px-3 py-2 font-bold">Program</td>
+              <td className="px-3 py-2">{report.programModality.name}</td>
+              <td className="px-3 py-2 font-bold">Faculty</td>
+              <td className="px-3 py-2">Faculty of Health Sciences</td>
+            </tr>
+            <tr className="bg-cyan-100 dark:bg-cyan-900 border-2 border-black dark:border-gray-600">
+              <td className="px-3 py-2 font-bold">Batch</td>
+              <td className="px-3 py-2">—</td>
+              <td className="px-3 py-2 font-bold">Department</td>
+              <td className="px-3 py-2">{report.department.name}</td>
+              <td className="px-3 py-2 font-bold">Date of Admission</td>
+              <td colSpan={3} className="px-3 py-2">
+                {report.dateEnrolledGC}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {report.studentCopies.map((copy, i) => {
+            const totalCH = copy.courses.reduce(
+              (sum, c) => sum + c.totalCrHrs,
+              0
+            );
+            const totalPoints = copy.courses.reduce(
+              (sum, c) => sum + c.gradePoint,
+              0
+            );
+
+            return (
+              <div
+                key={i}
+                className="border-4 border-black dark:border-gray-600"
+              >
+                <div className="bg-orange-500 dark:bg-orange-600 text-white font-bold px-3 py-2 text-center text-xs sm:text-sm">
+                  Academic Year: {copy.academicYear || "N/A"} G.C •{" "}
+                  {copy.semester.name} • Class Year {copy.classyear.name}
+                </div>
+                <table className="w-full border border-gray-600 dark:border-gray-500">
+                  <thead className="bg-gray-300 dark:bg-gray-700">
+                    <tr>
+                      <th className="border border-gray-600 dark:border-gray-500 px-2 py-1">
+                        Course Code
+                      </th>
+                      <th className="border border-gray-600 dark:border-gray-500 px-2 py-1">
+                        Course Title
+                      </th>
+                      <th className="border border-gray-600 dark:border-gray-500 px-2 py-1">
+                        CH
+                      </th>
+                      <th className="border border-gray-600 dark:border-gray-500 px-2 py-1">
+                        Grade
+                      </th>
+                      <th className="border border-gray-600 dark:border-gray-500 px-2 py-1">
+                        Point
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {copy.courses.map((c, j) => (
+                      <tr
+                        key={j}
+                        className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                      >
+                        <td className="border border-gray-400 dark:border-gray-600 px-2 py-1">
+                          {c.courseCode}
+                        </td>
+                        <td className="border border-gray-400 dark:border-gray-600 px-2 py-1">
+                          {c.courseTitle}
+                        </td>
+                        <td className="border border-gray-400 dark:border-gray-600 px-2 py-1 text-center">
+                          {c.totalCrHrs}
+                        </td>
+                        <td className="border border-gray-400 dark:border-gray-600 px-2 py-1 text-center font-bold text-blue-700 dark:text-blue-400">
+                          {c.letterGrade}
+                        </td>
+                        <td className="border border-gray-400 dark:border-gray-600 px-2 py-1 text-center">
+                          {c.gradePoint.toFixed(1)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="bg-orange-500 dark:bg-orange-600 text-white font-bold px-3 py-2 text-right text-xs sm:text-sm">
+                  TOTAL {totalCH} CH → {totalPoints.toFixed(1)} Points → GPA:{" "}
+                  {copy.semesterGPA.toFixed(2)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="grid grid-cols-2 gap-8 sm:gap-16 p-8 sm:p-12 border-t-4 border-black dark:border-gray-600 mt-8">
+          <div className="text-center">
+            <div className="h-28 sm:h-32 border-4 border-dashed rounded-xl mb-4 bg-gray-100 dark:bg-gray-700"></div>
+            <p className="font-bold text-base sm:text-lg">REGISTRAR OFFICE</p>
+          </div>
+          <div className="text-center">
+            <div className="h-28 sm:h-32 border-4 border-dashed rounded-xl mb-4 bg-gray-100 dark:bg-gray-700"></div>
+            <p className="font-bold text-base sm:text-lg">DEAN OFFICE</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 function TranscriptView({ transcript }: { transcript: TranscriptRecord }) {
   return (
     <div className="bg-white dark:bg-gray-800 shadow-2xl border-4 border-black dark:border-gray-600 font-mono text-xs sm:text-sm overflow-x-auto">
