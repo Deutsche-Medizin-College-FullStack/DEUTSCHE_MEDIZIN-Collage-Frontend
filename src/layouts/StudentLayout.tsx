@@ -4,23 +4,18 @@ import { Outlet, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { LanguageSwitcher } from "@/components/language-switcher";
 import {
   ClipboardList,
   LayoutDashboard,
   User,
-  BookOpen,
-  CreditCard,
-  LogOut,
   Menu,
   Settings,
   Key,
-  Lock,
+  LogOut,
+  ChevronDown,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { studentApi } from "@/lib/api";
-import type { Student } from "@/mocks/mockStudent";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -30,7 +25,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import apiClient from "../components/api/apiClient";
 import endPoints from "../components/api/endPoints";
@@ -41,12 +35,7 @@ export default function StudentLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     return window.innerWidth >= 1024;
   });
-  const [isWide, setIsWide] = useState(() => {
-    return window.innerWidth >= 1024;
-  });
-  const [listOpen, setListOpen] = useState(() => {
-    return window.innerWidth >= 1024;
-  });
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [userData, setUserData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -57,6 +46,8 @@ export default function StudentLayout() {
   });
   const [passwordLoading, setPasswordLoading] = useState(false);
   const { t } = useTranslation(["navigation", "common", "auth"]);
+  
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Fetch user data
   useEffect(() => {
@@ -80,9 +71,7 @@ export default function StudentLayout() {
   // Handle window resize
   useEffect(() => {
     const handleResize = () => {
-      const wide = window.innerWidth >= 1024;
-      setIsWide(wide);
-      if (wide) {
+      if (window.innerWidth >= 1024) {
         setSidebarOpen(true);
       } else {
         setSidebarOpen(false);
@@ -91,6 +80,20 @@ export default function StudentLayout() {
 
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setUserDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
   function logout() {
@@ -104,8 +107,8 @@ export default function StudentLayout() {
       return;
     }
 
-    if (passwordForm.newPassword.length < 6) {
-      alert("Password must be at least 6 characters long");
+    if (passwordForm.newPassword.length < 3) {
+      alert("Password must be at least 4 characters long");
       return;
     }
 
@@ -152,7 +155,7 @@ export default function StudentLayout() {
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 lg:hidden"
+          className="fixed inset-0 z-40 lg:hidden bg-black/50"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -200,38 +203,6 @@ export default function StudentLayout() {
           </button>
         </div>
 
-        {/* User Profile Section in Sidebar */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center space-x-3">
-            <div className="relative">
-              {userData?.photoBase64 ? (
-                <img
-                  src={`data:image/jpeg;base64,${userData.photoBase64}`}
-                  alt={userData.fullName}
-                  className="h-12 w-12 rounded-full object-cover border-2 border-blue-500"
-                />
-              ) : (
-                <div className="h-12 w-12 bg-blue-600 rounded-full flex items-center justify-center">
-                  <span className="text-white font-semibold text-lg">
-                    {getUserInitials()}
-                  </span>
-                </div>
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                {userData?.fullName || "Loading..."}
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-                {userData?.role?.toLowerCase() || "User"}
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                {userData?.username || ""}
-              </p>
-            </div>
-          </div>
-        </div>
-
         <nav className="mt-4 flex-1">
           <div className="px-4 space-y-2">
             {navigation.map((item) => {
@@ -256,98 +227,6 @@ export default function StudentLayout() {
             })}
           </div>
         </nav>
-
-        <div className="absolute bottom-0 w-full p-4 space-y-2">
-          <Dialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen}>
-            <DialogTrigger asChild>
-              <Button
-                variant="ghost"
-                className="w-full justify-start text-gray-600 dark:text-gray-300"
-              >
-                <Key className="mr-3 h-5 w-5" />
-                Change Password
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Change Password</DialogTitle>
-                <DialogDescription>
-                  Enter your current password and new password below.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="oldPassword">Current Password</Label>
-                  <Input
-                    id="oldPassword"
-                    type="password"
-                    value={passwordForm.oldPassword}
-                    onChange={(e) =>
-                      setPasswordForm({
-                        ...passwordForm,
-                        oldPassword: e.target.value,
-                      })
-                    }
-                    placeholder="Enter current password"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="newPassword">New Password</Label>
-                  <Input
-                    id="newPassword"
-                    type="password"
-                    value={passwordForm.newPassword}
-                    onChange={(e) =>
-                      setPasswordForm({
-                        ...passwordForm,
-                        newPassword: e.target.value,
-                      })
-                    }
-                    placeholder="Enter new password"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    value={passwordForm.confirmPassword}
-                    onChange={(e) =>
-                      setPasswordForm({
-                        ...passwordForm,
-                        confirmPassword: e.target.value,
-                      })
-                    }
-                    placeholder="Confirm new password"
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setChangePasswordOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleChangePassword}
-                  disabled={passwordLoading}
-                >
-                  {passwordLoading ? "Changing..." : "Change Password"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          <Button
-            onClick={logout}
-            variant="ghost"
-            className="w-full justify-start text-gray-600 dark:text-gray-300"
-          >
-            <LogOut className="mr-3 h-5 w-5" />
-            {t("auth:logout")}
-          </Button>
-        </div>
       </div>
 
       {/* Main content */}
@@ -375,178 +254,98 @@ export default function StudentLayout() {
           </div>
 
           {/* Right section */}
-          <div className="flex items-center gap-x-4 lg:gap-x-6 relative">
+          <div className="flex items-center gap-x-4 lg:gap-x-6">
             <ThemeToggle />
 
-            {/* Avatar for mobile */}
-            {window.innerWidth < 720 && (
-              <div
-                className="relative cursor-pointer"
-                onClick={() => setListOpen((prev) => !prev)}
+            {/* Avatar dropdown for all screen sizes */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors focus:outline-none"
               >
-                {userData?.photoBase64 ? (
-                  <img
-                    src={`data:image/jpeg;base64,${userData.photoBase64}`}
-                    alt={userData.fullName}
-                    className="w-8 h-8 rounded-full object-cover border-2 border-blue-500"
-                  />
-                ) : (
-                  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm font-medium">
-                      {getUserInitials()}
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Large screen info + logout inline */}
-            {window.innerWidth > 720 && (
-              <div className="lg:flex items-center gap-x-4 ml-2">
-                <div className="text-right mr-4">
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">
-                    {userData?.fullName || "Loading..."}
-                  </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-                    {userData?.role?.toLowerCase() || "User"}
-                  </div>
-                </div>
-                <Dialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="mr-2">
-                      <Key className="h-4 w-4 mr-2" />
-                      Change Password
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-[425px]">
-                    <DialogHeader>
-                      <DialogTitle>Change Password</DialogTitle>
-                      <DialogDescription>
-                        Enter your current password and new password below.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid gap-2">
-                        <Label htmlFor="oldPassword">Current Password</Label>
-                        <Input
-                          id="oldPassword"
-                          type="password"
-                          value={passwordForm.oldPassword}
-                          onChange={(e) =>
-                            setPasswordForm({
-                              ...passwordForm,
-                              oldPassword: e.target.value,
-                            })
-                          }
-                          placeholder="Enter current password"
-                        />
-                      </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="newPassword">New Password</Label>
-                        <Input
-                          id="newPassword"
-                          type="password"
-                          value={passwordForm.newPassword}
-                          onChange={(e) =>
-                            setPasswordForm({
-                              ...passwordForm,
-                              newPassword: e.target.value,
-                            })
-                          }
-                          placeholder="Enter new password"
-                        />
-                      </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                        <Input
-                          id="confirmPassword"
-                          type="password"
-                          value={passwordForm.confirmPassword}
-                          onChange={(e) =>
-                            setPasswordForm({
-                              ...passwordForm,
-                              confirmPassword: e.target.value,
-                            })
-                          }
-                          placeholder="Confirm new password"
-                        />
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button
-                        variant="outline"
-                        onClick={() => setChangePasswordOpen(false)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        onClick={handleChangePassword}
-                        disabled={passwordLoading}
-                      >
-                        {passwordLoading ? "Changing..." : "Change Password"}
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-                <Button onClick={logout} variant="destructive">
-                  Logout
-                </Button>
-              </div>
-            )}
-
-            {/* Dropdown for small screens */}
-            {listOpen && window.innerWidth < 720 && (
-              <div className="absolute top-12 right-0 lg:hidden w-56 bg-white dark:bg-gray-800 shadow-lg rounded-lg p-3 z-50 border border-gray-200 dark:border-gray-700">
-                {/* User info in dropdown */}
-                <div className="flex items-center space-x-3 mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center space-x-2">
                   {userData?.photoBase64 ? (
                     <img
                       src={`data:image/jpeg;base64,${userData.photoBase64}`}
                       alt={userData.fullName}
-                      className="h-10 w-10 rounded-full object-cover border-2 border-blue-500"
+                      className="w-8 h-8 rounded-full object-cover border-2 border-blue-500"
                     />
                   ) : (
-                    <div className="h-10 w-10 bg-blue-600 rounded-full flex items-center justify-center">
-                      <span className="text-white font-semibold">
+                    <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                      <span className="text-white text-sm font-medium">
                         {getUserInitials()}
                       </span>
                     </div>
                   )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                  <div className="text-left max-w-[120px]">
+                    <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
                       {userData?.fullName || "Loading..."}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 capitalize truncate">
                       {userData?.role?.toLowerCase() || "User"}
-                    </p>
+                    </div>
+                  </div>
+                  <ChevronDown className={`h-4 w-4 text-gray-500 dark:text-gray-400 transition-transform ${userDropdownOpen ? 'rotate-180' : ''}`} />
+                </div>
+              </button>
+
+              {/* Dropdown menu */}
+              {userDropdownOpen && (
+                <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 z-50">
+                  {/* User info in dropdown */}
+                  <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center space-x-3">
+                      {userData?.photoBase64 ? (
+                        <img
+                          src={`data:image/jpeg;base64,${userData.photoBase64}`}
+                          alt={userData.fullName}
+                          className="h-10 w-10 rounded-full object-cover border-2 border-blue-500"
+                        />
+                      ) : (
+                        <div className="h-10 w-10 bg-blue-600 rounded-full flex items-center justify-center">
+                          <span className="text-white font-semibold">
+                            {getUserInitials()}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                          {userData?.fullName || "Loading..."}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+                          {userData?.role?.toLowerCase() || "User"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Dropdown options */}
+                  <div className="p-2">
+                    <button
+                      onClick={() => {
+                        setChangePasswordOpen(true);
+                        setUserDropdownOpen(false);
+                      }}
+                      className="w-full flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+                    >
+                      <Key className="h-4 w-4 mr-3" />
+                      Change Password
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        logout();
+                        setUserDropdownOpen(false);
+                      }}
+                      className="w-full flex items-center px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors mt-1"
+                    >
+                      <LogOut className="h-4 w-4 mr-3" />
+                      Logout
+                    </button>
                   </div>
                 </div>
-                
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start mb-2"
-                  onClick={() => {
-                    setChangePasswordOpen(true);
-                    setListOpen(false);
-                  }}
-                >
-                  <Key className="h-4 w-4 mr-2" />
-                  Change Password
-                </Button>
-                
-                <Button
-                  className="w-full"
-                  variant="destructive"
-                  onClick={() => {
-                    logout();
-                    setListOpen(false);
-                  }}
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Logout
-                </Button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
 
@@ -556,80 +355,91 @@ export default function StudentLayout() {
             <Outlet />
           </div>
         </main>
-
-        {/* Change Password Dialog for mobile */}
-        <Dialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Change Password</DialogTitle>
-              <DialogDescription>
-                Enter your current password and new password below.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="oldPassword">Current Password</Label>
-                <Input
-                  id="oldPassword"
-                  type="password"
-                  value={passwordForm.oldPassword}
-                  onChange={(e) =>
-                    setPasswordForm({
-                      ...passwordForm,
-                      oldPassword: e.target.value,
-                    })
-                  }
-                  placeholder="Enter current password"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="newPassword">New Password</Label>
-                <Input
-                  id="newPassword"
-                  type="password"
-                  value={passwordForm.newPassword}
-                  onChange={(e) =>
-                    setPasswordForm({
-                      ...passwordForm,
-                      newPassword: e.target.value,
-                    })
-                  }
-                  placeholder="Enter new password"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  value={passwordForm.confirmPassword}
-                  onChange={(e) =>
-                    setPasswordForm({
-                      ...passwordForm,
-                      confirmPassword: e.target.value,
-                    })
-                  }
-                  placeholder="Confirm new password"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setChangePasswordOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleChangePassword}
-                disabled={passwordLoading}
-              >
-                {passwordLoading ? "Changing..." : "Change Password"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
+
+      {/* Change Password Dialog */}
+      <Dialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen}>
+        <DialogContent className="sm:max-w-[425px] bg-white dark:bg-gray-800 z-[60]">
+          <DialogHeader>
+            <DialogTitle className="text-gray-900 dark:text-white">Change Password</DialogTitle>
+            <DialogDescription className="text-gray-600 dark:text-gray-300">
+              Enter your current password and new password below.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="oldPassword" className="text-gray-700 dark:text-gray-300">
+                Current Password
+              </Label>
+              <Input
+                id="oldPassword"
+                type="password"
+                value={passwordForm.oldPassword}
+                onChange={(e) =>
+                  setPasswordForm({
+                    ...passwordForm,
+                    oldPassword: e.target.value,
+                  })
+                }
+                placeholder="Enter current password"
+                className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="newPassword" className="text-gray-700 dark:text-gray-300">
+                New Password
+              </Label>
+              <Input
+                id="newPassword"
+                type="password"
+                value={passwordForm.newPassword}
+                onChange={(e) =>
+                  setPasswordForm({
+                    ...passwordForm,
+                    newPassword: e.target.value,
+                  })
+                }
+                placeholder="Enter new password"
+                className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="confirmPassword" className="text-gray-700 dark:text-gray-300">
+                Confirm New Password
+              </Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={passwordForm.confirmPassword}
+                onChange={(e) =>
+                  setPasswordForm({
+                    ...passwordForm,
+                    confirmPassword: e.target.value,
+                  })
+                }
+                placeholder="Confirm new password"
+                className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setChangePasswordOpen(false)}
+              className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleChangePassword}
+              disabled={passwordLoading}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {passwordLoading ? "Changing..." : "Change Password"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
