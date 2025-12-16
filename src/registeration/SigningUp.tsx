@@ -44,7 +44,6 @@ export default function SignInPage() {
       });
       setResponse(responses.message);
       setIsLoading(false);
-      console.log(responses);
       localStorage.setItem("xy9a7b", responses.jwt);
       console.log(responses.role);
       // Navigate based on role from backend
@@ -57,6 +56,9 @@ export default function SignInPage() {
           break;
         case "GENERAL_MANAGER":
           navigate("/general-manager");
+          break;
+        case "TEACHER":
+          navigate("/teacher");
           break;
         case "DEAN":
           navigate("/dean");
