@@ -73,6 +73,8 @@ const endPoints = {
   getGrade: "/student-course-scores/:scoreId/grade",
   getAll: "/student-course-scores/all",
   bulkUpdate: "/student-course-scores/bulk-update",
+  getCurrentUser: "/auth/me",
+  changePassword: "/auth/me/change-password",
 };
 
 export default endPoints;
