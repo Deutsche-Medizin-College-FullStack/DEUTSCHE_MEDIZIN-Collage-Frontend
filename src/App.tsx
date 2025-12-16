@@ -28,6 +28,7 @@ const StudentSetting = React.lazy(() => import("./pages/student/Setting"));
 // Teacher Pages
 const TeacherLayout = React.lazy(() => import("./layouts/TeacherLayout"));
 const TeacherDashboard = React.lazy(() => import("./pages/teacher/Dashboard"));
+const TeacherProfile = React.lazy(() => import("./pages/teacher/TeacherProfile.tsx"));
 const TeacherCourses = React.lazy(() => import("./pages/teacher/Courses"));
 const TeacherStudents = React.lazy(() => import("./pages/teacher/Students"));
 const TeacherAssessments = React.lazy(
@@ -232,6 +233,7 @@ function App() {
               <Route index element={<Navigate to="dashboard" replace />} />
 
               <Route path="dashboard" element={<TeacherDashboard />} />
+              <Route path="profile" element={<TeacherProfile />} />
               <Route path="courses" element={<TeacherCourses />} />
               <Route path="students/:courseId" element={<TeacherStudents />} />
               <Route path="assessments" element={<TeacherAssessments />} />
