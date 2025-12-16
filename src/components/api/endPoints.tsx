@@ -75,6 +75,7 @@ const endPoints = {
   bulkUpdate: "/student-course-scores/bulk-update",
   getCurrentUser: "/auth/me",
   changePassword: "/auth/me/change-password",
+  getTeacherProfile: "/teachers/profile",
 };
 
 export default endPoints;
