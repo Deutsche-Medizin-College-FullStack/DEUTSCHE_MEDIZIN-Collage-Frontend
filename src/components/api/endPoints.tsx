@@ -77,6 +77,12 @@ const endPoints = {
   changePassword: "/auth/me/change-password",
   getTeacherProfile: "/teachers/profile",
   getTeacherCourses: "/teachers/my-courses",
+
+  createAssessment: "/assessments", //works
+  recordStudentScore: "/student-assessments",
+  updateStudentScore: "/student-assessments/:assessmentId/:studentId",
+  getCourseScores: "/student-assessments/courses/:teacherCourseAssignmentId/scores", //works
+  getTeacherDashboard: "/teachers/dashboard",
 };
 
 export default endPoints;
