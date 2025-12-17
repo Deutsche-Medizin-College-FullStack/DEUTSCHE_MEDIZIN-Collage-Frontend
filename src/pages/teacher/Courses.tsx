@@ -12,127 +12,136 @@ import {
   Users,
   FileText,
   Calendar,
-  Plus,
-  MoreHorizontal,
+  Clock,
+  Building,
+  Hash,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import apiClient from "../../components/api/apiClient";
+import endPoints from "../../components/api/endPoints";
+
+interface Course {
+  assignmentId: number;
+  courseCode: string;
+  courseTitle: string;
+  theoryHours: number;
+  labHours: number;
+  department: string;
+  batchClassYearSemester: string;
+  assignedAt: string;
+}
+
+interface CoursesResponse {
+  message: string;
+  totalCourses: number;
+  courses: Course[];
+}
 
 export default function TeacherCourses() {
-  const courses = [
-    {
-      id: "MED101",
-      name: "Human Anatomy",
-      code: "MED101",
-      semester: "Spring 2024",
-      students: 45,
-      credits: 4,
-      schedule: "Mon, Wed, Fri 9:00-10:30 AM",
-      room: "Room 101",
-      status: "active",
-      progress: 65,
-      nextClass: "2024-01-17 09:00",
-      assignments: 8,
-      pendingGrades: 12,
-    },
-    {
-      id: "MED102",
-      name: "Physiology",
-      code: "MED102",
-      semester: "Spring 2024",
-      students: 38,
-      credits: 3,
-      schedule: "Tue, Thu 11:00-12:30 PM",
-      room: "Room 205",
-      status: "active",
-      progress: 58,
-      nextClass: "2024-01-18 11:00",
-      assignments: 6,
-      pendingGrades: 8,
-    },
-    {
-      id: "MED104",
-      name: "Medical Ethics",
-      code: "MED104",
-      semester: "Spring 2024",
-      students: 52,
-      credits: 2,
-      schedule: "Wed 2:00-4:00 PM",
-      room: "Room 301",
-      status: "active",
-      progress: 72,
-      nextClass: "2024-01-17 14:00",
-      assignments: 4,
-      pendingGrades: 5,
-    },
-    {
-      id: "MED201",
-      name: "Advanced Anatomy",
-      code: "MED201",
-      semester: "Spring 2024",
-      students: 28,
-      credits: 4,
-      schedule: "Mon, Wed 3:00-4:30 PM",
-      room: "Lab 2",
-      status: "active",
-      progress: 45,
-      nextClass: "2024-01-17 15:00",
-      assignments: 5,
-      pendingGrades: 15,
-    },
-    {
-      id: "MED301",
-      name: "Clinical Anatomy",
-      code: "MED301",
-      semester: "Spring 2024",
-      students: 35,
-      credits: 3,
-      schedule: "Fri 10:00-1:00 PM",
-      room: "Clinical Lab",
-      status: "active",
-      progress: 80,
-      nextClass: "2024-01-19 10:00",
-      assignments: 3,
-      pendingGrades: 7,
-    },
-    {
-      id: "MED103",
-      name: "Biochemistry",
-      code: "MED103",
-      semester: "Fall 2023",
-      students: 42,
-      credits: 3,
-      schedule: "Completed",
-      room: "Lab 3",
-      status: "completed",
-      progress: 100,
-      nextClass: null,
-      assignments: 10,
-      pendingGrades: 0,
-    },
-  ];
+  const [coursesData, setCoursesData] = useState<CoursesResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active":
-        return "default";
-      case "completed":
-        return "secondary";
-      case "upcoming":
-        return "outline";
-      default:
-        return "outline";
+useEffect(() => {
+  const fetchMyCourses = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await apiClient.get<CoursesResponse>(
+        endPoints.getTeacherCourses
+      );
+      setCoursesData(response.data);
+    } catch (err: any) {
+      console.error("Error fetching courses:", err);
+      setError(
+        err.response?.data?.error || 
+        err.message || 
+        "Failed to load courses. Please try again later."
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
-  const activeCourses = courses.filter((course) => course.status === "active");
-  const completedCourses = courses.filter(
-    (course) => course.status === "completed"
-  );
+  fetchMyCourses();
+}, []);
+
+  // Calculate statistics from API data
+  const totalStudents = coursesData?.courses.length ? coursesData.courses.length * 30 : 0; // Assuming ~30 students per course
+  const totalTheoryHours = coursesData?.courses.reduce(
+    (sum, course) => sum + course.theoryHours,
+    0
+  ) || 0;
+  const totalLabHours = coursesData?.courses.reduce(
+    (sum, course) => sum + course.labHours,
+    0
+  ) || 0;
+  const totalCreditHours = totalTheoryHours + totalLabHours;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="flex flex-col items-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <p className="text-lg">Loading your courses...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 space-y-4">
+        <AlertCircle className="h-12 w-12 text-red-500" />
+        <p className="text-lg text-red-600">{error}</p>
+        <Button
+          variant="outline"
+          onClick={() => window.location.reload()}
+        >
+          Try Again
+        </Button>
+      </div>
+    );
+  }
+
+  if (!coursesData?.courses || coursesData.courses.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold">My Courses</h1>
+        </div>
+        
+        <div className="flex flex-col items-center justify-center h-64 space-y-4">
+          <BookOpen className="h-16 w-16 text-gray-400" />
+          <div className="text-center space-y-2">
+            <h3 className="text-xl font-semibold">No Courses Assigned</h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              You haven't been assigned any courses yet.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">My Courses</h1>
+        <div className="text-sm text-gray-600 dark:text-gray-400">
+          {coursesData.totalCourses} course{coursesData.totalCourses !== 1 ? 's' : ''} assigned
+        </div>
       </div>
 
       {/* Course Statistics */}
@@ -140,159 +149,155 @@ export default function TeacherCourses() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Active Courses
+              Total Courses
             </CardTitle>
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{activeCourses.length}</div>
-            <p className="text-xs text-muted-foreground">Spring 2024</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Students
-            </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {activeCourses.reduce((sum, course) => sum + course.students, 0)}
-            </div>
-            <p className="text-xs text-muted-foreground">Enrolled students</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Pending Grades
-            </CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {activeCourses.reduce(
-                (sum, course) => sum + course.pendingGrades,
-                0
-              )}
-            </div>
+            <div className="text-2xl font-bold">{coursesData.totalCourses}</div>
             <p className="text-xs text-muted-foreground">
-              Assignments to grade
+              Assigned to you
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Credits</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Theory Hours
+            </CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalTheoryHours}</div>
+            <p className="text-xs text-muted-foreground">Weekly lecture hours</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Lab Hours
+            </CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalLabHours}</div>
+            <p className="text-xs text-muted-foreground">Weekly practical hours</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Total Hours
+            </CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {activeCourses.reduce((sum, course) => sum + course.credits, 0)}
-            </div>
-            <p className="text-xs text-muted-foreground">Teaching load</p>
+            <div className="text-2xl font-bold">{totalCreditHours}</div>
+            <p className="text-xs text-muted-foreground">Weekly teaching load</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Active Courses */}
+      {/* Your Courses */}
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Your Courses</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {activeCourses.map((course) => (
-            <Card key={course.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                {/* <div className="flex items-center justify-between">
-                  <Badge variant={getStatusColor(course.status)}>
-                    {course.status}
+          {coursesData.courses.map((course) => (
+            <Card 
+              key={course.assignmentId} 
+              className="hover:shadow-lg transition-shadow hover:border-blue-300 dark:hover:border-blue-700"
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <CardTitle className="text-lg line-clamp-1">
+                      {course.courseTitle}
+                    </CardTitle>
+                    <CardDescription className="flex items-center space-x-2">
+                      <Hash className="h-3 w-3" />
+                      <span>{course.courseCode}</span>
+                    </CardDescription>
+                  </div>
+                  <Badge variant="outline" className="ml-2 whitespace-nowrap">
+                    {course.batchClassYearSemester}
                   </Badge>
-                  <Button variant="ghost" size="icon">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </div> */}
-                <CardTitle className="text-lg">{course.name}</CardTitle>
-                <CardDescription>
-                  {course.code} • {course.semester}
-                </CardDescription>
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="flex items-center">
-                    <Users className="mr-2 h-4 w-4 text-gray-500" />
-                    {course.students} students
+                {/* Course Details */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center text-gray-600 dark:text-gray-400">
+                      <Building className="h-4 w-4 mr-2" />
+                      <span>Department</span>
+                    </div>
+                    <span className="font-medium">{course.department}</span>
                   </div>
-                  <div className="flex items-center">
-                    <BookOpen className="mr-2 h-4 w-4 text-gray-500" />
-                    {course.credits} credits
+                  
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center text-gray-600 dark:text-gray-400">
+                      <BookOpen className="h-4 w-4 mr-2" />
+                      <span>Theory Hours</span>
+                    </div>
+                    <Badge variant="secondary" className="font-medium">
+                      {course.theoryHours} hrs/week
+                    </Badge>
+                  </div>
+                  
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center text-gray-600 dark:text-gray-400">
+                      <FileText className="h-4 w-4 mr-2" />
+                      <span>Lab Hours</span>
+                    </div>
+                    <Badge variant={course.labHours > 0 ? "default" : "outline"} className="font-medium">
+                      {course.labHours > 0 ? `${course.labHours} hrs/week` : "No Lab"}
+                    </Badge>
+                  </div>
+                  
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center text-gray-600 dark:text-gray-400">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      <span>Assigned Date</span>
+                    </div>
+                    <span className="text-gray-700 dark:text-gray-300">
+                      {formatDate(course.assignedAt)}
+                    </span>
                   </div>
                 </div>
 
-                {/* <div className="space-y-2">
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    <strong>Schedule:</strong> {course.schedule}
-                  </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    <strong>Room:</strong> {course.room}
-                  </div>
-                  {course.nextClass && (
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      <strong>Next Class:</strong>{" "}
-                      {new Date(course.nextClass).toLocaleString()}
-                    </div>
-                  )}
-                </div> */}
-
-                {/* <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Course Progress</span>
-                    <span>{course.progress}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
-                    <div
-                      className="bg-blue-600 h-2 rounded-full transition-all"
-                      style={{ width: `${course.progress}%` }}
-                    ></div>
-                  </div>
-                </div> */}
-
-                {/* <div className="flex justify-between text-sm">
-                  <span>Assignments: {course.assignments}</span>
-                  <span className="text-orange-600">
-                    Pending: {course.pendingGrades}
-                  </span>
-                </div> */}
-
-                <div className="flex space-x-2">
-                  <Link
-                    to={`/teacher/students/${course.id}`}
-                    className="flex-1"
-                  >
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full bg-transparent"
+                {/* Quick Actions */}
+                <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                  <div className="grid grid-cols-2 gap-2">
+                    <Link
+                      to={`/teacher/students?course=${course.assignmentId}&courseCode=${course.courseCode}`}
+                      className="w-full"
                     >
-                      <Users className="mr-2 h-4 w-4" />
-                      Students
-                    </Button>
-                  </Link>
-                  <Link
-                    to={`/teacher/assessments/${course.id}`}
-                    className="flex-1"
-                  >
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full bg-transparent"
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full bg-transparent hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-300 dark:hover:border-blue-700"
+                      >
+                        <Users className="mr-2 h-4 w-4" />
+                        Students
+                      </Button>
+                    </Link>
+                    <Link
+                      to={`/teacher/assessments?course=${course.assignmentId}&courseTitle=${course.courseTitle}`}
+                      className="w-full"
                     >
-                      <FileText className="mr-2 h-4 w-4" />
-                      Assessments
-                    </Button>
-                  </Link>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full bg-transparent hover:bg-green-50 dark:hover:bg-green-900/20 hover:border-green-300 dark:hover:border-green-700"
+                      >
+                        <FileText className="mr-2 h-4 w-4" />
+                        Assessments
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -300,47 +305,70 @@ export default function TeacherCourses() {
         </div>
       </div>
 
-      {/* Completed Courses */}
-      {/* {completedCourses.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Completed Courses</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {completedCourses.map((course) => (
-              <Card key={course.id} className="opacity-75">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <Badge variant={getStatusColor(course.status)}>{course.status}</Badge>
-                  </div>
-                  <CardTitle className="text-lg">{course.name}</CardTitle>
-                  <CardDescription>
-                    {course.code} • {course.semester}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center">
-                      <Users className="mr-2 h-4 w-4 text-gray-500" />
-                      {course.students} students
-                    </div>
-                    <div className="flex items-center">
-                      <BookOpen className="mr-2 h-4 w-4 text-gray-500" />
-                      {course.credits} credits
-                    </div>
-                  </div>
-
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    <strong>Final Grade Distribution:</strong> Available in reports
-                  </div>
-
-                  <Button variant="outline" size="sm" className="w-full bg-transparent">
-                    View Course Report
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+      {/* Course Summary */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Teaching Load Summary</CardTitle>
+          <CardDescription>
+            Overview of your current teaching responsibilities
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <div className="flex items-center">
+                <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-3" />
+                <div>
+                  <p className="text-sm font-medium">Departments</p>
+                  <p className="text-lg font-semibold">
+                    {Array.from(new Set(coursesData.courses.map(c => c.department))).length}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+              <div className="flex items-center">
+                <Clock className="h-5 w-5 text-green-600 dark:text-green-400 mr-3" />
+                <div>
+                  <p className="text-sm font-medium">Weekly Total Hours</p>
+                  <p className="text-lg font-semibold">{totalCreditHours} hrs</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+              <div className="flex items-center">
+                <Building className="h-5 w-5 text-purple-600 dark:text-purple-400 mr-3" />
+                <div>
+                  <p className="text-sm font-medium">Unique Course Codes</p>
+                  <p className="text-lg font-semibold">
+                    {Array.from(new Set(coursesData.courses.map(c => c.courseCode))).length}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+              <div className="flex items-center">
+                <Calendar className="h-5 w-5 text-orange-600 dark:text-orange-400 mr-3" />
+                <div>
+                  <p className="text-sm font-medium">Teaching Since</p>
+                  <p className="text-lg font-semibold">
+                    {formatDate(
+                      coursesData.courses.reduce((earliest, course) => 
+                        new Date(course.assignedAt) < new Date(earliest) 
+                          ? course.assignedAt 
+                          : earliest,
+                      coursesData.courses[0].assignedAt
+                    ))}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-      )} */}
+        </CardContent>
+      </Card>
     </div>
   );
 }
