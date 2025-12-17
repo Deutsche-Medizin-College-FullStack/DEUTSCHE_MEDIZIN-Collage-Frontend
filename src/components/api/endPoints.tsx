@@ -76,6 +76,7 @@ const endPoints = {
   getCurrentUser: "/auth/me",
   changePassword: "/auth/me/change-password",
   getTeacherProfile: "/teachers/profile",
+  getTeacherCourses: "/teachers/my-courses",
 };
 
 export default endPoints;
