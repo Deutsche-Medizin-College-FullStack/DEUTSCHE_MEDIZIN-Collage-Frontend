@@ -284,8 +284,14 @@ useEffect(() => {
                         Students
                       </Button>
                     </Link>
+
                     <Link
-                      to={`/teacher/assessments?course=${course.assignmentId}&courseTitle=${course.courseTitle}`}
+                      to={`/teacher/assessments/${course.assignmentId}`}
+                      state={{
+                        courseTitle: course.courseTitle,
+                        courseCode: course.courseCode,
+                        batch: course.batchClassYearSemester
+                      }}
                       className="w-full"
                     >
                       <Button
@@ -297,6 +303,7 @@ useEffect(() => {
                         Assessments
                       </Button>
                     </Link>
+
                   </div>
                 </div>
               </CardContent>

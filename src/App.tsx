@@ -27,7 +27,7 @@ const TeacherDashboard = React.lazy(() => import("./pages/teacher/Dashboard"));
 const TeacherProfile = React.lazy(() => import("./pages/teacher/TeacherProfile.tsx"));
 const TeacherCourses = React.lazy(() => import("./pages/teacher/Courses"));
 const TeacherStudents = React.lazy(() => import("./pages/teacher/Students"));
-const TeacherAssessments = React.lazy(() => import("./pages/teacher/Assessments"));
+// const TeacherAssessments = React.lazy(() => import("./pages/teacher/Assessments"));
 const AssessmentPage = React.lazy(  () => import("./pages/teacher/AssessmentPage"));
 
 // Department Head Pages
@@ -148,7 +148,7 @@ function App() {
               <Route path="profile" element={<TeacherProfile />} />
               <Route path="courses" element={<TeacherCourses />} />
               <Route path="students/:courseId" element={<TeacherStudents />} />
-              <Route path="assessments" element={<TeacherAssessments />} />
+              <Route path="assessments/:assignmentId" element={<AssessmentPage />} />
               <Route
                 path="assessments/:courseId"
                 element={<AssessmentPage />}
