@@ -83,6 +83,8 @@ const endPoints = {
   bulkCreateAssessments: "/assessments/bulk",
   bulkUpdateAssessments: "/assessments/bulk",
   bulkDeleteAssessments: "/assessments/bulk",
+
+  bulkUpdateStudentScores: "/student-assessments/bulk",
 };
 
 export default endPoints;
