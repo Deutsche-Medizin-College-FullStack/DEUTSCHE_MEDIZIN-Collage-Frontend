@@ -329,7 +329,7 @@ export default function StudentDashboard() {
             </Button>
             <Button
               onClick={() => {
-                navigate("/student/grades");
+                navigate("/student/profile");
               }}
               variant="outline"
               className="h-24 flex flex-col"
