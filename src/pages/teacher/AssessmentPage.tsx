@@ -12,13 +12,42 @@ import {
   Hash,
   BookOpen,
   Building,
-  Users
+  Users,
+  X,
+  MoreVertical,
+  Check,
+  AlertTriangle,
+  Download,
+  Upload,
+  Copy,
+  Settings,
+  Eye,
+  EyeOff,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription, 
+  DialogFooter,
+  DialogTrigger 
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import apiClient from "../../components/api/apiClient";
 import endPoints from "../../components/api/endPoints";
@@ -61,6 +90,26 @@ interface CreateAssessmentRequest {
   description: string;
 }
 
+interface BulkCreateAssessmentRequest {
+  teacherCourseAssignmentId: number;
+  assessments: Array<{
+    assTitle: string;
+    maxScore: number;
+    dueDate?: string;
+    description?: string;
+  }>;
+}
+
+interface BulkUpdateAssessmentRequest {
+  assessments: Array<{
+    assessmentId: number;
+    assTitle?: string;
+    maxScore?: number;
+    dueDate?: string;
+    description?: string;
+  }>;
+}
+
 interface RecordScoreRequest {
   assessmentId: number;
   studentId: number;
@@ -75,8 +124,28 @@ const AssessmentPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [scoresData, setScoresData] = useState<CourseScoresResponse | null>(null);
+  
+  // Dialog states
   const [showAddAssessment, setShowAddAssessment] = useState(false);
+  const [showBulkCreate, setShowBulkCreate] = useState(false);
+  const [showBulkEdit, setShowBulkEdit] = useState(false);
+  const [showBulkDelete, setShowBulkDelete] = useState(false);
+  
+  // Assessment management states
   const [editingScores, setEditingScores] = useState<Record<string, Record<number, string>>>({});
+  const [selectedAssessments, setSelectedAssessments] = useState<number[]>([]);
+  const [bulkEditData, setBulkEditData] = useState<Assessment[]>([]);
+  const [bulkCreateData, setBulkCreateData] = useState<Array<{
+    assTitle: string;
+    maxScore: number;
+    dueDate: string;
+    description: string;
+  }>>([
+    { assTitle: "", maxScore: 100, dueDate: "", description: "" },
+    { assTitle: "", maxScore: 100, dueDate: "", description: "" }
+  ]);
+  
+  // Single assessment state
   const [newAssessment, setNewAssessment] = useState<CreateAssessmentRequest>({
     teacherCourseAssignmentId: parseInt(assignmentId || "0"),
     assTitle: "",
@@ -84,9 +153,14 @@ const AssessmentPage = () => {
     dueDate: "",
     description: ""
   });
+  
+  // Loading states
   const [createLoading, setCreateLoading] = useState(false);
-
-  // Get course info from location state or fetch it
+  const [bulkCreateLoading, setBulkCreateLoading] = useState(false);
+  const [bulkUpdateLoading, setBulkUpdateLoading] = useState(false);
+  const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
+  
+  // Course info from location state or API
   const courseInfo = location.state || {
     courseTitle: "",
     courseCode: "",
@@ -118,6 +192,16 @@ const AssessmentPage = () => {
         });
       });
       setEditingScores(initialScores);
+      
+      // Initialize bulk edit data
+      setBulkEditData(response.data.assessments.map(assessment => ({
+        ...assessment,
+        title: assessment.title,
+        dueDate: assessment.dueDate || ""
+      })));
+      
+      // Clear selections
+      setSelectedAssessments([]);
     } catch (err: any) {
       console.error("Error fetching course scores:", err);
       setError(
@@ -140,10 +224,6 @@ const AssessmentPage = () => {
       toast.error("Max score must be greater than 0");
       return;
     }
-    if (!newAssessment.dueDate) {
-      toast.error("Due date is required");
-      return;
-    }
 
     try {
       setCreateLoading(true);
@@ -157,12 +237,140 @@ const AssessmentPage = () => {
         dueDate: "",
         description: ""
       });
-      fetchCourseScores(); // Refresh data
+      fetchCourseScores();
     } catch (err: any) {
       console.error("Error creating assessment:", err);
       toast.error(err.response?.data?.error || "Failed to create assessment");
     } finally {
       setCreateLoading(false);
+    }
+  };
+
+  const handleBulkCreateAssessments = async () => {
+    // Filter out empty assessments
+    const validAssessments = bulkCreateData.filter(
+      assessment => assessment.assTitle.trim() && assessment.maxScore > 0
+    );
+
+    if (validAssessments.length === 0) {
+      toast.error("Please add at least one valid assessment");
+      return;
+    }
+
+    const payload: BulkCreateAssessmentRequest = {
+      teacherCourseAssignmentId: parseInt(assignmentId || "0"),
+      assessments: validAssessments
+    };
+
+    try {
+      setBulkCreateLoading(true);
+      const response = await apiClient.post(endPoints.bulkCreateAssessments, payload);
+      toast.success(`${validAssessments.length} assessments created successfully!`);
+      setShowBulkCreate(false);
+      setBulkCreateData([
+        { assTitle: "", maxScore: 100, dueDate: "", description: "" },
+        { assTitle: "", maxScore: 100, dueDate: "", description: "" }
+      ]);
+      fetchCourseScores();
+    } catch (err: any) {
+      console.error("Error bulk creating assessments:", err);
+      toast.error(err.response?.data?.error || "Failed to create assessments");
+    } finally {
+      setBulkCreateLoading(false);
+    }
+  };
+
+  const handleBulkUpdateAssessments = async () => {
+    const payload: BulkUpdateAssessmentRequest = {
+      assessments: bulkEditData
+        .filter(assessment => {
+          const original = scoresData?.assessments.find(a => a.assessmentId === assessment.assessmentId);
+          return (
+            assessment.title !== original?.title ||
+            assessment.maxScore !== original?.maxScore ||
+            assessment.dueDate !== original?.dueDate ||
+            assessment.description !== original?.description
+          );
+        })
+        .map(assessment => ({
+          assessmentId: assessment.assessmentId,
+          assTitle: assessment.title,
+          maxScore: assessment.maxScore,
+          dueDate: assessment.dueDate,
+          description: assessment.description
+        }))
+    };
+
+    if (payload.assessments.length === 0) {
+      toast.info("No changes detected");
+      return;
+    }
+
+    try {
+      setBulkUpdateLoading(true);
+      await apiClient.put(endPoints.bulkUpdateAssessments, payload);
+      toast.success(`${payload.assessments.length} assessments updated successfully!`);
+      setShowBulkEdit(false);
+      fetchCourseScores();
+    } catch (err: any) {
+      console.error("Error bulk updating assessments:", err);
+      toast.error(err.response?.data?.error || "Failed to update assessments");
+    } finally {
+      setBulkUpdateLoading(false);
+    }
+  };
+
+  const handleBulkDeleteAssessments = async () => {
+    if (selectedAssessments.length === 0) {
+      toast.error("Please select at least one assessment to delete");
+      return;
+    }
+
+    try {
+      setBulkDeleteLoading(true);
+      await apiClient.delete(endPoints.bulkDeleteAssessments, { 
+        data: selectedAssessments 
+      });
+      toast.success(`${selectedAssessments.length} assessments deleted successfully!`);
+      setShowBulkDelete(false);
+      setSelectedAssessments([]);
+      fetchCourseScores();
+    } catch (err: any) {
+      console.error("Error bulk deleting assessments:", err);
+      toast.error(err.response?.data?.error || "Failed to delete assessments");
+    } finally {
+      setBulkDeleteLoading(false);
+    }
+  };
+
+  const addBulkCreateRow = () => {
+    setBulkCreateData([
+      ...bulkCreateData,
+      { assTitle: "", maxScore: 100, dueDate: "", description: "" }
+    ]);
+  };
+
+  const removeBulkCreateRow = (index: number) => {
+    if (bulkCreateData.length > 1) {
+      setBulkCreateData(bulkCreateData.filter((_, i) => i !== index));
+    }
+  };
+
+  const toggleAssessmentSelection = (assessmentId: number) => {
+    setSelectedAssessments(prev => 
+      prev.includes(assessmentId)
+        ? prev.filter(id => id !== assessmentId)
+        : [...prev, assessmentId]
+    );
+  };
+
+  const selectAllAssessments = () => {
+    if (scoresData) {
+      if (selectedAssessments.length === scoresData.assessments.length) {
+        setSelectedAssessments([]);
+      } else {
+        setSelectedAssessments(scoresData.assessments.map(a => a.assessmentId));
+      }
     }
   };
 
@@ -198,13 +406,11 @@ const AssessmentPage = () => {
         score
       };
       
-      // Check if score already exists
       const existingScore = scoresData?.students
         .find(s => s.studentId === studentId)
         ?.scores.find(s => s.assessmentId === assessmentId);
       
       if (existingScore?.score !== null && existingScore?.score !== undefined) {
-        // Update existing score
         await apiClient.put(
           endPoints.updateStudentScore
             .replace(":assessmentId", assessmentId.toString())
@@ -213,12 +419,11 @@ const AssessmentPage = () => {
         );
         toast.success("Score updated successfully!");
       } else {
-        // Create new score
         await apiClient.post(endPoints.recordStudentScore, payload);
         toast.success("Score recorded successfully!");
       }
       
-      fetchCourseScores(); // Refresh data
+      fetchCourseScores();
     } catch (err: any) {
       console.error("Error saving score:", err);
       toast.error(err.response?.data?.error || "Failed to save score");
@@ -231,17 +436,6 @@ const AssessmentPage = () => {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
-    });
-  };
-
-  const formatDateTime = (dateString: string) => {
-    if (!dateString) return "";
-    return new Date(dateString).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
     });
   };
 
@@ -334,19 +528,97 @@ const AssessmentPage = () => {
               </div>
             </div>
             
-            <Button
-              onClick={() => setShowAddAssessment(true)}
-              className="w-full md:w-auto"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Assessment
-            </Button>
+            <div className="flex flex-wrap gap-2 w-full md:w-auto">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="flex-1 md:flex-none">
+                    <MoreVertical className="mr-2 h-4 w-4" />
+                    Manage
+                    <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setShowAddAssessment(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Single Assessment
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowBulkCreate(true)}>
+                    <Copy className="mr-2 h-4 w-4" />
+                    Bulk Create Assessments
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setShowBulkEdit(true)}
+                    disabled={!scoresData || scoresData.assessments.length === 0}
+                  >
+                    <Edit className="mr-2 h-4 w-4" />
+                    Bulk Edit Assessments
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => setShowBulkDelete(true)}
+                    disabled={selectedAssessments.length === 0}
+                    className="text-red-600 dark:text-red-400"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Selected ({selectedAssessments.length})
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
+              <Button onClick={fetchCourseScores} variant="outline">
+                <Loader2 className="mr-2 h-4 w-4" />
+                Refresh
+              </Button>
+            </div>
           </div>
           
           <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
             Manage assessments and student scores. Click on a score to edit, then click the check button to save.
           </p>
         </div>
+
+        {/* Selection Bar */}
+        {scoresData && scoresData.assessments.length > 0 && (
+          <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="select-all"
+                  checked={selectedAssessments.length === scoresData.assessments.length}
+                  onCheckedChange={selectAllAssessments}
+                />
+                <Label htmlFor="select-all" className="cursor-pointer">
+                  Select All ({selectedAssessments.length}/{scoresData.assessments.length})
+                </Label>
+              </div>
+              
+              {selectedAssessments.length > 0 && (
+                <>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    Selected assessments: {selectedAssessments.join(", ")}
+                  </span>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setShowBulkDelete(true)}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Selected
+                  </Button>
+                </>
+              )}
+            </div>
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedAssessments([])}
+              disabled={selectedAssessments.length === 0}
+            >
+              Clear Selection
+            </Button>
+          </div>
+        )}
 
         {/* Assessment Grid */}
         {scoresData && scoresData.students.length > 0 && scoresData.assessments.length > 0 ? (
@@ -364,7 +636,14 @@ const AssessmentPage = () => {
                         className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider min-w-[180px]"
                       >
                         <div className="space-y-1">
-                          <div className="font-semibold">{assessment.title}</div>
+                          <div className="flex items-center justify-between">
+                            <div className="font-semibold">{assessment.title}</div>
+                            <Checkbox
+                              checked={selectedAssessments.includes(assessment.assessmentId)}
+                              onCheckedChange={() => toggleAssessmentSelection(assessment.assessmentId)}
+                              className="ml-2"
+                            />
+                          </div>
                           <div className="text-xs text-gray-400">
                             Max: {assessment.maxScore}
                           </div>
@@ -374,6 +653,9 @@ const AssessmentPage = () => {
                               Due: {formatDate(assessment.dueDate)}
                             </div>
                           )}
+                          <div className="text-xs text-gray-400">
+                            ID: {assessment.assessmentId}
+                          </div>
                         </div>
                       </th>
                     ))}
@@ -452,10 +734,16 @@ const AssessmentPage = () => {
                 ? "No students enrolled in this course yet." 
                 : "No assessments have been created for this course."}
             </p>
-            <Button onClick={() => setShowAddAssessment(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Create Your First Assessment
-            </Button>
+            <div className="flex flex-wrap justify-center gap-4">
+              <Button onClick={() => setShowAddAssessment(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Create Single Assessment
+              </Button>
+              <Button onClick={() => setShowBulkCreate(true)} variant="outline">
+                <Copy className="mr-2 h-4 w-4" />
+                Bulk Create Assessments
+              </Button>
+            </div>
           </div>
         )}
 
@@ -548,9 +836,330 @@ const AssessmentPage = () => {
           </DialogContent>
         </Dialog>
 
+        {/* Bulk Create Dialog */}
+        <Dialog open={showBulkCreate} onOpenChange={setShowBulkCreate}>
+          <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Bulk Create Assessments</DialogTitle>
+              <DialogDescription>
+                Create multiple assessments at once for {courseTitle}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-sm font-medium">Assessment List</h3>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={addBulkCreateRow}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Row
+                </Button>
+              </div>
+              
+              <div className="space-y-3">
+                {bulkCreateData.map((assessment, index) => (
+                  <div key={index} className="p-4 border rounded-lg space-y-3">
+                    <div className="flex justify-between items-center">
+                      <h4 className="font-medium">Assessment #{index + 1}</h4>
+                      {bulkCreateData.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeBulkCreateRow(index)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label htmlFor={`title-${index}`}>Title *</Label>
+                        <Input
+                          id={`title-${index}`}
+                          value={assessment.assTitle}
+                          onChange={(e) => {
+                            const newData = [...bulkCreateData];
+                            newData[index].assTitle = e.target.value;
+                            setBulkCreateData(newData);
+                          }}
+                          placeholder="e.g., Quiz 1, Assignment 2"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor={`maxScore-${index}`}>Max Score *</Label>
+                        <Input
+                          id={`maxScore-${index}`}
+                          type="number"
+                          min="1"
+                          step="0.1"
+                          value={assessment.maxScore}
+                          onChange={(e) => {
+                            const newData = [...bulkCreateData];
+                            newData[index].maxScore = parseFloat(e.target.value) || 0;
+                            setBulkCreateData(newData);
+                          }}
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor={`dueDate-${index}`}>Due Date</Label>
+                        <Input
+                          id={`dueDate-${index}`}
+                          type="datetime-local"
+                          value={assessment.dueDate}
+                          onChange={(e) => {
+                            const newData = [...bulkCreateData];
+                            newData[index].dueDate = e.target.value;
+                            setBulkCreateData(newData);
+                          }}
+                        />
+                      </div>
+                      
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor={`description-${index}`}>Description</Label>
+                        <Textarea
+                          id={`description-${index}`}
+                          value={assessment.description}
+                          onChange={(e) => {
+                            const newData = [...bulkCreateData];
+                            newData[index].description = e.target.value;
+                            setBulkCreateData(newData);
+                          }}
+                          placeholder="Optional description"
+                          rows={2}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="text-sm text-gray-500 p-3 bg-gray-50 dark:bg-gray-800 rounded">
+                <p className="font-medium">Tips:</p>
+                <ul className="list-disc pl-4 mt-1 space-y-1">
+                  <li>Empty rows will be ignored</li>
+                  <li>At least title and max score are required</li>
+                  <li>Due date is optional</li>
+                  <li>Course Assignment ID: {assignmentId}</li>
+                </ul>
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowBulkCreate(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleBulkCreateAssessments}
+                disabled={bulkCreateLoading}
+              >
+                {bulkCreateLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Copy className="mr-2 h-4 w-4" />
+                    Create {bulkCreateData.filter(a => a.assTitle.trim()).length} Assessments
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Bulk Edit Dialog */}
+        <Dialog open={showBulkEdit} onOpenChange={setShowBulkEdit}>
+          <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Bulk Edit Assessments</DialogTitle>
+              <DialogDescription>
+                Edit multiple assessments at once for {courseTitle}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div className="space-y-3">
+                {bulkEditData.map((assessment, index) => (
+                  <div key={assessment.assessmentId} className="p-4 border rounded-lg space-y-3">
+                    <div className="flex justify-between items-center">
+                      <h4 className="font-medium">ID: {assessment.assessmentId}</h4>
+                      <Badge variant="outline" className="ml-2">
+                        Current
+                      </Badge>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label htmlFor={`edit-title-${index}`}>Title *</Label>
+                        <Input
+                          id={`edit-title-${index}`}
+                          value={assessment.title}
+                          onChange={(e) => {
+                            const newData = [...bulkEditData];
+                            newData[index].title = e.target.value;
+                            setBulkEditData(newData);
+                          }}
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor={`edit-maxScore-${index}`}>Max Score *</Label>
+                        <Input
+                          id={`edit-maxScore-${index}`}
+                          type="number"
+                          min="1"
+                          step="0.1"
+                          value={assessment.maxScore}
+                          onChange={(e) => {
+                            const newData = [...bulkEditData];
+                            newData[index].maxScore = parseFloat(e.target.value) || 0;
+                            setBulkEditData(newData);
+                          }}
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor={`edit-dueDate-${index}`}>Due Date</Label>
+                        <Input
+                          id={`edit-dueDate-${index}`}
+                          type="datetime-local"
+                          value={assessment.dueDate ? new Date(assessment.dueDate).toISOString().slice(0, 16) : ""}
+                          onChange={(e) => {
+                            const newData = [...bulkEditData];
+                            newData[index].dueDate = e.target.value;
+                            setBulkEditData(newData);
+                          }}
+                        />
+                      </div>
+                      
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor={`edit-description-${index}`}>Description</Label>
+                        <Textarea
+                          id={`edit-description-${index}`}
+                          value={assessment.description || ""}
+                          onChange={(e) => {
+                            const newData = [...bulkEditData];
+                            newData[index].description = e.target.value;
+                            setBulkEditData(newData);
+                          }}
+                          rows={2}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="text-sm text-gray-500 p-3 bg-blue-50 dark:bg-blue-900/20 rounded">
+                <p className="font-medium">Note:</p>
+                <p>Only modified fields will be updated. Empty fields will be ignored.</p>
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowBulkEdit(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleBulkUpdateAssessments}
+                disabled={bulkUpdateLoading}
+              >
+                {bulkUpdateLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Save Changes
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Bulk Delete Confirmation Dialog (using existing Dialog) */}
+        <Dialog open={showBulkDelete} onOpenChange={setShowBulkDelete}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center">
+                <AlertTriangle className="h-5 w-5 text-red-600 mr-2" />
+                Confirm Delete
+              </DialogTitle>
+              <DialogDescription>
+                <div className="space-y-3 mt-2">
+                  <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded">
+                    <p className="text-red-600 dark:text-red-400 font-medium">
+                      Warning: This action cannot be undone!
+                    </p>
+                  </div>
+                  
+                  <p>
+                    You are about to delete {selectedAssessments.length} assessment(s). 
+                    This will also delete all related student scores.
+                  </p>
+                  
+                  {selectedAssessments.length > 0 && (
+                    <div className="text-sm p-3 bg-gray-100 dark:bg-gray-800 rounded">
+                      <p className="font-medium mb-1">Selected Assessment IDs:</p>
+                      <p className="break-words">{selectedAssessments.join(", ")}</p>
+                    </div>
+                  )}
+                  
+                  <p className="font-medium">
+                    Are you sure you want to continue?
+                  </p>
+                </div>
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowBulkDelete(false)}
+                disabled={bulkDeleteLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleBulkDeleteAssessments}
+                disabled={bulkDeleteLoading}
+              >
+                {bulkDeleteLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete {selectedAssessments.length} Assessment(s)
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {/* Summary Info */}
         {scoresData && (
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
               <h3 className="font-semibold text-blue-700 dark:text-blue-400 mb-1">Course Info</h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -574,6 +1183,18 @@ const AssessmentPage = () => {
               <p className="text-2xl font-bold">{scoresData.assessments.length}</p>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Created for this course
+              </p>
+            </div>
+            
+            <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg">
+              <h3 className="font-semibold text-amber-700 dark:text-amber-400 mb-1">Total Scores</h3>
+              <p className="text-2xl font-bold">
+                {scoresData.students.reduce((total, student) => 
+                  total + student.scores.filter(s => s.score !== null).length, 0
+                )}
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Scores recorded
               </p>
             </div>
           </div>
