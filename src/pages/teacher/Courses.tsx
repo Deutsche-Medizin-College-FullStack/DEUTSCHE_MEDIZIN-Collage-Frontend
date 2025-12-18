@@ -271,19 +271,19 @@ useEffect(() => {
                 {/* Quick Actions */}
                 <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
                   <div className="grid grid-cols-2 gap-2">
-                    <Link
-                      to={`/teacher/students?course=${course.assignmentId}&courseCode=${course.courseCode}`}
-                      className="w-full"
-                    >
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full bg-transparent hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-300 dark:hover:border-blue-700"
-                      >
-                        <Users className="mr-2 h-4 w-4" />
-                        Students
-                      </Button>
-                    </Link>
+                  <Link 
+                    to={`/teacher/students/${course.assignmentId}`} 
+                    state={{
+                      courseTitle: course.courseTitle,
+                      courseCode: course.courseCode,
+                      batch: course.batchClassYearSemester
+                    }}
+                  >
+                    <Button size="sm" variant="outline" className="h-8">
+                      <Users className="h-3 w-3 mr-1" />
+                      Students
+                    </Button>
+                  </Link>
 
                     <Link
                       to={`/teacher/assessments/${course.assignmentId}`}

@@ -7,8 +7,6 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import {
   LayoutDashboard,
   BookOpen,
-  Users,
-  FileText,
   LogOut,
   Menu,
   Key,
@@ -136,8 +134,7 @@ export default function TeacherLayout() {
     { name: "Dashboard", href: "/teacher/dashboard", icon: LayoutDashboard },
     { name: "Profile", href: "/teacher/profile", icon: User },
     { name: "Courses", href: "/teacher/courses", icon: BookOpen },
-    { name: "Students", href: "/teacher/students/all", icon: Users },
-    { name: "Assessments", href: "/teacher/assessments", icon: FileText },
+
   ];
 
   // Get user initials for avatar
