@@ -1,7 +1,5 @@
-// src/components/api/endPoints.ts
-
 const endPoints = {
-  // Existing ones...
+  
   login: "/auth/login",
   register: "/auth/register",
   applicantsRegister:
@@ -66,10 +64,8 @@ const endPoints = {
   slipPreview: "student-slips/preview",
   generateSlips: "/student-slips/generate",
   addCourse: "/student-course-scores/add",
-  updateScore:
-    "/student-course-scores/score/:studentId/:courseId/:batchClassYearSemesterId",
-  updateReleaseStatus:
-    "/student-course-scores/release/:studentId/:courseId/:batchClassYearSemesterId",
+  updateScore:   "/student-course-scores/score/:studentId/:courseId/:batchClassYearSemesterId",
+  updateReleaseStatus: "/student-course-scores/release/:studentId/:courseId/:batchClassYearSemesterId",
   getGrade: "/student-course-scores/:scoreId/grade",
   getAll: "/student-course-scores/all",
   bulkUpdate: "/student-course-scores/bulk-update",
@@ -78,11 +74,16 @@ const endPoints = {
   getTeacherProfile: "/teachers/profile",
   getTeacherCourses: "/teachers/my-courses",
 
-  createAssessment: "/assessments", //works
+  createAssessment: "/assessments", 
   recordStudentScore: "/student-assessments",
   updateStudentScore: "/student-assessments/:assessmentId/:studentId",
-  getCourseScores: "/student-assessments/courses/:teacherCourseAssignmentId/scores", //works
+  getCourseScores: "/student-assessments/courses/:teacherCourseAssignmentId/scores",
   getTeacherDashboard: "/teachers/dashboard",
+
+  bulkCreateAssessments: "/assessments/bulk",
+  bulkUpdateAssessments: "/assessments/bulk",
+  bulkDeleteAssessments: "/assessments/bulk",
 };
 
 export default endPoints;
+ 
