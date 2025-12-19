@@ -25,7 +25,11 @@ import {
   EyeOff,
   ChevronDown,
   ChevronUp,
-  SaveAll
+  SaveAll,
+  ShieldCheck,
+  Lock,
+  Unlock,
+  FileCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,7 +42,8 @@ import {
   DialogTitle, 
   DialogDescription, 
   DialogFooter,
-  DialogTrigger 
+  DialogTrigger,
+  DialogClose
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -49,6 +54,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import apiClient from "../../components/api/apiClient";
 import endPoints from "../../components/api/endPoints";
@@ -60,6 +66,7 @@ interface Assessment {
   maxScore: number;
   dueDate: string;
   description?: string;
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED';
 }
 
 interface Student {
@@ -135,6 +142,17 @@ interface BulkScoreUpdateResponse {
   }>;
 }
 
+// Approval response interface
+interface ApprovalResponse {
+  message: string;
+  count: number;
+  status: 'ACCEPTED' | 'REJECTED';
+  assessmentIds: number[];
+}
+
+// Approval status type
+type ApprovalStatus = 'ACCEPTED';
+
 const AssessmentPage = () => {
   const { assignmentId } = useParams<{ assignmentId: string }>();
   const location = useLocation();
@@ -149,6 +167,7 @@ const AssessmentPage = () => {
   const [showBulkCreate, setShowBulkCreate] = useState(false);
   const [showBulkEdit, setShowBulkEdit] = useState(false);
   const [showBulkDelete, setShowBulkDelete] = useState(false);
+  const [showApproveDialog, setShowApproveDialog] = useState(false);
   
   // Assessment management states
   const [editingScores, setEditingScores] = useState<Record<string, Record<number, string>>>({});
@@ -163,6 +182,9 @@ const AssessmentPage = () => {
     { assTitle: "", maxScore: 100, dueDate: "", description: "" },
     { assTitle: "", maxScore: 100, dueDate: "", description: "" }
   ]);
+  
+  // Approval states
+  const [approvalLoading, setApprovalLoading] = useState(false);
   
   // Single assessment state
   const [newAssessment, setNewAssessment] = useState<CreateAssessmentRequest>({
@@ -202,13 +224,15 @@ const AssessmentPage = () => {
       );
       setScoresData(response.data);
       
-      // Initialize editing scores
+      // Initialize editing scores only if assessments are not ACCEPTED
       const initialScores: Record<string, Record<number, string>> = {};
       response.data.students.forEach(student => {
         initialScores[student.studentId] = {};
         response.data.assessments.forEach(assessment => {
+          // Only allow editing if assessment status is PENDING or REJECTED
+          const canEdit = assessment.status === 'PENDING' || assessment.status === 'REJECTED';
           const score = student.scores.find(s => s.assessmentId === assessment.assessmentId);
-          initialScores[student.studentId][assessment.assessmentId] = score?.score?.toString() || "";
+          initialScores[student.studentId][assessment.assessmentId] = canEdit ? (score?.score?.toString() || "") : (score?.score?.toString() || "");
         });
       });
       setEditingScores(initialScores);
@@ -233,6 +257,16 @@ const AssessmentPage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Check if any assessment is ACCEPTED
+  const hasAcceptedAssessments = () => {
+    return scoresData?.assessments.some(assessment => assessment.status === 'ACCEPTED') || false;
+  };
+
+  // Check if all assessments are ACCEPTED
+  const areAllAssessmentsAccepted = () => {
+    return scoresData?.assessments.every(assessment => assessment.status === 'ACCEPTED') || false;
   };
 
   const handleCreateAssessment = async () => {
@@ -346,6 +380,20 @@ const AssessmentPage = () => {
       return;
     }
 
+    // Check if any selected assessment is ACCEPTED
+    if (scoresData) {
+      const acceptedSelected = scoresData.assessments.filter(
+        assessment => 
+          selectedAssessments.includes(assessment.assessmentId) && 
+          assessment.status === 'ACCEPTED'
+      );
+      
+      if (acceptedSelected.length > 0) {
+        toast.error(`Cannot delete ${acceptedSelected.length} accepted assessment(s). Please unselect them.`);
+        return;
+      }
+    }
+
     try {
       setBulkDeleteLoading(true);
       await apiClient.delete(endPoints.bulkDeleteAssessments, { 
@@ -366,6 +414,12 @@ const AssessmentPage = () => {
   const handleBulkSaveScores = async () => {
     if (!scoresData) return;
 
+    // Check if any assessment is ACCEPTED
+    if (hasAcceptedAssessments()) {
+      toast.error("Cannot save scores. Some assessments are already ACCEPTED.");
+      return;
+    }
+
     // Collect all modified scores
     const modifiedScores: Array<{
       assessmentId: number;
@@ -383,6 +437,11 @@ const AssessmentPage = () => {
     // Collect all modified scores with validation
     for (const student of scoresData.students) {
       for (const assessment of scoresData.assessments) {
+        // Only collect scores for assessments that can be edited
+        if (assessment.status === 'ACCEPTED') {
+          continue;
+        }
+
         const editingValue = editingScores[student.studentId]?.[assessment.assessmentId] || "";
         const existingScore = student.scores.find(s => s.assessmentId === assessment.assessmentId);
         const savedValue = existingScore?.score?.toString() || "";
@@ -470,6 +529,30 @@ const AssessmentPage = () => {
     }
   };
 
+  const handleApproveAssessments = async () => {
+    if (!scoresData || !assignmentId) return;
+
+    try {
+      setApprovalLoading(true);
+      const endpoint = endPoints.approveAssessments
+        .replace(":teacherCourseAssignmentId", assignmentId)
+        + "?status=ACCEPTED";
+      
+      const response = await apiClient.put<ApprovalResponse>(endpoint);
+      
+      toast.success(response.data.message);
+      setShowApproveDialog(false);
+      fetchCourseScores(); // Refresh data
+      
+    } catch (err: any) {
+      console.error("Error approving assessments:", err);
+      const errorMessage = err.response?.data?.message || "Failed to approve assessments";
+      toast.error(errorMessage);
+    } finally {
+      setApprovalLoading(false);
+    }
+  };
+
   const addBulkCreateRow = () => {
     setBulkCreateData([
       ...bulkCreateData,
@@ -484,6 +567,13 @@ const AssessmentPage = () => {
   };
 
   const toggleAssessmentSelection = (assessmentId: number) => {
+    // Don't allow selecting ACCEPTED assessments
+    const assessment = scoresData?.assessments.find(a => a.assessmentId === assessmentId);
+    if (assessment?.status === 'ACCEPTED') {
+      toast.warning("Cannot select ACCEPTED assessments");
+      return;
+    }
+    
     setSelectedAssessments(prev => 
       prev.includes(assessmentId)
         ? prev.filter(id => id !== assessmentId)
@@ -493,15 +583,27 @@ const AssessmentPage = () => {
 
   const selectAllAssessments = () => {
     if (scoresData) {
-      if (selectedAssessments.length === scoresData.assessments.length) {
+      // Only select assessments that are not ACCEPTED
+      const selectableAssessments = scoresData.assessments
+        .filter(assessment => assessment.status !== 'ACCEPTED')
+        .map(a => a.assessmentId);
+      
+      if (selectedAssessments.length === selectableAssessments.length) {
         setSelectedAssessments([]);
       } else {
-        setSelectedAssessments(scoresData.assessments.map(a => a.assessmentId));
+        setSelectedAssessments(selectableAssessments);
       }
     }
   };
 
   const handleScoreChange = (studentId: number, assessmentId: number, value: string) => {
+    // Check if the assessment can be edited
+    const assessment = scoresData?.assessments.find(a => a.assessmentId === assessmentId);
+    if (assessment?.status === 'ACCEPTED') {
+      toast.warning("Cannot edit scores for ACCEPTED assessments");
+      return;
+    }
+    
     setEditingScores(prev => ({
       ...prev,
       [studentId]: {
@@ -512,6 +614,13 @@ const AssessmentPage = () => {
   };
 
   const saveStudentScore = async (studentId: number, assessmentId: number) => {
+    // Check if the assessment can be edited
+    const assessment = scoresData?.assessments.find(a => a.assessmentId === assessmentId);
+    if (assessment?.status === 'ACCEPTED') {
+      toast.error("Cannot save score for ACCEPTED assessment");
+      return;
+    }
+
     const scoreValue = editingScores[studentId]?.[assessmentId];
     if (!scoreValue || isNaN(parseFloat(scoreValue))) {
       toast.error("Please enter a valid score");
@@ -519,10 +628,10 @@ const AssessmentPage = () => {
     }
 
     const score = parseFloat(scoreValue);
-    const assessment = scoresData?.assessments.find(a => a.assessmentId === assessmentId);
+    const assessmentMaxScore = scoresData?.assessments.find(a => a.assessmentId === assessmentId)?.maxScore;
     
-    if (assessment && score > assessment.maxScore) {
-      toast.error(`Score (${score}) exceeds max score (${assessment.maxScore})`);
+    if (assessmentMaxScore && score > assessmentMaxScore) {
+      toast.error(`Score (${score}) exceeds max score (${assessmentMaxScore})`);
       return;
     }
 
@@ -573,6 +682,11 @@ const AssessmentPage = () => {
     let count = 0;
     for (const student of scoresData.students) {
       for (const assessment of scoresData.assessments) {
+        // Only count modifications for assessments that can be edited
+        if (assessment.status === 'ACCEPTED') {
+          continue;
+        }
+
         const editingValue = editingScores[student.studentId]?.[assessment.assessmentId] || "";
         const existingScore = student.scores.find(s => s.assessmentId === assessment.assessmentId);
         const savedValue = existingScore?.score?.toString() || "";
@@ -583,6 +697,28 @@ const AssessmentPage = () => {
       }
     }
     return count;
+  };
+
+  // Get status badge color
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'ACCEPTED':
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
+      case 'REJECTED':
+        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
+      case 'PENDING':
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
+    }
+  };
+
+  // Check if approval button should be disabled
+  const isApproveDisabled = () => {
+    if (!scoresData || scoresData.assessments.length === 0) return true;
+    if (areAllAssessmentsAccepted()) return true;
+    if (hasAcceptedAssessments()) return true;
+    return false;
   };
 
   if (loading) {
@@ -623,6 +759,8 @@ const AssessmentPage = () => {
   const courseCode = scoresData?.courseCode || courseInfo.courseCode || "";
   const batch = scoresData?.batchClassYearSemester || courseInfo.batch || "";
   const modifiedScoresCount = getModifiedScoresCount();
+  const hasAccepted = hasAcceptedAssessments();
+  const allAccepted = areAllAssessmentsAccepted();
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
@@ -656,6 +794,18 @@ const AssessmentPage = () => {
                   <h1 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-100">
                     {courseTitle}
                   </h1>
+                  {allAccepted && (
+                    <Badge className={`ml-2 ${getStatusBadge('ACCEPTED')}`}>
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      All Approved
+                    </Badge>
+                  )}
+                  {hasAccepted && !allAccepted && (
+                    <Badge className={`ml-2 ${getStatusBadge('ACCEPTED')}`}>
+                      <AlertCircle className="h-3 w-3 mr-1" />
+                      Partially Approved
+                    </Badge>
+                  )}
                 </div>
                 <div className="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400">
                   <div className="flex items-center">
@@ -674,10 +824,20 @@ const AssessmentPage = () => {
                     <Building className="h-4 w-4 mr-1" />
                     {scoresData?.assessments.length || 0} assessments
                   </div>
+                  <div className="flex items-center">
+                    <FileCheck className="h-4 w-4 mr-1" />
+                    {scoresData?.assessments.filter(a => a.status === 'ACCEPTED').length || 0} approved
+                  </div>
                 </div>
               </div>
               
               <div className="flex flex-wrap gap-2 w-full md:w-auto">
+
+                <Button onClick={fetchCourseScores} variant="outline">
+                <Loader2 className="mr-2 h-4 w-4" />
+                Refresh
+                </Button>
+
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="flex-1 md:flex-none">
@@ -687,17 +847,23 @@ const AssessmentPage = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setShowAddAssessment(true)}>
+                    <DropdownMenuItem 
+                      onClick={() => setShowAddAssessment(true)}
+                      disabled={hasAccepted}
+                    >
                       <Plus className="mr-2 h-4 w-4" />
                       Add Single Assessment
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setShowBulkCreate(true)}>
+                    <DropdownMenuItem 
+                      onClick={() => setShowBulkCreate(true)}
+                      disabled={hasAccepted}
+                    >
                       <Copy className="mr-2 h-4 w-4" />
                       Bulk Create Assessments
                     </DropdownMenuItem>
                     <DropdownMenuItem 
                       onClick={() => setShowBulkEdit(true)}
-                      disabled={!scoresData || scoresData.assessments.length === 0}
+                      disabled={!scoresData || scoresData.assessments.length === 0 || hasAccepted}
                     >
                       <Edit className="mr-2 h-4 w-4" />
                       Bulk Edit Assessments
@@ -716,8 +882,8 @@ const AssessmentPage = () => {
                 
                 <Button 
                   onClick={handleBulkSaveScores} 
-                  disabled={modifiedScoresCount === 0 || bulkSaveScoresLoading}
-                  className="bg-green-600 hover:bg-green-700 text-white"
+                  disabled={modifiedScoresCount === 0 || bulkSaveScoresLoading || hasAccepted}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   {bulkSaveScoresLoading ? (
                     <>
@@ -731,17 +897,47 @@ const AssessmentPage = () => {
                     </>
                   )}
                 </Button>
-                
-                <Button onClick={fetchCourseScores} variant="outline">
-                  <Loader2 className="mr-2 h-4 w-4" />
-                  Refresh
+
+                <Button 
+                  onClick={() => setShowApproveDialog(true)}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                  disabled={isApproveDisabled()}
+                >
+                  <ShieldCheck className="mr-2 h-4 w-4" />
+                  Approve All
                 </Button>
+
               </div>
             </div>
             
-            <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-              Manage assessments and student scores. Edit scores in the table below, then click "Save All Scores" to save all changes at once.
-            </p>
+            <div className="mt-4">
+              {hasAccepted ? (
+                <div className={`p-3 rounded-lg ${allAccepted ? 'bg-green-50 dark:bg-green-900/20' : 'bg-yellow-50 dark:bg-yellow-900/20'}`}>
+                  <div className="flex items-start">
+                    {allAccepted ? (
+                      <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 mr-2 flex-shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mr-2 flex-shrink-0 mt-0.5" />
+                    )}
+                    <div>
+                      <p className="font-medium">
+                        {allAccepted ? 'All assessments have been approved' : 'Some assessments have been approved'}
+                      </p>
+                      <p className="text-sm mt-1">
+                        {allAccepted 
+                          ? 'Editing is disabled for all assessments.' 
+                          : 'Editing is disabled for approved assessments. You can still edit PENDING assessments.'
+                        }
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Manage assessments and student scores. Edit scores in the table below, then click "Save All Scores" to save all changes at once.
+                </p>
+              )}
+            </div>
           </div>
         </div>
 
@@ -755,11 +951,12 @@ const AssessmentPage = () => {
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="select-all"
-                      checked={selectedAssessments.length === scoresData.assessments.length}
+                      checked={selectedAssessments.length === scoresData.assessments.filter(a => a.status !== 'ACCEPTED').length}
                       onCheckedChange={selectAllAssessments}
+                      disabled={hasAccepted && !scoresData.assessments.some(a => a.status !== 'ACCEPTED')}
                     />
                     <Label htmlFor="select-all" className="cursor-pointer">
-                      Select All ({selectedAssessments.length}/{scoresData.assessments.length})
+                      Select All ({selectedAssessments.length}/{scoresData.assessments.filter(a => a.status !== 'ACCEPTED').length})
                     </Label>
                   </div>
                   
@@ -782,7 +979,7 @@ const AssessmentPage = () => {
                 
                 <div className="flex items-center space-x-4">
                   {modifiedScoresCount > 0 && (
-                    <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400">
+                    <Badge variant="outline" className="bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400">
                       {modifiedScoresCount} unsaved score{modifiedScoresCount !== 1 ? 's' : ''}
                     </Badge>
                   )}
@@ -811,36 +1008,59 @@ const AssessmentPage = () => {
                             <div className="text-xs font-normal text-gray-400">ID / Name</div>
                           </div>
                         </th>
-                        {scoresData.assessments.map((assessment) => (
-                          <th
-                            key={assessment.assessmentId}
-                            className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider min-w-[150px] bg-gray-50 dark:bg-gray-700"
-                          >
-                            <div className="space-y-1">
-                              <div className="flex items-center justify-between">
-                                <div className="font-semibold truncate max-w-[100px]" title={assessment.title}>
-                                  {assessment.title}
+                        {scoresData.assessments.map((assessment) => {
+                          const isAccepted = assessment.status === 'ACCEPTED';
+                          const canEdit = !isAccepted;
+                          
+                          return (
+                            <th
+                              key={assessment.assessmentId}
+                              className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider min-w-[150px] bg-gray-50 dark:bg-gray-700"
+                            >
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <div className="font-semibold truncate max-w-[100px]" title={assessment.title}>
+                                    {assessment.title}
+                                  </div>
+                                  <div className="flex items-center space-x-1">
+                                    <Badge className={`text-xs px-2 py-0.5 ${getStatusBadge(assessment.status)}`}>
+                                      {assessment.status}
+                                    </Badge>
+                                    <Checkbox
+                                      checked={selectedAssessments.includes(assessment.assessmentId)}
+                                      onCheckedChange={() => toggleAssessmentSelection(assessment.assessmentId)}
+                                      className="ml-2 h-4 w-4"
+                                      disabled={isAccepted}
+                                    />
+                                  </div>
                                 </div>
-                                <Checkbox
-                                  checked={selectedAssessments.includes(assessment.assessmentId)}
-                                  onCheckedChange={() => toggleAssessmentSelection(assessment.assessmentId)}
-                                  className="ml-2 h-4 w-4"
-                                />
-                              </div>
-                              <div className="text-xs text-gray-400">
-                                Max: {assessment.maxScore}
-                              </div>
-                              {assessment.dueDate && (
-                                <div className="text-xs text-gray-400 flex items-center">
-                                  <Calendar className="h-3 w-3 mr-1 flex-shrink-0" />
-                                  <span className="truncate" title={formatDate(assessment.dueDate)}>
-                                    {formatDate(assessment.dueDate)}
-                                  </span>
+                                <div className="text-xs text-gray-400">
+                                  Max: {assessment.maxScore}
                                 </div>
-                              )}
-                            </div>
-                          </th>
-                        ))}
+                                {assessment.dueDate && (
+                                  <div className="text-xs text-gray-400 flex items-center">
+                                    <Calendar className="h-3 w-3 mr-1 flex-shrink-0" />
+                                    <span className="truncate" title={formatDate(assessment.dueDate)}>
+                                      {formatDate(assessment.dueDate)}
+                                    </span>
+                                  </div>
+                                )}
+                                {isAccepted && (
+                                  <div className="text-xs text-green-600 dark:text-green-400 flex items-center">
+                                    <Lock className="h-3 w-3 mr-1" />
+                                    Read-only
+                                  </div>
+                                )}
+                                {canEdit && (
+                                  <div className="text-xs text-blue-600 dark:text-blue-400 flex items-center">
+                                    <Unlock className="h-3 w-3 mr-1" />
+                                    Editable
+                                  </div>
+                                )}
+                              </div>
+                            </th>
+                          );
+                        })}
                       </tr>
                     </thead>
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -864,6 +1084,7 @@ const AssessmentPage = () => {
                             const scoreValue = studentScore?.score;
                             const editingValue = editingScores[student.studentId]?.[assessment.assessmentId] || "";
                             const hasChanged = editingValue !== (scoreValue?.toString() || "");
+                            const isAccepted = assessment.status === 'ACCEPTED';
                             
                             return (
                               <td
@@ -878,16 +1099,21 @@ const AssessmentPage = () => {
                                     step="0.1"
                                     value={editingValue}
                                     onChange={(e) => handleScoreChange(student.studentId, assessment.assessmentId, e.target.value)}
-                                    className={`w-20 h-8 ${hasChanged ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20' : ''}`}
+                                    className={`w-20 h-8 ${hasChanged ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20' : ''} ${isAccepted ? 'bg-gray-100 dark:bg-gray-700 cursor-not-allowed' : ''}`}
                                     placeholder="Score"
+                                    disabled={isAccepted}
+                                    readOnly={isAccepted}
                                   />
-                                  {hasChanged && editingValue !== "" && (
+                                  {hasChanged && editingValue !== "" && !isAccepted && (
                                     <Badge 
                                       variant="outline" 
                                       className="text-xs px-1.5 py-0.5 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400"
                                     >
                                       Unsaved
                                     </Badge>
+                                  )}
+                                  {isAccepted && (
+                                    <Lock className="h-4 w-4 text-gray-400" />
                                   )}
                                 </div>
                               </td>
@@ -911,11 +1137,18 @@ const AssessmentPage = () => {
                     : "No assessments have been created for this course."}
                 </p>
                 <div className="flex flex-wrap justify-center gap-4">
-                  <Button onClick={() => setShowAddAssessment(true)}>
+                  <Button 
+                    onClick={() => setShowAddAssessment(true)}
+                    disabled={hasAccepted}
+                  >
                     <Plus className="mr-2 h-4 w-4" />
                     Create Single Assessment
                   </Button>
-                  <Button onClick={() => setShowBulkCreate(true)} variant="outline">
+                  <Button 
+                    onClick={() => setShowBulkCreate(true)} 
+                    variant="outline"
+                    disabled={hasAccepted}
+                  >
                     <Copy className="mr-2 h-4 w-4" />
                     Bulk Create Assessments
                   </Button>
@@ -925,7 +1158,7 @@ const AssessmentPage = () => {
 
             {/* Summary Info - Always visible at bottom */}
             {scoresData && (
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
                   <h3 className="font-semibold text-blue-700 dark:text-blue-400 mb-1">Course Info</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -953,6 +1186,18 @@ const AssessmentPage = () => {
                 </div>
                 
                 <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg">
+                  <h3 className="font-semibold text-amber-700 dark:text-amber-400 mb-1">Status</h3>
+                  <div className="flex items-center space-x-2">
+                    <Badge className={`${getStatusBadge('ACCEPTED')}`}>
+                      {scoresData.assessments.filter(a => a.status === 'ACCEPTED').length} Approved
+                    </Badge>
+                    <Badge className={`${getStatusBadge('PENDING')}`}>
+                      {scoresData.assessments.filter(a => a.status === 'PENDING').length} Pending
+                    </Badge>
+                  </div>
+                </div>
+                
+                <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg">
                   <h3 className="font-semibold text-amber-700 dark:text-amber-400 mb-1">Total Scores</h3>
                   <p className="text-2xl font-bold">
                     {scoresData.students.reduce((total, student) => 
@@ -969,12 +1214,12 @@ const AssessmentPage = () => {
         </div>
 
         {/* Bulk Save Scores Button - Fixed at bottom */}
-        {modifiedScoresCount > 0 && (
+        {modifiedScoresCount > 0 && !hasAccepted && (
           <div className="fixed bottom-6 right-6 z-50">
             <Button
               onClick={handleBulkSaveScores}
               size="lg"
-              className="shadow-lg bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-full"
+              className="shadow-lg bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full"
               disabled={bulkSaveScoresLoading}
             >
               {bulkSaveScoresLoading ? (
@@ -1240,9 +1485,14 @@ const AssessmentPage = () => {
                 <div key={assessment.assessmentId} className="p-4 border rounded-lg space-y-3">
                   <div className="flex justify-between items-center">
                     <h4 className="font-medium">ID: {assessment.assessmentId}</h4>
-                    <Badge variant="outline" className="ml-2">
-                      Current
-                    </Badge>
+                    <div className="flex items-center space-x-2">
+                      <Badge className={`${getStatusBadge(assessment.status)}`}>
+                        {assessment.status}
+                      </Badge>
+                      <Badge variant="outline" className="ml-2">
+                        Current
+                      </Badge>
+                    </div>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1256,6 +1506,7 @@ const AssessmentPage = () => {
                           newData[index].title = e.target.value;
                           setBulkEditData(newData);
                         }}
+                        disabled={assessment.status === 'ACCEPTED'}
                       />
                     </div>
                     
@@ -1272,6 +1523,7 @@ const AssessmentPage = () => {
                           newData[index].maxScore = parseFloat(e.target.value) || 0;
                           setBulkEditData(newData);
                         }}
+                        disabled={assessment.status === 'ACCEPTED'}
                       />
                     </div>
                     
@@ -1286,6 +1538,7 @@ const AssessmentPage = () => {
                           newData[index].dueDate = e.target.value;
                           setBulkEditData(newData);
                         }}
+                        disabled={assessment.status === 'ACCEPTED'}
                       />
                     </div>
                     
@@ -1300,16 +1553,23 @@ const AssessmentPage = () => {
                           setBulkEditData(newData);
                         }}
                         rows={2}
+                        disabled={assessment.status === 'ACCEPTED'}
                       />
                     </div>
                   </div>
+                  {assessment.status === 'ACCEPTED' && (
+                    <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center">
+                      <Lock className="h-3 w-3 mr-1" />
+                      This assessment is approved and cannot be edited
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
             
             <div className="text-sm text-gray-500 p-3 bg-blue-50 dark:bg-blue-900/20 rounded">
               <p className="font-medium">Note:</p>
-              <p>Only modified fields will be updated. Empty fields will be ignored.</p>
+              <p>Only modified fields will be updated. Empty fields will be ignored. Approved assessments cannot be edited.</p>
             </div>
           </div>
           
@@ -1396,6 +1656,83 @@ const AssessmentPage = () => {
                 <>
                   <Trash2 className="mr-2 h-4 w-4" />
                   Delete {selectedAssessments.length} Assessment(s)
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Approve Dialog */}
+      <Dialog open={showApproveDialog} onOpenChange={setShowApproveDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <ShieldCheck className="h-5 w-5 text-green-600 mr-2" />
+              Approve All Assessments
+            </DialogTitle>
+            <DialogDescription>
+              <div className="space-y-3 mt-2">
+                <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded">
+                  <div className="flex items-start">
+                    <CheckCircle className="h-5 w-5 text-green-600 mr-2 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-green-800 dark:text-green-300 font-medium">
+                        Finalize and Approve All Assessments
+                      </p>
+                      <p className="text-sm text-green-700 dark:text-green-400 mt-1">
+                        This will send the assessments to department heads for review.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <p className="font-medium">Before approving, please confirm:</p>
+                  <ul className="list-disc pl-4 space-y-1 text-sm">
+                    <li>All scores have been entered and saved</li>
+                    <li>All assessments are correctly configured</li>
+                    <li>You have reviewed all student scores</li>
+                    <li>No further edits will be possible after approval</li>
+                  </ul>
+                </div>
+                
+                {scoresData && (
+                  <div className="text-sm p-3 bg-blue-50 dark:bg-blue-900/20 rounded">
+                    <p className="font-medium mb-1">Summary:</p>
+                    <p>{scoresData.assessments.length} assessment(s) will be approved</p>
+                    <p>{scoresData.students.length} student(s) affected</p>
+                  </div>
+                )}
+                
+                <p className="font-medium text-red-600 dark:text-red-400">
+                  Note: After approval, you will not be able to edit assessments or scores.
+                </p>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowApproveDialog(false)}
+              disabled={approvalLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-green-600 hover:bg-green-700 text-white"
+              onClick={handleApproveAssessments}
+              disabled={approvalLoading}
+            >
+              {approvalLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Approving...
+                </>
+              ) : (
+                <>
+                  <ShieldCheck className="mr-2 h-4 w-4" />
+                  Confirm Approval
                 </>
               )}
             </Button>
