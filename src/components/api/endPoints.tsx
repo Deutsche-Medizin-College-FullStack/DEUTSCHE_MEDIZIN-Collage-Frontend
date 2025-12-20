@@ -88,6 +88,11 @@ const endPoints = {
   bulkCreateAssessments: "/assessments/bulk",
   bulkUpdateAssessments: "/assessments/bulk",
   bulkDeleteAssessments: "/assessments/bulk",
+
+  bulkUpdateStudentScores: "/student-assessments/bulk",
+  getCourseStudents: "/teachers/courses/:teacherCourseAssignmentId/students",
+
+  approveAssessments: "/assessments/assignment/:teacherCourseAssignmentId/approve",
 };
 
 export default endPoints;

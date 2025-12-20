@@ -29,13 +29,8 @@ const StudentSetting = React.lazy(() => import("./pages/student/Setting"));
 const TeacherLayout = React.lazy(() => import("./layouts/TeacherLayout"));
 const TeacherDashboard = React.lazy(() => import("./pages/teacher/Dashboard"));
 const TeacherCourses = React.lazy(() => import("./pages/teacher/Courses"));
-const TeacherStudents = React.lazy(() => import("./pages/teacher/Students"));
-const TeacherAssessments = React.lazy(
-  () => import("./pages/teacher/Assessments")
-);
-const AssessmentPage = React.lazy(
-  () => import("./pages/teacher/AssessmentPage")
-);
+const TeacherStudents = React.lazy(() => import("./pages/teacher/TeacherStudents"));
+const AssessmentPage = React.lazy(  () => import("./pages/teacher/AssessmentPage"));
 
 // Department Head Pages
 const HeadLayout = React.lazy(() => import("./layouts/HeadLayout"));
@@ -237,12 +232,8 @@ function App() {
 
               <Route path="dashboard" element={<TeacherDashboard />} />
               <Route path="courses" element={<TeacherCourses />} />
-              <Route path="students/:courseId" element={<TeacherStudents />} />
-              <Route path="assessments" element={<TeacherAssessments />} />
-              <Route
-                path="assessments/:courseId"
-                element={<AssessmentPage />}
-              />
+              <Route path="students/:assignmentId" element={<TeacherStudents />} />
+              <Route path="assessments/:assignmentId" element={<AssessmentPage />} />
             </Route>
 
             {/* Department Head Routes */}
