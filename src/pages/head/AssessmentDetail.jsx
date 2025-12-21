@@ -192,19 +192,16 @@ const HeadAssessmentDetail = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="space-y-2">
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate("/head/assessments")}
-              className="p-0"
-            >
+
+            <Button variant="ghost" size="sm" onClick={() => navigate("/head/assessments")} className="p-0" >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Assessments
             </Button>
+
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center md:mx-[2rem] gap-4">
+        <div className="space-y-2">
+          <div className="flex items-center space-x-2">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               {courseData.courseTitle}
             </h1>
@@ -245,79 +242,51 @@ const HeadAssessmentDetail = () => {
       </div>
 
       {/* Assessment Details */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader>
+      <div className="flex flex-col md:grid md:grid-cols-3 gap-6 md:mx-[2rem]">
+        <Card className="md:col-span-3">
+        <CardHeader>
             <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">
-              Assessment Summary
+            Course Information
             </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {courseData.assessments.map(assessment => (
-                <div key={assessment.assessmentId} className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">{assessment.title}</span>
-                    {getAssessmentStatusBadge(assessment.status)}
-                  </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                    <div className="flex justify-between">
-                      <span>Max Score:</span>
-                      <span className="font-medium">{assessment.maxScore}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Due Date:</span>
-                      <span>{formatDate(assessment.dueDate)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Your Approval:</span>
-                      {getHeadApprovalBadge(assessment.headApproval)}
-                    </div>
-                  </div>
+        </CardHeader>
+        <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                <div className="md:col-span-3 space-y-4">
+                <div className="space-y-1">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Course Title</p>
+                    <p className="font-medium text-lg">{courseData.courseTitle}</p>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">
-              Course Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Course Title</p>
-                <p className="font-medium">{courseData.courseTitle}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Course Code</p>
-                <p className="font-medium">{courseData.courseCode}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Batch/Semester</p>
-                <p className="font-medium">{courseData.batchClassYearSemester}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Total Students</p>
-                <p className="font-medium">{courseData.students.length}</p>
-              </div>
-              {courseData.teacherInfo?.teacherName && (
-                <>
-                  <div className="space-y-1">
+                </div>
+                
+                <div className="md:col-span-3 space-y-4">
+                <div className="space-y-1">
                     <p className="text-sm text-gray-500 dark:text-gray-400">Teacher</p>
-                    <p className="font-medium">{courseData.teacherInfo.teacherName}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Department</p>
-                    <p className="font-medium">{courseData.teacherInfo.departmentName || "N/A"}</p>
-                  </div>
-                </>
-              )}
+                    <p className="font-medium text-lg">{`${courseData.teacherFullNameENG || "N/A"} / ${courseData.teacherFullNameAMH || "N/A"}`}</p>
+                </div>
+                </div>
+                
+                <div className="md:col-span-2 space-y-4">
+                <div className="space-y-1">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Total Students</p>
+                    <p className="font-medium text-lg">{courseData.students.length}</p>
+                </div>
+                </div>
+
+                <div className="md:col-span-2 space-y-4">
+                <div className="space-y-1">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Batch/Semester</p>
+                    <p className="font-medium text-lg">{courseData.batchClassYearSemester}</p>
+                </div>
+                </div>
+
+                <div className="md:col-span-2 space-y-4">
+                <div className="space-y-1">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Assessments</p>
+                    <p className="font-medium text-lg">{courseData.assessments.length}</p>
+                </div>
+                </div>
             </div>
-          </CardContent>
+        </CardContent>
         </Card>
       </div>
 
