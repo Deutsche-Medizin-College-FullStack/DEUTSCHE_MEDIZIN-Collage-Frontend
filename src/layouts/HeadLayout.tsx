@@ -15,7 +15,7 @@ import {
   Key,
   School,
   LogOut,
-  FileCheck, // Added for Assessment icon
+  FileCheck,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -39,11 +39,13 @@ export default function HeadLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(
     () => window.innerWidth >= 1024
   );
-  const [userData, setUserData] = useState<any>(null);
+  const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
+  const [pendingAssessmentsCount, setPendingAssessmentsCount] = useState(0);
+  const [loadingPendingCount, setLoadingPendingCount] = useState(true);
 
   const [passwordForm, setPasswordForm] = useState({
     oldPassword: "",
@@ -51,7 +53,7 @@ export default function HeadLayout() {
     confirmPassword: "",
   });
 
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef(null);
 
   const navigation = [
     { name: "Dashboard", href: "/head/dashboard", icon: LayoutDashboard },
@@ -61,7 +63,12 @@ export default function HeadLayout() {
     { name: "Teachers", href: "/head/teachers", icon: Users },
     { name: "Grades", href: "/head/grades", icon: BookOpen },
     { name: "Reports", href: "/head/reports", icon: BarChart3 },
-    { name: "Assessments", href: "/head/assessments", icon: FileCheck }, // Added Assessment menu item
+    { 
+      name: "Assessments", 
+      href: "/head/assessments", 
+      icon: FileCheck,
+      badgeCount: pendingAssessmentsCount 
+    },
   ];
 
   const getUserInitials = () => {
@@ -103,10 +110,38 @@ export default function HeadLayout() {
         newPassword: "",
         confirmPassword: "",
       });
-    } catch (error: any) {
+    } catch (error) {
       alert(error.response?.data?.error || "Failed to change password");
     } finally {
       setPasswordLoading(false);
+    }
+  };
+
+  // Fetch pending assessments count
+  const fetchPendingAssessmentsCount = async () => {
+    try {
+      setLoadingPendingCount(true);
+      const response = await apiClient.get(
+        endPoints.getDepartmentHeadAssessments
+      );
+      
+      // Calculate total pending assessments across all courses
+      let pendingCount = 0;
+      if (response.data && Array.isArray(response.data)) {
+        pendingCount = response.data.reduce((total, course) => {
+          return total + (course.assessments || []).filter(
+            assessment => assessment.headApproval === 'PENDING'
+          ).length;
+        }, 0);
+      }
+      
+      setPendingAssessmentsCount(pendingCount);
+    } catch (error) {
+      console.error("Error fetching pending assessments count:", error);
+      // Don't set error state here to avoid breaking the layout
+      setPendingAssessmentsCount(0);
+    } finally {
+      setLoadingPendingCount(false);
     }
   };
 
@@ -127,7 +162,15 @@ export default function HeadLayout() {
     };
 
     loadUserData();
+    fetchPendingAssessmentsCount();
   }, []);
+
+  // Refresh pending count when navigating to assessments page
+  useEffect(() => {
+    if (location.pathname === "/head/assessments") {
+      fetchPendingAssessmentsCount();
+    }
+  }, [location.pathname]);
 
   // Sidebar resize handler
   useEffect(() => {
@@ -145,10 +188,10 @@ export default function HeadLayout() {
 
   // Close dropdown on outside click
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event) => {
       if (
         dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
+        !dropdownRef.current.contains(event.target)
       ) {
         setUserDropdownOpen(false);
       }
@@ -215,11 +258,13 @@ export default function HeadLayout() {
           <div className="px-4 space-y-2">
             {navigation.map((item) => {
               const isActive = location.pathname === item.href;
+              const hasBadge = item.badgeCount !== undefined && item.badgeCount > 0;
+              
               return (
                 <Link
                   key={item.name}
                   to={item.href}
-                  className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  className={`relative flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                     isActive
                       ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
                       : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
@@ -230,6 +275,20 @@ export default function HeadLayout() {
                 >
                   <item.icon className="mr-3 h-5 w-5" />
                   {item.name}
+                  
+                  {/* Badge for pending assessments */}
+                  {hasBadge && (
+                    <span className="absolute right-3 flex items-center justify-center h-5 w-5 rounded-full bg-red-500 text-white text-xs font-bold">
+                      {item.badgeCount}
+                    </span>
+                  )}
+                  
+                  {/* Loading indicator for pending count */}
+                  {item.name === "Assessments" && loadingPendingCount && !hasBadge && (
+                    <span className="absolute right-3 flex items-center justify-center h-5 w-5">
+                      <div className="h-2 w-2 animate-ping rounded-full bg-blue-500"></div>
+                    </span>
+                  )}
                 </Link>
               );
             })}

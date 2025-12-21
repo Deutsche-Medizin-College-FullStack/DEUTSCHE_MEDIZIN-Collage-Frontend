@@ -97,7 +97,7 @@ const endPoints = {
   approveAssessments: "/assessments/assignment/:teacherCourseAssignmentId/approve",
   
   getDepartmentHeadAssessments: "/department-heads/assessments/scores",
-  approveHeadAssessments: "/department-heads/assessments/scores/approve",
+  approveRejectAllAssessments: "/department-heads/assignments/:teacherCourseAssignmentId/approve-all",
 };
 
 export default endPoints;

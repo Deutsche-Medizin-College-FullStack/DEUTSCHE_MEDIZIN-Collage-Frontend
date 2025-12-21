@@ -100,13 +100,15 @@ const HeadAssessments = () => {
   };
 
   // Filter assessments based on search term
-  const filteredAssessments = courseAssessments.filter(course => {
+const filteredAssessments = courseAssessments.filter(course => {
     const searchLower = searchTerm.toLowerCase();
     return (
       course.courseTitle.toLowerCase().includes(searchLower) ||
       course.courseCode.toLowerCase().includes(searchLower) ||
       course.batchClassYearSemester.toLowerCase().includes(searchLower) ||
-      course.teacherInfo?.teacherName?.toLowerCase().includes(searchLower) ||
+      (course.teacherFullNameENG && course.teacherFullNameENG.toLowerCase().includes(searchLower)) ||
+      (course.teacherFullNameAMH && course.teacherFullNameAMH.toLowerCase().includes(searchLower)) ||
+      (course.teacherTitle && course.teacherTitle.toLowerCase().includes(searchLower)) ||
       course.assessments.some(assessment => 
         assessment.title.toLowerCase().includes(searchLower)
       )
@@ -181,8 +183,8 @@ const HeadAssessments = () => {
         </CardContent>
       </Card>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Summary Cards - Updated to show teacher count */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -192,6 +194,19 @@ const HeadAssessments = () => {
           <CardContent>
             <div className="text-2xl font-bold">{courseAssessments.length}</div>
             <p className="text-xs text-gray-500 dark:text-gray-400">Courses with assessments</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">
+              Total Teachers
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {new Set(courseAssessments.map(course => course.teacherFullNameENG)).size}
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Teachers submitted</p>
           </CardContent>
         </Card>
         <Card>
@@ -273,7 +288,7 @@ const HeadAssessments = () => {
                     <TableHead>Course & Teacher</TableHead>
                     <TableHead>Assessment</TableHead>
                     <TableHead>Batch</TableHead>
-                    <TableHead>Due Date</TableHead>
+                    <TableHead>Teacher</TableHead>
                     <TableHead>Teacher Status</TableHead>
                     <TableHead>Your Approval</TableHead>
                     <TableHead>Actions</TableHead>
@@ -291,12 +306,10 @@ const HeadAssessments = () => {
                                 <BookOpen className="h-3 w-3 mr-1" />
                                 {course.courseCode}
                               </div>
-                              {course.teacherInfo?.teacherName && (
-                                <div className="flex items-center mt-1">
-                                  <Users className="h-3 w-3 mr-1" />
-                                  {course.teacherInfo.teacherName}
-                                </div>
-                              )}
+                              <div className="flex items-center mt-1">
+                                <Users className="h-3 w-3 mr-1" />
+                                {course.batchClassYearSemester}
+                              </div>
                             </div>
                           </div>
                         </TableCell>
@@ -314,9 +327,16 @@ const HeadAssessments = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center text-sm">
-                            <Calendar className="h-3 w-3 mr-1 text-gray-400" />
-                            {formatDate(assessment.dueDate)}
+                          <div className="space-y-1">
+                            <div className="font-medium">{course.teacherFullNameENG || "N/A"}</div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              {course.teacherTitle || "Teacher"}
+                            </div>
+                            {course.teacherFullNameAMH && (
+                              <div className="text-xs text-gray-400 dark:text-gray-500">
+                                {course.teacherFullNameAMH}
+                              </div>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell>
