@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import {
   ChevronDown,
   Key,
   LogOut,
+  FileCheck, // Added for Assessment icon
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -56,6 +57,7 @@ export default function HeadLayout() {
     { name: "Teachers", href: "/head/teachers", icon: Users },
     { name: "Grades", href: "/head/grades", icon: BookOpen },
     { name: "Reports", href: "/head/reports", icon: BarChart3 },
+    { name: "Assessments", href: "/head/assessments", icon: FileCheck }, // Added Assessment menu item
   ];
 
   const getUserInitials = () => {

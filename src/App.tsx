@@ -38,6 +38,8 @@ const HeadCourses = React.lazy(() => import("./pages/head/Courses"));
 const HeadReports = React.lazy(() => import("./pages/head/Reports"));
 const HeadGrades = React.lazy(() => import("./pages/head/Grades"));
 const CreateTeacher = React.lazy(() => import("./pages/head/CreateTeacher"));
+const HeadAssessments = React.lazy(() => import("./pages/head/Assessments")); // Added
+const HeadAssessmentDetail = React.lazy(() => import("./pages/head/AssessmentDetail")); // Added
 
 // Registrar Pages
 const RegistrarLayout = React.lazy(() => import("./layouts/RegistrarLayout"));
@@ -160,6 +162,8 @@ function App() {
               <Route path="grades" element={<HeadGrades />} />
               <Route path="courses" element={<HeadCourses />} />
               <Route path="reports" element={<HeadReports />} />
+              <Route path="assessments" element={<HeadAssessments />} /> {/* Added */}
+              <Route path="assessments/:assignmentId" element={<HeadAssessmentDetail />} /> {/* Added */}
             </Route>
 
             {/* Registrar Routes */}
