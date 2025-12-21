@@ -10,6 +10,7 @@ import {
   BookOpen,
   BarChart3,
   Menu,
+  User,
   ChevronDown,
   Key,
   LogOut,
@@ -53,6 +54,7 @@ export default function HeadLayout() {
 
   const navigation = [
     { name: "Dashboard", href: "/head/dashboard", icon: LayoutDashboard },
+    { name: "Profile", href: "/head/profile", icon: User },
     { name: "Students", href: "/head/students", icon: Users },
     { name: "Teachers", href: "/head/teachers", icon: Users },
     { name: "Grades", href: "/head/grades", icon: BookOpen },
