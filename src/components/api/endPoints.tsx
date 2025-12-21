@@ -4,7 +4,9 @@ const endPoints = {
   applicantsRegister:
     "https://deutschemedizin-collage-backend-production.up.railway.app/api/applicants/register",
   registrarApplicantRegister: "/auth/register/student",
+  departmentHeadDashboard: "/department-heads/dashboard",
   studentStatus: "/student-statuses",
+  myDepartmentCourses: "/department-heads/my-courses",
   studentDashboard: "/student/dashboard",
   profile: "/students/profile",
   academicYears: "/academic-years",

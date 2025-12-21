@@ -1,74 +1,196 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { useMemo, useState } from "react"
+"use client";
 
-type Course = { code: string; name: string; teacher: string; semester: string; avg: number }
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  BookOpen,
+  Search,
+  Clock,
+  CalendarDays,
+  Users,
+  Hash,
+} from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { useEffect, useState } from "react";
+import endPoints from "@/components/api/endPoints";
+import apiService from "@/components/api/apiService";
 
-const MOCK_COURSES: Course[] = [
-  { code: "BIO101", name: "Intro to Biology", teacher: "Dr. Alemu", semester: "I", avg: 78 },
-  { code: "CHE201", name: "Organic Chemistry", teacher: "Dr. Sara", semester: "II", avg: 72 },
-  { code: "PHY110", name: "Mechanics", teacher: "Mr. Bekele", semester: "I", avg: 81 },
-]
+interface Course {
+  id: number;
+  code: string;
+  title: string;
+  totalCrHrs: number;
+  classYearName: string;
+  semesterName: string;
+}
 
-export default function HeadCourses() {
-  const [query, setQuery] = useState("")
-  const filtered = useMemo(() => {
-    return MOCK_COURSES.filter((c) =>
-      [c.code, c.name, c.teacher, c.semester].some((v) => v.toLowerCase().includes(query.toLowerCase()))
-    )
-  }, [query])
+export default function Courses() {
+  const { t } = useTranslation(["departmentHead", "common"]);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [filteredCourses, setFilteredCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    const loadCourses = async () => {
+      try {
+        const response = await apiService.get<Course[]>(
+          endPoints.myDepartmentCourses
+        );
+        setCourses(response);
+        setFilteredCourses(response);
+      } catch (error) {
+        console.error("Error loading department courses:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCourses();
+  }, []);
+
+  useEffect(() => {
+    const lowerSearch = searchTerm.toLowerCase();
+    const filtered = courses.filter(
+      (course) =>
+        course.code.toLowerCase().includes(lowerSearch) ||
+        course.title.toLowerCase().includes(lowerSearch) ||
+        course.classYearName.toLowerCase().includes(lowerSearch) ||
+        course.semesterName.toLowerCase().includes(lowerSearch)
+    );
+    setFilteredCourses(filtered);
+  }, [searchTerm, courses]);
+
+  // Group courses by classYearName for better organization
+  const groupedCourses = filteredCourses.reduce((groups, course) => {
+    const year = course.classYearName || "Uncategorized";
+    if (!groups[year]) groups[year] = [];
+    groups[year].push(course);
+    return groups;
+  }, {} as Record<string, Course[]>);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg">{t("common:loading") || "Loading..."}</div>
+      </div>
+    );
+  }
+
+  if (courses.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 space-y-4">
+        <BookOpen className="h-16 w-16 text-muted-foreground" />
+        <div className="text-lg text-muted-foreground">
+          No courses found in your department
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Department Courses</h1>
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg p-6 text-white">
+        <h1 className="text-2xl font-bold mb-2 flex items-center gap-3">
+          <BookOpen className="h-8 w-8" />
+          My Department Courses
+        </h1>
+        <p className="text-blue-100">
+          All {courses.length} courses offered by your department
+        </p>
+      </div>
+
+      {/* Search */}
       <Card>
         <CardHeader>
-          <CardTitle>Course Management</CardTitle>
-          <CardDescription>Assign teachers and track performance</CardDescription>
+          <div className="relative">
+            <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+            <Input
+              placeholder="Search by code, title, year, or semester..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <CardDescription>
+            {filteredCourses.length} course
+            {filteredCourses.length !== 1 ? "s" : ""} shown
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <Input placeholder="Search courses" value={query} onChange={(e) => setQuery(e.target.value)} />
-            <div className="md:col-span-2 flex gap-2">
-              <Button className="w-full">Add Course</Button>
-              <Button variant="outline" className="w-full">Assign Teacher</Button>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="text-left border-b">
-                  <th className="py-2 pr-4">Code</th>
-                  <th className="py-2 pr-4">Name</th>
-                  <th className="py-2 pr-4">Assigned Teacher</th>
-                  <th className="py-2 pr-4">Semester</th>
-                  <th className="py-2 pr-4">Avg Score</th>
-                  <th className="py-2 pr-4">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((c) => (
-                  <tr key={c.code} className="border-b">
-                    <td className="py-2 pr-4">{c.code}</td>
-                    <td className="py-2 pr-4">{c.name}</td>
-                    <td className="py-2 pr-4">{c.teacher}</td>
-                    <td className="py-2 pr-4">{c.semester}</td>
-                    <td className="py-2 pr-4">{c.avg}%</td>
-                    <td className="py-2 pr-4">
-                      <div className="flex gap-2">
-                        <Button size="sm">Edit</Button>
-                        <Button size="sm" variant="outline">Performance</Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
       </Card>
+
+      {/* Grouped Course Cards */}
+      <div className="space-y-8">
+        {Object.entries(groupedCourses)
+          .sort(([a], [b]) => a.localeCompare(b)) // Sort years logically if needed
+          .map(([year, yearCourses]) => (
+            <div key={year} className="space-y-4">
+              <h2 className="text-xl font-semibold flex items-center gap-2">
+                <Users className="h-5 w-5 text-muted-foreground" />
+                {year} ({yearCourses.length} course
+                {yearCourses.length !== 1 ? "s" : ""})
+              </h2>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {yearCourses.map((course) => (
+                  <Card
+                    key={course.id}
+                    className="hover:shadow-md transition-shadow"
+                  >
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Hash className="h-4 w-4 text-muted-foreground" />
+                            <CardTitle className="text-lg">
+                              {course.code}
+                            </CardTitle>
+                          </div>
+                          <CardDescription className="text-base font-medium">
+                            {course.title}
+                          </CardDescription>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap gap-3 text-sm">
+                        <Badge
+                          variant="secondary"
+                          className="flex items-center gap-1"
+                        >
+                          <Clock className="h-3.5 w-3.5" />
+                          {course.totalCrHrs} CrHrs
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className="flex items-center gap-1"
+                        >
+                          <CalendarDays className="h-3.5 w-3.5" />
+                          {course.semesterName}
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ))}
+      </div>
+
+      {filteredCourses.length === 0 && searchTerm && (
+        <Card>
+          <CardContent className="text-center py-12 text-muted-foreground">
+            No courses match your search criteria
+          </CardContent>
+        </Card>
+      )}
     </div>
-  )
+  );
 }
