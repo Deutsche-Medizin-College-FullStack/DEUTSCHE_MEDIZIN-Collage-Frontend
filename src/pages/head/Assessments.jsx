@@ -57,7 +57,7 @@ const HeadAssessments = () => {
 
   const getHeadApprovalBadge = (status) => {
     switch (status) {
-      case 'APPROVED':
+      case 'ACCEPTED':
         return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
           <CheckCircle className="h-3 w-3 mr-1" />
           Approved
@@ -223,19 +223,34 @@ const filteredAssessments = courseAssessments.filter(course => {
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2">
+        <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">
-              Pending Review
+            Pending Review
             </CardTitle>
-          </CardHeader>
-          <CardContent>
+        </CardHeader>
+        <CardContent>
             <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-              {courseAssessments.reduce((total, course) => 
-                total + course.assessments.filter(a => a.headApproval === 'PENDING').length, 0
-              )}
+            {courseAssessments.reduce((total, course) => 
+                total + course.assessments.filter(a => a.headApproval === 'PENDING' || !a.headApproval).length, 0
+            )}
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">Awaiting your approval</p>
-          </CardContent>
+        </CardContent>
+        </Card>
+        <Card>
+        <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">
+            Approved
+            </CardTitle>
+        </CardHeader>
+        <CardContent>
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+            {courseAssessments.reduce((total, course) => 
+                total + course.assessments.filter(a => a.headApproval === 'ACCEPTED').length, 0  // Change to 'ACCEPTED'
+            )}
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Approved by you</p>
+        </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
