@@ -34,7 +34,9 @@ const HeadAssessmentDetail = () => {
   const [error, setError] = useState(null);
   const [courseData, setCourseData] = useState(null);
   const [showApproveDialog, setShowApproveDialog] = useState(false);
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [approving, setApproving] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
 
   useEffect(() => {
     if (assignmentId) {
@@ -74,25 +76,38 @@ const HeadAssessmentDetail = () => {
     }
   };
 
-  const handleApprove = async () => {
+  const handleApprove = async (status) => {
     if (!courseData) return;
 
     try {
-      setApproving(true);
-      // Call the approval API
-      const response = await apiClient.put(
-        endPoints.approveHeadAssessments,
-        { teacherCourseAssignmentId: courseData.teacherCourseAssignmentId }
-      );
+      if (status === 'ACCEPTED') {
+        setApproving(true);
+      } else {
+        setRejecting(true);
+      }
       
-      toast.success("Assessment approved successfully!");
-      setShowApproveDialog(false);
+      // Call the new API endpoint for bulk approval/rejection
+      const endpoint = endPoints.approveRejectAllAssessments  .replace(":teacherCourseAssignmentId", courseData.teacherCourseAssignmentId)  + `?status=${status}`;      
+      const response = await apiClient.put(endpoint);
+      
+      toast.success(response.data.message || `${status === 'ACCEPTED' ? 'Approved' : 'Rejected'} successfully!`);
+      
+      if (status === 'ACCEPTED') {
+        setShowApproveDialog(false);
+      } else {
+        setShowRejectDialog(false);
+      }
+      
       fetchAssessmentDetails(); // Refresh data
     } catch (err) {
-      console.error("Error approving assessment:", err);
-      toast.error(err.response?.data?.message || "Failed to approve assessment");
+      console.error(`Error ${status === 'ACCEPTED' ? 'approving' : 'rejecting'} assessment:`, err);
+      toast.error(err.response?.data?.error || `Failed to ${status === 'ACCEPTED' ? 'approve' : 'reject'} assessment`);
     } finally {
-      setApproving(false);
+      if (status === 'ACCEPTED') {
+        setApproving(false);
+      } else {
+        setRejecting(false);
+      }
     }
   };
 
@@ -148,7 +163,19 @@ const HeadAssessmentDetail = () => {
   };
 
   const isAlreadyApproved = () => {
-    return courseData?.assessments.some(assessment => assessment.headApproval === 'APPROVED');
+    return courseData?.assessments.every(assessment => assessment.headApproval === 'APPROVED');
+  };
+
+  const isAlreadyRejected = () => {
+    return courseData?.assessments.every(assessment => assessment.headApproval === 'REJECTED');
+  };
+
+  const hasPendingApprovals = () => {
+    return courseData?.assessments.some(assessment => assessment.headApproval === 'PENDING');
+  };
+
+  const canTakeAction = () => {
+    return hasPendingApprovals() && !isAlreadyApproved() && !isAlreadyRejected();
   };
 
   if (loading) {
@@ -192,11 +219,10 @@ const HeadAssessmentDetail = () => {
 
   return (
     <div className="space-y-6">
-
-            <Button variant="ghost" size="sm" onClick={() => navigate("/head/assessments")} className="p-0" >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Assessments
-            </Button>
+      <Button variant="ghost" size="sm" onClick={() => navigate("/head/assessments")} className="p-0" >
+        <ArrowLeft className="h-4 w-4 mr-2" />
+        Back to Assessments
+      </Button>
 
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center md:mx-[2rem] gap-4">
@@ -211,6 +237,12 @@ const HeadAssessmentDetail = () => {
                 Approved
               </Badge>
             )}
+            {isAlreadyRejected() && (
+              <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
+                <XCircle className="h-3 w-3 mr-1" />
+                Rejected
+              </Badge>
+            )}
           </div>
           <div className="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400">
             <div className="flex items-center">
@@ -221,72 +253,82 @@ const HeadAssessmentDetail = () => {
               <Users className="h-4 w-4 mr-1" />
               {courseData.batchClassYearSemester}
             </div>
-            {courseData.teacherInfo?.teacherName && (
+            {courseData.teacherFullNameENG && (
               <div className="flex items-center">
                 <FileCheck className="h-4 w-4 mr-1" />
-                Teacher: {courseData.teacherInfo.teacherName}
+                Teacher: {courseData.teacherFullNameENG}
               </div>
             )}
           </div>
         </div>
 
-        {!isAlreadyApproved() && (
-          <Button
-            onClick={() => setShowApproveDialog(true)}
-            className="bg-green-600 hover:bg-green-700 text-white"
-          >
-            <ShieldCheck className="mr-2 h-4 w-4" />
-            Approve Assessment
-          </Button>
+        {canTakeAction() && (
+          <div className="flex space-x-2">
+            <Button
+              onClick={() => setShowRejectDialog(true)}
+              variant="outline"
+              className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
+            >
+              <XCircle className="mr-2 h-4 w-4" />
+              Reject
+            </Button>
+            <Button
+              onClick={() => setShowApproveDialog(true)}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              <ShieldCheck className="mr-2 h-4 w-4" />
+              Approve All
+            </Button>
+          </div>
         )}
       </div>
 
       {/* Assessment Details */}
       <div className="flex flex-col md:grid md:grid-cols-3 gap-6 md:mx-[2rem]">
         <Card className="md:col-span-3">
-        <CardHeader>
+          <CardHeader>
             <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            Course Information
+              Course Information
             </CardTitle>
-        </CardHeader>
-        <CardContent>
+          </CardHeader>
+          <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                <div className="md:col-span-3 space-y-4">
+              <div className="md:col-span-3 space-y-4">
                 <div className="space-y-1">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Course Title</p>
-                    <p className="font-medium text-lg">{courseData.courseTitle}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Course Title</p>
+                  <p className="font-medium text-lg">{courseData.courseTitle}</p>
                 </div>
-                </div>
-                
-                <div className="md:col-span-3 space-y-4">
+              </div>
+              
+              <div className="md:col-span-3 space-y-4">
                 <div className="space-y-1">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Teacher</p>
-                    <p className="font-medium text-lg">{`${courseData.teacherFullNameENG || "N/A"} / ${courseData.teacherFullNameAMH || "N/A"}`}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Teacher</p>
+                  <p className="font-medium text-lg">{`${courseData.teacherFullNameENG || "N/A"} / ${courseData.teacherFullNameAMH || "N/A"}`}</p>
                 </div>
-                </div>
-                
-                <div className="md:col-span-2 space-y-4">
+              </div>
+              
+              <div className="md:col-span-2 space-y-4">
                 <div className="space-y-1">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Total Students</p>
-                    <p className="font-medium text-lg">{courseData.students.length}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Total Students</p>
+                  <p className="font-medium text-lg">{courseData.students.length}</p>
                 </div>
-                </div>
+              </div>
 
-                <div className="md:col-span-2 space-y-4">
+              <div className="md:col-span-2 space-y-4">
                 <div className="space-y-1">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Batch/Semester</p>
-                    <p className="font-medium text-lg">{courseData.batchClassYearSemester}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Batch/Semester</p>
+                  <p className="font-medium text-lg">{courseData.batchClassYearSemester}</p>
                 </div>
-                </div>
+              </div>
 
-                <div className="md:col-span-2 space-y-4">
+              <div className="md:col-span-2 space-y-4">
                 <div className="space-y-1">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Assessments</p>
-                    <p className="font-medium text-lg">{courseData.assessments.length}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Assessments</p>
+                  <p className="font-medium text-lg">{courseData.assessments.length}</p>
                 </div>
-                </div>
+              </div>
             </div>
-        </CardContent>
+          </CardContent>
         </Card>
       </div>
 
@@ -295,7 +337,7 @@ const HeadAssessmentDetail = () => {
         <CardHeader>
           <CardTitle>Student Scores</CardTitle>
           <CardDescription>
-            Read-only view of student scores. {isAlreadyApproved() ? "Assessment has been approved." : "Approve assessment to finalize scores."}
+            Read-only view of student scores. {isAlreadyApproved() ? "Assessment has been approved." : isAlreadyRejected() ? "Assessment has been rejected." : "Review scores before approving or rejecting."}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -313,8 +355,11 @@ const HeadAssessmentDetail = () => {
                           <div className="font-medium truncate" title={assessment.title}>
                             {assessment.title}
                           </div>
-                          <div className="text-xs text-gray-500">
-                            Max: {assessment.maxScore}
+                          <div className="flex items-center justify-between">
+                            <div className="text-xs text-gray-500">
+                              Max: {assessment.maxScore}
+                            </div>
+                            {getHeadApprovalBadge(assessment.headApproval)}
                           </div>
                         </div>
                       </TableHead>
@@ -351,13 +396,13 @@ const HeadAssessmentDetail = () => {
         </CardContent>
       </Card>
 
-      {/* Approval Dialog */}
+      {/* Approve Dialog */}
       <Dialog open={showApproveDialog} onOpenChange={setShowApproveDialog}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle className="flex items-center">
               <ShieldCheck className="h-5 w-5 text-green-600 mr-2" />
-              Approve Assessment
+              Approve All Assessments
             </DialogTitle>
             <DialogDescription>
               <div className="space-y-3 mt-2">
@@ -369,18 +414,26 @@ const HeadAssessmentDetail = () => {
                         Confirm Final Approval
                       </p>
                       <p className="text-sm text-green-700 dark:text-green-400 mt-1">
-                        This will finalize the assessment scores.
+                        This will approve all assessments in this course assignment.
                       </p>
                     </div>
                   </div>
                 </div>
                 
                 <div className="space-y-2">
-                  <p className="font-medium">Before approving, please review:</p>
+                  <p className="font-medium">Requirements:</p>
                   <ul className="list-disc pl-4 space-y-1 text-sm">
-                    <li>All scores have been reviewed</li>
+                    <li>All assessments must be ACCEPTED by the teacher</li>
+                    <li>You have reviewed all student scores</li>
                     <li>Assessment details are correct</li>
-                    <li>Teacher has already approved these scores</li>
+                  </ul>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="font-medium">What happens:</p>
+                  <ul className="list-disc pl-4 space-y-1 text-sm">
+                    <li>All assessments will be marked as APPROVED by department head</li>
+                    <li>Notification will be sent to registrars</li>
                     <li>This action cannot be undone</li>
                   </ul>
                 </div>
@@ -390,10 +443,11 @@ const HeadAssessmentDetail = () => {
                   <p>{courseData.assessments.length} assessment(s)</p>
                   <p>{courseData.students.length} student(s)</p>
                   <p>Course: {courseData.courseTitle} ({courseData.courseCode})</p>
+                  <p>Teacher: {courseData.teacherFullNameENG}</p>
                 </div>
                 
                 <p className="font-medium text-red-600 dark:text-red-400">
-                  Note: After approval, scores will be finalized and cannot be changed.
+                  Note: After approval, scores will be finalized and sent to registrars.
                 </p>
               </div>
             </DialogDescription>
@@ -408,7 +462,7 @@ const HeadAssessmentDetail = () => {
             </Button>
             <Button
               className="bg-green-600 hover:bg-green-700 text-white"
-              onClick={handleApprove}
+              onClick={() => handleApprove('ACCEPTED')}
               disabled={approving}
             >
               {approving ? (
@@ -420,6 +474,83 @@ const HeadAssessmentDetail = () => {
                 <>
                   <ShieldCheck className="mr-2 h-4 w-4" />
                   Confirm Approval
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Dialog */}
+      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <XCircle className="h-5 w-5 text-red-600 mr-2" />
+              Reject All Assessments
+            </DialogTitle>
+            <DialogDescription>
+              <div className="space-y-3 mt-2">
+                <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded">
+                  <div className="flex items-start">
+                    <AlertCircle className="h-5 w-5 text-red-600 mr-2 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-red-800 dark:text-red-300 font-medium">
+                        Confirm Rejection
+                      </p>
+                      <p className="text-sm text-red-700 dark:text-red-400 mt-1">
+                        This will reject all assessments and return them to the teacher.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <p className="font-medium">What happens when you reject:</p>
+                  <ul className="list-disc pl-4 space-y-1 text-sm">
+                    <li>All assessments will be marked as REJECTED</li>
+                    <li>Assessment status will be set back to PENDING</li>
+                    <li>Teacher will be able to edit assessments and scores</li>
+                    <li>Teacher will need to resubmit after making corrections</li>
+                  </ul>
+                </div>
+                
+                <div className="text-sm p-3 bg-blue-50 dark:bg-blue-900/20 rounded">
+                  <p className="font-medium mb-1">Summary:</p>
+                  <p>{courseData.assessments.length} assessment(s) will be rejected</p>
+                  <p>{courseData.students.length} student(s) affected</p>
+                  <p>Course: {courseData.courseTitle} ({courseData.courseCode})</p>
+                  <p>Teacher: {courseData.teacherFullNameENG}</p>
+                </div>
+                
+                <p className="font-medium">
+                  Are you sure you want to reject all assessments?
+                </p>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowRejectDialog(false)}
+              disabled={rejecting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => handleApprove('REJECTED')}
+              disabled={rejecting}
+            >
+              {rejecting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Rejecting...
+                </>
+              ) : (
+                <>
+                  <XCircle className="mr-2 h-4 w-4" />
+                  Confirm Rejection
                 </>
               )}
             </Button>
