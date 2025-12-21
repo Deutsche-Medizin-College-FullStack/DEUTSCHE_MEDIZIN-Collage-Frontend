@@ -13,6 +13,7 @@ import {
   User,
   ChevronDown,
   Key,
+  School,
   LogOut,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
@@ -53,6 +54,7 @@ export default function HeadLayout() {
 
   const navigation = [
     { name: "Dashboard", href: "/head/dashboard", icon: LayoutDashboard },
+    { name: "Course", href: "/head/courses", icon: School },
     { name: "Profile", href: "/head/profile", icon: User },
     { name: "Students", href: "/head/students", icon: Users },
     { name: "Teachers", href: "/head/teachers", icon: Users },
