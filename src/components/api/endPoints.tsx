@@ -94,8 +94,10 @@ const endPoints = {
   bulkUpdateStudentScores: "/student-assessments/bulk",
   getCourseStudents: "/teachers/courses/:teacherCourseAssignmentId/students",
 
-  approveAssessments:
-    "/assessments/assignment/:teacherCourseAssignmentId/approve",
+  approveAssessments: "/assessments/assignment/:teacherCourseAssignmentId/approve",
+  
+  getDepartmentHeadAssessments: "/department-heads/assessments/scores",
+  approveHeadAssessments: "/department-heads/assessments/scores/approve",
 };
 
 export default endPoints;
