@@ -184,90 +184,59 @@ const filteredAssessments = courseAssessments.filter(course => {
       </Card>
 
       {/* Summary Cards - Updated to show teacher count */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">
-              Total Courses
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{courseAssessments.length}</div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Courses with assessments</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">
-              Total Teachers
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {new Set(courseAssessments.map(course => course.teacherFullNameENG)).size}
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Teachers submitted</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">
-              Total Assessments
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {courseAssessments.reduce((total, course) => total + course.assessments.length, 0)}
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">All assessments</p>
-          </CardContent>
-        </Card>
-        <Card>
-        <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            Pending Review
-            </CardTitle>
-        </CardHeader>
-        <CardContent>
-            <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-            {courseAssessments.reduce((total, course) => 
-                total + course.assessments.filter(a => a.headApproval === 'PENDING' || !a.headApproval).length, 0
-            )}
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Awaiting your approval</p>
-        </CardContent>
-        </Card>
-        <Card>
-        <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            Approved
-            </CardTitle>
-        </CardHeader>
-        <CardContent>
-            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-            {courseAssessments.reduce((total, course) => 
-                total + course.assessments.filter(a => a.headApproval === 'ACCEPTED').length, 0  // Change to 'ACCEPTED'
-            )}
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Approved by you</p>
-        </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">
-              Approved
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-              {courseAssessments.reduce((total, course) => 
-                total + course.assessments.filter(a => a.headApproval === 'APPROVED').length, 0
-              )}
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Approved by you</p>
-          </CardContent>
-        </Card>
-      </div>
+<div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+  <div className="bg-white dark:bg-gray-800 rounded-lg border p-4">
+    <div className="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+      <BookOpen className="h-4 w-4" />
+      Courses
+    </div>
+    <div className="text-2xl font-bold">{courseAssessments.length}</div>
+  </div>
+  
+  <div className="bg-white dark:bg-gray-800 rounded-lg border p-4">
+    <div className="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+      <Users className="h-4 w-4" />
+      Teachers
+    </div>
+    <div className="text-2xl font-bold">
+      {new Set(courseAssessments.map(course => course.teacherFullNameENG)).size}
+    </div>
+  </div>
+  
+  <div className="bg-white dark:bg-gray-800 rounded-lg border p-4">
+    <div className="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+      <FileCheck className="h-4 w-4" />
+      Assessments
+    </div>
+    <div className="text-2xl font-bold">
+      {courseAssessments.reduce((total, course) => total + course.assessments.length, 0)}
+    </div>
+  </div>
+  
+  <div className="bg-white dark:bg-gray-800 rounded-lg border p-4">
+    <div className="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+      <Clock className="h-4 w-4 text-yellow-500" />
+      Pending
+    </div>
+    <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+      {courseAssessments.reduce((total, course) => 
+        total + course.assessments.filter(a => a.headApproval === 'PENDING' || !a.headApproval).length, 0
+      )}
+    </div>
+  </div>
+  
+  <div className="bg-white dark:bg-gray-800 rounded-lg border p-4">
+    <div className="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+      <CheckCircle className="h-4 w-4 text-green-500" />
+      Approved
+    </div>
+    <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+      {courseAssessments.reduce((total, course) => 
+        total + course.assessments.filter(a => a.headApproval === 'ACCEPTED').length, 0
+      )}
+    </div>
+  </div>
+</div>
 
       {/* Assessments List */}
       <Card>
