@@ -10,6 +10,7 @@ import {
   BarChart3,
   Layers,
   Menu,
+  User,
   ChevronDown,
   Key,
   LogOut,
@@ -52,6 +53,8 @@ export default function ViceDeanLayout() {
 
   const navigation = [
     { name: "Dashboard", href: "/vice-dean/dashboard", icon: LayoutDashboard },
+    { name: "Profile", href: "/vice-dean/profile", icon: User },
+
     { name: "Students", href: "/vice-dean/students", icon: Users },
     { name: "Grades", href: "/vice-dean/grades", icon: BookOpen },
     { name: "Reports", href: "/vice-dean/reports", icon: BarChart3 },

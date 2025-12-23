@@ -9,6 +9,7 @@ import {
   BookOpen,
   BarChart3,
   Layers,
+  User,
   Menu,
   ChevronDown,
   Key,
@@ -53,6 +54,7 @@ export default function DeanLayout() {
   const navigation = [
     { name: "Dashboard", href: "/dean/dashboard", icon: LayoutDashboard },
     { name: "Students", href: "/dean/students", icon: Users },
+    { name: "Profile", href: "/dean/profile", icon: User },
     { name: "Grades", href: "/dean/grades", icon: BookOpen },
     { name: "Reports", href: "/dean/reports", icon: BarChart3 },
     { name: "Department", href: "/dean/department", icon: Layers },
