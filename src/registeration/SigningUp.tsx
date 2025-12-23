@@ -63,6 +63,9 @@ export default function SignInPage() {
         case "DEPARTMENT_HEAD":
           navigate("/head");
           break;
+        case "VICE_DEAN":
+          navigate("/vice-dean");
+          break;
         case "DEAN":
           navigate("/dean");
           break;
