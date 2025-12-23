@@ -29,8 +29,12 @@ const StudentSetting = React.lazy(() => import("./pages/student/Setting"));
 const TeacherLayout = React.lazy(() => import("./layouts/TeacherLayout"));
 const TeacherDashboard = React.lazy(() => import("./pages/teacher/Dashboard"));
 const TeacherCourses = React.lazy(() => import("./pages/teacher/Courses"));
-const TeacherStudents = React.lazy(() => import("./pages/teacher/TeacherStudents"));
-const AssessmentPage = React.lazy(  () => import("./pages/teacher/AssessmentPage"));
+const TeacherStudents = React.lazy(
+  () => import("./pages/teacher/TeacherStudents")
+);
+const AssessmentPage = React.lazy(
+  () => import("./pages/teacher/AssessmentPage")
+);
 
 // Department Head Pages
 const HeadLayout = React.lazy(() => import("./layouts/HeadLayout"));
@@ -45,7 +49,9 @@ const DepartmentHeadProfile = React.lazy(
 const HeadGrades = React.lazy(() => import("./pages/head/Grades"));
 const CreateTeacher = React.lazy(() => import("./pages/head/CreateTeacher"));
 const HeadAssessments = React.lazy(() => import("./pages/head/Assessments")); // Added
-const HeadAssessmentDetail = React.lazy(() => import("./pages/head/AssessmentDetail")); // Added
+const HeadAssessmentDetail = React.lazy(
+  () => import("./pages/head/AssessmentDetail")
+); // Added
 
 // Registrar Pages
 const RegistrarLayout = React.lazy(() => import("./layouts/RegistrarLayout"));
@@ -133,6 +139,9 @@ const ViceDeanDashboard = React.lazy(
   () => import("./pages/vice-dean/Dashboard")
 );
 const ViceDeanStudents = React.lazy(() => import("./pages/vice-dean/Students"));
+const ViceDean_Profile = React.lazy(
+  () => import("./pages/vice-dean/ViceDean_Profile")
+);
 const ViceDeanGrades = React.lazy(() => import("./pages/vice-dean/Grades"));
 const ViceDeanReports = React.lazy(() => import("./pages/vice-dean/Reports"));
 const ViceCreateDepartmentHead = React.lazy(
@@ -193,6 +202,7 @@ const DeanProfile = React.lazy(() => import("./pages/manager/DeanProfile"));
 const ViceDeanProfile = React.lazy(
   () => import("./pages/manager/ViceDeanProfile")
 );
+const Dean_Profile = React.lazy(() => import("./pages/dean/Dean_Profile"));
 const RegistrarProfile = React.lazy(
   () => import("./pages/manager/RegistrarProfile")
 );
@@ -234,8 +244,14 @@ function App() {
 
               <Route path="dashboard" element={<TeacherDashboard />} />
               <Route path="courses" element={<TeacherCourses />} />
-              <Route path="students/:assignmentId" element={<TeacherStudents />} />
-              <Route path="assessments/:assignmentId" element={<AssessmentPage />} />
+              <Route
+                path="students/:assignmentId"
+                element={<TeacherStudents />}
+              />
+              <Route
+                path="assessments/:assignmentId"
+                element={<AssessmentPage />}
+              />
             </Route>
 
             {/* Department Head Routes */}
@@ -248,10 +264,14 @@ function App() {
               <Route path="grades" element={<HeadGrades />} />
               <Route path="courses" element={<HeadCourses />} />
               <Route path="reports" element={<HeadReports />} />
-              <Route path="assessments" element={<HeadAssessments />} /> {/* Added */}
-              <Route path="assessments/:assignmentId" element={<HeadAssessmentDetail />} /> {/* Added */}
+              <Route path="assessments" element={<HeadAssessments />} />{" "}
+              {/* Added */}
+              <Route
+                path="assessments/:assignmentId"
+                element={<HeadAssessmentDetail />}
+              />{" "}
+              {/* Added */}
               <Route path="profile" element={<DepartmentHeadProfile />} />
-
             </Route>
 
             {/* Registrar Routes */}
@@ -352,6 +372,7 @@ function App() {
                 path="create-department-head"
                 element={<CreateDepartmentHead />}
               />
+              <Route path="profile" element={<Dean_Profile />} />
               <Route path="students" element={<DeanStudents />} />
               <Route path="grades" element={<DeanGrades />} />
               <Route path="department" element={<DeanDepartments />} />
@@ -374,6 +395,8 @@ function App() {
               <Route path="grades" element={<ViceDeanGrades />} />
               <Route path="reports" element={<ViceDeanReports />} />
               <Route path="department" element={<ViceDeanDepartments />} />
+              <Route path="profile" element={<ViceDean_Profile />} />
+
               <Route
                 path="departments/:id"
                 element={<ViceDepartmentDetail />}

@@ -5,6 +5,8 @@ const endPoints = {
     "https://deutschemedizin-collage-backend-production.up.railway.app/api/applicants/register",
   registrarApplicantRegister: "/auth/register/student",
   departmentHeadDashboard: "/department-heads/dashboard",
+  getViceDeanProfile: "/vice-deans/profile",
+  getDeanProfile: "/deans/profile",
   studentStatus: "/student-statuses",
   myDepartmentCourses: "/department-heads/my-courses",
   studentDashboard: "/student/dashboard",
@@ -94,8 +96,9 @@ const endPoints = {
   bulkUpdateStudentScores: "/student-assessments/bulk",
   getCourseStudents: "/teachers/courses/:teacherCourseAssignmentId/students",
 
-  approveAssessments: "/assessments/assignment/:teacherCourseAssignmentId/approve",
-  
+  approveAssessments:
+    "/assessments/assignment/:teacherCourseAssignmentId/approve",
+
   getDepartmentHeadAssessments: "/department-heads/assessments/scores",
   approveRejectAllAssessments: "/department-heads/assignments/:teacherCourseAssignmentId/approve-all",
 };
