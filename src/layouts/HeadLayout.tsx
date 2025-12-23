@@ -44,7 +44,7 @@ export default function HeadLayout() {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
-  const [pendingAssessmentsCount, setPendingAssessmentsCount] = useState(0);
+  const [pendingCoursesCount, setPendingCoursesCount] = useState(0);
   const [loadingPendingCount, setLoadingPendingCount] = useState(true);
 
   const [passwordForm, setPasswordForm] = useState({
@@ -67,7 +67,7 @@ export default function HeadLayout() {
       name: "Assessments", 
       href: "/head/assessments", 
       icon: FileCheck,
-      badgeCount: pendingAssessmentsCount 
+      badgeCount: pendingCoursesCount 
     },
   ];
 
@@ -117,29 +117,29 @@ export default function HeadLayout() {
     }
   };
 
-  // Fetch pending assessments count
-  const fetchPendingAssessmentsCount = async () => {
+  // Fetch pending courses count (courses with any pending assessment)
+  const fetchPendingCoursesCount = async () => {
     try {
       setLoadingPendingCount(true);
       const response = await apiClient.get(
         endPoints.getDepartmentHeadAssessments
       );
       
-      // Calculate total pending assessments across all courses
+      // Calculate courses with pending assessments
       let pendingCount = 0;
       if (response.data && Array.isArray(response.data)) {
-        pendingCount = response.data.reduce((total, course) => {
-          return total + (course.assessments || []).filter(
-            assessment => assessment.headApproval === 'PENDING'
-          ).length;
-        }, 0);
+        pendingCount = response.data.filter(course => {
+          return course.assessments.some(assessment => 
+            assessment.headApproval === 'PENDING' || !assessment.headApproval
+          );
+        }).length;
       }
       
-      setPendingAssessmentsCount(pendingCount);
+      setPendingCoursesCount(pendingCount);
     } catch (error) {
-      console.error("Error fetching pending assessments count:", error);
+      console.error("Error fetching pending courses count:", error);
       // Don't set error state here to avoid breaking the layout
-      setPendingAssessmentsCount(0);
+      setPendingCoursesCount(0);
     } finally {
       setLoadingPendingCount(false);
     }
@@ -162,13 +162,13 @@ export default function HeadLayout() {
     };
 
     loadUserData();
-    fetchPendingAssessmentsCount();
+    fetchPendingCoursesCount();
   }, []);
 
   // Refresh pending count when navigating to assessments page
   useEffect(() => {
     if (location.pathname === "/head/assessments") {
-      fetchPendingAssessmentsCount();
+      fetchPendingCoursesCount();
     }
   }, [location.pathname]);
 
@@ -246,7 +246,7 @@ export default function HeadLayout() {
             >
               <g>
                 <path d="M32.6,22.6a1.9,1.9,0,0,0,0,2.8l5.9,6a2.1,2.1,0,0,0,2.7.2,1.9,1.9,0,0,0,.2-3L38.8,26H44a2,2,0,0,0,0-4H38.8l2.6-2.6a1.9,1.9,0,0,0-.2-3,2.1,2.1,0,0,0-2.7.2Z" />
-                <path d="M15.4,25.4a1.9,1.9,0,0,0,0-2.8l-5.9-6a2.1,2.1,0,0,0-2.7-.2,1.9,1.9,0,0,0-.2-3L9.2,22H4a2,2,0,0,0,0,4H9.2L6.6,28.6a1.9,1.9,0,0,0,.2,3,2.1,2.1,0,0,0,2.7-.2Z" />
+                <path d="M15.4,25.4a1.9,1.9,0,0,0,0-2.8l-5.9-6a2.1,2.2,0,0,0-2.7-.2,1.9,1.9,0,0,0-.2,3L9.2,22H4a2,2,0,0,0,0,4H9.2L6.6,28.6a1.9,1.9,0,0,0,.2,3,2.1,2.1,0,0,0,2.7-.2Z" />
                 <path d="M26,6V42a2,2,0,0,0,4,0V6a2,2,0,0,0-4,0Z" />
                 <path d="M22,42V6a2,2,0,0,0-4,0V42a2,2,0,0,0,4,0Z" />
               </g>
@@ -276,7 +276,7 @@ export default function HeadLayout() {
                   <item.icon className="mr-3 h-5 w-5" />
                   {item.name}
                   
-                  {/* Badge for pending assessments */}
+                  {/* Badge for pending courses */}
                   {hasBadge && (
                     <span className="absolute right-3 flex items-center justify-center h-5 w-5 rounded-full bg-red-500 text-white text-xs font-bold">
                       {item.badgeCount}
