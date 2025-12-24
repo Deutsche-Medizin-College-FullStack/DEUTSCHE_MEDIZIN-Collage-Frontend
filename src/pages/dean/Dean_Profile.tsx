@@ -28,8 +28,8 @@ import {
   Shield,
   GraduationCap,
   FileText,
+  Loader2,
 } from "lucide-react";
-
 import { useEffect, useState } from "react";
 import apiClient from "../../components/api/apiClient";
 import endPoints from "../../components/api/endPoints";
@@ -48,8 +48,8 @@ interface DeanProfileResponse {
   phoneNumber: string;
   hiredDateGC: string;
   title: string;
-  photo: string | null; // will be base64 after conversion
-  documents: string | null; // will be base64 if present
+  photo: string | null; // Base64 string from API
+  documents: string | null; // Base64 string from API
   role: string;
   residenceRegion: string;
   residenceRegionCode: string;
@@ -63,8 +63,7 @@ export default function Dean_Profile() {
   const [profile, setProfile] = useState<DeanProfileResponse | null>(null);
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
   const [documentBase64, setDocumentBase64] = useState<string | null>(null);
-  const [documentFileName, setDocumentFileName] =
-    useState<string>("document.pdf");
+  const [documentFileName, setDocumentFileName] = useState<string>("dean_document.pdf");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,44 +71,55 @@ export default function Dean_Profile() {
     const fetchProfile = async () => {
       try {
         setLoading(true);
+        setError(null);
 
-        // Fetch Dean profile (photo and documents come as byte[])
-        const profileResponse = await apiClient.get<any>(
-          endPoints.getDeanProfile // "/api/deans/profile"
+        // Fetch Dean profile
+        const response = await apiClient.get<DeanProfileResponse>(
+          endPoints.getDeanProfile
         );
 
-        const data = profileResponse.data;
+        const data = response.data;
 
-        // Convert photo byte[] to base64 if present
+        // The API returns photo and documents as base64 strings (not byte arrays)
         if (data.photo) {
-          const photoBlob = new Blob([data.photo], { type: "image/jpeg" });
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            setPhotoBase64(reader.result as string);
-          };
-          reader.readAsDataURL(photoBlob);
+          // Check if it's already base64 or needs conversion
+          if (typeof data.photo === 'string' && data.photo.startsWith('data:')) {
+            setPhotoBase64(data.photo);
+          } else if (typeof data.photo === 'string') {
+            // If it's a base64 string without data URL prefix
+            setPhotoBase64(`data:image/jpeg;base64,${data.photo}`);
+          }
         }
 
-        // Convert documents byte[] to base64 if present
+        // Handle documents
         if (data.documents) {
-          const docBlob = new Blob([data.documents], {
-            type: "application/pdf",
-          });
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            setDocumentBase64(reader.result as string);
-          };
-          reader.readAsDataURL(docBlob);
+          // Check if it's already base64 or needs conversion
+          if (typeof data.documents === 'string' && data.documents.startsWith('data:')) {
+            setDocumentBase64(data.documents);
+          } else if (typeof data.documents === 'string') {
+            // If it's a base64 string without data URL prefix
+            setDocumentBase64(`data:application/pdf;base64,${data.documents}`);
+          }
         }
 
         setProfile(data);
       } catch (err: any) {
         console.error("Failed to load dean profile:", err);
-        setError(
-          err.response?.data?.error ||
+        
+        // Handle 403 error specifically
+        if (err.response?.status === 403) {
+          if (err.response?.data?.error?.includes("Not a Dean")) {
+            setError("Access Denied: You do not have Dean privileges.");
+          } else {
+            setError("Access forbidden: You do not have permission to access this resource.");
+          }
+        } else {
+          setError(
+            err.response?.data?.error ||
             err.message ||
             "Failed to load profile. Please try again later."
-        );
+          );
+        }
       } finally {
         setLoading(false);
       }
@@ -120,26 +130,40 @@ export default function Dean_Profile() {
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "Not specified";
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+    try {
+      return new Date(dateString).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    } catch (e) {
+      return dateString;
+    }
   };
 
   const downloadDocument = () => {
     if (!documentBase64) return;
 
-    const link = document.createElement("a");
-    link.href = documentBase64;
-    link.download = documentFileName;
-    link.click();
+    try {
+      const link = document.createElement("a");
+      link.href = documentBase64;
+      link.download = documentFileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Failed to download document:", error);
+      alert("Failed to download document. Please try again.");
+    }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Loading profile...</div>
+        <div className="flex flex-col items-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <p className="text-lg">Loading dean profile...</p>
+        </div>
       </div>
     );
   }
@@ -148,9 +172,23 @@ export default function Dean_Profile() {
     return (
       <div className="flex flex-col items-center justify-center h-64 space-y-4">
         <AlertCircle className="h-12 w-12 text-red-500" />
-        <p className="text-lg text-red-600">
+        <p className="text-lg text-red-600 text-center px-4">
           {error || "Unable to load profile"}
         </p>
+        <div className="flex space-x-4 mt-4">
+          <Button
+            variant="outline"
+            onClick={() => window.location.reload()}
+          >
+            Retry
+          </Button>
+          <Button
+            variant="default"
+            onClick={() => window.history.back()}
+          >
+            Go Back
+          </Button>
+        </div>
       </div>
     );
   }
@@ -170,6 +208,9 @@ export default function Dean_Profile() {
     residenceRegion,
     residenceZone,
     residenceWoreda,
+    residenceRegionCode,
+    residenceZoneCode,
+    residenceWoredaCode,
     username,
   } = profile;
 
@@ -182,6 +223,14 @@ export default function Dean_Profile() {
     [residenceWoreda, residenceZone, residenceRegion]
       .filter(Boolean)
       .join(", ") || "Address not specified";
+
+  const addressCodes = [
+    residenceWoredaCode,
+    residenceZoneCode,
+    residenceRegionCode,
+  ]
+    .filter(Boolean)
+    .join(" / ");
 
   const initials = fullNameEnglish
     .split(" ")
@@ -329,13 +378,25 @@ export default function Dean_Profile() {
               </div>
             </div>
             <Separator />
-            <div className="space-y-2">
-              <Label>Current Residence</Label>
-              <Input
-                value={fullAddress}
-                readOnly
-                className="bg-gray-50 dark:bg-gray-800"
-              />
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Current Residence</Label>
+                <Input
+                  value={fullAddress}
+                  readOnly
+                  className="bg-gray-50 dark:bg-gray-800"
+                />
+              </div>
+              {addressCodes && (
+                <div className="space-y-2">
+                  <Label>Address Codes</Label>
+                  <Input
+                    value={addressCodes}
+                    readOnly
+                    className="bg-gray-50 dark:bg-gray-800 text-sm"
+                  />
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -350,14 +411,14 @@ export default function Dean_Profile() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label className="flex items-center">
                 <Building className="h-4 w-4 mr-2" />
                 Role
               </Label>
               <Input
-                value="Dean"
+                value={profile.role || "Dean"}
                 readOnly
                 className="bg-gray-50 dark:bg-gray-800"
               />
@@ -384,6 +445,17 @@ export default function Dean_Profile() {
                 className="bg-gray-50 dark:bg-gray-800"
               />
             </div>
+            <div className="space-y-2">
+              <Label className="flex items-center">
+                <CalendarDays className="h-4 w-4 mr-2" />
+                Employee ID
+              </Label>
+              <Input
+                value={`DEAN-${profile.id.toString().padStart(3, '0')}`}
+                readOnly
+                className="bg-gray-50 dark:bg-gray-800"
+              />
+            </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -393,6 +465,17 @@ export default function Dean_Profile() {
               </Label>
               <Input
                 value={formatDate(hiredDateGC)}
+                readOnly
+                className="bg-gray-50 dark:bg-gray-800"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center">
+                <UserCircle className="h-4 w-4 mr-2" />
+                Username
+              </Label>
+              <Input
+                value={username}
                 readOnly
                 className="bg-gray-50 dark:bg-gray-800"
               />
@@ -462,19 +545,31 @@ export default function Dean_Profile() {
                 Verified
               </Badge>
             </div>
+            {hasDocument && (
+              <div className="flex items-center justify-between p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                <div className="flex items-center">
+                  <FileText className="h-5 w-5 text-amber-600 dark:text-amber-400 mr-3" />
+                  <div>
+                    <p className="font-medium">Supporting Documents</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Supporting document available for download
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={downloadDocument}
+                  className="text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700"
+                >
+                  <FileText className="h-3 w-3 mr-1" />
+                  Download
+                </Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
-
-      {/* Action Buttons */}
-      <div className="flex justify-end space-x-4">
-        <Button variant="outline" disabled>
-          Edit Profile (Coming Soon)
-        </Button>
-        <Button variant="outline" disabled>
-          Upload Photo / Document (Coming Soon)
-        </Button>
-      </div>
     </div>
   );
 }

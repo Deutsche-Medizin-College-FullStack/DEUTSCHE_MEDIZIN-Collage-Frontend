@@ -55,7 +55,29 @@ const HeadAssessments = () => {
     }
   };
 
-  const getHeadApprovalBadge = (status) => {
+  const getOverallCourseStatus = (course) => {
+    const assessments = course.assessments || [];
+    
+    // If all assessments are approved
+    if (assessments.every(a => a.headApproval === 'ACCEPTED')) {
+      return 'ACCEPTED';
+    }
+    
+    // If any assessment is rejected
+    if (assessments.some(a => a.headApproval === 'REJECTED')) {
+      return 'REJECTED';
+    }
+    
+    // If any assessment is pending
+    if (assessments.some(a => a.headApproval === 'PENDING' || !a.headApproval)) {
+      return 'PENDING';
+    }
+    
+    // Default to pending if no assessments
+    return 'PENDING';
+  };
+
+  const getCourseStatusBadge = (status) => {
     switch (status) {
       case 'ACCEPTED':
         return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
@@ -75,17 +97,39 @@ const HeadAssessments = () => {
     }
   };
 
-  const getAssessmentStatusBadge = (status) => {
+  const getTeacherStatus = (course) => {
+    const assessments = course.assessments || [];
+    
+    // Check if all assessments are accepted by teacher
+    if (assessments.length === 0) return 'NONE';
+    
+    if (assessments.every(a => a.status === 'ACCEPTED')) {
+      return 'ALL_ACCEPTED';
+    }
+    
+    if (assessments.some(a => a.status === 'ACCEPTED')) {
+      return 'SOME_ACCEPTED';
+    }
+    
+    return 'NONE_ACCEPTED';
+  };
+
+  const getTeacherStatusBadge = (status) => {
     switch (status) {
-      case 'ACCEPTED':
+      case 'ALL_ACCEPTED':
         return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
           <CheckCircle className="h-3 w-3 mr-1" />
-          Accepted
+          All Accepted
+        </Badge>;
+      case 'SOME_ACCEPTED':
+        return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+          <CheckCircle className="h-3 w-3 mr-1" />
+          Partially Accepted
         </Badge>;
       default:
-        return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
+        return <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300">
           <Clock className="h-3 w-3 mr-1" />
-          Pending
+          Not Accepted
         </Badge>;
     }
   };
@@ -99,21 +143,30 @@ const HeadAssessments = () => {
     });
   };
 
-  // Filter assessments based on search term
-const filteredAssessments = courseAssessments.filter(course => {
+  // Filter courses based on search term
+  const filteredCourses = courseAssessments.filter(course => {
     const searchLower = searchTerm.toLowerCase();
     return (
       course.courseTitle.toLowerCase().includes(searchLower) ||
       course.courseCode.toLowerCase().includes(searchLower) ||
       course.batchClassYearSemester.toLowerCase().includes(searchLower) ||
       (course.teacherFullNameENG && course.teacherFullNameENG.toLowerCase().includes(searchLower)) ||
-      (course.teacherFullNameAMH && course.teacherFullNameAMH.toLowerCase().includes(searchLower)) ||
-      (course.teacherTitle && course.teacherTitle.toLowerCase().includes(searchLower)) ||
-      course.assessments.some(assessment => 
-        assessment.title.toLowerCase().includes(searchLower)
-      )
+      (course.teacherFullNameAMH && course.teacherFullNameAMH.toLowerCase().includes(searchLower))
     );
   });
+
+  // Calculate statistics
+  const pendingCoursesCount = courseAssessments.filter(course => 
+    getOverallCourseStatus(course) === 'PENDING'
+  ).length;
+
+  const approvedCoursesCount = courseAssessments.filter(course => 
+    getOverallCourseStatus(course) === 'ACCEPTED'
+  ).length;
+
+  const rejectedCoursesCount = courseAssessments.filter(course => 
+    getOverallCourseStatus(course) === 'REJECTED'
+  ).length;
 
   if (loading) {
     return (
@@ -154,7 +207,7 @@ const filteredAssessments = courseAssessments.filter(course => {
       <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Assessments</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-2">
-          Review and approve assessments submitted by teachers in your department
+          Review and approve course assessments submitted by teachers in your department
         </p>
       </div>
 
@@ -165,16 +218,12 @@ const filteredAssessments = courseAssessments.filter(course => {
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Search by course, teacher, batch, or assessment..."
+                placeholder="Search by course, teacher, or batch..."
                 className="pl-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <Button variant="outline" className="flex items-center gap-2">
-              <Filter className="h-4 w-4" />
-              Filter
-            </Button>
             <Button onClick={fetchAssessments} variant="outline">
               <Loader2 className="h-4 w-4 mr-2" />
               Refresh
@@ -183,80 +232,76 @@ const filteredAssessments = courseAssessments.filter(course => {
         </CardContent>
       </Card>
 
-      {/* Summary Cards - Updated to show teacher count */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      {/* Summary Cards - Updated to show course counts */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg border p-4">
-            <div className="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+          <div className="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
             <BookOpen className="h-4 w-4" />
-            Courses
-            </div>
-            <div className="text-2xl font-bold">{courseAssessments.length}</div>
+            Total Courses
+          </div>
+          <div className="text-2xl font-bold">{courseAssessments.length}</div>
         </div>
         
         <div className="bg-white dark:bg-gray-800 rounded-lg border p-4">
-            <div className="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+          <div className="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
             <Users className="h-4 w-4" />
             Teachers
-            </div>
-            <div className="text-2xl font-bold">
+          </div>
+          <div className="text-2xl font-bold">
             {new Set(courseAssessments.map(course => course.teacherFullNameENG)).size}
-            </div>
+          </div>
         </div>
         
         <div className="bg-white dark:bg-gray-800 rounded-lg border p-4">
-            <div className="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+          <div className="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
             <FileCheck className="h-4 w-4" />
             Assessments
-            </div>
-            <div className="text-2xl font-bold">
-            {courseAssessments.reduce((total, course) => total + course.assessments.length, 0)}
-            </div>
+          </div>
+          <div className="text-2xl font-bold">
+            {courseAssessments.reduce((total, course) => total + (course.assessments?.length || 0), 0)}
+          </div>
         </div>
         
         <div className="bg-white dark:bg-gray-800 rounded-lg border p-4">
-            <div className="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+          <div className="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
             <Clock className="h-4 w-4 text-yellow-500" />
-            Pending
-            </div>
-            <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-            {courseAssessments.reduce((total, course) => 
-                total + course.assessments.filter(a => a.headApproval === 'PENDING' || !a.headApproval).length, 0
-            )}
-            </div>
+            Pending Courses
+          </div>
+          <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+            {pendingCoursesCount}
+          </div>
         </div>
         
         <div className="bg-white dark:bg-gray-800 rounded-lg border p-4">
-            <div className="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+          <div className="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
             <CheckCircle className="h-4 w-4 text-green-500" />
-            Approved
-            </div>
-            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-            {courseAssessments.reduce((total, course) => 
-                total + course.assessments.filter(a => a.headApproval === 'ACCEPTED').length, 0
-            )}
-            </div>
+            Approved Courses
+          </div>
+          <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+            {approvedCoursesCount}
+          </div>
         </div>
-        </div>
+      </div>
 
-      {/* Assessments List */}
+      {/* Courses List */}
       <Card>
         <CardHeader>
-          <CardTitle>Assessment List</CardTitle>
+          <CardTitle>Course Assessment List</CardTitle>
           <CardDescription>
-            All assessments from teachers in your department that require review
+            All courses with assessments requiring your review
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {filteredAssessments.length === 0 ? (
+          {filteredCourses.length === 0 ? (
             <div className="text-center py-12">
               <FileCheck className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                No Assessments Found
+                No Courses Found
               </h3>
               <p className="text-gray-600 dark:text-gray-400 mb-4">
                 {searchTerm 
-                  ? "No assessments match your search criteria" 
-                  : "No assessments have been submitted for review yet."}
+                  ? "No courses match your search criteria" 
+                  : "No courses with assessments have been submitted for review yet."}
               </p>
               {searchTerm && (
                 <Button variant="outline" onClick={() => setSearchTerm("")}>
@@ -269,19 +314,22 @@ const filteredAssessments = courseAssessments.filter(course => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Course & Teacher</TableHead>
-                    <TableHead>Assessment</TableHead>
+                    <TableHead>Course</TableHead>
                     <TableHead>Batch</TableHead>
                     <TableHead>Teacher</TableHead>
+                    <TableHead>Assessments</TableHead>
                     <TableHead>Teacher Status</TableHead>
                     <TableHead>Your Approval</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredAssessments.flatMap(course =>
-                    course.assessments.map(assessment => (
-                      <TableRow key={`${course.teacherCourseAssignmentId}-${assessment.assessmentId}`}>
+                  {filteredCourses.map(course => {
+                    const courseStatus = getOverallCourseStatus(course);
+                    const teacherStatus = getTeacherStatus(course);
+                    
+                    return (
+                      <TableRow key={course.teacherCourseAssignmentId}>
                         <TableCell>
                           <div className="space-y-1">
                             <div className="font-medium">{course.courseTitle}</div>
@@ -290,18 +338,6 @@ const filteredAssessments = courseAssessments.filter(course => {
                                 <BookOpen className="h-3 w-3 mr-1" />
                                 {course.courseCode}
                               </div>
-                              <div className="flex items-center mt-1">
-                                <Users className="h-3 w-3 mr-1" />
-                                {course.batchClassYearSemester}
-                              </div>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="font-medium">{assessment.title}</div>
-                            <div className="text-sm text-gray-500 dark:text-gray-400">
-                              Max Score: {assessment.maxScore}
                             </div>
                           </div>
                         </TableCell>
@@ -324,23 +360,31 @@ const filteredAssessments = courseAssessments.filter(course => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          {getAssessmentStatusBadge(assessment.status)}
+                          <div className="space-y-1">
+                            <div className="font-medium">{course.assessments?.length || 0} assessments</div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              Total Students: {course.students?.length || 0}
+                            </div>
+                          </div>
                         </TableCell>
                         <TableCell>
-                          {getHeadApprovalBadge(assessment.headApproval)}
+                          {getTeacherStatusBadge(teacherStatus)}
+                        </TableCell>
+                        <TableCell>
+                          {getCourseStatusBadge(courseStatus)}
                         </TableCell>
                         <TableCell>
                           <Link to={`/head/assessments/${course.teacherCourseAssignmentId}`}>
                             <Button variant="outline" size="sm" className="flex items-center gap-2">
                               <Eye className="h-4 w-4" />
-                              View Details
+                              Review Course
                               <ChevronRight className="h-4 w-4" />
                             </Button>
                           </Link>
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
