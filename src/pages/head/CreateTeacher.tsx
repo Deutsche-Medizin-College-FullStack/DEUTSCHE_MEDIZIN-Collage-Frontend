@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, use } from "react";
+import { useState, useEffect, useRef } from "react";
+import { ChevronsUpDown } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -18,7 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, GraduationCap, Upload, X } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ArrowLeft, GraduationCap, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import apiClient from "@/components/api/apiClient";
 import endPoints from "@/components/api/endPoints";
@@ -27,8 +29,9 @@ export default function CreateTeacher() {
   const [isLoading, setIsLoading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [documentName, setDocumentName] = useState<string>("");
-
-  // Cascading address states
+  const [courseSearch, setCourseSearch] = useState("");
+  const [courseDropdownOpen, setCourseDropdownOpen] = useState(false);
+  // Address cascading
   const [regions, setRegions] = useState<{ value: string; label: string }[]>(
     []
   );
@@ -37,111 +40,68 @@ export default function CreateTeacher() {
     []
   );
   const [loadingZones, setLoadingZones] = useState(false);
-  const [selectedImpairment, setSelectedImpairment] = useState<string>("");
-  const [maritalStatus, setMaritalStatus] = useState<string>("");
-  const [selectedCourse, setSelectedCourse] = useState<string>("");
-  const [loadingCourses, setLoadingCourses] = useState(true);
-  const [courses, setCourses] = useState<{ value: string; label: string }[]>(
-    []
-  );
   const [loadingWoredas, setLoadingWoredas] = useState(false);
-  const [loadingImpairments, setLoadingImpairments] = useState(true);
-  const photoInputRef = useRef<HTMLInputElement>(null);
-  const documentInputRef = useRef<HTMLInputElement>(null);
+
+  // Impairments
   const [impairments, setImpairments] = useState<
     { value: string; label: string }[]
   >([]);
-  // Load regions on mount
-  // useEffect(() => {
-  //   const fetchImpairment = async () => {
-  //     try {
-  //       const impairmentReps = await apiClient.get(endPoints.impairments);
-  //       console.log(impairmentReps);
-  //       setImpairments(
-  //         (impairmentReps.data || [])
-  //           .map((i: any) => ({
-  //             value: i.disabilityCode || i.code || i.id,
-  //             label: i.disability || i.name || i.label,
-  //           }))
-  //           .filter((opt) => opt.value && opt.label)
-  //       );
-  //     } catch (err) {
-  //       console.log("erroro on something");
-  //     } finally {
-  //       setLoadingImpairments(false);
-  //     }
-  //   };
-  //   fetchImpairment();
-  // }, []);
-  useEffect(() => {
-    const fetchImpairment = async () => {
-      setLoadingImpairments(true); // important: reset on retry
-      try {
-        const impairmentReps = await apiClient.get(endPoints.impairments);
-        console.log("Impairments response:", impairmentReps);
+  const [loadingImpairments, setLoadingImpairments] = useState(true);
 
-        const formatted = (impairmentReps.data || [])
+  // Courses - fetched from myDepartmentCourses (multi-select)
+  const [courses, setCourses] = useState<
+    {
+      id: number;
+      code: string;
+      title: string;
+      totalCrHrs: number;
+      classYearName: string;
+      semesterName: string;
+    }[]
+  >([]);
+  const [selectedCourseIds, setSelectedCourseIds] = useState<number[]>([]);
+  const [loadingCourses, setLoadingCourses] = useState(true);
+
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const documentInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch Impairments
+  useEffect(() => {
+    const fetchImpairments = async () => {
+      setLoadingImpairments(true);
+      try {
+        const res = await apiClient.get(endPoints.impairments);
+        const formatted = (res.data || [])
           .map((i: any) => ({
-            value: i.disabilityCode || i.impairmentCode || i.code || i.id,
-            label: i.disability || i.impairment || i.name || i.label,
+            value: i.disabilityCode || i.impairmentCode || i.code || i.id || "",
+            label: i.disability || i.impairment || i.name || i.label || "",
           }))
           .filter(
             (opt): opt is { value: string; label: string } =>
-              opt.value != null &&
-              opt.value !== "" &&
-              opt.label != null &&
-              opt.label !== ""
+              opt.value && opt.label
           );
-
         setImpairments(formatted);
       } catch (err) {
         console.error("Failed to load impairments:", err);
-        setImpairments([]); // ensure it's an array
+        setImpairments([]);
       } finally {
-        setLoadingImpairments(false); // ALWAYS run this
+        setLoadingImpairments(false);
       }
     };
+    fetchImpairments();
+  }, []);
 
-    fetchImpairment();
-  }, []);
-  useEffect(() => {
-    const fetchCourses = async () => {
-      setLoadingCourses(true);
-      try {
-        const courses = await apiClient.get(endPoints.departments);
-        console.log(courses);
-        const formatted = (courses.data || [])
-          .map((i: any) => ({
-            value: i.departmentCode || i.dptID || i.id,
-            label: i.deptName || i.name || i.label,
-          }))
-          .filter(
-            (opt): opt is { value: string; label: string } =>
-              opt.value != null &&
-              opt.value !== "" &&
-              opt.label != null &&
-              opt.label !== ""
-          );
-        console.log(courses);
-        setCourses(formatted);
-      } catch (err) {
-        console.log("error on fetching courses" + err);
-        setCourses([]);
-      } finally {
-        setLoadingCourses(false);
-      }
-    };
-    fetchCourses();
-  }, []);
+  // Fetch Regions
   useEffect(() => {
     const fetchRegions = async () => {
       try {
-        const response = await apiClient.get(endPoints.regions); // adjust if endpoint is different
-        const formatted = (response.data || []).map((r: any) => ({
-          value: r.code || r.id || r.regionCode,
-          label: r.name || r.region,
-        }));
-        console.log(response);
+        const res = await apiClient.get(endPoints.regions);
+        const formatted = (res.data || [])
+          .map((r: any) => ({
+            value: r.code || r.id || r.regionCode || "",
+            label: r.name || r.region || "",
+          }))
+          .filter((r) => r.value && r.label);
         setRegions(formatted);
       } catch (err) {
         alert("Failed to load regions");
@@ -150,24 +110,49 @@ export default function CreateTeacher() {
     fetchRegions();
   }, []);
 
-  // Fetch zones when region changes
+  // Fetch actual courses from myDepartmentCourses
+  useEffect(() => {
+    const fetchCourses = async () => {
+      setLoadingCourses(true);
+      try {
+        const res = await apiClient.get(endPoints.myDepartmentCourses);
+        if (res.data && Array.isArray(res.data)) {
+          setCourses(res.data);
+        } else {
+          setCourses([]);
+        }
+      } catch (err: any) {
+        console.error("Failed to fetch courses:", err);
+        if (err.response?.status === 404) {
+          alert(
+            "No department profile found. Please set up your department first."
+          );
+        } else if (err.response?.status === 500) {
+          alert("Server error while loading courses.");
+        } else {
+          alert("Failed to load courses.");
+        }
+        setCourses([]);
+      } finally {
+        setLoadingCourses(false);
+      }
+    };
+    fetchCourses();
+  }, []);
 
+  // Address cascading
   const handleRegionChange = async (regionCode: string) => {
     setZones([]);
     setWoredas([]);
     if (!regionCode) return;
-
     setLoadingZones(true);
     try {
-      const response = await apiClient.get(
-        // endPoints.zonesByRegion?.replace(":regionCode", regionCode) ||
-        //   `/api/zones?region=${regionCode}`
+      const res = await apiClient.get(
         `${endPoints.zonesByRegion}/${regionCode}`
       );
-      console.log(response);
-      const formatted = (response.data || []).map((z: any) => ({
-        value: z.code || z.id || z.zoneCode,
-        label: z.name || z.zone,
+      const formatted = (res.data || []).map((z: any) => ({
+        value: z.code || z.id || z.zoneCode || "",
+        label: z.name || z.zone || "",
       }));
       setZones(formatted);
     } catch (err) {
@@ -177,24 +162,16 @@ export default function CreateTeacher() {
     }
   };
 
-  // Fetch woredas when zone changes
   const handleZoneChange = async (zoneCode: string) => {
     setWoredas([]);
     if (!zoneCode) return;
-
     setLoadingWoredas(true);
     try {
-      const response = await apiClient.get(
-        // endPoints.woredasByZone?.replace(":zoneCode", zoneCode) ||
-        //   `/api/woredas?zone=${zoneCode}`
-        `${endPoints.woredasByZone}/${zoneCode}`
-      );
-      console.log(response);
-      const formatted = (response.data || []).map((w: any) => ({
-        value: w.code || w.id || w.woredaCode,
-        label: w.name || w.woreda,
+      const res = await apiClient.get(`${endPoints.woredasByZone}/${zoneCode}`);
+      const formatted = (res.data || []).map((w: any) => ({
+        value: w.code || w.id || w.woredaCode || "",
+        label: w.name || w.woreda || "",
       }));
-
       setWoredas(formatted);
     } catch (err) {
       alert("Failed to load woredas");
@@ -203,6 +180,7 @@ export default function CreateTeacher() {
     }
   };
 
+  // File handlers
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -237,12 +215,19 @@ export default function CreateTeacher() {
     if (documentInputRef.current) documentInputRef.current.value = "";
   };
 
+  const toggleCourseSelection = (courseId: number) => {
+    setSelectedCourseIds((prev) =>
+      prev.includes(courseId)
+        ? prev.filter((id) => id !== courseId)
+        : [...prev, courseId]
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const selectedCourses = formData.getAll("courses") as string[];
 
     const jsonPayload = {
       username: formData.get("username")?.toString().trim() || "",
@@ -268,7 +253,6 @@ export default function CreateTeacher() {
         ? Number(formData.get("yearsOfExperience"))
         : 0,
       impairmentCode: formData.get("impairmentCode")?.toString().trim() || "",
-
       maritalStatus: formData.get("maritalStatus") || "SINGLE",
       currentAddressRegionCode:
         formData.get("currentAddressRegionCode")?.toString().trim() || "",
@@ -276,10 +260,10 @@ export default function CreateTeacher() {
         formData.get("currentAddressZoneCode")?.toString().trim() || "",
       currentAddressWoredaCode:
         formData.get("currentAddressWoredaCode")?.toString().trim() || "",
-      courseAssignments:
-        selectedCourses.length > 0
-          ? selectedCourses.map((id) => ({ courseId: Number(id), bcysId: 4 }))
-          : [],
+      courseAssignments: selectedCourseIds.map((courseId) => ({
+        courseId,
+        bcysId: 4,
+      })),
     };
 
     const required = [
@@ -297,7 +281,9 @@ export default function CreateTeacher() {
       jsonPayload.hireDateGC,
       jsonPayload.title,
     ];
+
     if (required.some((f) => !f)) {
+      console.log(required);
       alert("Please fill all required fields (*).");
       setIsLoading(false);
       return;
@@ -315,22 +301,30 @@ export default function CreateTeacher() {
     if (docFile) multipart.append("document", docFile);
 
     try {
-      const response = await apiClient.post(
-        endPoints.registerTeacher,
-        multipart
-      );
-      alert(
-        `Teacher registered successfully!\nUser ID: ${response.data.userId}`
-      );
-      e.currentTarget.reset();
-      setPhotoPreview(null);
-      setDocumentName("");
-      setZones([]);
-      setWoredas([]);
+      const res = await apiClient.post(endPoints.registerTeacher, multipart);
+      alert(`Teacher registered successfully`);
+      setTimeout(() => {
+        e.currentTarget.reset();
+        setPhotoPreview(null);
+        setDocumentName("");
+        setZones([]);
+        setWoredas([]);
+        setSelectedCourseIds([]);
+      }, 0);
     } catch (error: any) {
-      alert(
-        "Error: " + (error.response?.data?.message || "Registration failed")
-      );
+      let errorMessage = "Registration failed";
+
+      // Axios error with response from backend
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      alert("Error: " + errorMessage);
+      console.error("Registration error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -365,7 +359,6 @@ export default function CreateTeacher() {
                 Personal Information
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* ... (same as before: names, gender, DOB GC/EC, marital, impairment) */}
                 <div className="space-y-2">
                   <Label>
                     First Name (Amharic) <span className="text-red-500">*</span>
@@ -438,62 +431,100 @@ export default function CreateTeacher() {
                     </SelectContent>
                   </Select>
                 </div>
-                {/* <div className="space-y-2">
-                  <Label>Impairment Code (if any)</Label>
-                  <Input name="impairmentCode" placeholder="e.g., VISUAL" />
-                </div> */}
                 <div className="space-y-2 md:col-span-2">
-                  {/* <Label>
-                    Information about Impairment (if any) (Optional)
-                  </Label> */}
-                  <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-                      Information about Impairment (if any): (Optional)
-                    </label>
-                    <select
-                      onChange={(e) => setSelectedImpairment(e.target.value)}
-                      value={selectedImpairment}
-                      name="impairmentCode"
-                      // value={formData.impairmentCode}
-                      //  onChange={handleInputChange}
-                      className="w-full bg-white dark:bg-black px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Select Impairment</option>
-                      {impairments.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
+                  <Label>Impairment (if any) (Optional)</Label>
+                  <Select name="impairmentCode">
+                    <SelectTrigger>
+                      <SelectValue
+                        placeholder={loadingImpairments ? "Loading..." : "None"}
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {impairments.map((imp) => (
+                        <SelectItem key={imp.value} value={imp.value}>
+                          {imp.label}
+                        </SelectItem>
                       ))}
-                    </select>
-                  </div>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </section>
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-                Marital Status:
-              </label>
-              <div className="flex flex-wrap gap-4">
-                {["Single", "Married", "Divorced", "Separated"].map(
-                  (status) => (
-                    <label key={status} className="flex items-center">
-                      <input
-                        type="radio"
-                        name="maritalStatus"
-                        value={status}
-                        checked={maritalStatus === status}
-                        onChange={(e) => setMaritalStatus(e.target.value)}
-                        className="mr-2"
-                      />
-                      {status}
-                    </label>
-                  )
-                )}
-              </div>
-            </div>
 
-            {/* Current Address - Cascading */}
-            {/* Current Address - Cascading */}
+            {/* Contact Information */}
+            <section className="space-y-6">
+              <h2 className="text-xl font-semibold border-b pb-2">
+                Contact Information
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label>
+                    Phone Number <span className="text-red-500">*</span>
+                  </Label>
+                  <Input name="phoneNumber" required placeholder="+251..." />
+                </div>
+                <div className="space-y-2">
+                  <Label>
+                    Email <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    name="email"
+                    type="email"
+                    required
+                    placeholder="teacher@example.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>
+                    Username <span className="text-red-500">*</span>
+                  </Label>
+                  <Input name="username" required placeholder="teacher123" />
+                </div>
+                <div className="space-y-2">
+                  <Label>
+                    Password <span className="text-red-500">*</span>
+                  </Label>
+                  <Input name="password" type="password" required />
+                </div>
+              </div>
+            </section>
+
+            {/* Employment Information */}
+            <section className="space-y-6">
+              <h2 className="text-xl font-semibold border-b pb-2">
+                Employment Information
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label>
+                    Department ID <span className="text-red-500">*</span>
+                  </Label>
+                  <Input name="departmentId" type="number" required />
+                </div>
+                <div className="space-y-2">
+                  <Label>
+                    Hire Date (GC) <span className="text-red-500">*</span>
+                  </Label>
+                  <Input name="hireDateGC" type="date" required />
+                </div>
+                <div className="space-y-2">
+                  <Label>Hire Date (EC)</Label>
+                  <Input name="hireDateEC" type="date" />
+                </div>
+                <div className="space-y-2">
+                  <Label>
+                    Title <span className="text-red-500">*</span>
+                  </Label>
+                  <Input name="title" required placeholder="Lecturer" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Years of Experience</Label>
+                  <Input name="yearsOfExperience" type="number" min="0" />
+                </div>
+              </div>
+            </section>
+
+            {/* Current Address */}
             <section className="space-y-6">
               <h2 className="text-xl font-semibold border-b pb-2">
                 Current Address (Optional)
@@ -503,28 +534,12 @@ export default function CreateTeacher() {
                   <Label>Region</Label>
                   <Select
                     name="currentAddressRegionCode"
-                    onValueChange={(value) => {
-                      handleRegionChange(value);
-                      // Clear dependent fields
-                      const form = document.querySelector(
-                        "form"
-                      ) as HTMLFormElement;
-                      if (form) {
-                        form.elements
-                          .namedItem("currentAddressZoneCode")
-                          ?.setAttribute("value", "");
-                        form.elements
-                          .namedItem("currentAddressWoredaCode")
-                          ?.setAttribute("value", "");
-                      }
-                    }}
+                    onValueChange={handleRegionChange}
                   >
                     <SelectTrigger>
                       <SelectValue
                         placeholder={
-                          regions.length === 0
-                            ? "Loading regions..."
-                            : "Select Region"
+                          regions.length === 0 ? "Loading..." : "Select Region"
                         }
                       />
                     </SelectTrigger>
@@ -537,19 +552,18 @@ export default function CreateTeacher() {
                     </SelectContent>
                   </Select>
                 </div>
-
                 <div className="space-y-2">
                   <Label>Zone</Label>
                   <Select
                     name="currentAddressZoneCode"
                     disabled={zones.length === 0 || loadingZones}
-                    onValueChange={(value) => handleZoneChange(value)}
+                    onValueChange={handleZoneChange}
                   >
                     <SelectTrigger>
                       <SelectValue
                         placeholder={
                           loadingZones
-                            ? "Loading zones..."
+                            ? "Loading..."
                             : zones.length === 0
                             ? "Select Region first"
                             : "Select Zone"
@@ -565,7 +579,6 @@ export default function CreateTeacher() {
                     </SelectContent>
                   </Select>
                 </div>
-
                 <div className="space-y-2">
                   <Label>Woreda</Label>
                   <Select
@@ -576,7 +589,7 @@ export default function CreateTeacher() {
                       <SelectValue
                         placeholder={
                           loadingWoredas
-                            ? "Loading woredas..."
+                            ? "Loading..."
                             : woredas.length === 0
                             ? "Select Zone first"
                             : "Select Woreda"
@@ -594,45 +607,238 @@ export default function CreateTeacher() {
                 </div>
               </div>
             </section>
-            {/* Rest of the form remains the same: Contact, Employment, Credentials, Courses, Attachments */}
-            {/* ... (copy from previous version) */}
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-800 dark:text-white mb-2">
-                Assign Courses
-              </label>
-              <div className="relative">
-                <select
-                  name="departmentEnrolledId"
-                  value={selectedCourse}
-                  onChange={(e) => setSelectedCourse(e.target.value)}
-                  className="appearance-none w-full bg-white dark:bg-black border border-gray-300 rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                >
-                  <option value="">Choose Course</option>
-                  {courses.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
 
-                {/* Dropdown arrow */}
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 dark:text-gray-100">
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
+            {/* Attachments */}
+            <section className="space-y-6">
+              <h2 className="text-xl font-semibold border-b pb-2">
+                Attachments (Optional)
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label>Photograph</Label>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    ref={photoInputRef}
+                    onChange={handlePhotoChange}
+                  />
+                  {photoPreview && (
+                    <div className="relative mt-4">
+                      <img
+                        src={photoPreview}
+                        alt="Preview"
+                        className="w-32 h-32 object-cover rounded"
+                      />
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="absolute top-0 right-0"
+                        onClick={removePhoto}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label>Supporting Document (PDF)</Label>
+                  <Input
+                    type="file"
+                    accept="application/pdf"
+                    ref={documentInputRef}
+                    onChange={handleDocumentChange}
+                  />
+                  {documentName && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-sm">{documentName}</span>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={removeDocument}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
+            </section>
+
+            {/* Assign Courses - Multi Select */}
+            {/* <section className="space-y-6">
+              <h2 className="text-xl font-semibold border-b pb-2">
+                Assign Courses{" "}
+                <span className="text-sm font-normal text-gray-500">
+                  (Optional)
+                </span>
+              </h2>
+              {loadingCourses ? (
+                <p className="text-gray-500">Loading courses...</p>
+              ) : courses.length === 0 ? (
+                <p className="text-amber-600">
+                  No courses available for your department.
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto p-4 border rounded-lg bg-gray-50 dark:bg-gray-900">
+                  {courses.map((course) => (
+                    <div
+                      key={course.id}
+                      className="flex items-start space-x-3 p-3 bg-white dark:bg-gray-800 rounded-md shadow-sm"
+                    >
+                      <Checkbox
+                        id={`course-${course.id}`}
+                        checked={selectedCourseIds.includes(course.id)}
+                        onCheckedChange={() => toggleCourseSelection(course.id)}
+                      />
+                      <label
+                        htmlFor={`course-${course.id}`}
+                        className="flex-1 cursor-pointer text-sm"
+                      >
+                        <div className="font-medium">
+                          {course.code} - {course.title}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {course.classYearName} • {course.semesterName} •{" "}
+                          {course.totalCrHrs} Cr.Hrs
+                        </div>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {selectedCourseIds.length > 0 && (
+                <p className="text-sm text-blue-600 mt-2">
+                  {selectedCourseIds.length} course(s) selected.
+                </p>
+              )}
+            </section> */}
+            {/* Assign Courses - Multi-Select Dropdown */}
+            <section className="space-y-6">
+              <h2 className="text-xl font-semibold border-b pb-2">
+                Assign Courses{" "}
+                <span className="text-sm font-normal text-gray-500">
+                  (Optional)
+                </span>
+              </h2>
+
+              {loadingCourses ? (
+                <p className="text-gray-500">Loading courses...</p>
+              ) : courses.length === 0 ? (
+                <p className="text-amber-600">
+                  No courses available for your department.
+                </p>
+              ) : (
+                <Select
+                  onValueChange={(value) => {
+                    if (value && !selectedCourseIds.includes(Number(value))) {
+                      setSelectedCourseIds([
+                        ...selectedCourseIds,
+                        Number(value),
+                      ]);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-full min-h-12">
+                    <SelectValue placeholder="Select courses to assign">
+                      <div className="flex flex-wrap gap-2 items-center">
+                        {selectedCourseIds.length === 0 ? (
+                          <span className="text-muted-foreground">
+                            Select courses...
+                          </span>
+                        ) : (
+                          <>
+                            <span className="font-medium">
+                              {selectedCourseIds.length} course(s) selected
+                            </span>
+                            <div className="flex flex-wrap gap-1">
+                              {selectedCourseIds.map((id) => {
+                                const course = courses.find((c) => c.id === id);
+                                if (!course) return null;
+                                return (
+                                  <span
+                                    key={id}
+                                    className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
+                                  >
+                                    {course.code}
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedCourseIds(
+                                          selectedCourseIds.filter(
+                                            (cid) => cid !== id
+                                          )
+                                        );
+                                      }}
+                                      className="ml-1 rounded-full hover:bg-primary/20"
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </button>
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {courses.map((course) => (
+                      <SelectItem
+                        key={course.id}
+                        value={String(course.id)}
+                        disabled={selectedCourseIds.includes(course.id)}
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {course.code} - {course.title}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {course.classYearName} • {course.semesterName} •{" "}
+                            {course.totalCrHrs} Cr.Hrs
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+
+              {selectedCourseIds.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {selectedCourseIds.map((id) => {
+                    const course = courses.find((c) => c.id === id);
+                    if (!course) return null;
+                    return (
+                      <div
+                        key={id}
+                        className="inline-flex items-center gap-2 rounded-md border bg-background px-3 py-1.5 text-sm"
+                      >
+                        <span>
+                          <strong>{course.code}</strong> - {course.title}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSelectedCourseIds(
+                              selectedCourseIds.filter((cid) => cid !== id)
+                            )
+                          }
+                          className="rounded-full hover:bg-muted p-0.5"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+            {/* Assign Courses - Simple Searchable Multi-Select Dropdown */}
+            {/* Assign Courses - Searchable Multi-Select Dropdown (FIXED) */}
+
+            {/* Submit */}
             <div className="flex justify-end gap-4 pt-8">
               <Button type="reset" variant="outline" size="lg">
                 Clear Form
@@ -649,12 +855,6 @@ export default function CreateTeacher() {
           </form>
         </CardContent>
       </Card>
-
-      <style jsx global>{`
-        .font-geez {
-          font-family: "Nyala", "Abyssinica SIL", sans-serif;
-        }
-      `}</style>
     </div>
   );
 }

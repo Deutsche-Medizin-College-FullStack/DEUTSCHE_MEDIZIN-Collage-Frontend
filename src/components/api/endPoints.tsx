@@ -17,6 +17,7 @@ const endPoints = {
   getDepartmentHeadProfile: "/department-heads/profile",
   studentCopy: "/student-copy/generate",
   registerTeacher: "/auth/register/teacher",
+  departmentTeachers: "/department-heads/teachers",
   studentGradeReports: "/student/grade-reports",
   semesters: "/semesters",
   attritionCauses: "/attrition-causes",
