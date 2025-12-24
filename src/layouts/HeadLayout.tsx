@@ -153,6 +153,7 @@ export default function HeadLayout() {
         const response = await apiClient.get(endPoints.getCurrentUser);
         if (response.data) {
           setUserData(response.data);
+          sessionStorage.setItem("Userdata", JSON.stringify(response.data));
         }
       } catch (error) {
         console.error("Error loading user profile:", error);

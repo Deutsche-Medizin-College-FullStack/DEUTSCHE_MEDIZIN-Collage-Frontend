@@ -318,7 +318,7 @@ const HeadAssessments = () => {
                     <TableHead>Batch</TableHead>
                     <TableHead>Teacher</TableHead>
                     <TableHead>Assessments</TableHead>
-                    <TableHead>Teacher Status</TableHead>
+                    <TableHead>Teacher Approval</TableHead>
                     <TableHead>Your Approval</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
