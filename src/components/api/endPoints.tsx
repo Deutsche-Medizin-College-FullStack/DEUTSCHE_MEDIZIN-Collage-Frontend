@@ -17,6 +17,7 @@ const endPoints = {
   getDepartmentHeadProfile: "/department-heads/profile",
   studentCopy: "/student-copy/generate",
   registerTeacher: "/auth/register/teacher",
+  departmentTeachers: "/department-heads/teachers",
   studentGradeReports: "/student/grade-reports",
   semesters: "/semesters",
   attritionCauses: "/attrition-causes",
@@ -100,8 +101,9 @@ const endPoints = {
     "/assessments/assignment/:teacherCourseAssignmentId/approve",
 
   getDepartmentHeadAssessments: "/department-heads/assessments/scores",
-  approveRejectAllAssessments: "/department-heads/assignments/:teacherCourseAssignmentId/approve-all",
-  
+  approveRejectAllAssessments:
+    "/department-heads/assignments/:teacherCourseAssignmentId/approve-all",
+
   getViceDeanProfile: "/vice-deans/profile",
 };
 

@@ -46,6 +46,9 @@ const HeadReports = React.lazy(() => import("./pages/head/Reports"));
 const DepartmentHeadProfile = React.lazy(
   () => import("./pages/head/DepartmentHeadProfile.tsx")
 );
+const TeacherProfileDetail = React.lazy(
+  () => import("./pages/head/TeacherProfileDetail.tsx")
+);
 const HeadGrades = React.lazy(() => import("./pages/head/Grades"));
 const CreateTeacher = React.lazy(() => import("./pages/head/CreateTeacher"));
 const HeadAssessments = React.lazy(() => import("./pages/head/Assessments")); // Added
@@ -262,6 +265,7 @@ function App() {
               <Route path="teachers" element={<HeadTeachers />} />
               <Route path="create-teacher" element={<CreateTeacher />} />
               <Route path="grades" element={<HeadGrades />} />
+              <Route path="teachers/:id" element={<TeacherProfileDetail />} />
               <Route path="courses" element={<HeadCourses />} />
               <Route path="reports" element={<HeadReports />} />
               <Route path="assessments" element={<HeadAssessments />} />{" "}
