@@ -499,7 +499,7 @@ export default function CreateTeacher() {
                   <Label>
                     Department ID <span className="text-red-500">*</span>
                   </Label>
-                  <Input name="departmentId" type="number" required />
+                  <Input name="departmentId" type="number" value={JSON.parse(sessionStorage.getItem("Userdata") || "{}").departmentId || ""} readOnly required />
                 </div>
                 <div className="space-y-2">
                   <Label>
@@ -664,54 +664,6 @@ export default function CreateTeacher() {
               </div>
             </section>
 
-            {/* Assign Courses - Multi Select */}
-            {/* <section className="space-y-6">
-              <h2 className="text-xl font-semibold border-b pb-2">
-                Assign Courses{" "}
-                <span className="text-sm font-normal text-gray-500">
-                  (Optional)
-                </span>
-              </h2>
-              {loadingCourses ? (
-                <p className="text-gray-500">Loading courses...</p>
-              ) : courses.length === 0 ? (
-                <p className="text-amber-600">
-                  No courses available for your department.
-                </p>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto p-4 border rounded-lg bg-gray-50 dark:bg-gray-900">
-                  {courses.map((course) => (
-                    <div
-                      key={course.id}
-                      className="flex items-start space-x-3 p-3 bg-white dark:bg-gray-800 rounded-md shadow-sm"
-                    >
-                      <Checkbox
-                        id={`course-${course.id}`}
-                        checked={selectedCourseIds.includes(course.id)}
-                        onCheckedChange={() => toggleCourseSelection(course.id)}
-                      />
-                      <label
-                        htmlFor={`course-${course.id}`}
-                        className="flex-1 cursor-pointer text-sm"
-                      >
-                        <div className="font-medium">
-                          {course.code} - {course.title}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {course.classYearName} • {course.semesterName} •{" "}
-                          {course.totalCrHrs} Cr.Hrs
-                        </div>
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {selectedCourseIds.length > 0 && (
-                <p className="text-sm text-blue-600 mt-2">
-                  {selectedCourseIds.length} course(s) selected.
-                </p>
-              )}
-            </section> */}
             {/* Assign Courses - Multi-Select Dropdown */}
             <section className="space-y-6">
               <h2 className="text-xl font-semibold border-b pb-2">
