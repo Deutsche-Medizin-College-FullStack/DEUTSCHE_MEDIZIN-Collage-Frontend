@@ -380,10 +380,6 @@ export default function ViceDeanProfileEditable() {
                   <Edit className="h-4 w-4 mr-2" />
                   Edit Profile
                 </Button>
-                <Button onClick={() => handleUploadClick('photo')} variant="outline">
-                  <Camera className="h-4 w-4 mr-2" />
-                  Upload Photo
-                </Button>
               </>
             ) : (
               <>

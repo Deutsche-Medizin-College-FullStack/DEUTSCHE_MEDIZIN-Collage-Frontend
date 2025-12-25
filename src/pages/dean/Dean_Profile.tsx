@@ -236,33 +236,26 @@ export default function Dean_Profile() {
       console.log("Sending JSON data:", jsonString);
       console.log("JSON data object:", jsonData);
 
-      // Check if we have a photo file to upload
+      // ALWAYS use FormData - even when there's no photo
+      const formDataToSend = new FormData();
+      
+      // Use Blob to ensure proper encoding
+      const jsonBlob = new Blob([jsonString], { type: 'application/json' });
+      formDataToSend.append("data", jsonBlob);
+      
+      // Add photo if provided
       if (photoFile) {
-        // Create FormData for multipart/form-data (when photo is included)
-        const formDataToSend = new FormData();
-        
-        // Use Blob to ensure proper encoding
-        const jsonBlob = new Blob([jsonString], { type: 'application/json' });
-        formDataToSend.append("data", jsonBlob);
         formDataToSend.append("photograph", photoFile);
-
-        console.log("Sending with FormData (with photo)");
-
-        await apiClient.patch(endPoints.updateDeanProfile, formDataToSend, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        });
+        console.log("Sending with photo file");
       } else {
-        // Send as JSON directly when no photo is included
-        console.log("Sending as plain JSON (no photo)");
-
-        await apiClient.patch(endPoints.updateDeanProfile, jsonData, {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
+        console.log("Sending without photo file");
       }
+
+      await apiClient.patch(endPoints.updateDeanProfile, formDataToSend, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       setSuccess("Profile updated successfully!");
       setEditing(false);
@@ -273,6 +266,8 @@ export default function Dean_Profile() {
     } catch (err: any) {
       console.error("Failed to update profile:", err);
       console.error("Error response:", err.response);
+      console.error("Error status:", err.response?.status);
+      console.error("Error data:", err.response?.data);
       
       // Handle specific API errors
       if (err.response?.status === 400 && err.response?.data?.error?.includes("Phone number already in use")) {
