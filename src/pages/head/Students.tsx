@@ -28,9 +28,11 @@ import {
   Activity,
   Users,
   Mars,
-  Venus ,
+  Venus,
   CheckCircle,
   XCircle,
+  Filter,
+  Calendar,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -59,38 +61,76 @@ interface DepartmentStudentsResponse {
   statistics: Statistics;
 }
 
+interface LookupOption {
+  name: string;
+  id: string | number;
+}
+
+interface LookupsResponse {
+  batchClassYearSemesters: LookupOption[];
+  batches: LookupOption[];
+  enrollmentTypes: LookupOption[];
+  courseCategories: LookupOption[];
+  classYears: LookupOption[];
+  departments: LookupOption[];
+  semesters: LookupOption[];
+  courseSources: LookupOption[];
+  academicYears: LookupOption[];
+  impairments: LookupOption[];
+  studentStatuses: LookupOption[];
+  programLevels: LookupOption[];
+  programModalities: LookupOption[];
+}
+
 export default function HeadStudents() {
   const [query, setQuery] = useState("");
-  const [year, setYear] = useState("All");
+  const [selectedBcys, setSelectedBcys] = useState<string>("All");
   const [loading, setLoading] = useState(true);
+  const [loadingLookups, setLoadingLookups] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [departmentData, setDepartmentData] = useState<DepartmentStudentsResponse | null>(null);
+  const [lookups, setLookups] = useState<LookupsResponse | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchDepartmentStudents();
+    fetchLookups();
   }, []);
 
-    const fetchDepartmentStudents = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await apiClient.get<DepartmentStudentsResponse>(
-          endPoints.departmentStudents  
-        );
-        setDepartmentData(response.data);
-      } catch (err: any) {
-        console.error("Failed to load students:", err);
-        setError(
-          err.response?.data?.error ||
-          err.message ||
-          "Failed to load students. Please try again later."
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchDepartmentStudents = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await apiClient.get<DepartmentStudentsResponse>(
+        endPoints.departmentStudents  
+      );
+      setDepartmentData(response.data);
+    } catch (err: any) {
+      console.error("Failed to load students:", err);
+      setError(
+        err.response?.data?.error ||
+        err.message ||
+        "Failed to load students. Please try again later."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchLookups = async () => {
+    try {
+      setLoadingLookups(true);
+      const response = await apiClient.get<LookupsResponse>(
+        endPoints.lookupsDropdown
+      );
+      setLookups(response.data);
+    } catch (err: any) {
+      console.error("Failed to load lookups:", err);
+    } finally {
+      setLoadingLookups(false);
+    }
+  };
 
   const filtered = useMemo(() => {
     if (!departmentData?.students) return [];
@@ -100,39 +140,28 @@ export default function HeadStudents() {
         s.fullName.toLowerCase().includes(query.toLowerCase()) ||
         s.studentId.toLowerCase().includes(query.toLowerCase()) ||
         s.phoneNumber.includes(query);
-      const matchesYear = year === "All" || s.recentBcysName.includes(year);
-      return matchesQuery && matchesYear;
+      
+      const matchesBcys = selectedBcys === "All" || s.recentBcysName === selectedBcys;
+      
+      return matchesQuery && matchesBcys;
     });
-  }, [query, year, departmentData]);
-
-  const getYearOptions = () => {
-    if (!departmentData?.students) return ["All"];
-    
-    const years = new Set<string>();
-    departmentData.students.forEach(s => {
-      const yearMatch = s.recentBcysName.match(/\b(?:Year|Sem)\s*\d+/);
-      if (yearMatch) {
-        years.add(yearMatch[0]);
-      }
-    });
-    return ["All", ...Array.from(years)];
-  };
+  }, [query, selectedBcys, departmentData]);
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'active':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800';
       case 'inactive':
-        return 'bg-red-100 text-red-800 border-red-200';
+        return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800';
       case 'graduated':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
     }
   };
 
   const getGenderIcon = (gender: string) => {
-    return gender === 'MALE' ? <Mars className="h-4 w-4" /> : <Venus  className="h-4 w-4" />;
+    return gender === 'MALE' ? <Mars className="h-4 w-4" /> : <Venus className="h-4 w-4" />;
   };
 
   const handleViewDetails = (studentId: number) => {
@@ -153,10 +182,10 @@ export default function HeadStudents() {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-64 space-y-4">
-        <div className="rounded-full bg-red-100 p-3">
-          <XCircle className="h-8 w-8 text-red-600" />
+        <div className="rounded-full bg-red-100 dark:bg-red-900/30 p-3">
+          <XCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
         </div>
-        <p className="text-lg text-red-600 text-center px-4">
+        <p className="text-lg text-red-600 dark:text-red-400 text-center px-4">
           {error}
         </p>
         <Button
@@ -172,8 +201,8 @@ export default function HeadStudents() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Department Students</h1>
-        <p className="text-gray-600 mt-2">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Department Students</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-2">
           Manage and view all students in your department
         </p>
       </div>
@@ -181,69 +210,69 @@ export default function HeadStudents() {
       {/* Statistics Cards */}
       {departmentData?.statistics && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
+          <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Total Students</p>
-                  <p className="text-2xl font-bold">{departmentData.statistics.totalStudentsInDepartment}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Total Students</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{departmentData.statistics.totalStudentsInDepartment}</p>
                 </div>
-                <div className="p-3 rounded-full bg-blue-100">
-                  <Users className="h-6 w-6 text-blue-600" />
+                <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900/30">
+                  <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                 {departmentData.statistics.percentageOfCollege.toFixed(1)}% of college total
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Active Students</p>
-                  <p className="text-2xl font-bold">{departmentData.statistics.activeStudentsCount}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Active Students</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{departmentData.statistics.activeStudentsCount}</p>
                 </div>
-                <div className="p-3 rounded-full bg-green-100">
-                  <Activity className="h-6 w-6 text-green-600" />
+                <div className="p-3 rounded-full bg-green-100 dark:bg-green-900/30">
+                  <Activity className="h-6 w-6 text-green-600 dark:text-green-400" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                 {departmentData.statistics.inactiveStudentsCount} inactive
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Male Students</p>
-                  <p className="text-2xl font-bold">{departmentData.statistics.maleCount}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Male Students</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{departmentData.statistics.maleCount}</p>
                 </div>
-                <div className="p-3 rounded-full bg-blue-100">
-                  <Mars  className="h-6 w-6 text-blue-600" />
+                <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900/30">
+                  <Mars className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                 {((departmentData.statistics.maleCount / departmentData.statistics.totalStudentsInDepartment) * 100).toFixed(1)}% of department
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Female Students</p>
-                  <p className="text-2xl font-bold">{departmentData.statistics.femaleCount}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Female Students</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{departmentData.statistics.femaleCount}</p>
                 </div>
-                <div className="p-3 rounded-full bg-pink-100">
-                  <Venus  className="h-6 w-6 text-pink-600" />
+                <div className="p-3 rounded-full bg-pink-100 dark:bg-pink-900/30">
+                  <Venus className="h-6 w-6 text-pink-600 dark:text-pink-400" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                 {((departmentData.statistics.femaleCount / departmentData.statistics.totalStudentsInDepartment) * 100).toFixed(1)}% of department
               </p>
             </CardContent>
@@ -252,10 +281,10 @@ export default function HeadStudents() {
       )}
 
       {/* Main Card */}
-      <Card>
+      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardHeader>
-          <CardTitle>Student Management</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-gray-900 dark:text-white">Student Management</CardTitle>
+          <CardDescription className="text-gray-600 dark:text-gray-400">
             Search, filter, and view student profiles
           </CardDescription>
         </CardHeader>
@@ -264,75 +293,86 @@ export default function HeadStudents() {
           {/* Filters */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Search</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Search</label>
               <Input
                 placeholder="Search by name, ID, or phone"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
               />
             </div>
             
             <div className="space-y-2">
-              <label className="text-sm font-medium">Filter by Year/Semester</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Filter by Batch/Class/Year/Semester
+              </label>
               <select
-                className="w-full border rounded-md px-3 py-2 bg-background focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={year}
-                onChange={(e) => setYear(e.target.value)}
+                className="w-full border rounded-md px-3 py-2 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
+                value={selectedBcys}
+                onChange={(e) => setSelectedBcys(e.target.value)}
+                disabled={loadingLookups}
               >
-                {getYearOptions().map(option => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
+                <option value="All">All Programs</option>
+                {loadingLookups ? (
+                  <option disabled>Loading options...</option>
+                ) : (
+                  lookups?.batchClassYearSemesters?.map((option) => (
+                    <option key={option.id} value={option.name}>
+                      {option.name}
+                    </option>
+                  ))
+                )}
               </select>
+              {loadingLookups && (
+                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Loading filters...
+                </div>
+              )}
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium invisible">Actions</label>
-              <Button className="w-full" variant="outline">
-                Export Data
-              </Button>
-            </div>
+
           </div>
 
           {/* Table */}
-          <div className="overflow-x-auto border rounded-lg">
+          <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg">
             <table className="min-w-full">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr className="text-left">
-                  <th className="py-3 px-4 font-medium text-gray-700">Student ID</th>
-                  <th className="py-3 px-4 font-medium text-gray-700">Full Name</th>
-                  <th className="py-3 px-4 font-medium text-gray-700">Gender</th>
-                  <th className="py-3 px-4 font-medium text-gray-700">Current Program</th>
-                  <th className="py-3 px-4 font-medium text-gray-700">Phone</th>
-                  <th className="py-3 px-4 font-medium text-gray-700">Status</th>
-                  <th className="py-3 px-4 font-medium text-gray-700">Actions</th>
+                  <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Student ID</th>
+                  <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Full Name</th>
+                  <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Gender</th>
+                  <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Current Program</th>
+                  <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Phone</th>
+                  <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Status</th>
+                  <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-gray-500">
+                    <td colSpan={7} className="py-8 text-center text-gray-500 dark:text-gray-400">
                       No students found matching your criteria
                     </td>
                   </tr>
                 ) : (
                   filtered.map((student) => (
-                    <tr key={student.id} className="border-t hover:bg-gray-50 dark:hover:bg-gray-800">
+                    <tr key={student.id} className="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                       <td className="py-3 px-4">
-                        <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm text-gray-800 dark:text-gray-100">
+                        <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm text-gray-800 dark:text-gray-100 font-mono">
                           {student.studentId}
                         </code>
                       </td>
-                      <td className="py-3 px-4 font-medium">{student.fullName}</td>
+                      <td className="py-3 px-4 font-medium text-gray-900 dark:text-white">{student.fullName}</td>
                       <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                           {getGenderIcon(student.gender)}
                           <span>{student.gender === 'MALE' ? 'Male' : 'Female'}</span>
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-sm">{student.recentBcysName}</td>
-                      <td className="py-3 px-4">{student.phoneNumber}</td>
+                      <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{student.recentBcysName}</td>
+                      <td className="py-3 px-4 text-gray-700 dark:text-gray-300">{student.phoneNumber}</td>
                       <td className="py-3 px-4">
                         <Badge 
                           variant="outline" 
@@ -347,6 +387,7 @@ export default function HeadStudents() {
                             size="sm"
                             variant="outline"
                             onClick={() => handleViewDetails(student.id)}
+                            className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                           >
                             View Details
                           </Button>
@@ -358,41 +399,42 @@ export default function HeadStudents() {
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => setSelectedStudent(student)}
+                                className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                               >
                                 Quick View
                               </Button>
                             </DialogTrigger>
-                            <DialogContent>
+                            <DialogContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                               <DialogHeader>
-                                <DialogTitle>Student Quick View</DialogTitle>
+                                <DialogTitle className="text-gray-900 dark:text-white">Student Quick View</DialogTitle>
                               </DialogHeader>
                               {selectedStudent && (
                                 <div className="space-y-4 mt-4">
                                   <div className="flex items-center gap-3">
-                                    <div className="p-2 rounded-full bg-blue-100">
-                                      <User className="h-5 w-5 text-blue-600" />
+                                    <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900/30">
+                                      <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                                     </div>
                                     <div>
-                                      <p className="font-semibold">{selectedStudent.fullName}</p>
-                                      <code className="text-sm text-gray-600 dark:text-gray-300">{selectedStudent.studentId}</code>
+                                      <p className="font-semibold text-gray-900 dark:text-white">{selectedStudent.fullName}</p>
+                                      <code className="text-sm text-gray-600 dark:text-gray-300 font-mono">{selectedStudent.studentId}</code>
                                     </div>
                                   </div>
                                   
                                   <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                      <p className="text-sm text-gray-500">Gender</p>
-                                      <p className="font-medium">{selectedStudent.gender}</p>
+                                      <p className="text-sm text-gray-500 dark:text-gray-400">Gender</p>
+                                      <p className="font-medium text-gray-900 dark:text-white">{selectedStudent.gender}</p>
                                     </div>
                                     <div>
-                                      <p className="text-sm text-gray-500">Phone</p>
-                                      <p className="font-medium">{selectedStudent.phoneNumber}</p>
+                                      <p className="text-sm text-gray-500 dark:text-gray-400">Phone</p>
+                                      <p className="font-medium text-gray-900 dark:text-white">{selectedStudent.phoneNumber}</p>
                                     </div>
                                     <div>
-                                      <p className="text-sm text-gray-500">Current Program</p>
-                                      <p className="font-medium">{selectedStudent.recentBcysName}</p>
+                                      <p className="text-sm text-gray-500 dark:text-gray-400">Current Program</p>
+                                      <p className="font-medium text-gray-900 dark:text-white">{selectedStudent.recentBcysName}</p>
                                     </div>
                                     <div>
-                                      <p className="text-sm text-gray-500">Status</p>
+                                      <p className="text-sm text-gray-500 dark:text-gray-400">Status</p>
                                       <Badge 
                                         className={`mt-1 ${getStatusColor(selectedStudent.studentRecentStatusName)}`}
                                       >
@@ -401,10 +443,10 @@ export default function HeadStudents() {
                                     </div>
                                   </div>
                                   
-                                  <div className="pt-4 border-t">
+                                  <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                                     <Button 
                                       variant="outline" 
-                                      className="w-full"
+                                      className="w-full border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                                       onClick={() => handleViewDetails(selectedStudent.id)}
                                     >
                                       View Full Profile
@@ -424,16 +466,22 @@ export default function HeadStudents() {
           </div>
 
           {/* Summary */}
-          <div className="flex items-center justify-between text-sm text-gray-600">
-            <div>
-              Showing <span className="font-medium">{filtered.length}</span> of{' '}
-              <span className="font-medium">{departmentData?.students.length || 0}</span> students
+          <div className="flex flex-col sm:flex-row items-center justify-between text-sm text-gray-600 dark:text-gray-400 gap-4">
+            <div className="text-center sm:text-left">
+              Showing <span className="font-medium text-gray-900 dark:text-white">{filtered.length}</span> of{' '}
+              <span className="font-medium text-gray-900 dark:text-white">{departmentData?.students.length || 0}</span> students
             </div>
             <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-green-500" />
+              {selectedBcys !== "All" && (
+                <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-full text-xs">
+                  <Filter className="h-3 w-3" />
+                  Filtered by: {selectedBcys}
+                </div>
+              )}
+              <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" />
               <span>{departmentData?.statistics.activeStudentsCount || 0} Active</span>
-              <span className="mx-2">•</span>
-              <Users className="h-4 w-4 text-blue-500" />
+              <span className="mx-2 text-gray-400">•</span>
+              <Users className="h-4 w-4 text-blue-500 dark:text-blue-400" />
               <span>{departmentData?.statistics.totalStudentsInDepartment || 0} Total</span>
             </div>
           </div>
