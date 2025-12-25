@@ -17,6 +17,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+
+import apiClient from "@/components/api/apiClient";
+import endPoints from "@/components/api/endPoints";
 import {
   ArrowLeft,
   Briefcase,
@@ -32,7 +35,6 @@ import {
   Calendar,
   RefreshCw,
 } from "lucide-react";
-import apiClient from "@/components/api/apiClient";
 
 type AssignedCourse = {
   id: number;
@@ -78,6 +80,23 @@ export default function TeacherProfileDetail() {
   const [originalTeacher, setOriginalTeacher] = useState<TeacherDetail | null>(
     null
   );
+  const [documentFileSelected, setDocumentFileSelected] = useState(false);
+  // Address cascading states
+  const [regions, setRegions] = useState<{ value: string; label: string }[]>(
+    []
+  );
+  const [zones, setZones] = useState<{ value: string; label: string }[]>([]);
+  const [woredas, setWoredas] = useState<{ value: string; label: string }[]>(
+    []
+  );
+
+  const [loadingRegions, setLoadingRegions] = useState(false);
+  const [loadingZones, setLoadingZones] = useState(false);
+  const [loadingWoredas, setLoadingWoredas] = useState(false);
+  // Optional but strongly recommended – show the selected filename to the user
+  const [selectedDocumentName, setSelectedDocumentName] = useState<
+    string | null
+  >(null);
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -86,7 +105,76 @@ export default function TeacherProfileDetail() {
 
   const photoInputRef = useRef<HTMLInputElement>(null);
   const documentInputRef = useRef<HTMLInputElement>(null);
+  const handleRegionChange = async (regionCode: string) => {
+    // Update teacher state
+    setTeacher((prev) =>
+      prev ? { ...prev, currentAddressRegionCode: regionCode || "" } : null
+    );
 
+    // Reset dependent fields
+    setTeacher((prev) =>
+      prev
+        ? { ...prev, currentAddressZoneCode: "", currentAddressWoredaCode: "" }
+        : null
+    );
+    setZones([]);
+    setWoredas([]);
+
+    if (!regionCode) return;
+
+    setLoadingZones(true);
+    try {
+      const res = await apiClient.get(
+        `${endPoints.zonesByRegion}/${regionCode}`
+      );
+      const formatted = (res.data || [])
+        .map((z: any) => ({
+          value: z.code || z.zoneCode || z.id || "",
+          label: z.zone || z.zoneName || z.name,
+        }))
+        .filter((z: any) => z.value && z.label);
+      console.log(formatted, res, "runaway");
+      setZones(formatted);
+    } catch (err) {
+      console.error("Failed to load zones", err);
+      setError("Failed to load zones");
+    } finally {
+      setLoadingZones(false);
+    }
+  };
+
+  const handleZoneChange = async (zoneCode: string) => {
+    // Update teacher state
+    setTeacher((prev) =>
+      prev ? { ...prev, currentAddressZoneCode: zoneCode || "" } : null
+    );
+
+    // Reset woreda
+    setTeacher((prev) =>
+      prev ? { ...prev, currentAddressWoredaCode: "" } : null
+    );
+    setWoredas([]);
+
+    if (!zoneCode) return;
+
+    setLoadingWoredas(true);
+    try {
+      const res = await apiClient.get(`${endPoints.woredasByZone}/${zoneCode}`);
+      const formatted = (res.data || [])
+        .map((w: any) => ({
+          value: w.code || w.woredaCode || w.id || "",
+          label: w.woreda || w.woredaName || w.name,
+        }))
+        .filter((w: any) => w.value && w.label);
+      console.log(res, formatted, "woredas");
+      setWoredas(formatted);
+    } catch (err) {
+      console.error("Failed to load woredas", err);
+      setError("Failed to load woredas");
+    } finally {
+      setLoadingWoredas(false);
+    }
+  };
   const fetchTeacher = useCallback(async () => {
     if (!id) {
       setError("No teacher ID provided.");
@@ -110,7 +198,33 @@ export default function TeacherProfileDetail() {
       setLoading(false);
     }
   }, [id]);
+  useEffect(() => {
+    const fetchRegions = async () => {
+      setLoadingRegions(true);
+      try {
+        const res = await apiClient.get(endPoints.regions);
+        const formatted = (res.data || [])
+          .map((r: any) => ({
+            value: r.code || r.regionCode || r.id || "",
+            label: r.name || r.regionName || r.region,
+          }))
+          .filter((r: any) => r.value && r.label);
+        console.log(res, "regions");
+        setRegions(formatted);
+        console.log(formatted);
+      } catch (err) {
+        console.error("Failed to load regions", err);
+        setError("Failed to load regions list");
+      } finally {
+        setLoadingRegions(false);
+      }
+    };
 
+    if (editMode) {
+      // only fetch when entering edit mode (optional optimization)
+      fetchRegions();
+    }
+  }, [editMode]);
   useEffect(() => {
     fetchTeacher();
   }, [fetchTeacher]);
@@ -766,6 +880,83 @@ export default function TeacherProfileDetail() {
                   teacher.regionName ||
                   teacher.zoneName ||
                   teacher.woredaName) && (
+                  // <section>
+                  //   <h3 className="text-xl font-semibold mb-6 flex items-center gap-3 text-foreground">
+                  //     <MapPin className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  //     Current Address
+                  //   </h3>
+
+                  //   {editMode ? (
+                  //     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  //       <div>
+                  //         <Label>Region Code</Label>
+                  //         <Input
+                  //           value={teacher.currentAddressRegionCode || ""}
+                  //           onChange={(e) =>
+                  //             setTeacher((p) =>
+                  //               p
+                  //                 ? {
+                  //                     ...p,
+                  //                     currentAddressRegionCode: e.target.value,
+                  //                   }
+                  //                 : null
+                  //             )
+                  //           }
+                  //           placeholder="e.g. AA"
+                  //         />
+                  //       </div>
+                  //       <div>
+                  //         <Label>Zone Code</Label>
+                  //         <Input
+                  //           value={teacher.currentAddressZoneCode || ""}
+                  //           onChange={(e) =>
+                  //             setTeacher((p) =>
+                  //               p
+                  //                 ? {
+                  //                     ...p,
+                  //                     currentAddressZoneCode: e.target.value,
+                  //                   }
+                  //                 : null
+                  //             )
+                  //           }
+                  //           placeholder="e.g. Gulele"
+                  //         />
+                  //       </div>
+                  //       <div>
+                  //         <Label>Woreda Code</Label>
+                  //         <Input
+                  //           value={teacher.currentAddressWoredaCode || ""}
+                  //           onChange={(e) =>
+                  //             setTeacher((p) =>
+                  //               p
+                  //                 ? {
+                  //                     ...p,
+                  //                     currentAddressWoredaCode: e.target.value,
+                  //                   }
+                  //                 : null
+                  //             )
+                  //           }
+                  //           placeholder="e.g. W01"
+                  //         />
+                  //       </div>
+                  //     </div>
+                  //   ) : (
+                  //     <div className="space-y-1 text-muted-foreground">
+                  //       {teacher.woredaName && (
+                  //         <p className="font-medium text-foreground">
+                  //           {teacher.woredaName}
+                  //         </p>
+                  //       )}
+                  //       {teacher.zoneName && <p>{teacher.zoneName}</p>}
+                  //       {teacher.regionName && <p>{teacher.regionName}</p>}
+                  //       {!teacher.woredaName &&
+                  //         !teacher.zoneName &&
+                  //         !teacher.regionName && (
+                  //           <p className="italic">No address set</p>
+                  //         )}
+                  //     </div>
+                  //   )}
+                  // </section>
                   <section>
                     <h3 className="text-xl font-semibold mb-6 flex items-center gap-3 text-foreground">
                       <MapPin className="h-6 w-6 text-blue-600 dark:text-blue-400" />
@@ -773,57 +964,114 @@ export default function TeacherProfileDetail() {
                     </h3>
 
                     {editMode ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div>
-                          <Label>Region Code</Label>
-                          <Input
-                            value={teacher.currentAddressRegionCode || ""}
-                            onChange={(e) =>
-                              setTeacher((p) =>
-                                p
-                                  ? {
-                                      ...p,
-                                      currentAddressRegionCode: e.target.value,
-                                    }
-                                  : null
-                              )
-                            }
-                            placeholder="e.g. AA"
-                          />
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                        {/* Region */}
+                        <div className="space-y-2">
+                          <Label>Region</Label>
+                          <Select
+                            value={teacher?.currentAddressRegionCode || ""}
+                            onValueChange={handleRegionChange}
+                            disabled={loadingRegions || regions.length === 0}
+                          >
+                            <SelectTrigger>
+                              <SelectValue
+                                placeholder={
+                                  loadingRegions
+                                    ? "Loading regions..."
+                                    : regions.length === 0
+                                    ? "No regions available"
+                                    : "Select Region"
+                                }
+                              />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {regions.map((r) => (
+                                <SelectItem key={r.value} value={r.value}>
+                                  {r.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
-                        <div>
-                          <Label>Zone Code</Label>
-                          <Input
-                            value={teacher.currentAddressZoneCode || ""}
-                            onChange={(e) =>
-                              setTeacher((p) =>
-                                p
-                                  ? {
-                                      ...p,
-                                      currentAddressZoneCode: e.target.value,
-                                    }
-                                  : null
-                              )
+
+                        {/* Zone */}
+                        <div className="space-y-2">
+                          <Label>Zone</Label>
+                          <Select
+                            value={teacher?.currentAddressZoneCode || ""}
+                            onValueChange={handleZoneChange}
+                            disabled={
+                              loadingZones ||
+                              zones.length === 0 ||
+                              !teacher?.currentAddressRegionCode
                             }
-                            placeholder="e.g. Gulele"
-                          />
+                          >
+                            <SelectTrigger>
+                              <SelectValue
+                                placeholder={
+                                  loadingZones
+                                    ? "Loading zones..."
+                                    : !teacher?.currentAddressRegionCode
+                                    ? "Select Region first"
+                                    : zones.length === 0
+                                    ? "No zones available"
+                                    : "Select Zone"
+                                }
+                              />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {zones.map((z) => (
+                                <SelectItem key={z.value} value={z.value}>
+                                  {z.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
-                        <div>
-                          <Label>Woreda Code</Label>
-                          <Input
-                            value={teacher.currentAddressWoredaCode || ""}
-                            onChange={(e) =>
-                              setTeacher((p) =>
-                                p
+
+                        {/* Woreda */}
+                        <div className="space-y-2">
+                          <Label>Woreda</Label>
+                          <Select
+                            value={teacher?.currentAddressWoredaCode || ""}
+                            onValueChange={(woredaCode) =>
+                              setTeacher((prev) =>
+                                prev
                                   ? {
-                                      ...p,
-                                      currentAddressWoredaCode: e.target.value,
+                                      ...prev,
+                                      currentAddressWoredaCode:
+                                        woredaCode || "",
                                     }
                                   : null
                               )
                             }
-                            placeholder="e.g. W01"
-                          />
+                            disabled={
+                              loadingWoredas ||
+                              woredas.length === 0 ||
+                              !teacher?.currentAddressZoneCode
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue
+                                placeholder={
+                                  loadingWoredas
+                                    ? "Loading woredas..."
+                                    : !teacher?.currentAddressZoneCode
+                                    ? "Select Zone first"
+                                    : woredas.length === 0
+                                    ? "No woredas available"
+                                    : "Select Woreda"
+                                }
+                              />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {woredas.map((w) => (
+                                <SelectItem key={w.value} value={w.value}>
+                                  {w.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
                     ) : (
@@ -845,7 +1093,7 @@ export default function TeacherProfileDetail() {
                   </section>
                 )}
 
-                {editMode && (
+                {/* {editMode && (
                   <section>
                     <Label>
                       Update Supporting Document (PDF – replaces existing)
@@ -855,6 +1103,35 @@ export default function TeacherProfileDetail() {
                       accept="application/pdf"
                       ref={documentInputRef}
                     />
+                  </section>
+                )} */}
+                {editMode && (
+                  <section>
+                    <Label>
+                      Update Supporting Document (PDF – replaces existing)
+                    </Label>
+                    <div className="mt-2 flex items-center gap-4 flex-wrap">
+                      <Input
+                        type="file"
+                        accept="application/pdf"
+                        ref={documentInputRef}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setDocumentFileSelected(true);
+                            setSelectedDocumentName(file.name);
+                          } else {
+                            setDocumentFileSelected(false);
+                            setSelectedDocumentName(null);
+                          }
+                        }}
+                      />
+                      {selectedDocumentName && (
+                        <span className="text-sm text-muted-foreground truncate max-w-xs">
+                          Selected: {selectedDocumentName}
+                        </span>
+                      )}
+                    </div>
                   </section>
                 )}
               </div>
