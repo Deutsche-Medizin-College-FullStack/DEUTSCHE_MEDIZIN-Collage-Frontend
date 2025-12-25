@@ -707,10 +707,6 @@ export default function StudentDetail() {
         <Button variant="outline" onClick={() => navigate(-1)}>
           Back to List
         </Button>
-        <Button variant="outline">
-          <FileText className="h-4 w-4 mr-2" />
-          Print Profile
-        </Button>
       </div>
     </div>
   );
