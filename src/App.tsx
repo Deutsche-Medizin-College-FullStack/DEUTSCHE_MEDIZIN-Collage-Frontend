@@ -78,6 +78,8 @@ const DeanLayout = React.lazy(() => import("./layouts/DeanLayout"));
 const DeanDashboard = React.lazy(() => import("./pages/dean/Dashboard"));
 const DeanStudents = React.lazy(() => import("./pages/dean/Students"));
 const DeanGrades = React.lazy(() => import("./pages/dean/Grades"));
+const DepartmentHeadsList = React.lazy(() => import("./pages/dean/DepartmentHeadsList.tsx"));
+const DepartmentHeadDetail = React.lazy(() => import("./pages/dean/DepartmentHeadDetail.tsx"));
 const DeanReports = React.lazy(() => import("./pages/dean/Reports"));
 const CreateDepartmentHead = React.lazy(  () => import("./pages/dean/CreateDepartmentHead"));
 const DeanDepartments = React.lazy(() => import("./pages/dean/DeanDeparment"));
@@ -148,14 +150,8 @@ function App() {
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<TeacherDashboard />} />
               <Route path="courses" element={<TeacherCourses />} />
-              <Route
-                path="students/:assignmentId"
-                element={<TeacherStudents />}
-              />
-              <Route
-                path="assessments/:assignmentId"
-                element={<AssessmentPage />}
-              />
+              <Route path="students/:assignmentId" element={<TeacherStudents />} />
+              <Route path="assessments/:assignmentId" element={<AssessmentPage />} />
             </Route>
 
             {/* Department Head Routes */}
@@ -171,10 +167,7 @@ function App() {
               <Route path="courses" element={<HeadCourses />} />
               <Route path="reports" element={<HeadReports />} />
               <Route path="assessments" element={<HeadAssessments />} />{" "}
-              <Route
-                path="assessments/:assignmentId"
-                element={<HeadAssessmentDetail />}
-              />
+              <Route path="assessments/:assignmentId" element={<HeadAssessmentDetail />} />
               <Route path="profile" element={<DepartmentHeadProfile />} />
             </Route>
 
@@ -189,10 +182,7 @@ function App() {
               <Route path="applications" element={<RegistrarApplications />} />
               <Route path="transcripts" element={<Transcript_Generate />} />
               <Route path="settings/location" element={<LocationEditor />} />
-              <Route
-                path="settings/academic-years"
-                element={<AcademicYearEditor />}
-              />
+              <Route path="settings/academic-years" element={<AcademicYearEditor />} />
               <Route
                 path="settings/batches/:id"
                 element={<SingleBatchPage />}
@@ -269,19 +259,15 @@ function App() {
             <Route path="/dean" element={<DeanLayout />}>
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<DeanDashboard />} />
-              <Route
-                path="create-department-head"
-                element={<CreateDepartmentHead />}
-              />
+              <Route path="create-department-head" element={<CreateDepartmentHead />} />
               <Route path="profile" element={<Dean_Profile />} />
               <Route path="students" element={<DeanStudents />} />
+              <Route path="department-heads" element={<DepartmentHeadsList />} />
+              <Route path="department-heads/:id" element={<DepartmentHeadDetail />} />
               <Route path="grades" element={<DeanGrades />} />
               <Route path="department" element={<DeanDepartments />} />
               <Route path="reports" element={<DeanReports />} />
-              <Route
-                path="departments/:id"
-                element={<DeanDepartmentDetail />}
-              />
+              <Route path="departments/:id" element={<DeanDepartmentDetail />} />
             </Route>
 
             {/*Vice Dean Routes */}
