@@ -1,5 +1,4 @@
 "use client";
-
 import {
   Card,
   CardContent,
@@ -10,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -29,10 +29,40 @@ import {
   GraduationCap,
   FileText,
   Loader2,
+  Save,
+  Edit,
+  X,
+  Camera,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import apiClient from "../../components/api/apiClient";
 import endPoints from "../../components/api/endPoints";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+interface Region {
+  regionCode: string;
+  region: string;
+  countryCode: string;
+}
+
+interface Zone {
+  zoneCode: string;
+  zone: string;
+  regionCode: string;
+  regionType: string;
+}
+
+interface Woreda {
+  woredaCode: string;
+  woreda: string;
+  zoneCode: string;
+}
 
 interface DeanProfileResponse {
   id: number;
@@ -48,8 +78,8 @@ interface DeanProfileResponse {
   phoneNumber: string;
   hiredDateGC: string;
   title: string;
-  photo: string | null; // Base64 string from API
-  documents: string | null; // Base64 string from API
+  photo: string | null;
+  documents: string | null;
   role: string;
   residenceRegion: string;
   residenceRegionCode: string;
@@ -57,76 +87,328 @@ interface DeanProfileResponse {
   residenceZoneCode: string;
   residenceWoreda: string;
   residenceWoredaCode: string;
+  remarks?: string;
+}
+
+interface UpdateDeanRequest {
+  firstNameENG?: string;
+  firstNameAMH?: string;
+  fatherNameENG?: string;
+  fatherNameAMH?: string;
+  grandfatherNameENG?: string;
+  grandfatherNameAMH?: string;
+  phoneNumber?: string;
+  email?: string;
+  title?: string;
+  remarks?: string;
+  residenceRegionCode?: string;
+  residenceZoneCode?: string;
+  residenceWoredaCode?: string;
 }
 
 export default function Dean_Profile() {
   const [profile, setProfile] = useState<DeanProfileResponse | null>(null);
-  const [photoBase64, setPhotoBase64] = useState<string | null>(null);
   const [documentBase64, setDocumentBase64] = useState<string | null>(null);
   const [documentFileName, setDocumentFileName] = useState<string>("dean_document.pdf");
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+
+  // Form state
+  const [formData, setFormData] = useState<UpdateDeanRequest>({});
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+
+  // Location data states
+  const [regions, setRegions] = useState<Region[]>([]);
+  const [zones, setZones] = useState<Zone[]>([]);
+  const [woredas, setWoredas] = useState<Woreda[]>([]);
+  const [loadingRegions, setLoadingRegions] = useState(false);
+  const [loadingZones, setLoadingZones] = useState(false);
+  const [loadingWoredas, setLoadingWoredas] = useState(false);
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Fetch Dean profile
-        const response = await apiClient.get<DeanProfileResponse>(
-          endPoints.getDeanProfile
-        );
-
-        const data = response.data;
-
-        // The API returns photo and documents as base64 strings (not byte arrays)
-        if (data.photo) {
-          // Check if it's already base64 or needs conversion
-          if (typeof data.photo === 'string' && data.photo.startsWith('data:')) {
-            setPhotoBase64(data.photo);
-          } else if (typeof data.photo === 'string') {
-            // If it's a base64 string without data URL prefix
-            setPhotoBase64(`data:image/jpeg;base64,${data.photo}`);
-          }
-        }
-
-        // Handle documents
-        if (data.documents) {
-          // Check if it's already base64 or needs conversion
-          if (typeof data.documents === 'string' && data.documents.startsWith('data:')) {
-            setDocumentBase64(data.documents);
-          } else if (typeof data.documents === 'string') {
-            // If it's a base64 string without data URL prefix
-            setDocumentBase64(`data:application/pdf;base64,${data.documents}`);
-          }
-        }
-
-        setProfile(data);
-      } catch (err: any) {
-        console.error("Failed to load dean profile:", err);
-        
-        // Handle 403 error specifically
-        if (err.response?.status === 403) {
-          if (err.response?.data?.error?.includes("Not a Dean")) {
-            setError("Access Denied: You do not have Dean privileges.");
-          } else {
-            setError("Access forbidden: You do not have permission to access this resource.");
-          }
-        } else {
-          setError(
-            err.response?.data?.error ||
-            err.message ||
-            "Failed to load profile. Please try again later."
-          );
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchProfile();
+    fetchAllRegions();
   }, []);
+
+  // Fetch all regions
+  const fetchAllRegions = async () => {
+    try {
+      setLoadingRegions(true);
+      const response = await apiClient.get<Region[]>(endPoints.regions);
+      setRegions(response.data);
+    } catch (err: any) {
+      console.error("Failed to load regions:", err);
+      setError("Failed to load regions data");
+    } finally {
+      setLoadingRegions(false);
+    }
+  };
+
+  // Fetch zones by region code
+  const fetchZonesByRegion = async (regionCode: string) => {
+    try {
+      setLoadingZones(true);
+      setZones([]); // Clear previous zones
+      setWoredas([]); // Clear woredas when region changes
+
+      const response = await apiClient.get<Zone[]>(
+        `${endPoints.zonesByRegion}/${regionCode}`
+      );
+      setZones(response.data);
+    } catch (err: any) {
+      console.error("Failed to load zones:", err);
+      setError("Failed to load zones data");
+    } finally {
+      setLoadingZones(false);
+    }
+  };
+
+  // Fetch woredas by zone code
+  const fetchWoredasByZone = async (zoneCode: string) => {
+    try {
+      setLoadingWoredas(true);
+      const response = await apiClient.get<Woreda[]>(
+        `${endPoints.woredasByZone}/${zoneCode}`
+      );
+      setWoredas(response.data);
+    } catch (err: any) {
+      console.error("Failed to load woredas:", err);
+      setError("Failed to load woredas data");
+    } finally {
+      setLoadingWoredas(false);
+    }
+  };
+
+  // Handle region change
+  const handleRegionChange = (regionCode: string) => {
+    setFormData(prev => ({
+      ...prev,
+      residenceRegionCode: regionCode || undefined,
+      residenceZoneCode: "",
+      residenceWoredaCode: ""
+    }));
+
+    if (regionCode) {
+      fetchZonesByRegion(regionCode);
+    } else {
+      setZones([]);
+      setWoredas([]);
+    }
+  };
+
+  // Handle zone change
+  const handleZoneChange = (zoneCode: string) => {
+    setFormData(prev => ({
+      ...prev,
+      residenceZoneCode: zoneCode || undefined,
+      residenceWoredaCode: ""
+    }));
+
+    if (zoneCode) {
+      fetchWoredasByZone(zoneCode);
+    } else {
+      setWoredas([]);
+    }
+  };
+
+  // Handle woreda change
+  const handleWoredaChange = (woredaCode: string) => {
+    setFormData(prev => ({
+      ...prev,
+      residenceWoredaCode: woredaCode || undefined
+    }));
+  };
+
+  const fetchProfile = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      setSuccess(null);
+
+      const response = await apiClient.get<DeanProfileResponse>(
+        endPoints.getDeanProfile
+      );
+      const data = response.data;
+
+      // Handle photo
+      if (data.photo) {
+        let photoUrl = data.photo;
+        if (!photoUrl.startsWith('data:')) {
+          photoUrl = `data:image/jpeg;base64,${data.photo}`;
+        }
+        setPhotoPreview(photoUrl);
+      }
+
+      // Handle documents
+      if (data.documents) {
+        if (typeof data.documents === 'string' && data.documents.startsWith('data:')) {
+          setDocumentBase64(data.documents);
+        } else if (typeof data.documents === 'string') {
+          setDocumentBase64(`data:application/pdf;base64,${data.documents}`);
+        }
+      }
+
+      setProfile(data);
+
+      // Initialize form data
+      const initialFormData: UpdateDeanRequest = {
+        firstNameENG: data.firstNameENG,
+        firstNameAMH: data.firstNameAMH,
+        fatherNameENG: data.fatherNameENG,
+        fatherNameAMH: data.fatherNameAMH,
+        grandfatherNameENG: data.grandfatherNameENG,
+        grandfatherNameAMH: data.grandfatherNameAMH,
+        phoneNumber: data.phoneNumber,
+        email: data.email,
+        title: data.title,
+        remarks: data.remarks || "",
+        residenceRegionCode: data.residenceRegionCode || undefined,
+        residenceZoneCode: data.residenceZoneCode || undefined,
+        residenceWoredaCode: data.residenceWoredaCode || undefined,
+      };
+      setFormData(initialFormData);
+
+      // Pre-load zones/woredas if needed
+      if (data.residenceRegionCode) {
+        fetchZonesByRegion(data.residenceRegionCode);
+        if (data.residenceZoneCode) {
+          fetchWoredasByZone(data.residenceZoneCode);
+        }
+      }
+    } catch (err: any) {
+      console.error("Failed to load dean profile:", err);
+      if (err.response?.status === 403) {
+        if (err.response?.data?.error?.includes("Not a Dean")) {
+          setError("Access Denied: You do not have Dean privileges.");
+        } else {
+          setError("Access forbidden: You do not have permission to access this resource.");
+        }
+      } else {
+        setError(
+          err.response?.data?.error ||
+          err.message ||
+          "Failed to load profile. Please try again later."
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setError("Image file size must be less than 5MB");
+        return;
+      }
+      if (!file.type.startsWith('image/')) {
+        setError("Please select an image file");
+        return;
+      }
+
+      setPhotoFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      setError(null);
+      setSuccess(null);
+
+      const jsonData: UpdateDeanRequest = { ...formData };
+      const jsonString = JSON.stringify(jsonData);
+      const formDataToSend = new FormData();
+      const jsonBlob = new Blob([jsonString], { type: 'application/json' });
+      formDataToSend.append("data", jsonBlob);
+
+      if (photoFile) {
+        formDataToSend.append("photograph", photoFile);
+      }
+
+      await apiClient.patch(endPoints.updateDeanProfile, formDataToSend, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      setSuccess("Profile updated successfully!");
+      setEditing(false);
+      await fetchProfile();
+      setPhotoFile(null);
+    } catch (err: any) {
+      console.error("Failed to update profile:", err);
+      if (err.response?.status === 400 && err.response?.data?.error?.includes("Phone number already in use")) {
+        setError("Phone number is already in use. Please use a different phone number.");
+      } else if (err.response?.status === 403) {
+        setError("Access Denied: You do not have permission to update the Dean profile.");
+      } else {
+        setError(
+          err.response?.data?.error ||
+          err.message ||
+          "Failed to update profile. Please try again."
+        );
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setEditing(false);
+    if (profile) {
+      const resetForm: UpdateDeanRequest = {
+        firstNameENG: profile.firstNameENG,
+        firstNameAMH: profile.firstNameAMH,
+        fatherNameENG: profile.fatherNameENG,
+        fatherNameAMH: profile.fatherNameAMH,
+        grandfatherNameENG: profile.grandfatherNameENG,
+        grandfatherNameAMH: profile.grandfatherNameAMH,
+        phoneNumber: profile.phoneNumber,
+        email: profile.email,
+        title: profile.title,
+        remarks: profile.remarks || "",
+        residenceRegionCode: profile.residenceRegionCode || undefined,
+        residenceZoneCode: profile.residenceZoneCode || undefined,
+        residenceWoredaCode: profile.residenceWoredaCode || undefined,
+      };
+      setFormData(resetForm);
+
+      if (profile.photo) {
+        let photoUrl = profile.photo;
+        if (!photoUrl.startsWith('data:')) {
+          photoUrl = `data:image/jpeg;base64,${profile.photo}`;
+        }
+        setPhotoPreview(photoUrl);
+      }
+
+      if (profile.residenceRegionCode) {
+        fetchZonesByRegion(profile.residenceRegionCode);
+        if (profile.residenceZoneCode) {
+          fetchWoredasByZone(profile.residenceZoneCode);
+        }
+      }
+    }
+    setPhotoFile(null);
+  };
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "Not specified";
@@ -143,7 +425,6 @@ export default function Dean_Profile() {
 
   const downloadDocument = () => {
     if (!documentBase64) return;
-
     try {
       const link = document.createElement("a");
       link.href = documentBase64;
@@ -157,6 +438,36 @@ export default function Dean_Profile() {
     }
   };
 
+  const handleUploadClick = () => {
+    if (!editing) {
+      setEditing(true);
+    }
+    setTimeout(() => {
+      document.getElementById('photo-upload')?.click();
+    }, 100);
+  };
+
+  // Helper functions for display names
+  const getRegionName = (code: string) => regions.find(r => r.regionCode === code)?.region || code;
+  const getZoneName = (code: string) => zones.find(z => z.zoneCode === code)?.zone || code;
+  const getWoredaName = (code: string) => woredas.find(w => w.woredaCode === code)?.woreda || code;
+
+  const getFullAddressDisplay = () => {
+    const parts = [];
+    if (formData.residenceWoredaCode) parts.push(getWoredaName(formData.residenceWoredaCode));
+    if (formData.residenceZoneCode) parts.push(getZoneName(formData.residenceZoneCode));
+    if (formData.residenceRegionCode) parts.push(getRegionName(formData.residenceRegionCode));
+    return parts.length > 0 ? parts.join(", ") : "Address not specified";
+  };
+
+  const getAddressCodesDisplay = () => {
+    const parts = [];
+    if (formData.residenceWoredaCode) parts.push(formData.residenceWoredaCode);
+    if (formData.residenceZoneCode) parts.push(formData.residenceZoneCode);
+    if (formData.residenceRegionCode) parts.push(formData.residenceRegionCode);
+    return parts.length > 0 ? parts.join(" / ") : "";
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -168,408 +479,310 @@ export default function Dean_Profile() {
     );
   }
 
-  if (error || !profile) {
+  if (error && !profile) {
     return (
       <div className="flex flex-col items-center justify-center h-64 space-y-4">
         <AlertCircle className="h-12 w-12 text-red-500" />
-        <p className="text-lg text-red-600 text-center px-4">
-          {error || "Unable to load profile"}
-        </p>
+        <p className="text-lg text-red-600 text-center px-4">{error}</p>
         <div className="flex space-x-4 mt-4">
-          <Button
-            variant="outline"
-            onClick={() => window.location.reload()}
-          >
-            Retry
-          </Button>
-          <Button
-            variant="default"
-            onClick={() => window.history.back()}
-          >
-            Go Back
-          </Button>
+          <Button variant="outline" onClick={() => window.location.reload()}>Retry</Button>
+          <Button variant="default" onClick={() => window.history.back()}>Go Back</Button>
         </div>
       </div>
     );
   }
 
-  const {
-    firstNameENG,
-    firstNameAMH,
-    fatherNameENG,
-    fatherNameAMH,
-    grandfatherNameENG,
-    grandfatherNameAMH,
-    email,
-    phoneNumber,
-    gender,
-    hiredDateGC,
-    title,
-    residenceRegion,
-    residenceZone,
-    residenceWoreda,
-    residenceRegionCode,
-    residenceZoneCode,
-    residenceWoredaCode,
-    username,
-  } = profile;
+  if (!profile) return null;
 
-  const fullNameEnglish = `${
-    title ? title + " " : ""
-  }${firstNameENG} ${fatherNameENG} ${grandfatherNameENG}`;
-  const fullNameAmharic = `${firstNameAMH} ${fatherNameAMH} ${grandfatherNameAMH}`;
-
-  const fullAddress =
-    [residenceWoreda, residenceZone, residenceRegion]
-      .filter(Boolean)
-      .join(", ") || "Address not specified";
-
-  const addressCodes = [
-    residenceWoredaCode,
-    residenceZoneCode,
-    residenceRegionCode,
-  ]
-    .filter(Boolean)
-    .join(" / ");
-
-  const initials = fullNameEnglish
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-
+  const fullNameEnglish = `${profile.title ? profile.title + " " : ""}${formData.firstNameENG || profile.firstNameENG} ${formData.fatherNameENG || profile.fatherNameENG} ${formData.grandfatherNameENG || profile.grandfatherNameENG}`;
+  const fullNameAmharic = `${formData.firstNameAMH || profile.firstNameAMH} ${formData.fatherNameAMH || profile.fatherNameAMH} ${formData.grandfatherNameAMH || profile.grandfatherNameAMH}`;
+  const fullAddress = getFullAddressDisplay();
+  const addressCodes = getAddressCodesDisplay();
+  const initials = fullNameEnglish.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
   const hasDocument = !!documentBase64;
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">My Profile</h1>
-        <Badge variant="outline" className="text-sm">
-          <Shield className="h-3 w-3 mr-1" />
-          Dean Account
-        </Badge>
+      {/* Success/Error Messages */}
+      {success && (
+        <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg flex items-center">
+          <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          </svg>
+          {success}
+        </div>
+      )}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg flex items-center">
+          <AlertCircle className="h-5 w-5 mr-2" />
+          {error}
+        </div>
+      )}
+
+      {/* Top Action Bar */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">My Profile</h1>
+            <div className="flex items-center gap-2 mt-2">
+              <Badge variant="outline" className="text-sm"><Shield className="h-3 w-3 mr-1" />Dean Account</Badge>
+              <Badge variant="secondary" className="text-sm">{profile.title || "Dean"}</Badge>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {!editing ? (
+              <>
+                <Button onClick={() => setEditing(true)} variant="outline">
+                  <Edit className="h-4 w-4 mr-2" />Edit Profile
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button onClick={handleCancel} variant="outline">
+                  <X className="h-4 w-4 mr-2" />Cancel
+                </Button>
+                <Button onClick={handleSave} disabled={saving}>
+                  {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                  Save Changes
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
       </div>
 
+      <input id="photo-upload" type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Profile Picture and Basic Info */}
+        {/* Left: Avatar & Basic Info */}
         <Card className="lg:col-span-1">
           <CardHeader className="text-center">
             <div className="relative mx-auto">
               <Avatar className="w-32 h-32 border-4 border-blue-100 dark:border-blue-900">
-                {photoBase64 ? (
-                  <AvatarImage
-                    src={photoBase64}
-                    alt={fullNameEnglish}
-                    className="object-cover"
-                  />
+                {photoPreview ? (
+                  <AvatarImage src={photoPreview} alt={fullNameEnglish} className="object-cover" />
                 ) : (
-                  <AvatarFallback className="text-2xl bg-blue-600 text-white font-semibold">
-                    {initials}
-                  </AvatarFallback>
+                  <AvatarFallback className="text-2xl bg-blue-600 text-white font-semibold">{initials}</AvatarFallback>
                 )}
               </Avatar>
+              {editing && (
+                <div className="absolute bottom-0 right-0">
+                  <label htmlFor="photo-upload" className="cursor-pointer">
+                    <div className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-colors shadow-md">
+                      <Camera className="h-4 w-4" />
+                    </div>
+                  </label>
+                </div>
+              )}
             </div>
             <CardTitle className="mt-4">{fullNameEnglish}</CardTitle>
-            <CardDescription className="text-base">
-              {fullNameAmharic}
-            </CardDescription>
+            <CardDescription className="text-base">{fullNameAmharic}</CardDescription>
             <div className="mt-4 space-y-2">
-              <Badge variant="secondary" className="text-sm">
-                Dean
-              </Badge>
-              <Badge variant="outline" className="text-sm">
-                {title || "Dean"}
-              </Badge>
+              <Badge variant="secondary" className="text-sm">Dean</Badge>
+              <Badge variant="outline" className="text-sm">{profile.title || "Dean"}</Badge>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center space-x-2 text-sm">
-              <Mail className="h-4 w-4 text-gray-500" />
-              <span>{email}</span>
-            </div>
-            <div className="flex items-center space-x-2 text-sm">
-              <Phone className="h-4 w-4 text-gray-500" />
-              <span>{phoneNumber}</span>
-            </div>
-            <div className="flex items-center space-x-2 text-sm">
-              <MapPin className="h-4 w-4 text-gray-500" />
-              <span>{fullAddress}</span>
-            </div>
-            <div className="flex items-center space-x-2 text-sm">
-              <UserCircle className="h-4 w-4 text-gray-500" />
-              <span>Username: {username}</span>
-            </div>
+            <div className="flex items-center space-x-2 text-sm"><Mail className="h-4 w-4 text-gray-500" /><span>{formData.email || profile.email}</span></div>
+            <div className="flex items-center space-x-2 text-sm"><Phone className="h-4 w-4 text-gray-500" /><span>{formData.phoneNumber || profile.phoneNumber}</span></div>
+            <div className="flex items-center space-x-2 text-sm"><MapPin className="h-4 w-4 text-gray-500" /><span>{fullAddress}</span></div>
+            <div className="flex items-center space-x-2 text-sm"><UserCircle className="h-4 w-4 text-gray-500" /><span>Username: {profile.username}</span></div>
             {hasDocument && (
               <div className="pt-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={downloadDocument}
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Download Supporting Document
+                <Button variant="outline" size="sm" className="w-full" onClick={downloadDocument}>
+                  <FileText className="h-4 w-4 mr-2" />Download Supporting Document
                 </Button>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Personal Information */}
+        {/* Right: Personal Information */}
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Personal Information</CardTitle>
             <CardDescription>Your personal and contact details</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Names */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Full Name (English)</Label>
-                <Input
-                  value={fullNameEnglish}
-                  readOnly
-                  className="bg-gray-50 dark:bg-gray-800"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Full Name (አማርኛ)</Label>
-                <Input
-                  value={fullNameAmharic}
-                  readOnly
-                  className="bg-gray-50 dark:bg-gray-800"
-                />
-              </div>
+              <div className="space-y-2"><Label>First Name (English)</Label><Input name="firstNameENG" value={formData.firstNameENG || ""} onChange={handleInputChange} readOnly={!editing} className={!editing ? "bg-gray-50 dark:bg-gray-800 cursor-not-allowed" : ""} /></div>
+              <div className="space-y-2"><Label>First Name (አማርኛ)</Label><Input name="firstNameAMH" value={formData.firstNameAMH || ""} onChange={handleInputChange} readOnly={!editing} className={!editing ? "bg-gray-50 dark:bg-gray-800 cursor-not-allowed" : ""} /></div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Email Address</Label>
-                <Input
-                  value={email}
-                  readOnly
-                  className="bg-gray-50 dark:bg-gray-800"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Phone Number</Label>
-                <Input
-                  value={phoneNumber}
-                  readOnly
-                  className="bg-gray-50 dark:bg-gray-800"
-                />
-              </div>
+              <div className="space-y-2"><Label>Father's Name (English)</Label><Input name="fatherNameENG" value={formData.fatherNameENG || ""} onChange={handleInputChange} readOnly={!editing} className={!editing ? "bg-gray-50 dark:bg-gray-800 cursor-not-allowed" : ""} /></div>
+              <div className="space-y-2"><Label>Father's Name (አማርኛ)</Label><Input name="fatherNameAMH" value={formData.fatherNameAMH || ""} onChange={handleInputChange} readOnly={!editing} className={!editing ? "bg-gray-50 dark:bg-gray-800 cursor-not-allowed" : ""} /></div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Gender</Label>
-                <Input
-                  value={gender}
-                  readOnly
-                  className="bg-gray-50 dark:bg-gray-800"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Academic Title</Label>
-                <Input
-                  value={title || "Not specified"}
-                  readOnly
-                  className="bg-gray-50 dark:bg-gray-800"
-                />
-              </div>
+              <div className="space-y-2"><Label>Grandfather's Name (English)</Label><Input name="grandfatherNameENG" value={formData.grandfatherNameENG || ""} onChange={handleInputChange} readOnly={!editing} className={!editing ? "bg-gray-50 dark:bg-gray-800 cursor-not-allowed" : ""} /></div>
+              <div className="space-y-2"><Label>Grandfather's Name (አማርኛ)</Label><Input name="grandfatherNameAMH" value={formData.grandfatherNameAMH || ""} onChange={handleInputChange} readOnly={!editing} className={!editing ? "bg-gray-50 dark:bg-gray-800 cursor-not-allowed" : ""} /></div>
             </div>
-            <Separator />
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Current Residence</Label>
-                <Input
-                  value={fullAddress}
-                  readOnly
-                  className="bg-gray-50 dark:bg-gray-800"
-                />
-              </div>
-              {addressCodes && (
-                <div className="space-y-2">
-                  <Label>Address Codes</Label>
-                  <Input
-                    value={addressCodes}
-                    readOnly
-                    className="bg-gray-50 dark:bg-gray-800 text-sm"
-                  />
+
+            {/* Contact */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2"><Label>Email Address</Label><Input name="email" type="email" value={formData.email || ""} onChange={handleInputChange} readOnly={!editing} className={!editing ? "bg-gray-50 dark:bg-gray-800 cursor-not-allowed" : ""} /></div>
+              <div className="space-y-2"><Label>Phone Number</Label><Input name="phoneNumber" value={formData.phoneNumber || ""} onChange={handleInputChange} readOnly={!editing} className={!editing ? "bg-gray-50 dark:bg-gray-800 cursor-not-allowed" : ""} /></div>
+            </div>
+
+            {/* Other */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2"><Label>Gender</Label><Input value={profile.gender} readOnly className="bg-gray-50 dark:bg-gray-800 cursor-not-allowed" /></div>
+              <div className="space-y-2"><Label>Academic Title</Label><Input name="title" value={formData.title || ""} onChange={handleInputChange} readOnly={!editing} className={!editing ? "bg-gray-50 dark:bg-gray-800 cursor-not-allowed" : ""} /></div>
+            </div>
+
+            {editing && (
+              <>
+                <Separator />
+                <div className="space-y-4">
+                  <div className="space-y-2"><Label>Remarks (Optional)</Label><Textarea name="remarks" value={formData.remarks || ""} onChange={handleInputChange} placeholder="Additional notes or remarks" rows={2} /></div>
+
+                  <div className="space-y-2">
+                    <Label>Current Residence</Label>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Region */}
+                      <div className="space-y-1">
+                        <Label className="text-sm">Region</Label>
+                        <Select value={formData.residenceRegionCode || ""} onValueChange={handleRegionChange} disabled={loadingRegions}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a region" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {regions.map((region) => (
+                              <SelectItem key={region.regionCode} value={region.regionCode}>
+                                {region.region}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {loadingRegions && <p className="text-xs text-gray-500 flex items-center"><Loader2 className="h-3 w-3 mr-1 animate-spin" />Loading...</p>}
+                      </div>
+
+                      {/* Zone */}
+                      <div className="space-y-1">
+                        <Label className="text-sm">Zone</Label>
+                        <Select value={formData.residenceZoneCode || ""} onValueChange={handleZoneChange} disabled={!formData.residenceRegionCode || loadingZones}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a zone" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {zones.map((zone) => (
+                              <SelectItem key={zone.zoneCode} value={zone.zoneCode}>
+                                {zone.zone}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {loadingZones && <p className="text-xs text-gray-500 flex items-center"><Loader2 className="h-3 w-3 mr-1 animate-spin" />Loading...</p>}
+                        {!formData.residenceRegionCode && <p className="text-xs text-gray-500">Select a region first</p>}
+                      </div>
+
+                      {/* Woreda */}
+                      <div className="space-y-1">
+                        <Label className="text-sm">Woreda</Label>
+                        <Select value={formData.residenceWoredaCode || ""} onValueChange={handleWoredaChange} disabled={!formData.residenceZoneCode || loadingWoredas}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a woreda" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {woredas.map((woreda) => (
+                              <SelectItem key={woreda.woredaCode} value={woreda.woredaCode}>
+                                {woreda.woreda}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {loadingWoredas && <p className="text-xs text-gray-500 flex items-center"><Loader2 className="h-3 w-3 mr-1 animate-spin" />Loading...</p>}
+                        {!formData.residenceZoneCode && <p className="text-xs text-gray-500">Select a zone first</p>}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
+              </>
+            )}
+
+            {!editing && (
+              <>
+                <Separator />
+                <div className="space-y-4">
+                  <div className="space-y-2"><Label>Current Residence</Label><Input value={fullAddress} readOnly className="bg-gray-50 dark:bg-gray-800" /></div>
+                  {addressCodes && (
+                    <div className="space-y-2"><Label>Address Codes</Label><Input value={addressCodes} readOnly className="bg-gray-50 dark:bg-gray-800 text-sm" /></div>
+                  )}
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Professional Information */}
+      {/* Professional Information Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <Briefcase className="mr-2 h-5 w-5" />
-            Professional Information
-          </CardTitle>
+          <CardTitle className="flex items-center"><Briefcase className="mr-2 h-5 w-5" />Professional Information</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <Label className="flex items-center">
-                <Building className="h-4 w-4 mr-2" />
-                Role
-              </Label>
-              <Input
-                value={profile.role || "Dean"}
-                readOnly
-                className="bg-gray-50 dark:bg-gray-800"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="flex items-center">
-                <Award className="h-4 w-4 mr-2" />
-                Academic Title
-              </Label>
-              <Input
-                value={title || "Not specified"}
-                readOnly
-                className="bg-gray-50 dark:bg-gray-800"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="flex items-center">
-                <GraduationCap className="h-4 w-4 mr-2" />
-                Institution Level
-              </Label>
-              <Input
-                value="University"
-                readOnly
-                className="bg-gray-50 dark:bg-gray-800"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="flex items-center">
-                <CalendarDays className="h-4 w-4 mr-2" />
-                Employee ID
-              </Label>
-              <Input
-                value={`DEAN-${profile.id.toString().padStart(3, '0')}`}
-                readOnly
-                className="bg-gray-50 dark:bg-gray-800"
-              />
-            </div>
+            <div className="space-y-2"><Label className="flex items-center"><Building className="h-4 w-4 mr-2" />Role</Label><Input value={profile.role || "Dean"} readOnly className="bg-gray-50 dark:bg-gray-800" /></div>
+            <div className="space-y-2"><Label className="flex items-center"><Award className="h-4 w-4 mr-2" />Academic Title</Label><Input value={formData.title || profile.title || "Not specified"} readOnly className="bg-gray-50 dark:bg-gray-800" /></div>
+            <div className="space-y-2"><Label className="flex items-center"><GraduationCap className="h-4 w-4 mr-2" />Institution Level</Label><Input value="University" readOnly className="bg-gray-50 dark:bg-gray-800" /></div>
+            <div className="space-y-2"><Label className="flex items-center"><CalendarDays className="h-4 w-4 mr-2" />Employee ID</Label><Input value={`DEAN-${profile.id.toString().padStart(3, '0')}`} readOnly className="bg-gray-50 dark:bg-gray-800" /></div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="flex items-center">
-                <CalendarDays className="h-4 w-4 mr-2" />
-                Appointment Date (Gregorian)
-              </Label>
-              <Input
-                value={formatDate(hiredDateGC)}
-                readOnly
-                className="bg-gray-50 dark:bg-gray-800"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="flex items-center">
-                <UserCircle className="h-4 w-4 mr-2" />
-                Username
-              </Label>
-              <Input
-                value={username}
-                readOnly
-                className="bg-gray-50 dark:bg-gray-800"
-              />
-            </div>
+            <div className="space-y-2"><Label className="flex items-center"><CalendarDays className="h-4 w-4 mr-2" />Appointment Date (Gregorian)</Label><Input value={formatDate(profile.hiredDateGC)} readOnly className="bg-gray-50 dark:bg-gray-800" /></div>
+            <div className="space-y-2"><Label className="flex items-center"><UserCircle className="h-4 w-4 mr-2" />Username</Label><Input value={profile.username} readOnly className="bg-gray-50 dark:bg-gray-800" /></div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Career Summary */}
+      {/* Career Summary Cards */}
       <Card>
         <CardHeader>
           <CardTitle>Career Summary</CardTitle>
-          <CardDescription>
-            Professional role and status overview
-          </CardDescription>
+          <CardDescription>Professional role and status overview</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <div className="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-              <div className="flex items-center">
-                <Briefcase className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-3" />
-                <div>
-                  <p className="font-medium">Current Role</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Dean of the University
-                  </p>
-                </div>
-              </div>
-              <Badge
-                variant="outline"
-                className="text-blue-600 dark:text-blue-400"
-              >
-                {title || "Dean"}
-              </Badge>
+              <div className="flex items-center"><Briefcase className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-3" /><div><p className="font-medium">Current Role</p><p className="text-sm text-gray-600 dark:text-gray-400">Dean of the University</p></div></div>
+              <Badge variant="outline" className="text-blue-600 dark:text-blue-400">{formData.title || profile.title || "Dean"}</Badge>
             </div>
             <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-              <div className="flex items-center">
-                <Award className="h-5 w-5 text-green-600 dark:text-green-400 mr-3" />
-                <div>
-                  <p className="font-medium">Appointment Date</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Appointed since {formatDate(hiredDateGC)}
-                  </p>
-                </div>
-              </div>
-              <Badge
-                variant="outline"
-                className="text-green-600 dark:text-green-400"
-              >
-                Active
-              </Badge>
+              <div className="flex items-center"><Award className="h-5 w-5 text-green-600 dark:text-green-400 mr-3" /><div><p className="font-medium">Appointment Date</p><p className="text-sm text-gray-600 dark:text-gray-400">Appointed since {formatDate(profile.hiredDateGC)}</p></div></div>
+              <Badge variant="outline" className="text-green-600 dark:text-green-400">Active</Badge>
             </div>
             <div className="flex items-center justify-between p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-              <div className="flex items-center">
-                <User className="h-5 w-5 text-purple-600 dark:text-purple-400 mr-3" />
-                <div>
-                  <p className="font-medium">Account Status</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Dean account with highest administrative privileges
-                  </p>
-                </div>
-              </div>
-              <Badge
-                variant="outline"
-                className="text-purple-600 dark:text-purple-400"
-              >
-                Verified
-              </Badge>
+              <div className="flex items-center"><User className="h-5 w-5 text-purple-600 dark:text-purple-400 mr-3" /><div><p className="font-medium">Account Status</p><p className="text-sm text-gray-600 dark:text-gray-400">Dean account with highest administrative privileges</p></div></div>
+              <Badge variant="outline" className="text-purple-600 dark:text-purple-400">Verified</Badge>
             </div>
             {hasDocument && (
               <div className="flex items-center justify-between p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-                <div className="flex items-center">
-                  <FileText className="h-5 w-5 text-amber-600 dark:text-amber-400 mr-3" />
-                  <div>
-                    <p className="font-medium">Supporting Documents</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Supporting document available for download
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={downloadDocument}
-                  className="text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700"
-                >
-                  <FileText className="h-3 w-3 mr-1" />
-                  Download
+                <div className="flex items-center"><FileText className="h-5 w-5 text-amber-600 dark:text-amber-400 mr-3" /><div><p className="font-medium">Supporting Documents</p><p className="text-sm text-gray-600 dark:text-gray-400">Supporting document available for download</p></div></div>
+                <Button variant="outline" size="sm" onClick={downloadDocument} className="text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700">
+                  <FileText className="h-3 w-3 mr-1" />Download
                 </Button>
               </div>
             )}
           </div>
         </CardContent>
       </Card>
+
+      {/* New Photo Preview */}
+      {photoFile && editing && (
+        <Card>
+          <CardHeader><CardTitle>Selected Photo</CardTitle></CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <div className="flex items-center gap-3">
+                <Camera className="h-5 w-5 text-blue-600" />
+                <div><p className="font-medium">Profile Photo</p><p className="text-sm text-gray-600">{photoFile.name}</p></div>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => { setPhotoFile(null); setPhotoPreview(profile.photo ? `data:image/jpeg;base64,${profile.photo}` : null); }} className="text-red-600 hover:text-red-800">
+                Remove
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
