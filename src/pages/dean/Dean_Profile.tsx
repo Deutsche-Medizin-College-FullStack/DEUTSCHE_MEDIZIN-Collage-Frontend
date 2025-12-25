@@ -84,7 +84,6 @@ interface UpdateDeanRequest {
 
 export default function Dean_Profile() {
   const [profile, setProfile] = useState<DeanProfileResponse | null>(null);
-  const [photoBase64, setPhotoBase64] = useState<string | null>(null);
   const [documentBase64, setDocumentBase64] = useState<string | null>(null);
   const [documentFileName, setDocumentFileName] = useState<string>("dean_document.pdf");
   const [loading, setLoading] = useState(true);
@@ -115,16 +114,15 @@ export default function Dean_Profile() {
 
       const data = response.data;
 
-      // Handle photo
+      // Handle photo data - check if it's base64 with or without data URL prefix
       if (data.photo) {
-        if (typeof data.photo === 'string' && data.photo.startsWith('data:')) {
-          setPhotoBase64(data.photo);
-          setPhotoPreview(data.photo);
-        } else if (typeof data.photo === 'string') {
-          const base64Photo = `data:image/jpeg;base64,${data.photo}`;
-          setPhotoBase64(base64Photo);
-          setPhotoPreview(base64Photo);
+        let photoUrl = data.photo;
+        // Check if it's already a data URL
+        if (!photoUrl.startsWith('data:')) {
+          // Add data URL prefix for base64 image
+          photoUrl = `data:image/jpeg;base64,${data.photo}`;
         }
+        setPhotoPreview(photoUrl);
       }
 
       // Handle documents
@@ -215,10 +213,7 @@ export default function Dean_Profile() {
       setError(null);
       setSuccess(null);
 
-      // Create FormData for multipart/form-data
-      const formDataToSend = new FormData();
-      
-      // Add JSON data with all editable fields
+      // Prepare the request data
       const jsonData: UpdateDeanRequest = {
         firstNameENG: formData.firstNameENG,
         firstNameAMH: formData.firstNameAMH,
@@ -234,20 +229,40 @@ export default function Dean_Profile() {
         residenceZoneCode: formData.residenceZoneCode,
         residenceWoredaCode: formData.residenceWoredaCode,
       };
-      
-      formDataToSend.append("data", JSON.stringify(jsonData));
-      
-      // Add photo if provided
-      if (photoFile) {
-        formDataToSend.append("photograph", photoFile);
-      }
 
-      // Use the correct endpoint
-      await apiClient.patch(endPoints.updateDeanProfile, formDataToSend, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      // Create JSON string with proper encoding for Unicode characters
+      const jsonString = JSON.stringify(jsonData);
+
+      console.log("Sending JSON data:", jsonString);
+      console.log("JSON data object:", jsonData);
+
+      // Check if we have a photo file to upload
+      if (photoFile) {
+        // Create FormData for multipart/form-data (when photo is included)
+        const formDataToSend = new FormData();
+        
+        // Use Blob to ensure proper encoding
+        const jsonBlob = new Blob([jsonString], { type: 'application/json' });
+        formDataToSend.append("data", jsonBlob);
+        formDataToSend.append("photograph", photoFile);
+
+        console.log("Sending with FormData (with photo)");
+
+        await apiClient.patch(endPoints.updateDeanProfile, formDataToSend, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+      } else {
+        // Send as JSON directly when no photo is included
+        console.log("Sending as plain JSON (no photo)");
+
+        await apiClient.patch(endPoints.updateDeanProfile, jsonData, {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+      }
 
       setSuccess("Profile updated successfully!");
       setEditing(false);
@@ -257,6 +272,7 @@ export default function Dean_Profile() {
       setPhotoFile(null);
     } catch (err: any) {
       console.error("Failed to update profile:", err);
+      console.error("Error response:", err.response);
       
       // Handle specific API errors
       if (err.response?.status === 400 && err.response?.data?.error?.includes("Phone number already in use")) {
@@ -294,7 +310,14 @@ export default function Dean_Profile() {
         residenceZoneCode: profile.residenceZoneCode,
         residenceWoredaCode: profile.residenceWoredaCode,
       });
-      setPhotoPreview(photoBase64);
+      // Reset photo preview to original photo
+      if (profile.photo) {
+        let photoUrl = profile.photo;
+        if (!photoUrl.startsWith('data:')) {
+          photoUrl = `data:image/jpeg;base64,${profile.photo}`;
+        }
+        setPhotoPreview(photoUrl);
+      }
     }
     setPhotoFile(null);
   };
@@ -954,7 +977,14 @@ export default function Dean_Profile() {
                   size="sm"
                   onClick={() => {
                     setPhotoFile(null);
-                    setPhotoPreview(photoBase64);
+                    // Reset to original photo
+                    if (profile.photo) {
+                      let photoUrl = profile.photo;
+                      if (!photoUrl.startsWith('data:')) {
+                        photoUrl = `data:image/jpeg;base64,${profile.photo}`;
+                      }
+                      setPhotoPreview(photoUrl);
+                    }
                   }}
                   className="text-red-600 hover:text-red-800"
                 >

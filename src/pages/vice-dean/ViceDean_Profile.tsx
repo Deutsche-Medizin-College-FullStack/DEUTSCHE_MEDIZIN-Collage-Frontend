@@ -108,8 +108,15 @@ export default function ViceDeanProfileEditable() {
         gender: response.data.gender,
       });
       
+      // Handle photo data - check if it's base64 with or without data URL prefix
       if (response.data.photo) {
-        setPhotoPreview(response.data.photo);
+        let photoUrl = response.data.photo;
+        // Check if it's already a data URL
+        if (!photoUrl.startsWith('data:')) {
+          // Add data URL prefix for base64 image
+          photoUrl = `data:image/jpeg;base64,${response.data.photo}`;
+        }
+        setPhotoPreview(photoUrl);
       }
     } catch (err: any) {
       console.error("Failed to load vice-dean profile:", err);
@@ -178,36 +185,26 @@ export default function ViceDeanProfileEditable() {
       // Create JSON string with proper encoding for Unicode characters
       const jsonString = JSON.stringify(jsonData);
 
-      console.log("Sending JSON data:", jsonString);
-      console.log("JSON data object:", jsonData);
-
-      // Check if we have a photo file to upload
+      // ALWAYS use FormData - even when there's no photo
+      const formDataToSend = new FormData();
+      
+      // Use Blob to ensure proper encoding
+      const jsonBlob = new Blob([jsonString], { type: 'application/json' });
+      formDataToSend.append("data", jsonBlob);
+      
+      // Add photo if provided
       if (photoFile) {
-        // Create FormData for multipart/form-data (when photo is included)
-        const formDataToSend = new FormData();
-        
-        // Use Blob to ensure proper encoding
-        const jsonBlob = new Blob([jsonString], { type: 'application/json' });
-        formDataToSend.append("data", jsonBlob);
         formDataToSend.append("photograph", photoFile);
-
-        console.log("Sending with FormData (with photo)");
-
-        await apiClient.patch(endPoints.updateViceDeanProfile, formDataToSend, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        });
+        console.log("Sending with photo file");
       } else {
-        // Send as JSON directly when no photo is included
-        console.log("Sending as plain JSON (no photo)");
-
-        await apiClient.patch(endPoints.updateViceDeanProfile, jsonData, {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
+        console.log("Sending without photo file");
       }
+
+      await apiClient.patch(endPoints.updateViceDeanProfile, formDataToSend, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       setSuccess("Profile updated successfully!");
       setEditing(false);
@@ -218,6 +215,8 @@ export default function ViceDeanProfileEditable() {
     } catch (err: any) {
       console.error("Failed to update profile:", err);
       console.error("Error response:", err.response);
+      console.error("Error status:", err.response?.status);
+      console.error("Error data:", err.response?.data);
       
       // Check for specific error types
       if (err.response?.status === 403) {
@@ -263,7 +262,14 @@ export default function ViceDeanProfileEditable() {
         title: profile.title,
         gender: profile.gender,
       });
-      setPhotoPreview(profile.photo);
+      // Reset photo preview to original photo
+      if (profile.photo) {
+        let photoUrl = profile.photo;
+        if (!photoUrl.startsWith('data:')) {
+          photoUrl = `data:image/jpeg;base64,${profile.photo}`;
+        }
+        setPhotoPreview(photoUrl);
+      }
     }
     setPhotoFile(null);
   };
@@ -680,7 +686,14 @@ export default function ViceDeanProfileEditable() {
                   size="sm"
                   onClick={() => {
                     setPhotoFile(null);
-                    setPhotoPreview(profile.photo);
+                    // Reset to original photo
+                    if (profile.photo) {
+                      let photoUrl = profile.photo;
+                      if (!photoUrl.startsWith('data:')) {
+                        photoUrl = `data:image/jpeg;base64,${profile.photo}`;
+                      }
+                      setPhotoPreview(photoUrl);
+                    }
                   }}
                   className="text-red-600 hover:text-red-800"
                 >
