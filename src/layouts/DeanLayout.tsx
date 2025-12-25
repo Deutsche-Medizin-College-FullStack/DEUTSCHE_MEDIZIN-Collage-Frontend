@@ -55,6 +55,7 @@ export default function DeanLayout() {
     { name: "Dashboard", href: "/dean/dashboard", icon: LayoutDashboard },
     { name: "Students", href: "/dean/students", icon: Users },
     { name: "Profile", href: "/dean/profile", icon: User },
+    { name: "Department Heads", href: "/dean/department-heads", icon: Users },
     { name: "Grades", href: "/dean/grades", icon: BookOpen },
     { name: "Reports", href: "/dean/reports", icon: BarChart3 },
     { name: "Department", href: "/dean/department", icon: Layers },
