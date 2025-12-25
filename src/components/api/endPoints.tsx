@@ -100,6 +100,7 @@ const endPoints = {
   approveRejectAllAssessments: "/department-heads/assignments/:teacherCourseAssignmentId/approve-all",
   
   updateViceDeanProfile: "/vice-deans/update",
+   updateDeanProfile: "/deans/update"
 };
 
 export default endPoints;

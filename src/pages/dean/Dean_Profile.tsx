@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -29,6 +30,11 @@ import {
   GraduationCap,
   FileText,
   Loader2,
+  Save,
+  Edit,
+  X,
+  Camera,
+  Upload,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import apiClient from "../../components/api/apiClient";
@@ -48,8 +54,8 @@ interface DeanProfileResponse {
   phoneNumber: string;
   hiredDateGC: string;
   title: string;
-  photo: string | null; // Base64 string from API
-  documents: string | null; // Base64 string from API
+  photo: string | null;
+  documents: string | null;
   role: string;
   residenceRegion: string;
   residenceRegionCode: string;
@@ -57,6 +63,23 @@ interface DeanProfileResponse {
   residenceZoneCode: string;
   residenceWoreda: string;
   residenceWoredaCode: string;
+  remarks?: string;
+}
+
+interface UpdateDeanRequest {
+  firstNameENG?: string;
+  firstNameAMH?: string;
+  fatherNameENG?: string;
+  fatherNameAMH?: string;
+  grandfatherNameENG?: string;
+  grandfatherNameAMH?: string;
+  phoneNumber?: string;
+  email?: string;
+  title?: string;
+  remarks?: string;
+  residenceRegionCode?: string;
+  residenceZoneCode?: string;
+  residenceWoredaCode?: string;
 }
 
 export default function Dean_Profile() {
@@ -65,68 +88,216 @@ export default function Dean_Profile() {
   const [documentBase64, setDocumentBase64] = useState<string | null>(null);
   const [documentFileName, setDocumentFileName] = useState<string>("dean_document.pdf");
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  
+  // Form state
+  const [formData, setFormData] = useState<UpdateDeanRequest>({});
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Fetch Dean profile
-        const response = await apiClient.get<DeanProfileResponse>(
-          endPoints.getDeanProfile
-        );
-
-        const data = response.data;
-
-        // The API returns photo and documents as base64 strings (not byte arrays)
-        if (data.photo) {
-          // Check if it's already base64 or needs conversion
-          if (typeof data.photo === 'string' && data.photo.startsWith('data:')) {
-            setPhotoBase64(data.photo);
-          } else if (typeof data.photo === 'string') {
-            // If it's a base64 string without data URL prefix
-            setPhotoBase64(`data:image/jpeg;base64,${data.photo}`);
-          }
-        }
-
-        // Handle documents
-        if (data.documents) {
-          // Check if it's already base64 or needs conversion
-          if (typeof data.documents === 'string' && data.documents.startsWith('data:')) {
-            setDocumentBase64(data.documents);
-          } else if (typeof data.documents === 'string') {
-            // If it's a base64 string without data URL prefix
-            setDocumentBase64(`data:application/pdf;base64,${data.documents}`);
-          }
-        }
-
-        setProfile(data);
-      } catch (err: any) {
-        console.error("Failed to load dean profile:", err);
-        
-        // Handle 403 error specifically
-        if (err.response?.status === 403) {
-          if (err.response?.data?.error?.includes("Not a Dean")) {
-            setError("Access Denied: You do not have Dean privileges.");
-          } else {
-            setError("Access forbidden: You do not have permission to access this resource.");
-          }
-        } else {
-          setError(
-            err.response?.data?.error ||
-            err.message ||
-            "Failed to load profile. Please try again later."
-          );
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchProfile();
   }, []);
+
+  const fetchProfile = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      setSuccess(null);
+
+      // Fetch Dean profile
+      const response = await apiClient.get<DeanProfileResponse>(
+        endPoints.getDeanProfile
+      );
+
+      const data = response.data;
+
+      // Handle photo
+      if (data.photo) {
+        if (typeof data.photo === 'string' && data.photo.startsWith('data:')) {
+          setPhotoBase64(data.photo);
+          setPhotoPreview(data.photo);
+        } else if (typeof data.photo === 'string') {
+          const base64Photo = `data:image/jpeg;base64,${data.photo}`;
+          setPhotoBase64(base64Photo);
+          setPhotoPreview(base64Photo);
+        }
+      }
+
+      // Handle documents
+      if (data.documents) {
+        if (typeof data.documents === 'string' && data.documents.startsWith('data:')) {
+          setDocumentBase64(data.documents);
+        } else if (typeof data.documents === 'string') {
+          setDocumentBase64(`data:application/pdf;base64,${data.documents}`);
+        }
+      }
+
+      setProfile(data);
+      
+      // Initialize form data
+      setFormData({
+        firstNameENG: data.firstNameENG,
+        firstNameAMH: data.firstNameAMH,
+        fatherNameENG: data.fatherNameENG,
+        fatherNameAMH: data.fatherNameAMH,
+        grandfatherNameENG: data.grandfatherNameENG,
+        grandfatherNameAMH: data.grandfatherNameAMH,
+        phoneNumber: data.phoneNumber,
+        email: data.email,
+        title: data.title,
+        remarks: data.remarks || "",
+        residenceRegionCode: data.residenceRegionCode,
+        residenceZoneCode: data.residenceZoneCode,
+        residenceWoredaCode: data.residenceWoredaCode,
+      });
+
+    } catch (err: any) {
+      console.error("Failed to load dean profile:", err);
+      
+      // Handle 403 error specifically
+      if (err.response?.status === 403) {
+        if (err.response?.data?.error?.includes("Not a Dean")) {
+          setError("Access Denied: You do not have Dean privileges.");
+        } else {
+          setError("Access forbidden: You do not have permission to access this resource.");
+        }
+      } else {
+        setError(
+          err.response?.data?.error ||
+          err.message ||
+          "Failed to load profile. Please try again later."
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError("Image file size must be less than 5MB");
+        return;
+      }
+      
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        setError("Please select an image file");
+        return;
+      }
+      
+      setPhotoFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      setError(null);
+      setSuccess(null);
+
+      // Create FormData for multipart/form-data
+      const formDataToSend = new FormData();
+      
+      // Add JSON data with all editable fields
+      const jsonData: UpdateDeanRequest = {
+        firstNameENG: formData.firstNameENG,
+        firstNameAMH: formData.firstNameAMH,
+        fatherNameENG: formData.fatherNameENG,
+        fatherNameAMH: formData.fatherNameAMH,
+        grandfatherNameENG: formData.grandfatherNameENG,
+        grandfatherNameAMH: formData.grandfatherNameAMH,
+        phoneNumber: formData.phoneNumber,
+        email: formData.email,
+        title: formData.title,
+        remarks: formData.remarks,
+        residenceRegionCode: formData.residenceRegionCode,
+        residenceZoneCode: formData.residenceZoneCode,
+        residenceWoredaCode: formData.residenceWoredaCode,
+      };
+      
+      formDataToSend.append("data", JSON.stringify(jsonData));
+      
+      // Add photo if provided
+      if (photoFile) {
+        formDataToSend.append("photograph", photoFile);
+      }
+
+      // Use the correct endpoint
+      await apiClient.patch(endPoints.updateDeanProfile, formDataToSend, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      setSuccess("Profile updated successfully!");
+      setEditing(false);
+      // Refresh profile data
+      await fetchProfile();
+      // Reset files
+      setPhotoFile(null);
+    } catch (err: any) {
+      console.error("Failed to update profile:", err);
+      
+      // Handle specific API errors
+      if (err.response?.status === 400 && err.response?.data?.error?.includes("Phone number already in use")) {
+        setError("Phone number is already in use. Please use a different phone number.");
+      } else if (err.response?.status === 403) {
+        setError("Access Denied: You do not have permission to update the Dean profile.");
+      } else {
+        setError(
+          err.response?.data?.error ||
+          err.message ||
+          "Failed to update profile. Please try again."
+        );
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setEditing(false);
+    // Reset form data to original profile data
+    if (profile) {
+      setFormData({
+        firstNameENG: profile.firstNameENG,
+        firstNameAMH: profile.firstNameAMH,
+        fatherNameENG: profile.fatherNameENG,
+        fatherNameAMH: profile.fatherNameAMH,
+        grandfatherNameENG: profile.grandfatherNameENG,
+        grandfatherNameAMH: profile.grandfatherNameAMH,
+        phoneNumber: profile.phoneNumber,
+        email: profile.email,
+        title: profile.title,
+        remarks: profile.remarks || "",
+        residenceRegionCode: profile.residenceRegionCode,
+        residenceZoneCode: profile.residenceZoneCode,
+        residenceWoredaCode: profile.residenceWoredaCode,
+      });
+      setPhotoPreview(photoBase64);
+    }
+    setPhotoFile(null);
+  };
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "Not specified";
@@ -157,6 +328,17 @@ export default function Dean_Profile() {
     }
   };
 
+  const handleUploadClick = () => {
+    if (!editing) {
+      setEditing(true);
+    }
+    
+    // Trigger file input click
+    setTimeout(() => {
+      document.getElementById('photo-upload')?.click();
+    }, 100);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -168,7 +350,7 @@ export default function Dean_Profile() {
     );
   }
 
-  if (error || !profile) {
+  if (error && !profile) {
     return (
       <div className="flex flex-col items-center justify-center h-64 space-y-4">
         <AlertCircle className="h-12 w-12 text-red-500" />
@@ -193,41 +375,24 @@ export default function Dean_Profile() {
     );
   }
 
-  const {
-    firstNameENG,
-    firstNameAMH,
-    fatherNameENG,
-    fatherNameAMH,
-    grandfatherNameENG,
-    grandfatherNameAMH,
-    email,
-    phoneNumber,
-    gender,
-    hiredDateGC,
-    title,
-    residenceRegion,
-    residenceZone,
-    residenceWoreda,
-    residenceRegionCode,
-    residenceZoneCode,
-    residenceWoredaCode,
-    username,
-  } = profile;
+  if (!profile) {
+    return null;
+  }
 
   const fullNameEnglish = `${
-    title ? title + " " : ""
-  }${firstNameENG} ${fatherNameENG} ${grandfatherNameENG}`;
-  const fullNameAmharic = `${firstNameAMH} ${fatherNameAMH} ${grandfatherNameAMH}`;
+    profile.title ? profile.title + " " : ""
+  }${formData.firstNameENG || profile.firstNameENG} ${formData.fatherNameENG || profile.fatherNameENG} ${formData.grandfatherNameENG || profile.grandfatherNameENG}`;
+  
+  const fullNameAmharic = `${formData.firstNameAMH || profile.firstNameAMH} ${formData.fatherNameAMH || profile.fatherNameAMH} ${formData.grandfatherNameAMH || profile.grandfatherNameAMH}`;
 
-  const fullAddress =
-    [residenceWoreda, residenceZone, residenceRegion]
-      .filter(Boolean)
-      .join(", ") || "Address not specified";
+  const fullAddress = [profile.residenceWoreda, profile.residenceZone, profile.residenceRegion]
+    .filter(Boolean)
+    .join(", ") || "Address not specified";
 
   const addressCodes = [
-    residenceWoredaCode,
-    residenceZoneCode,
-    residenceRegionCode,
+    profile.residenceWoredaCode,
+    profile.residenceZoneCode,
+    profile.residenceRegionCode,
   ]
     .filter(Boolean)
     .join(" / ");
@@ -243,13 +408,82 @@ export default function Dean_Profile() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">My Profile</h1>
-        <Badge variant="outline" className="text-sm">
-          <Shield className="h-3 w-3 mr-1" />
-          Dean Account
-        </Badge>
+      {/* Success/Error Messages */}
+      {success && (
+        <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
+          <div className="flex items-center">
+            <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            {success}
+          </div>
+        </div>
+      )}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+          <div className="flex items-center">
+            <AlertCircle className="h-5 w-5 mr-2" />
+            {error}
+          </div>
+        </div>
+      )}
+
+      {/* Top Action Bar */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">My Profile</h1>
+            <div className="flex items-center gap-2 mt-2">
+              <Badge variant="outline" className="text-sm">
+                <Shield className="h-3 w-3 mr-1" />
+                Dean Account
+              </Badge>
+              <Badge variant="secondary" className="text-sm">
+                {profile.title || "Dean"}
+              </Badge>
+            </div>
+          </div>
+          
+          <div className="flex flex-wrap gap-2">
+            {!editing ? (
+              <>
+                <Button onClick={() => setEditing(true)} variant="outline">
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Profile
+                </Button>
+                <Button onClick={handleUploadClick} variant="outline">
+                  <Camera className="h-4 w-4 mr-2" />
+                  Upload Photo
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button onClick={handleCancel} variant="outline">
+                  <X className="h-4 w-4 mr-2" />
+                  Cancel
+                </Button>
+                <Button onClick={handleSave} disabled={saving}>
+                  {saving ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4 mr-2" />
+                  )}
+                  Save Changes
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
       </div>
+
+      {/* Hidden file input */}
+      <input
+        id="photo-upload"
+        type="file"
+        accept="image/*"
+        onChange={handlePhotoChange}
+        className="hidden"
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Profile Picture and Basic Info */}
@@ -257,9 +491,9 @@ export default function Dean_Profile() {
           <CardHeader className="text-center">
             <div className="relative mx-auto">
               <Avatar className="w-32 h-32 border-4 border-blue-100 dark:border-blue-900">
-                {photoBase64 ? (
+                {photoPreview ? (
                   <AvatarImage
-                    src={photoBase64}
+                    src={photoPreview}
                     alt={fullNameEnglish}
                     className="object-cover"
                   />
@@ -269,6 +503,15 @@ export default function Dean_Profile() {
                   </AvatarFallback>
                 )}
               </Avatar>
+              {editing && (
+                <div className="absolute bottom-0 right-0">
+                  <label htmlFor="photo-upload" className="cursor-pointer">
+                    <div className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-colors shadow-md">
+                      <Camera className="h-4 w-4" />
+                    </div>
+                  </label>
+                </div>
+              )}
             </div>
             <CardTitle className="mt-4">{fullNameEnglish}</CardTitle>
             <CardDescription className="text-base">
@@ -279,18 +522,18 @@ export default function Dean_Profile() {
                 Dean
               </Badge>
               <Badge variant="outline" className="text-sm">
-                {title || "Dean"}
+                {profile.title || "Dean"}
               </Badge>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center space-x-2 text-sm">
               <Mail className="h-4 w-4 text-gray-500" />
-              <span>{email}</span>
+              <span>{formData.email || profile.email}</span>
             </div>
             <div className="flex items-center space-x-2 text-sm">
               <Phone className="h-4 w-4 text-gray-500" />
-              <span>{phoneNumber}</span>
+              <span>{formData.phoneNumber || profile.phoneNumber}</span>
             </div>
             <div className="flex items-center space-x-2 text-sm">
               <MapPin className="h-4 w-4 text-gray-500" />
@@ -298,7 +541,7 @@ export default function Dean_Profile() {
             </div>
             <div className="flex items-center space-x-2 text-sm">
               <UserCircle className="h-4 w-4 text-gray-500" />
-              <span>Username: {username}</span>
+              <span>Username: {profile.username}</span>
             </div>
             {hasDocument && (
               <div className="pt-2">
@@ -316,7 +559,7 @@ export default function Dean_Profile() {
           </CardContent>
         </Card>
 
-        {/* Personal Information */}
+        {/* Personal Information - Editable */}
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Personal Information</CardTitle>
@@ -325,79 +568,196 @@ export default function Dean_Profile() {
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Full Name (English)</Label>
+                <Label>First Name (English)</Label>
                 <Input
-                  value={fullNameEnglish}
-                  readOnly
-                  className="bg-gray-50 dark:bg-gray-800"
+                  name="firstNameENG"
+                  value={formData.firstNameENG || ""}
+                  onChange={handleInputChange}
+                  readOnly={!editing}
+                  className={!editing ? "bg-gray-50 dark:bg-gray-800 cursor-not-allowed" : "bg-white dark:bg-gray-800"}
                 />
               </div>
               <div className="space-y-2">
-                <Label>Full Name (አማርኛ)</Label>
+                <Label>First Name (አማርኛ)</Label>
                 <Input
-                  value={fullNameAmharic}
-                  readOnly
-                  className="bg-gray-50 dark:bg-gray-800"
+                  name="firstNameAMH"
+                  value={formData.firstNameAMH || ""}
+                  onChange={handleInputChange}
+                  readOnly={!editing}
+                  className={!editing ? "bg-gray-50 dark:bg-gray-800 cursor-not-allowed" : "bg-white dark:bg-gray-800"}
                 />
               </div>
             </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Father's Name (English)</Label>
+                <Input
+                  name="fatherNameENG"
+                  value={formData.fatherNameENG || ""}
+                  onChange={handleInputChange}
+                  readOnly={!editing}
+                  className={!editing ? "bg-gray-50 dark:bg-gray-800 cursor-not-allowed" : "bg-white dark:bg-gray-800"}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Father's Name (አማርኛ)</Label>
+                <Input
+                  name="fatherNameAMH"
+                  value={formData.fatherNameAMH || ""}
+                  onChange={handleInputChange}
+                  readOnly={!editing}
+                  className={!editing ? "bg-gray-50 dark:bg-gray-800 cursor-not-allowed" : "bg-white dark:bg-gray-800"}
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Grandfather's Name (English)</Label>
+                <Input
+                  name="grandfatherNameENG"
+                  value={formData.grandfatherNameENG || ""}
+                  onChange={handleInputChange}
+                  readOnly={!editing}
+                  className={!editing ? "bg-gray-50 dark:bg-gray-800 cursor-not-allowed" : "bg-white dark:bg-gray-800"}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Grandfather's Name (አማርኛ)</Label>
+                <Input
+                  name="grandfatherNameAMH"
+                  value={formData.grandfatherNameAMH || ""}
+                  onChange={handleInputChange}
+                  readOnly={!editing}
+                  className={!editing ? "bg-gray-50 dark:bg-gray-800 cursor-not-allowed" : "bg-white dark:bg-gray-800"}
+                />
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Email Address</Label>
                 <Input
-                  value={email}
-                  readOnly
-                  className="bg-gray-50 dark:bg-gray-800"
+                  name="email"
+                  type="email"
+                  value={formData.email || ""}
+                  onChange={handleInputChange}
+                  readOnly={!editing}
+                  className={!editing ? "bg-gray-50 dark:bg-gray-800 cursor-not-allowed" : "bg-white dark:bg-gray-800"}
                 />
               </div>
               <div className="space-y-2">
                 <Label>Phone Number</Label>
                 <Input
-                  value={phoneNumber}
-                  readOnly
-                  className="bg-gray-50 dark:bg-gray-800"
+                  name="phoneNumber"
+                  value={formData.phoneNumber || ""}
+                  onChange={handleInputChange}
+                  readOnly={!editing}
+                  className={!editing ? "bg-gray-50 dark:bg-gray-800 cursor-not-allowed" : "bg-white dark:bg-gray-800"}
                 />
               </div>
             </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Gender</Label>
                 <Input
-                  value={gender}
+                  value={profile.gender}
                   readOnly
-                  className="bg-gray-50 dark:bg-gray-800"
+                  className="bg-gray-50 dark:bg-gray-800 cursor-not-allowed"
                 />
               </div>
               <div className="space-y-2">
                 <Label>Academic Title</Label>
                 <Input
-                  value={title || "Not specified"}
-                  readOnly
-                  className="bg-gray-50 dark:bg-gray-800"
+                  name="title"
+                  value={formData.title || ""}
+                  onChange={handleInputChange}
+                  readOnly={!editing}
+                  className={!editing ? "bg-gray-50 dark:bg-gray-800 cursor-not-allowed" : "bg-white dark:bg-gray-800"}
                 />
               </div>
             </div>
-            <Separator />
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Current Residence</Label>
-                <Input
-                  value={fullAddress}
-                  readOnly
-                  className="bg-gray-50 dark:bg-gray-800"
-                />
-              </div>
-              {addressCodes && (
-                <div className="space-y-2">
-                  <Label>Address Codes</Label>
-                  <Input
-                    value={addressCodes}
-                    readOnly
-                    className="bg-gray-50 dark:bg-gray-800 text-sm"
-                  />
+
+            {editing && (
+              <>
+                <Separator />
+                
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Remarks (Optional)</Label>
+                    <Textarea
+                      name="remarks"
+                      value={formData.remarks || ""}
+                      onChange={handleInputChange}
+                      placeholder="Additional notes or remarks"
+                      rows={2}
+                      className="bg-white dark:bg-gray-800"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Address Codes</Label>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Region Code</Label>
+                        <Input
+                          name="residenceRegionCode"
+                          value={formData.residenceRegionCode || ""}
+                          onChange={handleInputChange}
+                          placeholder="Region code"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Zone Code</Label>
+                        <Input
+                          name="residenceZoneCode"
+                          value={formData.residenceZoneCode || ""}
+                          onChange={handleInputChange}
+                          placeholder="Zone code"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Woreda Code</Label>
+                        <Input
+                          name="residenceWoredaCode"
+                          value={formData.residenceWoredaCode || ""}
+                          onChange={handleInputChange}
+                          placeholder="Woreda code"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
+              </>
+            )}
+
+            {!editing && (
+              <>
+                <Separator />
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Current Residence</Label>
+                    <Input
+                      value={fullAddress}
+                      readOnly
+                      className="bg-gray-50 dark:bg-gray-800"
+                    />
+                  </div>
+                  {addressCodes && (
+                    <div className="space-y-2">
+                      <Label>Address Codes</Label>
+                      <Input
+                        value={addressCodes}
+                        readOnly
+                        className="bg-gray-50 dark:bg-gray-800 text-sm"
+                      />
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -429,9 +789,11 @@ export default function Dean_Profile() {
                 Academic Title
               </Label>
               <Input
-                value={title || "Not specified"}
-                readOnly
-                className="bg-gray-50 dark:bg-gray-800"
+                value={formData.title || profile.title || "Not specified"}
+                readOnly={!editing}
+                onChange={handleInputChange}
+                name="title"
+                className={!editing ? "bg-gray-50 dark:bg-gray-800 cursor-not-allowed" : "bg-white dark:bg-gray-800"}
               />
             </div>
             <div className="space-y-2">
@@ -464,7 +826,7 @@ export default function Dean_Profile() {
                 Appointment Date (Gregorian)
               </Label>
               <Input
-                value={formatDate(hiredDateGC)}
+                value={formatDate(profile.hiredDateGC)}
                 readOnly
                 className="bg-gray-50 dark:bg-gray-800"
               />
@@ -475,7 +837,7 @@ export default function Dean_Profile() {
                 Username
               </Label>
               <Input
-                value={username}
+                value={profile.username}
                 readOnly
                 className="bg-gray-50 dark:bg-gray-800"
               />
@@ -508,7 +870,7 @@ export default function Dean_Profile() {
                 variant="outline"
                 className="text-blue-600 dark:text-blue-400"
               >
-                {title || "Dean"}
+                {formData.title || profile.title || "Dean"}
               </Badge>
             </div>
             <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
@@ -517,7 +879,7 @@ export default function Dean_Profile() {
                 <div>
                   <p className="font-medium">Appointment Date</p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Appointed since {formatDate(hiredDateGC)}
+                    Appointed since {formatDate(profile.hiredDateGC)}
                   </p>
                 </div>
               </div>
@@ -570,6 +932,39 @@ export default function Dean_Profile() {
           </div>
         </CardContent>
       </Card>
+
+      {/* File Preview Section */}
+      {photoFile && editing && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Selected File</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Camera className="h-5 w-5 text-blue-600" />
+                  <div>
+                    <p className="font-medium">Profile Photo</p>
+                    <p className="text-sm text-gray-600">{photoFile.name}</p>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setPhotoFile(null);
+                    setPhotoPreview(photoBase64);
+                  }}
+                  className="text-red-600 hover:text-red-800"
+                >
+                  Remove
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

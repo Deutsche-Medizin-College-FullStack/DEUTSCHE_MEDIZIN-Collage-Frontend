@@ -161,10 +161,7 @@ export default function ViceDeanProfileEditable() {
       setError(null);
       setSuccess(null);
 
-      // Create FormData for multipart/form-data
-      const formDataToSend = new FormData();
-      
-      // Add JSON data with all editable fields
+      // Prepare the request data
       const jsonData: UpdateViceDeanRequest = {
         firstNameENG: formData.firstNameENG,
         fatherNameENG: formData.fatherNameENG,
@@ -177,20 +174,40 @@ export default function ViceDeanProfileEditable() {
         title: formData.title,
         gender: formData.gender,
       };
-      
-      formDataToSend.append("data", JSON.stringify(jsonData));
-      
-      // Add photo if provided
-      if (photoFile) {
-        formDataToSend.append("photograph", photoFile);
-      }
 
-      // Use the correct endpoint
-      await apiClient.patch(endPoints.updateViceDeanProfile, formDataToSend, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      // Create JSON string with proper encoding for Unicode characters
+      const jsonString = JSON.stringify(jsonData);
+
+      console.log("Sending JSON data:", jsonString);
+      console.log("JSON data object:", jsonData);
+
+      // Check if we have a photo file to upload
+      if (photoFile) {
+        // Create FormData for multipart/form-data (when photo is included)
+        const formDataToSend = new FormData();
+        
+        // Use Blob to ensure proper encoding
+        const jsonBlob = new Blob([jsonString], { type: 'application/json' });
+        formDataToSend.append("data", jsonBlob);
+        formDataToSend.append("photograph", photoFile);
+
+        console.log("Sending with FormData (with photo)");
+
+        await apiClient.patch(endPoints.updateViceDeanProfile, formDataToSend, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+      } else {
+        // Send as JSON directly when no photo is included
+        console.log("Sending as plain JSON (no photo)");
+
+        await apiClient.patch(endPoints.updateViceDeanProfile, jsonData, {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+      }
 
       setSuccess("Profile updated successfully!");
       setEditing(false);
@@ -200,11 +217,31 @@ export default function ViceDeanProfileEditable() {
       setPhotoFile(null);
     } catch (err: any) {
       console.error("Failed to update profile:", err);
-      setError(
-        err.response?.data?.error ||
+      console.error("Error response:", err.response);
+      
+      // Check for specific error types
+      if (err.response?.status === 403) {
+        setError("Access Denied: You do not have permission to update the vice-dean profile.");
+      } else if (err.response?.status === 400) {
+        // Handle validation errors
+        const errorMessage = err.response?.data?.error || "Invalid data. Please check your inputs.";
+        setError(errorMessage);
+        
+        // Log the request data for debugging
+        console.error("Request data that caused error:", {
+          firstNameENG: formData.firstNameENG,
+          firstNameAMH: formData.firstNameAMH,
+          email: formData.email,
+          phoneNumber: formData.phoneNumber,
+        });
+      } else {
+        setError(
+          err.response?.data?.error ||
+          err.response?.data?.message ||
           err.message ||
           "Failed to update profile. Please try again."
-      );
+        );
+      }
     } finally {
       setSaving(false);
     }
@@ -265,8 +302,8 @@ export default function ViceDeanProfileEditable() {
     return null;
   }
 
-  const fullNameEnglish = `${profile.title ? profile.title + " " : ""}${profile.firstNameENG} ${profile.fatherNameENG} ${profile.grandfatherNameENG}`;
-  const fullNameAmharic = `${profile.firstNameAMH} ${profile.fatherNameAMH} ${profile.grandfatherNameAMH}`;
+  const fullNameEnglish = `${profile.title ? profile.title + " " : ""}${formData.firstNameENG || profile.firstNameENG} ${formData.fatherNameENG || profile.fatherNameENG} ${formData.grandfatherNameENG || profile.grandfatherNameENG}`;
+  const fullNameAmharic = `${formData.firstNameAMH || profile.firstNameAMH} ${formData.fatherNameAMH || profile.fatherNameAMH} ${formData.grandfatherNameAMH || profile.grandfatherNameAMH}`;
   
   const fullAddress = [profile.residenceWoreda, profile.residenceZone, profile.residenceRegion]
     .filter(Boolean)
@@ -325,7 +362,7 @@ export default function ViceDeanProfileEditable() {
                 Vice-Dean Account
               </Badge>
               <Badge variant="secondary" className="text-sm">
-                {profile.title || "Vice-Dean"}
+                {formData.title || profile.title || "Vice-Dean"}
               </Badge>
             </div>
           </div>
@@ -336,6 +373,10 @@ export default function ViceDeanProfileEditable() {
                 <Button onClick={() => setEditing(true)} variant="outline">
                   <Edit className="h-4 w-4 mr-2" />
                   Edit Profile
+                </Button>
+                <Button onClick={() => handleUploadClick('photo')} variant="outline">
+                  <Camera className="h-4 w-4 mr-2" />
+                  Upload Photo
                 </Button>
               </>
             ) : (
@@ -404,18 +445,18 @@ export default function ViceDeanProfileEditable() {
                 Vice-Dean
               </Badge>
               <Badge variant="outline" className="text-sm">
-                {profile.title || "Vice-Dean"}
+                {formData.title || profile.title || "Vice-Dean"}
               </Badge>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center space-x-2 text-sm">
               <Mail className="h-4 w-4 text-gray-500" />
-              <span>{profile.email}</span>
+              <span>{formData.email || profile.email}</span>
             </div>
             <div className="flex items-center space-x-2 text-sm">
               <Phone className="h-4 w-4 text-gray-500" />
-              <span>{profile.phoneNumber}</span>
+              <span>{formData.phoneNumber || profile.phoneNumber}</span>
             </div>
             <div className="flex items-center space-x-2 text-sm">
               <MapPin className="h-4 w-4 text-gray-500" />
