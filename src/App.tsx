@@ -32,14 +32,15 @@ const AssessmentPage = React.lazy(  () => import("./pages/teacher/AssessmentPage
 const HeadLayout = React.lazy(() => import("./layouts/HeadLayout"));
 const HeadDashboard = React.lazy(() => import("./pages/head/Dashboard"));
 const HeadStudents = React.lazy(() => import("./pages/head/Students"));
+const HeadStudentDetail = React.lazy(() => import("./pages/head/StudentDetail.tsx"));
 const HeadTeachers = React.lazy(() => import("./pages/head/Teachers"));
 const HeadCourses = React.lazy(() => import("./pages/head/Courses"));
 const HeadReports = React.lazy(() => import("./pages/head/Reports"));
 const DepartmentHeadProfile = React.lazy(  () => import("./pages/head/DepartmentHeadProfile.tsx"));
 const HeadGrades = React.lazy(() => import("./pages/head/Grades"));
 const CreateTeacher = React.lazy(() => import("./pages/head/CreateTeacher"));
-const HeadAssessments = React.lazy(() => import("./pages/head/Assessments")); // Added
-const HeadAssessmentDetail = React.lazy(  () => import("./pages/head/AssessmentDetail")); // Added
+const HeadAssessments = React.lazy(() => import("./pages/head/Assessments"));
+const HeadAssessmentDetail = React.lazy(  () => import("./pages/head/AssessmentDetail")); 
 
 // Registrar Pages
 const RegistrarLayout = React.lazy(() => import("./layouts/RegistrarLayout"));
@@ -155,6 +156,7 @@ function App() {
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<HeadDashboard />} />
               <Route path="students" element={<HeadStudents />} />
+              <Route path="students/:id" element={<HeadStudentDetail />} />
               <Route path="teachers" element={<HeadTeachers />} />
               <Route path="create-teacher" element={<CreateTeacher />} />
               <Route path="grades" element={<HeadGrades />} />
