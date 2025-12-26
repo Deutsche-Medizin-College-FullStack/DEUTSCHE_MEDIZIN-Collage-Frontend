@@ -15,6 +15,10 @@ const endPoints = {
   getDepartmentHeadPhoto: "/department-heads/profile/photo",
   teacherCourseAssignments: (teacherId: number | string) =>
     `/teachers/${teacherId}/course-assignments`,
+  teacherCourseAssignmentDeletion: (
+    teacherId: number | string,
+    assignmentId: number | string
+  ) => `/teachers/${teacherId}/course-assignments/${assignmentId}`,
   gradingSystem: "/grading-systems",
   getDepartmentHeadProfile: "/department-heads/profile",
   studentCopy: "/student-copy/generate",
@@ -35,7 +39,8 @@ const endPoints = {
   students: "/students",
   studentsDeactivation: "/students/:id/disable",
   studentsActivation: "/students/:id/enable",
-  resetStudentPassword:    "/auth/registrar/students/:studentUserId/reset-password",
+  resetStudentPassword:
+    "/auth/registrar/students/:studentUserId/reset-password",
   createDepartmentHead: "/auth/create-department-head",
   createTeacher: "/auth/create-teacher",
   departmentHeads: "/department-heads",
@@ -106,10 +111,10 @@ const endPoints = {
     "/department-heads/assignments/:teacherCourseAssignmentId/approve-all",
 
   updateViceDeanProfile: "/vice-deans/update",
-  updateDeanProfile: "/deans/update" ,
-  departmentStudents: "/department-heads/my-students", 
+  updateDeanProfile: "/deans/update",
+  departmentStudents: "/department-heads/my-students",
   studentById: "/students",
-  deanDashboard: "/deans/dashboard"
+  deanDashboard: "/deans/dashboard",
 };
 
 export default endPoints;

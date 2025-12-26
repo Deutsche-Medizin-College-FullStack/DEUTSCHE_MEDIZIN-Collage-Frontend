@@ -42,6 +42,7 @@ type AssignedCourse = {
   courseTitle: string;
   totalCrHrs: number;
   batchClassYearSemesterName: string;
+  teacherCourseAssigmentId: number;
 };
 
 type TeacherDetail = {
@@ -163,7 +164,8 @@ export default function TeacherProfileDetail() {
     try {
       setDeletingAssignmentId(assignmentId);
       await apiClient.delete(
-        `/teachers/${teacher.userId}/course-assignments/${assignmentId}`
+        endPoints.teacherCourseAssignmentDeletion(teacher.userId, assignmentId)
+        // `/teachers/${teacher.userId}/course-assignments/${assignmentId}`
       );
       setSuccess("Course assignment removed successfully");
       await fetchTeacher();
@@ -1483,10 +1485,18 @@ export default function TeacherProfileDetail() {
                                 variant="ghost"
                                 size="icon"
                                 className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => setConfirmDeleteId(course.id)}
-                                disabled={deletingAssignmentId === course.id}
+                                onClick={() =>
+                                  setConfirmDeleteId(
+                                    course.teacherCourseAssigmentId
+                                  )
+                                }
+                                disabled={
+                                  deletingAssignmentId ===
+                                  course.teacherCourseAssigmentId
+                                }
                               >
-                                {deletingAssignmentId === course.id ? (
+                                {deletingAssignmentId ===
+                                course.teacherCourseAssigmentId ? (
                                   <RefreshCw className="h-4 w-4 animate-spin" />
                                 ) : (
                                   <X className="h-4 w-4" />
