@@ -134,7 +134,10 @@ export default function TeacherProfileDetail() {
 
     try {
       await apiClient.post(
-        `/teachers/${teacher.userId}/course-assignments`,
+        // `/teachers/${teacher.userId}/course-assignments`,
+        // payload
+
+        endPoints.teacherCourseAssignments(teacher.userId),
         payload
       );
 
@@ -313,6 +316,7 @@ export default function TeacherProfileDetail() {
     try {
       const res = await apiClient.get(`/teachers/${id}`);
       setTeacher(res.data);
+      console.log(res, "look at ya");
       setOriginalTeacher(structuredClone(res.data));
     } catch (err: any) {
       setError(
@@ -355,7 +359,16 @@ export default function TeacherProfileDetail() {
   useEffect(() => {
     fetchTeacher();
   }, [fetchTeacher]);
-
+  // Add this useEffect
+  useEffect(() => {
+    if (
+      assignmentMode &&
+      departmentCourses.length === 0 &&
+      !loadingDeptCourses
+    ) {
+      fetchDepartmentCourses();
+    }
+  }, [assignmentMode]);
   const handleRetry = () => {
     setError(null);
     fetchTeacher();
