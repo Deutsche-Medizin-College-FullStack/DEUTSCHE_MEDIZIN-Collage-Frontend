@@ -26,6 +26,11 @@ import apiClient from "@/components/api/apiClient";
 import endPoints from "@/components/api/endPoints";
 
 export default function CreateTeacher() {
+  // Add near other states (e.g. after impairments / courses)
+  const [bcysOptions, setBcysOptions] = useState<
+    { id: number; label: string /* add year?, semester?, batch? if useful */ }[]
+  >([]);
+  const [loadingBcys, setLoadingBcys] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [documentName, setDocumentName] = useState<string>("");
@@ -47,7 +52,10 @@ export default function CreateTeacher() {
     { value: string; label: string }[]
   >([]);
   const [loadingImpairments, setLoadingImpairments] = useState(true);
-
+  const [departmentCourses, setDepartmentCourses] = useState<any[]>([]);
+  const [loadingDeptCourses, setLoadingDeptCourses] = useState(false);
+  const [selectedCourseId, setSelectedCourseId] = useState<string>("");
+  const [selectedBcysId, setSelectedBcysId] = useState<number | "">("");
   // Courses - fetched from myDepartmentCourses (multi-select)
   const [courses, setCourses] = useState<
     {
@@ -90,7 +98,47 @@ export default function CreateTeacher() {
     };
     fetchImpairments();
   }, []);
+  useEffect(() => {
+    const fetchBcysOptions = async () => {
+      setLoadingBcys(true);
+      try {
+        const res = await apiClient.get(endPoints.lookupsDropdown);
+        const data = res.data || {};
 
+        // Adjust property name according to your real response
+        const batches = Array.isArray(data.batchClassYearSemesters)
+          ? data.batchClassYearSemesters
+          : [];
+
+        // Format them into something readable
+        const formatted = batches.map((item: any) => ({
+          id: item.id || item.bcysId || item.value || 0,
+          label:
+            [
+              item.name || item.batch || "",
+              item.classYearName || item.year || "",
+              item.semesterName || item.semester || "",
+            ]
+              .filter(Boolean)
+              .join(" • ") || `BCYS #${item.id}`,
+        }));
+
+        setBcysOptions(formatted.filter((opt) => opt.id > 0));
+
+        // Optional: auto-select first one if there's only 1 option
+        if (formatted.length === 1) {
+          setSelectedBcysId(formatted[0].id);
+        }
+      } catch (err) {
+        console.error("Failed to load BCYS options:", err);
+        setBcysOptions([]);
+      } finally {
+        setLoadingBcys(false);
+      }
+    };
+
+    fetchBcysOptions();
+  }, []);
   // Fetch Regions
   useEffect(() => {
     const fetchRegions = async () => {
@@ -222,6 +270,11 @@ export default function CreateTeacher() {
         : [...prev, courseId]
     );
   };
+  let departmentId;
+  const token = sessionStorage.getItem("Userdata");
+  console.log(token);
+  departmentId = JSON.parse(token).departmentId;
+  console.log(JSON.parse(token).departmentId);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -243,9 +296,10 @@ export default function CreateTeacher() {
       dateOfBirthEC: formData.get("dateOfBirthEC")?.toString() || "",
       phoneNumber: formData.get("phoneNumber")?.toString().trim() || "",
       email: formData.get("email")?.toString().trim() || "",
-      departmentId: formData.get("departmentId")
-        ? Number(formData.get("departmentId"))
-        : null,
+      departmentId: departmentId,
+      // formData.get("departmentId")
+      //   ? Number(formData.get("departmentId"))
+      //   : null,
       hireDateGC: formData.get("hireDateGC")?.toString() || "",
       hireDateEC: formData.get("hireDateEC")?.toString() || "",
       title: formData.get("title")?.toString().trim() || "",
@@ -260,10 +314,17 @@ export default function CreateTeacher() {
         formData.get("currentAddressZoneCode")?.toString().trim() || "",
       currentAddressWoredaCode:
         formData.get("currentAddressWoredaCode")?.toString().trim() || "",
-      courseAssignments: selectedCourseIds.map((courseId) => ({
-        courseId,
-        bcysId: 4,
-      })),
+      // courseAssignments: selectedCourseIds.map((courseId) => ({
+      //   courseId,
+      //   bcysId: 4,
+      // })),
+      courseAssignments:
+        selectedBcysId && selectedCourseIds.length > 0
+          ? selectedCourseIds.map((courseId) => ({
+              courseId,
+              bcysId: selectedBcysId, // ← now dynamic
+            }))
+          : [],
     };
 
     const required = [
@@ -277,7 +338,7 @@ export default function CreateTeacher() {
       jsonPayload.dateOfBirthGC,
       jsonPayload.phoneNumber,
       jsonPayload.email,
-      jsonPayload.departmentId,
+      //sjsonPayload.departmentId,
       jsonPayload.hireDateGC,
       jsonPayload.title,
     ];
@@ -499,7 +560,16 @@ export default function CreateTeacher() {
                   <Label>
                     Department ID <span className="text-red-500">*</span>
                   </Label>
-                  <Input name="departmentId" type="number" value={JSON.parse(sessionStorage.getItem("Userdata") || "{}").departmentId || ""} readOnly required />
+                  <Input
+                    name="departmentId"
+                    type="number"
+                    value={
+                      JSON.parse(sessionStorage.getItem("Userdata") || "{}")
+                        .departmentId || ""
+                    }
+                    readOnly
+                    required
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>
@@ -786,6 +856,50 @@ export default function CreateTeacher() {
                   })}
                 </div>
               )}
+            </section>
+            <section className="space-y-6">
+              <h2 className="text-xl font-semibold border-b pb-2">
+                Academic Period for Assignments
+              </h2>
+
+              <div className="space-y-2 max-w-md">
+                <Label>
+                  Batch / Class / Year / Semester{" "}
+                  <span className="text-red-500">*</span>
+                </Label>
+
+                <Select
+                  value={String(selectedBcysId)}
+                  onValueChange={(v) => setSelectedBcysId(v ? Number(v) : "")}
+                  disabled={loadingBcys || bcysOptions.length === 0}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={
+                        loadingBcys
+                          ? "Loading academic periods..."
+                          : bcysOptions.length === 0
+                          ? "No academic periods available"
+                          : "Select batch/year/semester"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {bcysOptions.map((opt) => (
+                      <SelectItem key={opt.id} value={String(opt.id)}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {bcysOptions.length === 0 && !loadingBcys && (
+                  <p className="text-sm text-amber-700 mt-1">
+                    No academic periods found. Contact admin.
+                  </p>
+                )}
+              </div>
             </section>
             {/* Assign Courses - Simple Searchable Multi-Select Dropdown */}
             {/* Assign Courses - Searchable Multi-Select Dropdown (FIXED) */}

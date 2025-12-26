@@ -75,7 +75,13 @@ type TeacherDetail = {
 export default function TeacherProfileDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  // ── New states for course assignment ────────────────────────────────────────
+  const [departmentCourses, setDepartmentCourses] = useState<any[]>([]);
 
+  const [loadingDeptCourses, setLoadingDeptCourses] = useState(false);
+  const [selectedCourseId, setSelectedCourseId] = useState<string>("");
+  // You may also want to fetch BCYS options — for now we assume user knows/pastes ID
+  // (in real app you'd probably fetch batch/class/year/semester combos too)
   const [teacher, setTeacher] = useState<TeacherDetail | null>(null);
   const [originalTeacher, setOriginalTeacher] = useState<TeacherDetail | null>(
     null
@@ -93,6 +99,13 @@ export default function TeacherProfileDetail() {
   const [loadingRegions, setLoadingRegions] = useState(false);
   const [loadingZones, setLoadingZones] = useState(false);
   const [loadingWoredas, setLoadingWoredas] = useState(false);
+  // Add these new states
+  const [assignmentMode, setAssignmentMode] = useState(false);
+
+  const [deletingAssignmentId, setDeletingAssignmentId] = useState<
+    number | null
+  >(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   // Optional but strongly recommended – show the selected filename to the user
   const [selectedDocumentName, setSelectedDocumentName] = useState<
     string | null
@@ -105,6 +118,68 @@ export default function TeacherProfileDetail() {
 
   const photoInputRef = useRef<HTMLInputElement>(null);
   const documentInputRef = useRef<HTMLInputElement>(null);
+  const handleAssignCourse = async () => {
+    if (!teacher?.userId || !selectedCourseId || !selectedBcysId) return;
+
+    setSaving(true);
+    setError(null);
+    setSuccess(null);
+
+    const payload = [
+      {
+        courseId: Number(selectedCourseId),
+        bcysId: Number(selectedBcysId),
+      },
+    ];
+
+    try {
+      await apiClient.post(
+        // `/teachers/${teacher.userId}/course-assignments`,
+        // payload
+
+        endPoints.teacherCourseAssignments(teacher.userId),
+        payload
+      );
+
+      setSuccess("Course assigned successfully!");
+      await fetchTeacher();
+
+      // Reset selection
+      setSelectedCourseId("");
+      setSelectedBcysId("");
+    } catch (err: any) {
+      console.error("Assign failed:", err);
+      setError(
+        err.response?.data?.message ||
+          "Failed to assign course (may already exist or invalid IDs)"
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+  const handleRevokeCourse = async (assignmentId: number) => {
+    if (!teacher?.userId) return;
+
+    try {
+      setDeletingAssignmentId(assignmentId);
+      await apiClient.delete(
+        `/teachers/${teacher.userId}/course-assignments/${assignmentId}`
+      );
+      setSuccess("Course assignment removed successfully");
+      await fetchTeacher();
+    } catch (err: any) {
+      console.error("Revoke failed:", err);
+      setError(
+        err.response?.data?.message ||
+          (err.response?.status === 404
+            ? "Assignment not found"
+            : "Failed to remove assignment")
+      );
+    } finally {
+      setDeletingAssignmentId(null);
+      setConfirmDeleteId(null);
+    }
+  };
   const handleRegionChange = async (regionCode: string) => {
     // Update teacher state
     setTeacher((prev) =>
@@ -175,6 +250,60 @@ export default function TeacherProfileDetail() {
       setLoadingWoredas(false);
     }
   };
+  // Add this state (for better UX)
+  // States (should already be there)
+  const [classYearBatch, setClassYearBatch] = useState<any[]>([]);
+  const [selectedBcysId, setSelectedBcysId] = useState<string>("");
+  const [loadingBcys, setLoadingBcys] = useState(false);
+  // Fetch — improve it a bit for safety
+  useEffect(() => {
+    const fetchDropDowns = async () => {
+      setLoadingBcys(true);
+      try {
+        const res = await apiClient.get(endPoints.lookupsDropdown);
+        const data = res.data || {};
+        const batches = Array.isArray(data.batchClassYearSemesters)
+          ? data.batchClassYearSemesters
+          : [];
+
+        setClassYearBatch(batches);
+        console.log("Loaded BCYS options:", batches.length, "items");
+      } catch (err) {
+        console.error("Failed to load batch/class/year/semester options:", err);
+        setClassYearBatch([]);
+      } finally {
+        setLoadingBcys(false);
+      }
+    };
+
+    fetchDropDowns(); // always fetch on mount
+    // OR: if (editMode) fetchDropDowns();   // only when editing
+  }, []); // or [editMode] if you prefer lazy loading// ← or [editMode] if you want to load only when editing
+  const fetchDepartmentCourses = async () => {
+    setLoadingDeptCourses(true);
+    try {
+      const res = await apiClient.get(endPoints.myDepartmentCourses);
+      // assuming response is array like your example
+      if (Array.isArray(res.data)) {
+        setDepartmentCourses(res.data);
+        console.log(res, "you found me");
+      } else {
+        console.log(res, "you found me");
+        setDepartmentCourses([]);
+        console.warn("Unexpected courses format", res.data);
+      }
+    } catch (err: any) {
+      console.error("Failed to load department courses", err);
+      if (err.response?.status === 404) {
+        alert(
+          "No department profile found. Please set up your department first."
+        );
+      }
+      setDepartmentCourses([]);
+    } finally {
+      setLoadingDeptCourses(false);
+    }
+  };
   const fetchTeacher = useCallback(async () => {
     if (!id) {
       setError("No teacher ID provided.");
@@ -187,6 +316,7 @@ export default function TeacherProfileDetail() {
     try {
       const res = await apiClient.get(`/teachers/${id}`);
       setTeacher(res.data);
+      console.log(res, "look at ya");
       setOriginalTeacher(structuredClone(res.data));
     } catch (err: any) {
       setError(
@@ -223,17 +353,32 @@ export default function TeacherProfileDetail() {
     if (editMode) {
       // only fetch when entering edit mode (optional optimization)
       fetchRegions();
+      fetchDepartmentCourses();
     }
   }, [editMode]);
   useEffect(() => {
     fetchTeacher();
   }, [fetchTeacher]);
-
+  // Add this useEffect
+  useEffect(() => {
+    if (
+      assignmentMode &&
+      departmentCourses.length === 0 &&
+      !loadingDeptCourses
+    ) {
+      fetchDepartmentCourses();
+    }
+  }, [assignmentMode]);
   const handleRetry = () => {
     setError(null);
     fetchTeacher();
   };
-
+  let departementId;
+  useEffect(() => {
+    const token = sessionStorage.getItem("Userdata");
+    departementId = JSON.parse(token);
+    console.log(JSON.parse(token).departmentId);
+  }, []);
   const hasChanges = () => {
     if (!teacher || !originalTeacher) return false;
     return (
@@ -710,7 +855,7 @@ export default function TeacherProfileDetail() {
                 <p className="text-muted-foreground mt-4">
                   ID:{" "}
                   <span className="font-mono font-bold text-foreground">
-                    {teacher.userId}
+                    {id}
                   </span>
                 </p>
               </div>
@@ -1136,7 +1281,7 @@ export default function TeacherProfileDetail() {
                 )}
               </div>
 
-              <div>
+              {/* <div>
                 <h3 className="text-xl font-semibold mb-6 flex items-center gap-3 text-foreground">
                   <BookOpen className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                   Assigned Courses ({teacher.assignedCourses.length})
@@ -1174,6 +1319,334 @@ export default function TeacherProfileDetail() {
                         </div>
                       </Card>
                     ))}
+                  </div>
+                )}
+                {editMode && (
+                  <div className="mt-8 pt-6 border-t border-border">
+                    <h4 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                      <BookOpen className="h-5 w-5" />
+                      Assign New Course
+                    </h4>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                      <div className="space-y-2">
+                        <Label>Course</Label>
+                        {loadingDeptCourses ? (
+                          <div className="text-sm text-muted-foreground">
+                            Loading courses...
+                          </div>
+                        ) : departmentCourses.length === 0 ? (
+                          <div className="text-sm text-destructive">
+                            No courses available in your department
+                          </div>
+                        ) : (
+                          <Select
+                            value={selectedCourseId}
+                            onValueChange={setSelectedCourseId}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a course" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {departmentCourses.map((c) => (
+                                <SelectItem key={c.id} value={String(c.id)}>
+                                  {c.code} – {c.title}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Batch / Year / Semester</Label>
+
+                        {loadingBcys ? (
+                          <div className="h-10 flex items-center text-sm text-muted-foreground">
+                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            Loading options...
+                          </div>
+                        ) : classYearBatch.length === 0 ? (
+                          <div className="h-10 flex items-center text-sm text-muted-foreground italic">
+                            No batch/year/semester options available
+                          </div>
+                        ) : (
+                          <Select
+                            value={selectedBcysId}
+                            onValueChange={setSelectedBcysId}
+                            disabled={saving}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select batch / year / semester" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {classYearBatch.map((item: any) => (
+                                <SelectItem
+                                  key={item.id}
+                                  value={String(item.id)}
+                                >
+                                  {item.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </div>
+                    </div>
+
+                    <Button
+                      onClick={handleAssignCourse}
+                      // disabled={
+                      //   !selectedCourseId ||
+                      //   !selectedBcysId ||
+                      //   loadingDeptCourses ||
+                      //   saving
+                      // }
+                      disabled={
+                        !selectedCourseId ||
+                        !selectedBcysId ||
+                        loadingDeptCourses ||
+                        loadingBcys || // ← added
+                        saving ||
+                        classYearBatch.length === 0
+                      }
+                      className="w-full sm:w-auto"
+                    >
+                      Assign Course
+                    </Button>
+                  </div>
+                )}
+              </div> */}
+              <div className="lg:col-span-1">
+                <div className="bg-card rounded-xl border shadow-sm p-6 sticky top-6">
+                  {/* Header */}
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-semibold flex items-center gap-3">
+                      <BookOpen className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                      Course Assignments (
+                      {teacher?.assignedCourses?.length || 0})
+                    </h3>
+
+                    <Button
+                      variant={assignmentMode ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setAssignmentMode(!assignmentMode)}
+                    >
+                      {assignmentMode ? (
+                        <>
+                          <X className="h-4 w-4 mr-2" /> Close
+                        </>
+                      ) : (
+                        <>
+                          <Edit3 className="h-4 w-4 mr-2" /> Manage Courses
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
+                  {/* No courses yet */}
+                  {(!teacher?.assignedCourses ||
+                    teacher.assignedCourses.length === 0) && (
+                    <div className="text-center py-10 text-muted-foreground bg-muted/30 rounded-lg border border-dashed">
+                      <BookOpen className="h-12 w-12 mx-auto mb-3 opacity-60" />
+                      <p className="font-medium">No courses assigned yet</p>
+                      <p className="text-sm mt-1">
+                        Click "Manage Courses" to assign
+                      </p>
+                    </div>
+                  )}
+
+                  {/* List of assigned courses */}
+                  {teacher?.assignedCourses?.length > 0 && (
+                    <div className="space-y-3 mb-8 max-h-[380px] overflow-y-auto pr-2">
+                      {teacher.assignedCourses.map((course) => (
+                        <div
+                          key={course.id}
+                          className="flex items-start justify-between p-3.5 rounded-lg border bg-muted/40 hover:bg-muted/60 transition-colors group"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium leading-tight">
+                              {course.courseCode} — {course.courseTitle}
+                            </div>
+                            <div className="text-sm text-muted-foreground mt-1">
+                              {course.batchClassYearSemesterName}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            <Badge variant="outline" className="text-xs">
+                              {course.totalCrHrs} Cr.Hrs
+                            </Badge>
+
+                            {assignmentMode && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => setConfirmDeleteId(course.id)}
+                                disabled={deletingAssignmentId === course.id}
+                              >
+                                {deletingAssignmentId === course.id ? (
+                                  <RefreshCw className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <X className="h-4 w-4" />
+                                )}
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Assign new course form – visible only in assignmentMode */}
+                  {assignmentMode && (
+                    <div className="pt-6 border-t border-border">
+                      <h4 className="text-base font-semibold mb-4">
+                        Assign New Course
+                      </h4>
+
+                      <div className="space-y-4">
+                        {/* Course selector */}
+                        <div>
+                          <Label>Course</Label>
+                          {loadingDeptCourses ? (
+                            <div className="h-10 flex items-center text-sm text-muted-foreground">
+                              Loading courses...
+                            </div>
+                          ) : departmentCourses.length === 0 ? (
+                            <div className="text-sm text-amber-600 dark:text-amber-400">
+                              No courses available in department
+                            </div>
+                          ) : (
+                            <Select
+                              value={selectedCourseId}
+                              onValueChange={setSelectedCourseId}
+                              disabled={saving}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select course..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {departmentCourses.map((c: any) => {
+                                  const isAlreadyAssigned =
+                                    teacher.assignedCourses.some(
+                                      (ac) => ac.id === c.id // or compare courseId if you have it
+                                    );
+                                  return (
+                                    <SelectItem
+                                      key={c.id}
+                                      value={String(c.id)}
+                                      disabled={isAlreadyAssigned}
+                                      className={
+                                        isAlreadyAssigned ? "opacity-50" : ""
+                                      }
+                                    >
+                                      {c.code} – {c.title}
+                                      {isAlreadyAssigned &&
+                                        " (already assigned)"}
+                                    </SelectItem>
+                                  );
+                                })}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </div>
+
+                        {/* BCYS selector */}
+                        <div>
+                          <Label>Batch / Class / Year / Semester</Label>
+                          {loadingBcys ? (
+                            <div className="h-10 flex items-center text-sm text-muted-foreground">
+                              Loading...
+                            </div>
+                          ) : (
+                            <Select
+                              value={selectedBcysId}
+                              onValueChange={setSelectedBcysId}
+                              disabled={saving}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select period..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {classYearBatch.map((item: any) => (
+                                  <SelectItem
+                                    key={item.id}
+                                    value={String(item.id)}
+                                  >
+                                    {item.name ||
+                                      item.displayName ||
+                                      `ID ${item.id}`}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </div>
+
+                        <Button
+                          onClick={handleAssignCourse}
+                          disabled={
+                            !selectedCourseId ||
+                            !selectedBcysId ||
+                            loadingDeptCourses ||
+                            loadingBcys ||
+                            saving
+                          }
+                          className="w-full"
+                        >
+                          {saving ? (
+                            <>
+                              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                              Assigning...
+                            </>
+                          ) : (
+                            "Assign Course"
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Delete confirmation modal */}
+                {confirmDeleteId && (
+                  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <Card className="max-w-md w-full border-destructive/30">
+                      <CardContent className="pt-6">
+                        <h3 className="text-lg font-semibold text-destructive mb-3">
+                          Remove this course assignment?
+                        </h3>
+                        <p className="text-sm text-muted-foreground mb-6">
+                          This will permanently delete the assignment{" "}
+                          <strong>
+                            and all related student assessments / records
+                          </strong>
+                          .
+                          <br />
+                          This action <strong>cannot be undone</strong>.
+                        </p>
+                        <div className="flex justify-end gap-3">
+                          <Button
+                            variant="outline"
+                            onClick={() => setConfirmDeleteId(null)}
+                            disabled={deletingAssignmentId !== null}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            onClick={() => handleRevokeCourse(confirmDeleteId)}
+                            disabled={deletingAssignmentId !== null}
+                          >
+                            {deletingAssignmentId === confirmDeleteId
+                              ? "Removing..."
+                              : "Remove"}
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
                   </div>
                 )}
               </div>
