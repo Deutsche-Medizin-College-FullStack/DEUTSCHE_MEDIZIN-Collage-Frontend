@@ -35,8 +35,7 @@ const endPoints = {
   students: "/students",
   studentsDeactivation: "/students/:id/disable",
   studentsActivation: "/students/:id/enable",
-  resetStudentPassword:
-    "/auth/registrar/students/:studentUserId/reset-password",
+  resetStudentPassword:    "/auth/registrar/students/:studentUserId/reset-password",
   createDepartmentHead: "/auth/create-department-head",
   createTeacher: "/auth/create-teacher",
   departmentHeads: "/department-heads",
@@ -107,7 +106,10 @@ const endPoints = {
     "/department-heads/assignments/:teacherCourseAssignmentId/approve-all",
 
   updateViceDeanProfile: "/vice-deans/update",
-  updateDeanProfile: "/deans/update",
+  updateDeanProfile: "/deans/update" ,
+  departmentStudents: "/department-heads/my-students", 
+  studentById: "/students",
+  deanDashboard: "/deans/dashboard"
 };
 
 export default endPoints;
