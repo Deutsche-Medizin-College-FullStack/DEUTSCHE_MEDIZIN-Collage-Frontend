@@ -189,55 +189,19 @@ function App() {
               />
               <Route path="settings/batches" element={<BatchesEditor />} />
               <Route path="settings/semesters" element={<SemestersEditor />} />
-              <Route
-                path="settings/school-background"
-                element={<SchoolBackgroundsEditor />}
-              />
-              <Route
-                path="settings/enrollment"
-                element={<EnrollmentTypesEditor />}
-              />
-              <Route
-                path="settings/grading-systems"
-                element={<GradingSystemEditor />}
-              />
-              <Route
-                path="settings/class-years"
-                element={<ClassYearsEditor />}
-              />
-              <Route
-                path="settings/impairments"
-                element={<ImpairmentEditor />}
-              />
-              <Route
-                path="settings/program-modality"
-                element={<ProgramModalitiesEditor />}
-              />
-              <Route
-                path="settings/program-level"
-                element={<ProgramLevelsEditor />}
-              />
-              <Route
-                path="settings/course-category"
-                element={<CourseCategoriesEditor />}
-              />
+              <Route  path="settings/school-background"                element={<SchoolBackgroundsEditor />}              />
+              <Route path="settings/enrollment" element={<EnrollmentTypesEditor />} />
+              <Route  path="settings/grading-systems"    element={<GradingSystemEditor />}              />
+              <Route  path="settings/class-years"   element={<ClassYearsEditor />}              />
+              <Route  path="settings/impairments" element={<ImpairmentEditor />}              />
+              <Route  path="settings/program-modality"  element={<ProgramModalitiesEditor />}              />
+              <Route  path="settings/program-level"  element={<ProgramLevelsEditor />}              />
+              <Route path="settings/course-category" element={<CourseCategoriesEditor />} />
               <Route path="settings/courses" element={<CoursesEditor />} />
-              <Route
-                path="settings/course-source"
-                element={<CourseSourcesEditor />}
-              />
-              <Route
-                path="settings/attritions"
-                element={<AttritionCausesEditor />}
-              />
-              <Route
-                path="rejected-applications"
-                element={<RejectedApplications />}
-              />
-              <Route
-                path="rejected-applications/:id"
-                element={<ApplicantDetail />}
-              />
+              <Route path="settings/course-source" element={<CourseSourcesEditor />} />
+              <Route path="settings/attritions" element={<AttritionCausesEditor />}/>
+              <Route path="rejected-applications" element={<RejectedApplications />} />
+              <Route path="rejected-applications/:id" element={<ApplicantDetail />}/>
               <Route path="students" element={<RegistrarStudents />} />
               <Route path="registration-slips" element={<RegistrationSlip />} />
               <Route path="add-student" element={<AddStudent />} />
@@ -274,19 +238,13 @@ function App() {
             <Route path="/vice-dean" element={<ViceDeanLayout />}>
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<ViceDeanDashboard />} />
-              <Route
-                path="create-department-head"
-                element={<ViceCreateDepartmentHead />}
-              />
+              <Route path="create-department-head"element={<ViceCreateDepartmentHead />} />
               <Route path="students" element={<ViceDeanStudents />} />
               <Route path="grades" element={<ViceDeanGrades />} />
               <Route path="reports" element={<ViceDeanReports />} />
               <Route path="department" element={<ViceDeanDepartments />} />
               <Route path="profile" element={<ViceDean_Profile />} />
-              <Route
-                path="departments/:id"
-                element={<ViceDepartmentDetail />}
-              />
+              <Route path="departments/:id"element={<ViceDepartmentDetail />}/>
             </Route>
 
             {/* Manager Routes */}
@@ -297,10 +255,7 @@ function App() {
               <Route path="students/:id" element={<StudentDetail />} />
               <Route path="reports" element={<DeanReports />} />
               <Route path="department" element={<DeanDepartments />} />
-              <Route
-                path="departments/:id"
-                element={<DeanDepartmentDetail />}
-              />
+              <Route path="departments/:id" element={<DeanDepartmentDetail />}/>
               <Route path="teachers" element={<ManagerTeachers />} />
               <Route path="dean" element={<DeanProfile />} />
               <Route path="vice-dean" element={<ViceDeanProfile />} />
