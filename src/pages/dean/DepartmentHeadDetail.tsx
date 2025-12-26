@@ -32,18 +32,12 @@ import {
   Mail,
   Calendar,
   MapPin,
-  Building,
   FileText,
-  Shield,
-  Award,
   AlertCircle,
   Edit,
-  CheckCircle,
-  XCircle,
-  Home,
-  IdCard,
   Save,
   X,
+  Home
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -78,13 +72,6 @@ interface DepartmentHeadDetailModel {
   documentBase64?: string;
 }
 
-interface Department {
-  id: number;
-  name: string;
-  modality: string;
-  level: string;
-}
-
 interface Region {
   regionCode: string;
   region: string;
@@ -110,7 +97,6 @@ export default function DepartmentHeadDetail() {
   const headId = params.id as string;
   
   const [head, setHead] = useState<DepartmentHeadDetailModel | null>(null);
-  const [departments, setDepartments] = useState<Department[]>([]);
   const [regions, setRegions] = useState<Region[]>([]);
   const [zones, setZones] = useState<Zone[]>([]);
   const [woredas, setWoredas] = useState<Woreda[]>([]);
@@ -130,13 +116,13 @@ export default function DepartmentHeadDetail() {
     email: "",
     hiredDateGC: "",
     hiredDateEC: "",
-    departmentId: "",
     residenceRegionId: "",
     residenceZoneId: "",
     residenceWoredaId: "",
     remark: "",
-    isActive: true,
   });
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [documentFile, setDocumentFile] = useState<File | null>(null);
 
   useEffect(() => {
     fetchDepartmentHeadDetail();
@@ -165,12 +151,10 @@ export default function DepartmentHeadDetail() {
         email: data.email || "",
         hiredDateGC: data.hiredDateGC || "",
         hiredDateEC: data.hiredDateEC || "",
-        departmentId: data.department?.id?.toString() || "",
         residenceRegionId: data.residenceRegion?.id || "",
         residenceZoneId: data.residenceZone?.id || "",
         residenceWoredaId: data.residenceWoreda?.id || "",
         remark: data.remark || "",
-        isActive: data.isActive ?? true,
       });
 
       // Load dropdown data
@@ -189,33 +173,11 @@ export default function DepartmentHeadDetail() {
 
   const fetchDropdownData = async (headData: DepartmentHeadDetailModel) => {
     try {
-      // Fetch departments and regions
-      const [deptResponse, regionResponse] = await Promise.allSettled([
-        apiClient.get<Department[]>(endPoints.departments),
-        apiClient.get<Region[]>(endPoints.regions),
-      ]);
+      // Fetch regions
+      const regionResponse = await apiClient.get<Region[]>(endPoints.regions);
 
-      // Handle departments response with validation
-      if (deptResponse.status === 'fulfilled') {
-        const deptData = deptResponse.value.data || [];
-        // Filter out invalid departments and ensure id exists
-        const validDepartments = deptData.filter(dept => 
-          dept && 
-          typeof dept.id === 'number' && 
-          dept.name && 
-          dept.modality && 
-          dept.level
-        );
-        setDepartments(validDepartments);
-      } else {
-        console.error("Failed to load departments:", deptResponse.reason);
-        setDepartments([]);
-      }
-
-      // Handle regions response with validation
-      if (regionResponse.status === 'fulfilled') {
-        const regionData = regionResponse.value.data || [];
-        // Filter out invalid regions
+      if (regionResponse.data) {
+        const regionData = regionResponse.data || [];
         const validRegions = regionData.filter(region => 
           region && 
           region.regionCode && 
@@ -223,7 +185,6 @@ export default function DepartmentHeadDetail() {
         );
         setRegions(validRegions);
       } else {
-        console.error("Failed to load regions:", regionResponse.reason);
         setRegions([]);
       }
 
@@ -266,7 +227,6 @@ export default function DepartmentHeadDetail() {
       }
     } catch (err) {
       console.error("Error in fetchDropdownData:", err);
-      setDepartments([]);
       setRegions([]);
       setZones([]);
       setWoredas([]);
@@ -291,14 +251,14 @@ export default function DepartmentHeadDetail() {
         email: head.email || "",
         hiredDateGC: head.hiredDateGC || "",
         hiredDateEC: head.hiredDateEC || "",
-        departmentId: head.department?.id?.toString() || "",
         residenceRegionId: head.residenceRegion?.id || "",
         residenceZoneId: head.residenceZone?.id || "",
         residenceWoredaId: head.residenceWoreda?.id || "",
         remark: head.remark || "",
-        isActive: head.isActive ?? true,
       });
     }
+    setPhotoFile(null);
+    setDocumentFile(null);
     setIsEditing(false);
   };
 
@@ -360,6 +320,7 @@ export default function DepartmentHeadDetail() {
     try {
       setSaving(true);
       
+      // Create the update payload according to API spec
       const updatePayload = {
         firstNameENG: editForm.firstNameENG.trim(),
         firstNameAMH: editForm.firstNameAMH.trim(),
@@ -372,21 +333,42 @@ export default function DepartmentHeadDetail() {
         email: editForm.email.trim(),
         hiredDateGC: editForm.hiredDateGC,
         hiredDateEC: editForm.hiredDateEC.trim(),
-        departmentId: editForm.departmentId ? parseInt(editForm.departmentId) : 0,
-        residenceRegionId: editForm.residenceRegionId,
-        residenceZoneId: editForm.residenceZoneId,
-        residenceWoredaId: editForm.residenceWoredaId,
-        remark: editForm.remark.trim(),
-        isActive: editForm.isActive,
+        residenceRegionCode: editForm.residenceRegionId,
+        residenceZoneCode: editForm.residenceZoneId,
+        residenceWoredaCode: editForm.residenceWoredaId,
+        remarks: editForm.remark.trim(),
       };
 
-      await apiClient.put(
+      // Create FormData and append Blob for JSON data
+      const formData = new FormData();
+      const jsonBlob = new Blob([JSON.stringify(updatePayload)], { type: 'application/json' });
+      formData.append('data', jsonBlob);
+
+      // Append photo if selected
+      if (photoFile) {
+        formData.append('photograph', photoFile);
+      }
+
+      // Append document if selected
+      if (documentFile) {
+        formData.append('document', documentFile);
+      }
+
+      // Make PATCH request with FormData
+      await apiClient.patch(
         `${endPoints.departmentHeads}/${headId}`,
-        updatePayload
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
       );
 
       await fetchDepartmentHeadDetail();
       setIsEditing(false);
+      setPhotoFile(null);
+      setDocumentFile(null);
       toast.success("Department head updated successfully!");
     } catch (err: any) {
       console.error("Failed to update department head:", err);
@@ -430,7 +412,10 @@ export default function DepartmentHeadDetail() {
   };
 
   const downloadDocument = () => {
-    if (!head?.documentBase64) return;
+    if (!head?.documentBase64) {
+      toast.error("No document available to download");
+      return;
+    }
 
     try {
       const link = document.createElement("a");
@@ -445,31 +430,33 @@ export default function DepartmentHeadDetail() {
     }
   };
 
-  // Safe department mapping function - FIXED: Don't use empty string value
-  const renderDepartmentOptions = () => {
-    const safeDepartments = departments || [];
-    
-    if (safeDepartments.length === 0) {
-      return (
-        <SelectItem value="no-departments" disabled>
-          No departments available
-        </SelectItem>
-      );
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Image file size must be less than 5MB");
+        return;
+      }
+      if (!file.type.startsWith('image/')) {
+        toast.error("Please select an image file");
+        return;
+      }
+      setPhotoFile(file);
     }
-
-    return safeDepartments
-      .filter(dept => dept && typeof dept.id === 'number' && dept.id > 0 && dept.name)
-      .map(dept => (
-        <SelectItem 
-          key={dept.id} 
-          value={dept.id.toString()}
-        >
-          {dept.name}
-        </SelectItem>
-      ));
   };
 
-  // Safe region mapping function - FIXED: Don't use empty string value
+  const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error("Document file size must be less than 10MB");
+        return;
+      }
+      setDocumentFile(file);
+    }
+  };
+
+  // Safe region mapping function
   const renderRegionOptions = () => {
     const safeRegions = regions || [];
     
@@ -493,7 +480,7 @@ export default function DepartmentHeadDetail() {
       ));
   };
 
-  // Safe zone mapping function - FIXED: Don't use empty string value
+  // Safe zone mapping function
   const renderZoneOptions = () => {
     const safeZones = zones || [];
     
@@ -517,7 +504,7 @@ export default function DepartmentHeadDetail() {
       ));
   };
 
-  // Safe woreda mapping function - FIXED: Don't use empty string value
+  // Safe woreda mapping function
   const renderWoredaOptions = () => {
     const safeWoredas = woredas || [];
     
@@ -576,75 +563,94 @@ export default function DepartmentHeadDetail() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate(-1)}
-            className="rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
-              {isEditing ? "Edit Department Head" : "Department Head Details"}
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 text-sm md:text-base">
-              {isEditing 
-                ? `Update information for ${head.firstNameENG || ""} ${head.fatherNameENG || ""}`
-                : `Viewing profile for ${head.firstNameENG || ""} ${head.fatherNameENG || ""}`
-              }
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge className={`${getStatusColor(head.isActive)}`}>
-            {head.isActive ? "Active" : "Inactive"}
-          </Badge>
-          {isEditing ? (
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={handleCancelEdit}
-                className="border-gray-300 dark:border-gray-600"
-                disabled={saving}
-                size="sm"
-              >
-                <X className="h-4 w-4 mr-1" />
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSave}
-                disabled={saving}
-                className="min-w-24"
-                size="sm"
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                    Saving
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-1" />
-                    Save
-                  </>
-                )}
-              </Button>
-            </div>
-          ) : (
+      {/* Header with Department Info */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
             <Button
-              variant="outline"
-              onClick={handleEditClick}
-              className="border-blue-300 dark:border-blue-600 text-blue-600 dark:text-blue-400"
-              size="sm"
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(-1)}
+              className="rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
             >
-              <Edit className="h-4 w-4 mr-1" />
-              Edit
+              <ArrowLeft className="h-5 w-5" />
             </Button>
-          )}
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
+                {isEditing ? "Edit Department Head" : "Department Head Details"}
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400 text-sm md:text-base">
+                {isEditing 
+                  ? `Update information for ${head.firstNameENG || ""} ${head.fatherNameENG || ""}`
+                  : `Viewing profile for ${head.firstNameENG || ""} ${head.fatherNameENG || ""}`
+                }
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            {/* Department Info */}
+            <div className="flex items-center gap-2">
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                <span className="font-medium text-gray-900 dark:text-white">
+                  Department:
+                </span>{" "}
+                {head.department?.name || "Not assigned"}
+              </div>
+              <Badge variant="outline" className="text-xs">
+                ID: {head.department?.id || "N/A"}
+              </Badge>
+            </div>
+            
+            {/* Status and Edit Buttons */}
+            <div className="flex items-center gap-2">
+              <Badge className={`${getStatusColor(head.isActive)}`}>
+                {head.isActive ? "Active" : "Inactive"}
+              </Badge>
+              {isEditing ? (
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={handleCancelEdit}
+                    className="border-gray-300 dark:border-gray-600"
+                    disabled={saving}
+                    size="sm"
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="min-w-24"
+                    size="sm"
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        Saving
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 mr-1" />
+                        Save
+                      </>
+                    )}
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  onClick={handleEditClick}
+                  className="border-blue-300 dark:border-blue-600 text-blue-600 dark:text-blue-400"
+                  size="sm"
+                >
+                  <Edit className="h-4 w-4 mr-1" />
+                  Edit
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -666,6 +672,32 @@ export default function DepartmentHeadDetail() {
                   </AvatarFallback>
                 )}
               </Avatar>
+              
+              {isEditing && (
+                <div className="mt-3">
+                  <input
+                    type="file"
+                    id="photo-upload"
+                    accept="image/*"
+                    onChange={handlePhotoChange}
+                    className="hidden"
+                  />
+                  <label htmlFor="photo-upload">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                    >
+                      {photoFile ? "Change Photo" : "Upload Photo"}
+                    </Button>
+                  </label>
+                  {photoFile && (
+                    <p className="text-xs text-gray-500 mt-1 truncate">
+                      Selected: {photoFile.name}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
             <CardTitle className="mt-4 text-lg font-bold">
               {isEditing ? (
@@ -734,42 +766,35 @@ export default function DepartmentHeadDetail() {
 
             <Separator />
 
-            <div className="space-y-2">
-              <Label>Status</Label>
-              {isEditing ? (
-                <Select
-                  value={editForm.isActive ? "true" : "false"}
-                  onValueChange={(value) => 
-                    setEditForm(prev => ({ ...prev, isActive: value === "true" }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="true">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        Active
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="false">
-                      <div className="flex items-center gap-2">
-                        <XCircle className="h-4 w-4 text-red-500" />
-                        Inactive
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              ) : (
-                <div className={`px-3 py-1.5 rounded-md ${getStatusColor(head.isActive)} w-fit`}>
-                  {head.isActive ? "Active" : "Inactive"}
+            {/* Document Upload/Download Section */}
+            <div className="space-y-3">
+              {isEditing && (
+                <div>
+                  <input
+                    type="file"
+                    id="document-upload"
+                    accept=".pdf,.doc,.docx"
+                    onChange={handleDocumentChange}
+                    className="hidden"
+                  />
+                  <label htmlFor="document-upload">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                    >
+                      {documentFile ? "Change Document" : "Upload Document"}
+                    </Button>
+                  </label>
+                  {documentFile && (
+                    <p className="text-xs text-gray-500 mt-1 truncate">
+                      Selected: {documentFile.name}
+                    </p>
+                  )}
                 </div>
               )}
-            </div>
-
-            {head.hasDocument && (
-              <div className="pt-4">
+              
+              {!isEditing && head.hasDocument && (
                 <Button
                   variant="outline"
                   onClick={downloadDocument}
@@ -779,8 +804,8 @@ export default function DepartmentHeadDetail() {
                   <FileText className="h-4 w-4 mr-2" />
                   Download Document
                 </Button>
-              </div>
-            )}
+              )}
+            </div>
           </CardContent>
         </Card>
 
@@ -946,59 +971,19 @@ export default function DepartmentHeadDetail() {
             </CardContent>
           </Card>
 
-          {/* Department & Residence */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Building className="h-5 w-5 mr-2" />
-                  Department
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Department</Label>
-                  {isEditing ? (
-                    <Select
-                      value={editForm.departmentId}
-                      onValueChange={(value) => setEditForm(prev => ({ ...prev, departmentId: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select department" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {renderDepartmentOptions()}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <div className="space-y-2">
-                      <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
-                        {head.department?.name || "Not assigned"}
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                        <div className="flex items-center gap-1">
-                          <Shield className="h-4 w-4" />
-                          {head.department?.level || "N/A"}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Award className="h-4 w-4" />
-                          {head.department?.modality || "N/A"}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Home className="h-5 w-5 mr-2" />
-                  Residence
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+          {/* Residence Information - Horizontal Layout */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Home className="h-5 w-5 mr-2" />
+                Residence Address
+              </CardTitle>
+              <CardDescription>
+                Current residential address
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>Region</Label>
                   {isEditing ? (
@@ -1063,22 +1048,22 @@ export default function DepartmentHeadDetail() {
                     </div>
                   )}
                 </div>
+              </div>
 
-                {!isEditing && (
-                  <div className="pt-4 border-t">
-                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                      <MapPin className="h-4 w-4" />
-                      <span>
-                        {[head.residenceWoreda?.name, head.residenceZone?.name, head.residenceRegion?.name]
-                          .filter(Boolean)
-                          .join(", ") || "Address not specified"}
-                      </span>
-                    </div>
+              {!isEditing && (
+                <div className="pt-4 border-t mt-4">
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                    <MapPin className="h-4 w-4" />
+                    <span>
+                      {[head.residenceWoreda?.name, head.residenceZone?.name, head.residenceRegion?.name]
+                        .filter(Boolean)
+                        .join(", ") || "Address not specified"}
+                    </span>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
 
