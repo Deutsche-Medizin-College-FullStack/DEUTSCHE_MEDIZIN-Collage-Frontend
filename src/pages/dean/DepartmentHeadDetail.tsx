@@ -34,18 +34,12 @@ import {
   Edit,
   Save,
   X,
-  Camera,
-  Upload,
+  User,
   Building,
   Calendar,
-  User,
-  IdCard,
-  Briefcase,
   Home,
-  ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Separator } from "@/components/ui/separator";
 
 interface Region {
   regionCode: string;
@@ -89,21 +83,6 @@ interface DepartmentHead {
   hasDocument: boolean;
 }
 
-interface EditFormData {
-  firstNameENG: string;
-  firstNameAMH: string;
-  fatherNameENG: string;
-  fatherNameAMH: string;
-  grandfatherNameENG: string;
-  grandfatherNameAMH: string;
-  phoneNumber: string;
-  email: string;
-  remark?: string;
-  residenceRegionCode: string;
-  residenceZoneCode: string;
-  residenceWoredaCode: string;
-}
-
 export default function DepartmentHeadDetail() {
   const { id: headId } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -122,7 +101,21 @@ export default function DepartmentHeadDetail() {
   const [zones, setZones] = useState<Zone[]>([]);
   const [woredas, setWoredas] = useState<Woreda[]>([]);
 
-  const [editForm, setEditForm] = useState<EditFormData | null>(null);
+  const [editForm, setEditForm] = useState({
+    firstNameENG: "",
+    firstNameAMH: "",
+    fatherNameENG: "",
+    fatherNameAMH: "",
+    grandfatherNameENG: "",
+    grandfatherNameAMH: "",
+    phoneNumber: "",
+    email: "",
+    remark: "",
+    residenceRegionCode: "",
+    residenceZoneCode: "",
+    residenceWoredaCode: "",
+  });
+  
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [documentFile, setDocumentFile] = useState<File | null>(null);
 
@@ -173,22 +166,23 @@ export default function DepartmentHeadDetail() {
       const data = res.data;
       setHead(data);
 
+      // Initialize edit form
       setEditForm({
-        firstNameENG: data.firstNameENG,
-        firstNameAMH: data.firstNameAMH,
-        fatherNameENG: data.fatherNameENG,
-        fatherNameAMH: data.fatherNameAMH,
-        grandfatherNameENG: data.grandfatherNameENG,
-        grandfatherNameAMH: data.grandfatherNameAMH,
-        phoneNumber: data.phoneNumber,
-        email: data.email,
+        firstNameENG: data.firstNameENG || "",
+        firstNameAMH: data.firstNameAMH || "",
+        fatherNameENG: data.fatherNameENG || "",
+        fatherNameAMH: data.fatherNameAMH || "",
+        grandfatherNameENG: data.grandfatherNameENG || "",
+        grandfatherNameAMH: data.grandfatherNameAMH || "",
+        phoneNumber: data.phoneNumber || "",
+        email: data.email || "",
         remark: data.remark || "",
-        residenceRegionCode: data.residenceRegion.id,
-        residenceZoneCode: data.residenceZone.id,
-        residenceWoredaCode: data.residenceWoreda.id,
+        residenceRegionCode: data.residenceRegion?.id || "",
+        residenceZoneCode: data.residenceZone?.id || "",
+        residenceWoredaCode: data.residenceWoreda?.id || "",
       });
 
-      // Load photo - FIXED: This wasn't being called properly
+      // Load photo
       if (data.hasPhoto) {
         await loadPhoto(headId);
       } else {
@@ -196,9 +190,9 @@ export default function DepartmentHeadDetail() {
       }
 
       // Preload location data
-      if (data.residenceRegion.id) {
+      if (data.residenceRegion?.id) {
         fetchZones(data.residenceRegion.id);
-        if (data.residenceZone.id) {
+        if (data.residenceZone?.id) {
           fetchWoredas(data.residenceZone.id);
         }
       }
@@ -213,8 +207,6 @@ export default function DepartmentHeadDetail() {
   const loadPhoto = async (id: string) => {
     try {
       setPhotoLoading(true);
-      console.log("Fetching photo for ID:", id);
-      
       const photoRes = await apiClient.get(
         endPoints.getDepartmentHeadPhoto(id),
         {
@@ -225,20 +217,14 @@ export default function DepartmentHeadDetail() {
         }
       );
       
-      console.log("Photo response received:", photoRes);
-      
       if (photoRes.data && photoRes.data instanceof Blob) {
         const url = URL.createObjectURL(photoRes.data);
         setPhotoPreview(url);
-        console.log("Photo loaded successfully");
       }
     } catch (err: any) {
       console.error("Photo load failed:", err);
       if (err.response?.status === 404) {
-        console.log("Photo not found for this department head");
-        toast.warning("Profile photo not available");
-      } else {
-        toast.error("Failed to load profile photo");
+        console.log("Photo not found");
       }
       setPhotoPreview(null);
     } finally {
@@ -248,7 +234,7 @@ export default function DepartmentHeadDetail() {
 
   const handleRegionChange = (value: string) => {
     setEditForm(prev => ({
-      ...prev!,
+      ...prev,
       residenceRegionCode: value,
       residenceZoneCode: "",
       residenceWoredaCode: "",
@@ -258,7 +244,7 @@ export default function DepartmentHeadDetail() {
 
   const handleZoneChange = (value: string) => {
     setEditForm(prev => ({
-      ...prev!,
+      ...prev,
       residenceZoneCode: value,
       residenceWoredaCode: "",
     }));
@@ -266,19 +252,18 @@ export default function DepartmentHeadDetail() {
   };
 
   const handleWoredaChange = (value: string) => {
-    setEditForm(prev => ({ ...prev!, residenceWoredaCode: value }));
+    setEditForm(prev => ({ ...prev, residenceWoredaCode: value }));
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setEditForm(prev => ({ ...prev!, [name]: value }));
+    setEditForm(prev => ({ ...prev, [name]: value }));
   };
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    // Check file type
     if (!file.type.startsWith('image/')) {
       toast.error("Please select an image file");
       return;
@@ -311,70 +296,66 @@ export default function DepartmentHeadDetail() {
     }
     
     setDocumentFile(file);
-    toast.success("Document selected: " + file.name);
   };
 
   const triggerPhotoUpload = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
+    fileInputRef.current?.click();
   };
 
   const triggerDocumentUpload = () => {
-    if (docInputRef.current) {
-      docInputRef.current.click();
-    }
+    docInputRef.current?.click();
   };
 
   const handleSave = async () => {
-    if (!headId || !editForm) return;
+    if (!headId || !head) return;
 
     try {
       setSaving(true);
       
-      // Create update data object
-      const updateData: any = {
-        phoneNumber: editForm.phoneNumber,
-        email: editForm.email,
+      // FIX: Use the correct payload structure from working code
+      const updatePayload = {
+        firstNameENG: editForm.firstNameENG.trim(),
+        firstNameAMH: editForm.firstNameAMH.trim(),
+        fatherNameENG: editForm.fatherNameENG.trim(),
+        fatherNameAMH: editForm.fatherNameAMH.trim(),
+        grandfatherNameENG: editForm.grandfatherNameENG.trim(),
+        grandfatherNameAMH: editForm.grandfatherNameAMH.trim(),
+        phoneNumber: editForm.phoneNumber.trim(),
+        email: editForm.email.trim(),
+        residenceRegionCode: editForm.residenceRegionCode,
+        residenceZoneCode: editForm.residenceZoneCode,
+        residenceWoredaCode: editForm.residenceWoredaCode,
+        remarks: editForm.remark.trim(),
       };
-      
-      // Add location fields only if they're provided
-      if (editForm.residenceRegionCode) {
-        updateData.residenceRegionCode = editForm.residenceRegionCode;
-      }
-      if (editForm.residenceZoneCode) {
-        updateData.residenceZoneCode = editForm.residenceZoneCode;
-      }
-      if (editForm.residenceWoredaCode) {
-        updateData.residenceWoredaCode = editForm.residenceWoredaCode;
-      }
 
       const formData = new FormData();
-      formData.append("data", JSON.stringify(updateData));
-
-      // Add photo if selected
-      if (photoFile) {
-        formData.append("photo", photoFile);
-      }
+      const jsonBlob = new Blob([JSON.stringify(updatePayload)], { type: 'application/json' });
       
-      // Add document if selected
-      if (documentFile) {
-        formData.append("documents", documentFile);
+      // FIX: Use the correct field name 'data' as in working code
+      formData.append('data', jsonBlob);
+
+      // FIX: Use 'photograph' instead of 'photo' as in working code
+      if (photoFile) {
+        formData.append('photograph', photoFile);
       }
 
-      console.log("Saving with form data:", {
-        ...updateData,
-        hasPhoto: !!photoFile,
-        hasDocument: !!documentFile
-      });
+      // FIX: Use 'document' instead of 'documents' as in working code
+      if (documentFile) {
+        formData.append('document', documentFile);
+      }
 
-      await apiClient.patch(endPoints.updateDepartmentHead(headId), formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      // FIX: Use the same endpoint as working code
+      await apiClient.patch(
+        `${endPoints.departmentHeads}/${headId}`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
 
-      toast.success("Profile updated successfully!");
+      toast.success("Department head updated successfully!");
       setIsEditing(false);
       setPhotoFile(null);
       setDocumentFile(null);
@@ -388,6 +369,35 @@ export default function DepartmentHeadDetail() {
       toast.error(errorMsg);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    if (head) {
+      setEditForm({
+        firstNameENG: head.firstNameENG || "",
+        firstNameAMH: head.firstNameAMH || "",
+        fatherNameENG: head.fatherNameENG || "",
+        fatherNameAMH: head.fatherNameAMH || "",
+        grandfatherNameENG: head.grandfatherNameENG || "",
+        grandfatherNameAMH: head.grandfatherNameAMH || "",
+        phoneNumber: head.phoneNumber || "",
+        email: head.email || "",
+        remark: head.remark || "",
+        residenceRegionCode: head.residenceRegion?.id || "",
+        residenceZoneCode: head.residenceZone?.id || "",
+        residenceWoredaCode: head.residenceWoreda?.id || "",
+      });
+    }
+    setPhotoFile(null);
+    setDocumentFile(null);
+    setIsEditing(false);
+    
+    // Reset photo preview
+    if (head?.hasPhoto && !photoFile) {
+      loadPhoto(headId!);
+    } else if (!head?.hasPhoto) {
+      setPhotoPreview(null);
     }
   };
 
@@ -425,22 +435,24 @@ export default function DepartmentHeadDetail() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    if (!dateString) return "Not specified";
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch (e) {
+      return dateString;
+    }
   };
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen space-y-4">
-        <div className="flex items-center space-x-3">
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center space-y-4">
           <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          <div>
-            <p className="text-lg font-medium">Loading profile...</p>
-            <p className="text-sm text-gray-500">Please wait while we fetch the details</p>
-          </div>
+          <p className="text-lg">Loading department head details...</p>
         </div>
       </div>
     );
@@ -448,286 +460,238 @@ export default function DepartmentHeadDetail() {
 
   if (error || !head) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen space-y-6 p-6">
-        <div className="text-center space-y-4">
-          <AlertCircle className="h-16 w-16 text-red-500 mx-auto" />
-          <div>
-            <h2 className="text-2xl font-bold text-red-600">Profile Not Found</h2>
-            <p className="text-gray-600 mt-2">{error || "The department head profile could not be found"}</p>
-          </div>
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <AlertCircle className="h-12 w-12 text-red-500" />
+        <p className="text-lg text-red-600 text-center px-4">
+          {error || "Department head not found"}
+        </p>
+        <div className="flex space-x-4">
+          <Button variant="outline" onClick={() => navigate(-1)}>
+            Go Back
+          </Button>
+          <Button variant="default" onClick={fetchHeadDetail}>
+            Try Again
+          </Button>
         </div>
-        <Button 
-          onClick={() => navigate(-1)} 
-          variant="outline" 
-          className="px-6"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Go Back
-        </Button>
       </div>
     );
   }
 
+  const fullNameEnglish = `${head.firstNameENG || ""} ${head.fatherNameENG || ""} ${head.grandfatherNameENG || ""}`.trim();
+  const fullNameAmharic = `${head.firstNameAMH || ""} ${head.fatherNameAMH || ""} ${head.grandfatherNameAMH || ""}`.trim();
+
   return (
-    <div className="space-y-6 max-w-7xl mx-auto p-4 md:p-6">
-      {/* Header Card */}
-      <Card className="border-blue-100 dark:border-blue-900 shadow-sm">
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                  <User className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold tracking-tight">Department Head Profile</h1>
-                  <p className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                    <Building className="h-4 w-4" />
-                    {head.department.name} Department
-                  </p>
-                </div>
+    <div className="space-y-6">
+      {/* Header with Department Info */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(-1)}
+              className="rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
+                {isEditing ? "Edit Department Head" : "Department Head Details"}
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400 text-sm md:text-base">
+                {isEditing 
+                  ? `Update information for ${head.firstNameENG || ""} ${head.fatherNameENG || ""}`
+                  : `Viewing profile for ${head.firstNameENG || ""} ${head.fatherNameENG || ""}`
+                }
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            {/* Department Info */}
+            <div className="flex items-center gap-2">
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                <span className="font-medium text-gray-900 dark:text-white">
+                  Department:
+                </span>{" "}
+                {head.department?.name || "Not assigned"}
               </div>
-              
-              <div className="flex items-center gap-3 mt-4">
-                <Badge 
-                  variant={head.active ? "default" : "destructive"} 
-                  className="px-3 py-1 text-sm"
-                >
-                  {head.active ? (
-                    <>
-                      <ShieldCheck className="h-3 w-3 mr-1" />
-                      Active
-                    </>
-                  ) : "Inactive"}
-                </Badge>
-                <Badge variant="outline" className="px-3 py-1">
-                  {head.gender}
-                </Badge>
-              </div>
+              <Badge variant="outline" className="text-xs">
+                ID: {head.department?.id || "N/A"}
+              </Badge>
             </div>
             
-            <div className="flex items-center gap-3">
-              {!isEditing ? (
-                <Button 
-                  onClick={() => setIsEditing(true)} 
-                  variant="outline" 
-                  className="gap-2"
-                >
-                  <Edit className="h-4 w-4" />
-                  Edit Profile
-                </Button>
-              ) : (
+            {/* Status and Edit Buttons */}
+            <div className="flex items-center gap-2">
+              <Badge className={head.active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                {head.active ? "Active" : "Inactive"}
+              </Badge>
+              {isEditing ? (
                 <div className="flex gap-2">
-                  <Button 
-                    onClick={() => {
-                      setIsEditing(false);
-                      setPhotoFile(null);
-                      setDocumentFile(null);
-                      // Reset photo preview to original
-                      if (head.hasPhoto && !photoFile) {
-                        loadPhoto(headId!);
-                      } else if (!head.hasPhoto) {
-                        setPhotoPreview(null);
-                      }
-                    }} 
+                  <Button
                     variant="outline"
+                    onClick={handleCancelEdit}
+                    className="border-gray-300 dark:border-gray-600"
                     disabled={saving}
+                    size="sm"
                   >
-                    <X className="h-4 w-4 mr-2" />
+                    <X className="h-4 w-4 mr-1" />
                     Cancel
                   </Button>
-                  <Button 
-                    onClick={handleSave} 
+                  <Button
+                    onClick={handleSave}
                     disabled={saving}
-                    className="gap-2"
+                    className="min-w-24"
+                    size="sm"
                   >
                     {saving ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <>
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        Saving
+                      </>
                     ) : (
-                      <Save className="h-4 w-4" />
+                      <>
+                        <Save className="h-4 w-4 mr-1" />
+                        Save
+                      </>
                     )}
-                    Save Changes
                   </Button>
                 </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  onClick={() => setIsEditing(true)}
+                  className="border-blue-300 dark:border-blue-600 text-blue-600 dark:text-blue-400"
+                  size="sm"
+                >
+                  <Edit className="h-4 w-4 mr-1" />
+                  Edit
+                </Button>
               )}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <div className="grid lg:grid-cols-3 gap-8">
-        {/* Profile Card */}
-        <Card className="lg:col-span-1 border-0 shadow-lg">
-          <CardContent className="pt-8 text-center space-y-6">
-            {/* Avatar Section */}
-            <div className="relative inline-block group">
-              <div className="relative">
-                <Avatar className="w-48 h-48 border-8 border-white dark:border-gray-800 shadow-xl">
-                  {photoLoading ? (
-                    <div className="flex items-center justify-center h-full">
-                      <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-                    </div>
-                  ) : photoPreview ? (
-                    <AvatarImage 
-                      src={photoPreview} 
-                      alt="Profile photo" 
-                      className="object-cover"
-                    />
-                  ) : (
-                    <AvatarFallback className="text-4xl bg-gradient-to-br from-blue-500 to-blue-700 text-white">
-                      {getInitials()}
-                    </AvatarFallback>
-                  )}
-                </Avatar>
-                
-                {isEditing && (
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-full flex items-center justify-center">
-                    <Button
-                      onClick={triggerPhotoUpload}
-                      variant="secondary"
-                      className="gap-2"
-                    >
-                      <Camera className="h-4 w-4" />
-                      Change Photo
-                    </Button>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - Profile Card */}
+        <Card className="lg:col-span-1">
+          <CardHeader className="text-center">
+            <div className="mx-auto">
+              <Avatar className="w-28 h-28 border-4 border-blue-100 dark:border-blue-900 mx-auto">
+                {photoLoading ? (
+                  <div className="flex items-center justify-center h-full">
+                    <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
                   </div>
+                ) : photoPreview ? (
+                  <AvatarImage
+                    src={photoPreview}
+                    alt={fullNameEnglish}
+                    className="object-cover"
+                  />
+                ) : (
+                  <AvatarFallback className="text-xl bg-blue-600 text-white font-semibold">
+                    {getInitials()}
+                  </AvatarFallback>
                 )}
-              </div>
+              </Avatar>
               
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handlePhotoChange}
-                className="hidden"
-              />
-              
-              {isEditing && photoFile && (
-                <p className="text-sm text-green-600 mt-2">{photoFile.name}</p>
+              {isEditing && (
+                <div className="mt-3">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoChange}
+                    className="hidden"
+                  />
+                  <Button
+                    onClick={triggerPhotoUpload}
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                  >
+                    {photoFile ? "Change Photo" : "Upload Photo"}
+                  </Button>
+                  {photoFile && (
+                    <p className="text-xs text-gray-500 mt-1 truncate">
+                      Selected: {photoFile.name}
+                    </p>
+                  )}
+                </div>
               )}
             </div>
-
-            {/* Name Section */}
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold">
-                {head.firstNameENG} {head.fatherNameENG} {head.grandfatherNameENG}
-              </h2>
-              <p className="text-lg text-gray-600 dark:text-gray-400">
-                {head.firstNameAMH} {head.fatherNameAMH} {head.grandfatherNameAMH}
-              </p>
-              <p className="text-sm text-gray-500 flex items-center justify-center gap-2">
-                <IdCard className="h-4 w-4" />
-                @{head.username}
-              </p>
-            </div>
-
-            <Separator />
-
-            {/* Contact Info */}
-            <div className="space-y-4 text-left">
-              <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-md">
-                  <Building className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <CardTitle className="mt-4 text-lg font-bold">
+              {isEditing ? (
+                <div className="space-y-2">
+                  <Input
+                    value={editForm.firstNameENG}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, firstNameENG: e.target.value }))}
+                    className="text-center"
+                    placeholder="First Name (English)"
+                  />
+                  <Input
+                    value={editForm.fatherNameENG}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, fatherNameENG: e.target.value }))}
+                    className="text-center"
+                    placeholder="Father Name (English)"
+                  />
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm text-gray-500">Department</p>
-                  <p className="font-medium">{head.department.name}</p>
-                  <p className="text-xs text-gray-400">ID: {head.department.id}</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors">
-                <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-md">
-                  <Mail className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-gray-500">Email</p>
-                  {isEditing ? (
-                    <Input
-                      name="email"
-                      value={editForm?.email || ""}
-                      onChange={handleInputChange}
-                      placeholder="Email"
-                      className="mt-1"
-                    />
-                  ) : (
-                    <p className="font-medium">{head.email}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors">
-                <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-md">
-                  <Phone className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-gray-500">Phone</p>
-                  {isEditing ? (
-                    <Input
-                      name="phoneNumber"
-                      value={editForm?.phoneNumber || ""}
-                      onChange={handleInputChange}
-                      placeholder="Phone"
-                      className="mt-1"
-                    />
-                  ) : (
-                    <p className="font-medium">{head.phoneNumber}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors">
-                <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-md">
-                  <Home className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-gray-500">Residence</p>
-                  <p className="font-medium">
-                    {head.residenceWoreda.name}, {head.residenceZone.name}, {head.residenceRegion.name}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors">
-                <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-md">
-                  <Calendar className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-gray-500">Hired Date</p>
-                  <div className="space-y-1">
-                    <p className="font-medium">GC: {formatDate(head.hiredDateGC)}</p>
-                    <p className="text-sm text-gray-500">EC: {head.hiredDateEC}</p>
+              ) : (
+                <div>
+                  <div>{head.firstNameENG} {head.fatherNameENG}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    {head.firstNameAMH} {head.fatherNameAMH}
                   </div>
                 </div>
+              )}
+            </CardTitle>
+            <CardDescription className="mt-2">
+              @{head.username}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Mail className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                {isEditing ? (
+                  <Input
+                    name="email"
+                    value={editForm.email}
+                    onChange={handleInputChange}
+                    placeholder="Email"
+                    className="flex-1"
+                  />
+                ) : (
+                  <span className="text-sm">{head.email || "No email"}</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Phone className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                {isEditing ? (
+                  <Input
+                    name="phoneNumber"
+                    value={editForm.phoneNumber}
+                    onChange={handleInputChange}
+                    placeholder="Phone"
+                    className="flex-1"
+                  />
+                ) : (
+                  <span className="text-sm">{head.phoneNumber || "No phone"}</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                <span className="text-sm">
+                  Appointed: {formatDate(head.hiredDateGC)}
+                </span>
               </div>
             </div>
 
-            <Separator />
-
-            {/* Document Section */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Documents</h3>
-                {head.hasDocument && !isEditing && (
-                  <Badge variant="outline" className="text-xs">
-                    Available
-                  </Badge>
-                )}
-              </div>
-
-              {!isEditing ? (
-                head.hasDocument && (
-                  <Button 
-                    onClick={downloadDocument} 
-                    variant="outline" 
-                    className="w-full gap-2"
-                  >
-                    <FileText className="h-4 w-4" />
-                    Download Document
-                  </Button>
-                )
-              ) : (
-                <div className="space-y-3">
+            {/* Document Upload/Download Section */}
+            <div className="space-y-3">
+              {isEditing && (
+                <div>
                   <input
                     ref={docInputRef}
                     type="file"
@@ -735,290 +699,279 @@ export default function DepartmentHeadDetail() {
                     onChange={handleDocumentChange}
                     className="hidden"
                   />
-                  <Button 
+                  <Button
                     onClick={triggerDocumentUpload}
-                    variant="outline" 
-                    className="w-full gap-2"
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
                   >
-                    <Upload className="h-4 w-4" />
                     {documentFile ? "Change Document" : "Upload Document"}
                   </Button>
                   {documentFile && (
-                    <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                      <p className="text-sm font-medium text-green-700 dark:text-green-400">
-                        Selected: {documentFile.name}
-                      </p>
-                      <p className="text-xs text-green-600 dark:text-green-500">
-                        Size: {(documentFile.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    </div>
+                    <p className="text-xs text-gray-500 mt-1 truncate">
+                      Selected: {documentFile.name}
+                    </p>
                   )}
                 </div>
+              )}
+              
+              {!isEditing && head.hasDocument && (
+                <Button
+                  variant="outline"
+                  onClick={downloadDocument}
+                  className="w-full"
+                  size="sm"
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Download Document
+                </Button>
               )}
             </div>
           </CardContent>
         </Card>
 
-        {/* Right Side - Details */}
+        {/* Right Column - Details */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Personal Information Card */}
+          {/* Personal Information */}
           <Card>
-            <CardHeader className="bg-gradient-to-r from-blue-50 to-transparent dark:from-blue-900/20">
-              <CardTitle className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg">
-                  <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                </div>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <User className="h-5 w-5 mr-2" />
                 Personal Information
               </CardTitle>
-              <CardDescription>
-                Complete name details in English and Amharic
-              </CardDescription>
             </CardHeader>
-            <CardContent className="p-6">
-              <div className="grid md:grid-cols-2 gap-6">
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    First Name (English)
-                  </label>
+                  <Label>First Name (English)</Label>
                   {isEditing ? (
                     <Input
                       name="firstNameENG"
-                      value={editForm?.firstNameENG || ""}
+                      value={editForm.firstNameENG}
                       onChange={handleInputChange}
                     />
                   ) : (
-                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <p className="text-lg">{head.firstNameENG}</p>
+                    <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
+                      {head.firstNameENG}
                     </div>
                   )}
                 </div>
-                
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    First Name (አማርኛ)
-                  </label>
+                  <Label>First Name (አማርኛ)</Label>
                   {isEditing ? (
                     <Input
                       name="firstNameAMH"
-                      value={editForm?.firstNameAMH || ""}
+                      value={editForm.firstNameAMH}
                       onChange={handleInputChange}
                     />
                   ) : (
-                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <p className="text-lg">{head.firstNameAMH}</p>
+                    <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
+                      {head.firstNameAMH}
                     </div>
                   )}
                 </div>
-                
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Father's Name (English)
-                  </label>
+                  <Label>Father's Name (English)</Label>
                   {isEditing ? (
                     <Input
                       name="fatherNameENG"
-                      value={editForm?.fatherNameENG || ""}
+                      value={editForm.fatherNameENG}
                       onChange={handleInputChange}
                     />
                   ) : (
-                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <p className="text-lg">{head.fatherNameENG}</p>
+                    <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
+                      {head.fatherNameENG}
                     </div>
                   )}
                 </div>
-                
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Father's Name (አማርኛ)
-                  </label>
+                  <Label>Father's Name (አማርኛ)</Label>
                   {isEditing ? (
                     <Input
                       name="fatherNameAMH"
-                      value={editForm?.fatherNameAMH || ""}
+                      value={editForm.fatherNameAMH}
                       onChange={handleInputChange}
                     />
                   ) : (
-                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <p className="text-lg">{head.fatherNameAMH}</p>
+                    <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
+                      {head.fatherNameAMH}
                     </div>
                   )}
                 </div>
-                
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Grandfather's Name (English)
-                  </label>
+                  <Label>Grandfather's Name (English)</Label>
                   {isEditing ? (
                     <Input
                       name="grandfatherNameENG"
-                      value={editForm?.grandfatherNameENG || ""}
+                      value={editForm.grandfatherNameENG}
                       onChange={handleInputChange}
                     />
                   ) : (
-                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <p className="text-lg">{head.grandfatherNameENG}</p>
+                    <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
+                      {head.grandfatherNameENG || "Not specified"}
                     </div>
                   )}
                 </div>
-                
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Grandfather's Name (አማርኛ)
-                  </label>
+                  <Label>Grandfather's Name (አማርኛ)</Label>
                   {isEditing ? (
                     <Input
                       name="grandfatherNameAMH"
-                      value={editForm?.grandfatherNameAMH || ""}
+                      value={editForm.grandfatherNameAMH}
                       onChange={handleInputChange}
                     />
                   ) : (
-                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <p className="text-lg">{head.grandfatherNameAMH}</p>
+                    <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
+                      {head.grandfatherNameAMH || "Not specified"}
                     </div>
                   )}
                 </div>
               </div>
+
+              <div className="mt-6 space-y-2">
+                <Label>Remarks</Label>
+                {isEditing ? (
+                  <Textarea
+                    name="remark"
+                    value={editForm.remark}
+                    onChange={handleInputChange}
+                    placeholder="Add remarks..."
+                    rows={3}
+                  />
+                ) : (
+                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded border">
+                    {head.remark || "No remarks"}
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
 
-          {/* Residence Information Card */}
+          {/* Residence Information */}
           <Card>
-            <CardHeader className="bg-gradient-to-r from-green-50 to-transparent dark:from-green-900/20">
-              <CardTitle className="flex items-center gap-3">
-                <div className="p-2 bg-green-100 dark:bg-green-800 rounded-lg">
-                  <MapPin className="h-5 w-5 text-green-600 dark:text-green-400" />
-                </div>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Home className="h-5 w-5 mr-2" />
                 Residence Address
               </CardTitle>
               <CardDescription>
-                Current residential information
+                Current residential address
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-6">
-              <div className="grid md:grid-cols-3 gap-6">
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Region</label>
+                  <Label>Region</Label>
                   {isEditing ? (
-                    <Select value={editForm?.residenceRegionCode} onValueChange={handleRegionChange}>
+                    <Select
+                      value={editForm.residenceRegionCode}
+                      onValueChange={handleRegionChange}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select region" />
                       </SelectTrigger>
                       <SelectContent>
                         {regions.map(r => (
-                          <SelectItem key={r.regionCode} value={r.regionCode}>{r.region}</SelectItem>
+                          <SelectItem key={r.regionCode} value={r.regionCode}>
+                            {r.region}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   ) : (
-                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <p className="text-lg">{head.residenceRegion.name}</p>
+                    <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
+                      {head.residenceRegion?.name || "Not specified"}
                     </div>
                   )}
                 </div>
-                
+
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Zone</label>
+                  <Label>Zone</Label>
                   {isEditing ? (
                     <Select
-                      value={editForm?.residenceZoneCode}
+                      value={editForm.residenceZoneCode}
                       onValueChange={handleZoneChange}
-                      disabled={!editForm?.residenceRegionCode}
+                      disabled={!editForm.residenceRegionCode}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select zone" />
                       </SelectTrigger>
                       <SelectContent>
                         {zones.map(z => (
-                          <SelectItem key={z.zoneCode} value={z.zoneCode}>{z.zone}</SelectItem>
+                          <SelectItem key={z.zoneCode} value={z.zoneCode}>
+                            {z.zone}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   ) : (
-                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <p className="text-lg">{head.residenceZone.name}</p>
+                    <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
+                      {head.residenceZone?.name || "Not specified"}
                     </div>
                   )}
                 </div>
-                
+
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Woreda</label>
+                  <Label>Woreda</Label>
                   {isEditing ? (
                     <Select
-                      value={editForm?.residenceWoredaCode}
+                      value={editForm.residenceWoredaCode}
                       onValueChange={handleWoredaChange}
-                      disabled={!editForm?.residenceZoneCode}
+                      disabled={!editForm.residenceZoneCode}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select woreda" />
                       </SelectTrigger>
                       <SelectContent>
                         {woredas.map(w => (
-                          <SelectItem key={w.woredaCode} value={w.woredaCode}>{w.woreda}</SelectItem>
+                          <SelectItem key={w.woredaCode} value={w.woredaCode}>
+                            {w.woreda}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   ) : (
-                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <p className="text-lg">{head.residenceWoreda.name}</p>
+                    <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
+                      {head.residenceWoreda?.name || "Not specified"}
                     </div>
                   )}
                 </div>
               </div>
-            </CardContent>
-          </Card>
 
-          {/* Additional Information Card */}
-          <Card>
-            <CardHeader className="bg-gradient-to-r from-purple-50 to-transparent dark:from-purple-900/20">
-              <CardTitle className="flex items-center gap-3">
-                <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg">
-                  <Briefcase className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                </div>
-                Additional Information
-              </CardTitle>
-              <CardDescription>
-                Additional remarks and notes
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Remarks</label>
-                {isEditing ? (
-                  <Textarea
-                    name="remark"
-                    value={editForm?.remark || ""}
-                    onChange={handleInputChange}
-                    rows={4}
-                    placeholder="Add any remarks or notes..."
-                  />
-                ) : (
-                  <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <p className={head.remark ? "text-lg" : "text-lg text-gray-500 italic"}>
-                      {head.remark || "No remarks provided"}
-                    </p>
+              {!isEditing && (
+                <div className="pt-4 border-t mt-4">
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                    <MapPin className="h-4 w-4" />
+                    <span>
+                      {[head.residenceWoreda?.name, head.residenceZone?.name, head.residenceRegion?.name]
+                        .filter(Boolean)
+                        .join(", ") || "Address not specified"}
+                    </span>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
       </div>
 
-      {/* Footer Actions */}
-      <div className="flex justify-between items-center pt-6 border-t">
-        <Button 
-          onClick={() => navigate(-1)} 
-          variant="ghost" 
-          className="gap-2"
+      {/* Back Button */}
+      <div className="flex justify-end pt-4">
+        <Button
+          variant="outline"
+          onClick={() => navigate(-1)}
+          className="border-gray-300 dark:border-gray-600"
         >
-          <ArrowLeft className="h-4 w-4" />
           Back to List
         </Button>
-        
-        <div className="text-sm text-gray-500">
-          Last updated: {formatDate(new Date().toISOString())}
-        </div>
       </div>
     </div>
   );
 }
+
+// Helper component
+const Label = ({ children, className }: { children: React.ReactNode; className?: string }) => (
+  <label className={`text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block ${className || ''}`}>
+    {children}
+  </label>
+);
