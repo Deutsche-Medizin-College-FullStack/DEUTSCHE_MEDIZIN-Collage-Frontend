@@ -102,7 +102,8 @@ const endPoints = {
   updateDeanProfile: "/deans/update" ,
   departmentStudents: "/department-heads/my-students", 
   studentById: "/students",
-  deanDashboard: "/deans/dashboard"
+  deanDashboard: "/deans/dashboard",
+  getDepartmentHeadDocument: "/department-heads/get-document/:id",
 };
 
 export default endPoints;
