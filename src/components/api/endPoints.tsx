@@ -1,8 +1,7 @@
 const endPoints = {
   login: "/auth/login",
   register: "/auth/register",
-  applicantsRegister:
-    "https://deutschemedizin-collage-backend-production.up.railway.app/api/applicants/register",
+  applicantsRegister:    "https://deutschemedizin-collage-backend-production.up.railway.app/api/applicants/register",
   registrarApplicantRegister: "/auth/register/student",
   departmentHeadDashboard: "/department-heads/dashboard",
   getViceDeanProfile: "/vice-deans/profile",
@@ -13,6 +12,8 @@ const endPoints = {
   profile: "/students/profile",
   academicYears: "/academic-years",
   getDepartmentHeadPhoto: "/department-heads/profile/photo",
+  teacherCourseAssignments: (teacherId: number | string) =>    `/teachers/${teacherId}/course-assignments`,
+  teacherCourseAssignmentDeletion: (    teacherId: number | string,    assignmentId: number | string  ) => `/teachers/${teacherId}/course-assignments/${assignmentId}`,
   gradingSystem: "/grading-systems",
   getDepartmentHeadProfile: "/department-heads/profile",
   studentCopy: "/student-copy/generate",
@@ -70,8 +71,8 @@ const endPoints = {
   slipPreview: "student-slips/preview",
   generateSlips: "/student-slips/generate",
   addCourse: "/student-course-scores/add",
-  updateScore: "/student-course-scores/score/:studentId/:courseId/:batchClassYearSemesterId",
-  updateReleaseStatus: "/student-course-scores/release/:studentId/:courseId/:batchClassYearSemesterId",
+  updateScore:    "/student-course-scores/score/:studentId/:courseId/:batchClassYearSemesterId",
+  updateReleaseStatus:    "/student-course-scores/release/:studentId/:courseId/:batchClassYearSemesterId",
   getGrade: "/student-course-scores/:scoreId/grade",
   getAll: "/student-course-scores/all",
   bulkUpdate: "/student-course-scores/bulk-update",
@@ -79,31 +80,26 @@ const endPoints = {
   changePassword: "/auth/me/change-password",
   getTeacherProfile: "/teachers/profile",
   getTeacherCourses: "/teachers/my-courses",
-
   createAssessment: "/assessments",
   recordStudentScore: "/student-assessments",
   updateStudentScore: "/student-assessments/:assessmentId/:studentId",
-  getCourseScores: "/student-assessments/courses/:teacherCourseAssignmentId/scores",
+  getCourseScores:    "/student-assessments/courses/:teacherCourseAssignmentId/scores",
   getTeacherDashboard: "/teachers/dashboard",
-
   bulkCreateAssessments: "/assessments/bulk",
   bulkUpdateAssessments: "/assessments/bulk",
   bulkDeleteAssessments: "/assessments/bulk",
-
   bulkUpdateStudentScores: "/student-assessments/bulk",
   getCourseStudents: "/teachers/courses/:teacherCourseAssignmentId/students",
-
-  approveAssessments: "/assessments/assignment/:teacherCourseAssignmentId/approve",
-
+  approveAssessments:    "/assessments/assignment/:teacherCourseAssignmentId/approve",
   getDepartmentHeadAssessments: "/department-heads/assessments/scores",
-  approveRejectAllAssessments: "/department-heads/assignments/:teacherCourseAssignmentId/approve-all",
-  
+  approveRejectAllAssessments:    "/department-heads/assignments/:teacherCourseAssignmentId/approve-all",
   updateViceDeanProfile: "/vice-deans/update",
-  updateDeanProfile: "/deans/update" ,
-  departmentStudents: "/department-heads/my-students", 
+  updateDeanProfile: "/deans/update",
+  departmentStudents: "/department-heads/my-students",
   studentById: "/students",
   deanDashboard: "/deans/dashboard",
   getDepartmentHeadDocument: "/department-heads/get-document/:id",
+
 };
 
 export default endPoints;
