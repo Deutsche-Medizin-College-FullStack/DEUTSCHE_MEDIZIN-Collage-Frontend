@@ -1,21 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import apiClient from "@/components/api/apiClient";
 import endPoints from "@/components/api/endPoints";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Select,
@@ -27,21 +26,43 @@ import {
 import {
   Loader2,
   ArrowLeft,
-  User,
   Phone,
   Mail,
-  Calendar,
   MapPin,
   FileText,
   AlertCircle,
   Edit,
   Save,
   X,
-  Home
+  Camera,
+  Upload,
+  Building,
+  Calendar,
+  User,
+  IdCard,
+  Briefcase,
+  Home,
+  ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Separator } from "@/components/ui/separator";
 
-interface DepartmentHeadDetailModel {
+interface Region {
+  regionCode: string;
+  region: string;
+}
+
+interface Zone {
+  zoneCode: string;
+  zone: string;
+}
+
+interface Woreda {
+  woredaCode: string;
+  woreda: string;
+}
+
+interface DepartmentHead {
   id: number;
   username: string;
   firstNameENG: string;
@@ -58,482 +79,368 @@ interface DepartmentHeadDetailModel {
   department: {
     id: number;
     name: string;
-    modality: string;
-    level: string;
   };
   residenceRegion: { id: string; name: string };
   residenceZone: { id: string; name: string };
   residenceWoreda: { id: string; name: string };
-  remark: string;
-  isActive: boolean;
+  remark?: string;
+  active: boolean;
   hasPhoto: boolean;
   hasDocument: boolean;
-  photoBase64?: string;
-  documentBase64?: string;
 }
 
-interface Region {
-  regionCode: string;
-  region: string;
-  countryCode: string;
-}
-
-interface Zone {
-  zoneCode: string;
-  zone: string;
-  regionCode: string;
-  regionType: string;
-}
-
-interface Woreda {
-  woredaCode: string;
-  woreda: string;
-  zoneCode: string;
+interface EditFormData {
+  firstNameENG: string;
+  firstNameAMH: string;
+  fatherNameENG: string;
+  fatherNameAMH: string;
+  grandfatherNameENG: string;
+  grandfatherNameAMH: string;
+  phoneNumber: string;
+  email: string;
+  remark?: string;
+  residenceRegionCode: string;
+  residenceZoneCode: string;
+  residenceWoredaCode: string;
 }
 
 export default function DepartmentHeadDetail() {
-  const params = useParams();
+  const { id: headId } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const headId = params.id as string;
-  
-  const [head, setHead] = useState<DepartmentHeadDetailModel | null>(null);
-  const [regions, setRegions] = useState<Region[]>([]);
-  const [zones, setZones] = useState<Zone[]>([]);
-  const [woredas, setWoredas] = useState<Woreda[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const docInputRef = useRef<HTMLInputElement>(null);
+
+  const [head, setHead] = useState<DepartmentHead | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState({
-    firstNameENG: "",
-    firstNameAMH: "",
-    fatherNameENG: "",
-    fatherNameAMH: "",
-    grandfatherNameENG: "",
-    grandfatherNameAMH: "",
-    gender: "MALE",
-    phoneNumber: "",
-    email: "",
-    hiredDateGC: "",
-    hiredDateEC: "",
-    residenceRegionId: "",
-    residenceZoneId: "",
-    residenceWoredaId: "",
-    remark: "",
-  });
+  const [photoLoading, setPhotoLoading] = useState(false);
+
+  const [regions, setRegions] = useState<Region[]>([]);
+  const [zones, setZones] = useState<Zone[]>([]);
+  const [woredas, setWoredas] = useState<Woreda[]>([]);
+
+  const [editForm, setEditForm] = useState<EditFormData | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [documentFile, setDocumentFile] = useState<File | null>(null);
 
   useEffect(() => {
-    fetchDepartmentHeadDetail();
+    if (headId) {
+      fetchHeadDetail();
+      fetchRegions();
+    }
   }, [headId]);
 
-  const fetchDepartmentHeadDetail = async () => {
+  const fetchRegions = async () => {
+    try {
+      const res = await apiClient.get<Region[]>(endPoints.regions);
+      setRegions(res.data || []);
+    } catch (err) {
+      console.error("Failed to load regions", err);
+    }
+  };
+
+  const fetchZones = async (regionCode: string) => {
+    try {
+      const res = await apiClient.get<Zone[]>(`${endPoints.zonesByRegion}/${regionCode}`);
+      setZones(res.data || []);
+      setWoredas([]);
+    } catch (err) {
+      console.error("Failed to load zones", err);
+      setZones([]);
+    }
+  };
+
+  const fetchWoredas = async (zoneCode: string) => {
+    try {
+      const res = await apiClient.get<Woreda[]>(`${endPoints.woredasByZone}/${zoneCode}`);
+      setWoredas(res.data || []);
+    } catch (err) {
+      console.error("Failed to load woredas", err);
+      setWoredas([]);
+    }
+  };
+
+  const fetchHeadDetail = async () => {
+    if (!headId) return;
     try {
       setLoading(true);
       setError(null);
-      const response = await apiClient.get<DepartmentHeadDetailModel>(
-        `${endPoints.departmentHeads}/${headId}`
-      );
-      const data = response.data;
+
+      const res = await apiClient.get<DepartmentHead>(endPoints.getDepartmentHeadById(headId));
+      const data = res.data;
       setHead(data);
-      
-      // Initialize edit form with current data
+
       setEditForm({
-        firstNameENG: data.firstNameENG || "",
-        firstNameAMH: data.firstNameAMH || "",
-        fatherNameENG: data.fatherNameENG || "",
-        fatherNameAMH: data.fatherNameAMH || "",
-        grandfatherNameENG: data.grandfatherNameENG || "",
-        grandfatherNameAMH: data.grandfatherNameAMH || "",
-        gender: data.gender || "MALE",
-        phoneNumber: data.phoneNumber || "",
-        email: data.email || "",
-        hiredDateGC: data.hiredDateGC || "",
-        hiredDateEC: data.hiredDateEC || "",
-        residenceRegionId: data.residenceRegion?.id || "",
-        residenceZoneId: data.residenceZone?.id || "",
-        residenceWoredaId: data.residenceWoreda?.id || "",
+        firstNameENG: data.firstNameENG,
+        firstNameAMH: data.firstNameAMH,
+        fatherNameENG: data.fatherNameENG,
+        fatherNameAMH: data.fatherNameAMH,
+        grandfatherNameENG: data.grandfatherNameENG,
+        grandfatherNameAMH: data.grandfatherNameAMH,
+        phoneNumber: data.phoneNumber,
+        email: data.email,
         remark: data.remark || "",
+        residenceRegionCode: data.residenceRegion.id,
+        residenceZoneCode: data.residenceZone.id,
+        residenceWoredaCode: data.residenceWoreda.id,
       });
 
-      // Load dropdown data
-      await fetchDropdownData(data);
+      // Load photo - FIXED: This wasn't being called properly
+      if (data.hasPhoto) {
+        await loadPhoto(headId);
+      } else {
+        setPhotoPreview(null);
+      }
+
+      // Preload location data
+      if (data.residenceRegion.id) {
+        fetchZones(data.residenceRegion.id);
+        if (data.residenceZone.id) {
+          fetchWoredas(data.residenceZone.id);
+        }
+      }
     } catch (err: any) {
-      console.error("Failed to load department head details:", err);
-      setError(
-        err.response?.data?.error ||
-        err.message ||
-        "Failed to load department head details. Please try again later."
-      );
+      setError("Failed to load profile.");
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchDropdownData = async (headData: DepartmentHeadDetailModel) => {
+  const loadPhoto = async (id: string) => {
     try {
-      // Fetch regions
-      const regionResponse = await apiClient.get<Region[]>(endPoints.regions);
-
-      if (regionResponse.data) {
-        const regionData = regionResponse.data || [];
-        const validRegions = regionData.filter(region => 
-          region && 
-          region.regionCode && 
-          region.region
-        );
-        setRegions(validRegions);
-      } else {
-        setRegions([]);
-      }
-
-      // Load zones for current region if it exists
-      if (headData.residenceRegion?.id) {
-        try {
-          const zonesResponse = await apiClient.get<Zone[]>(
-            `${endPoints.zonesByRegion}/${headData.residenceRegion.id}`
-          );
-          const zonesData = zonesResponse.data || [];
-          const validZones = zonesData.filter(zone => 
-            zone && 
-            zone.zoneCode && 
-            zone.zone
-          );
-          setZones(validZones);
-        } catch (err) {
-          console.error("Failed to load zones:", err);
-          setZones([]);
-        }
-
-        // Load woredas for current zone if it exists
-        if (headData.residenceZone?.id) {
-          try {
-            const woredasResponse = await apiClient.get<Woreda[]>(
-              `${endPoints.woredasByZone}/${headData.residenceZone.id}`
-            );
-            const woredasData = woredasResponse.data || [];
-            const validWoredas = woredasData.filter(woreda => 
-              woreda && 
-              woreda.woredaCode && 
-              woreda.woreda
-            );
-            setWoredas(validWoredas);
-          } catch (err) {
-            console.error("Failed to load woredas:", err);
-            setWoredas([]);
+      setPhotoLoading(true);
+      console.log("Fetching photo for ID:", id);
+      
+      const photoRes = await apiClient.get(
+        endPoints.getDepartmentHeadPhoto(id),
+        {
+          responseType: "blob",
+          headers: {
+            'Accept': 'image/*'
           }
         }
+      );
+      
+      console.log("Photo response received:", photoRes);
+      
+      if (photoRes.data && photoRes.data instanceof Blob) {
+        const url = URL.createObjectURL(photoRes.data);
+        setPhotoPreview(url);
+        console.log("Photo loaded successfully");
       }
-    } catch (err) {
-      console.error("Error in fetchDropdownData:", err);
-      setRegions([]);
-      setZones([]);
-      setWoredas([]);
+    } catch (err: any) {
+      console.error("Photo load failed:", err);
+      if (err.response?.status === 404) {
+        console.log("Photo not found for this department head");
+        toast.warning("Profile photo not available");
+      } else {
+        toast.error("Failed to load profile photo");
+      }
+      setPhotoPreview(null);
+    } finally {
+      setPhotoLoading(false);
     }
   };
 
-  const handleEditClick = () => {
-    setIsEditing(true);
-  };
-
-  const handleCancelEdit = () => {
-    if (head) {
-      setEditForm({
-        firstNameENG: head.firstNameENG || "",
-        firstNameAMH: head.firstNameAMH || "",
-        fatherNameENG: head.fatherNameENG || "",
-        fatherNameAMH: head.fatherNameAMH || "",
-        grandfatherNameENG: head.grandfatherNameENG || "",
-        grandfatherNameAMH: head.grandfatherNameAMH || "",
-        gender: head.gender || "MALE",
-        phoneNumber: head.phoneNumber || "",
-        email: head.email || "",
-        hiredDateGC: head.hiredDateGC || "",
-        hiredDateEC: head.hiredDateEC || "",
-        residenceRegionId: head.residenceRegion?.id || "",
-        residenceZoneId: head.residenceZone?.id || "",
-        residenceWoredaId: head.residenceWoreda?.id || "",
-        remark: head.remark || "",
-      });
-    }
-    setPhotoFile(null);
-    setDocumentFile(null);
-    setIsEditing(false);
-  };
-
-  const handleRegionChange = async (regionId: string) => {
+  const handleRegionChange = (value: string) => {
     setEditForm(prev => ({
-      ...prev,
-      residenceRegionId: regionId,
-      residenceZoneId: "",
-      residenceWoredaId: "",
+      ...prev!,
+      residenceRegionCode: value,
+      residenceZoneCode: "",
+      residenceWoredaCode: "",
     }));
+    if (value) fetchZones(value);
+  };
+
+  const handleZoneChange = (value: string) => {
+    setEditForm(prev => ({
+      ...prev!,
+      residenceZoneCode: value,
+      residenceWoredaCode: "",
+    }));
+    if (value) fetchWoredas(value);
+  };
+
+  const handleWoredaChange = (value: string) => {
+    setEditForm(prev => ({ ...prev!, residenceWoredaCode: value }));
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setEditForm(prev => ({ ...prev!, [name]: value }));
+  };
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
     
-    try {
-      const response = await apiClient.get<Zone[]>(
-        `${endPoints.zonesByRegion}/${regionId}`
-      );
-      const zonesData = response.data || [];
-      const validZones = zonesData.filter(zone => 
-        zone && 
-        zone.zoneCode && 
-        zone.zone
-      );
-      setZones(validZones);
-      setWoredas([]);
-    } catch (err) {
-      console.error("Failed to load zones:", err);
-      toast.error("Failed to load zones");
-      setZones([]);
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      toast.error("Please select an image file");
+      return;
+    }
+    
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Photo must be less than 2MB");
+      return;
+    }
+    
+    setPhotoFile(file);
+    const reader = new FileReader();
+    reader.onload = () => setPhotoPreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Please select a PDF or Word document");
+      return;
+    }
+    
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Document must be less than 5MB");
+      return;
+    }
+    
+    setDocumentFile(file);
+    toast.success("Document selected: " + file.name);
+  };
+
+  const triggerPhotoUpload = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
     }
   };
 
-  const handleZoneChange = async (zoneId: string) => {
-    setEditForm(prev => ({
-      ...prev,
-      residenceZoneId: zoneId,
-      residenceWoredaId: "",
-    }));
-    
-    try {
-      const response = await apiClient.get<Woreda[]>(
-        `${endPoints.woredasByZone}/${zoneId}`
-      );
-      const woredasData = response.data || [];
-      const validWoredas = woredasData.filter(woreda => 
-        woreda && 
-        woreda.woredaCode && 
-        woreda.woreda
-      );
-      setWoredas(validWoredas);
-    } catch (err) {
-      console.error("Failed to load woredas:", err);
-      toast.error("Failed to load woredas");
-      setWoredas([]);
+  const triggerDocumentUpload = () => {
+    if (docInputRef.current) {
+      docInputRef.current.click();
     }
   };
 
   const handleSave = async () => {
-    if (!head) return;
+    if (!headId || !editForm) return;
 
     try {
       setSaving(true);
       
-      // Create the update payload according to API spec
-      const updatePayload = {
-        firstNameENG: editForm.firstNameENG.trim(),
-        firstNameAMH: editForm.firstNameAMH.trim(),
-        fatherNameENG: editForm.fatherNameENG.trim(),
-        fatherNameAMH: editForm.fatherNameAMH.trim(),
-        grandfatherNameENG: editForm.grandfatherNameENG.trim(),
-        grandfatherNameAMH: editForm.grandfatherNameAMH.trim(),
-        gender: editForm.gender,
-        phoneNumber: editForm.phoneNumber.trim(),
-        email: editForm.email.trim(),
-        hiredDateGC: editForm.hiredDateGC,
-        hiredDateEC: editForm.hiredDateEC.trim(),
-        residenceRegionCode: editForm.residenceRegionId,
-        residenceZoneCode: editForm.residenceZoneId,
-        residenceWoredaCode: editForm.residenceWoredaId,
-        remarks: editForm.remark.trim(),
+      // Create update data object
+      const updateData: any = {
+        phoneNumber: editForm.phoneNumber,
+        email: editForm.email,
       };
+      
+      // Add location fields only if they're provided
+      if (editForm.residenceRegionCode) {
+        updateData.residenceRegionCode = editForm.residenceRegionCode;
+      }
+      if (editForm.residenceZoneCode) {
+        updateData.residenceZoneCode = editForm.residenceZoneCode;
+      }
+      if (editForm.residenceWoredaCode) {
+        updateData.residenceWoredaCode = editForm.residenceWoredaCode;
+      }
 
-      // Create FormData and append Blob for JSON data
       const formData = new FormData();
-      const jsonBlob = new Blob([JSON.stringify(updatePayload)], { type: 'application/json' });
-      formData.append('data', jsonBlob);
+      formData.append("data", JSON.stringify(updateData));
 
-      // Append photo if selected
+      // Add photo if selected
       if (photoFile) {
-        formData.append('photograph', photoFile);
+        formData.append("photo", photoFile);
       }
-
-      // Append document if selected
+      
+      // Add document if selected
       if (documentFile) {
-        formData.append('document', documentFile);
+        formData.append("documents", documentFile);
       }
 
-      // Make PATCH request with FormData
-      await apiClient.patch(
-        `${endPoints.departmentHeads}/${headId}`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
+      console.log("Saving with form data:", {
+        ...updateData,
+        hasPhoto: !!photoFile,
+        hasDocument: !!documentFile
+      });
 
-      await fetchDepartmentHeadDetail();
+      await apiClient.patch(endPoints.updateDepartmentHead(headId), formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      toast.success("Profile updated successfully!");
       setIsEditing(false);
       setPhotoFile(null);
       setDocumentFile(null);
-      toast.success("Department head updated successfully!");
+      
+      // Reload data
+      await fetchHeadDetail();
+      
     } catch (err: any) {
-      console.error("Failed to update department head:", err);
-      const errorMessage = err.response?.data?.error || err.message || "Failed to update department head";
-      toast.error(errorMessage);
+      console.error("Update error:", err);
+      const errorMsg = err.response?.data?.error || err.message || "Failed to update profile";
+      toast.error(errorMsg);
     } finally {
       setSaving(false);
     }
   };
 
-  const getStatusColor = (isActive: boolean) => {
-    return isActive
-      ? 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800'
-      : 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800';
-  };
-
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "Not specified";
-    try {
-      return new Date(dateString).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
-    } catch (e) {
-      return dateString;
-    }
-  };
-
-  const formatDateForInput = (dateString: string) => {
-    if (!dateString) return "";
-    try {
-      return new Date(dateString).toISOString().split('T')[0];
-    } catch (e) {
-      return dateString;
-    }
-  };
-
-  const getInitials = (firstName: string, fatherName: string) => {
-    return `${firstName?.[0] || ''}${fatherName?.[0] || ''}`.toUpperCase();
-  };
-
-  const downloadDocument = () => {
-    if (!head?.documentBase64) {
-      toast.error("No document available to download");
+  const downloadDocument = async () => {
+    if (!headId || !head?.hasDocument) {
+      toast.error("No document available");
       return;
     }
 
     try {
+      const res = await apiClient.get(endPoints.getDepartmentHeadDocument(headId), {
+        responseType: "blob",
+      });
+      
+      const blob = new Blob([res.data]);
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.href = head.documentBase64;
-      link.download = `department-head-${head.username}-document.pdf`;
+      link.href = url;
+      link.download = `department_head_${headId}_document.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-    } catch (error) {
-      console.error("Failed to download document:", error);
+      URL.revokeObjectURL(url);
+      
+      toast.success("Document downloaded successfully");
+    } catch (err) {
+      console.error("Download error:", err);
       toast.error("Failed to download document");
     }
   };
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("Image file size must be less than 5MB");
-        return;
-      }
-      if (!file.type.startsWith('image/')) {
-        toast.error("Please select an image file");
-        return;
-      }
-      setPhotoFile(file);
-    }
+  const getInitials = () => {
+    if (!head) return "NA";
+    return `${head.firstNameENG?.[0] || ""}${head.fatherNameENG?.[0] || ""}`.toUpperCase();
   };
 
-  const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        toast.error("Document file size must be less than 10MB");
-        return;
-      }
-      setDocumentFile(file);
-    }
-  };
-
-  // Safe region mapping function
-  const renderRegionOptions = () => {
-    const safeRegions = regions || [];
-    
-    if (safeRegions.length === 0) {
-      return (
-        <SelectItem value="no-regions" disabled>
-          No regions available
-        </SelectItem>
-      );
-    }
-
-    return safeRegions
-      .filter(region => region && region.regionCode && region.regionCode.trim() !== "" && region.region)
-      .map(region => (
-        <SelectItem 
-          key={region.regionCode} 
-          value={region.regionCode}
-        >
-          {region.region}
-        </SelectItem>
-      ));
-  };
-
-  // Safe zone mapping function
-  const renderZoneOptions = () => {
-    const safeZones = zones || [];
-    
-    if (safeZones.length === 0) {
-      return (
-        <SelectItem value="no-zones" disabled>
-          No zones available
-        </SelectItem>
-      );
-    }
-
-    return safeZones
-      .filter(zone => zone && zone.zoneCode && zone.zoneCode.trim() !== "" && zone.zone)
-      .map(zone => (
-        <SelectItem 
-          key={zone.zoneCode} 
-          value={zone.zoneCode}
-        >
-          {zone.zone}
-        </SelectItem>
-      ));
-  };
-
-  // Safe woreda mapping function
-  const renderWoredaOptions = () => {
-    const safeWoredas = woredas || [];
-    
-    if (safeWoredas.length === 0) {
-      return (
-        <SelectItem value="no-woredas" disabled>
-          No woredas available
-        </SelectItem>
-      );
-    }
-
-    return safeWoredas
-      .filter(woreda => woreda && woreda.woredaCode && woreda.woredaCode.trim() !== "" && woreda.woreda)
-      .map(woreda => (
-        <SelectItem 
-          key={woreda.woredaCode} 
-          value={woreda.woredaCode}
-        >
-          {woreda.woreda}
-        </SelectItem>
-      ));
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="flex flex-col items-center space-y-4">
+      <div className="flex flex-col items-center justify-center min-h-screen space-y-4">
+        <div className="flex items-center space-x-3">
           <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          <p className="text-lg">Loading department head details...</p>
+          <div>
+            <p className="text-lg font-medium">Loading profile...</p>
+            <p className="text-sm text-gray-500">Please wait while we fetch the details</p>
+          </div>
         </div>
       </div>
     );
@@ -541,549 +448,577 @@ export default function DepartmentHeadDetail() {
 
   if (error || !head) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-        <AlertCircle className="h-12 w-12 text-red-500" />
-        <p className="text-lg text-red-600 text-center px-4">
-          {error || "Department head not found"}
-        </p>
-        <div className="flex space-x-4">
-          <Button variant="outline" onClick={() => navigate(-1)}>
-            Go Back
-          </Button>
-          <Button variant="default" onClick={fetchDepartmentHeadDetail}>
-            Try Again
-          </Button>
+      <div className="flex flex-col items-center justify-center min-h-screen space-y-6 p-6">
+        <div className="text-center space-y-4">
+          <AlertCircle className="h-16 w-16 text-red-500 mx-auto" />
+          <div>
+            <h2 className="text-2xl font-bold text-red-600">Profile Not Found</h2>
+            <p className="text-gray-600 mt-2">{error || "The department head profile could not be found"}</p>
+          </div>
         </div>
+        <Button 
+          onClick={() => navigate(-1)} 
+          variant="outline" 
+          className="px-6"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Go Back
+        </Button>
       </div>
     );
   }
 
-  const fullNameEnglish = `${head.firstNameENG || ""} ${head.fatherNameENG || ""} ${head.grandfatherNameENG || ""}`.trim();
-  const fullNameAmharic = `${head.firstNameAMH || ""} ${head.fatherNameAMH || ""} ${head.grandfatherNameAMH || ""}`.trim();
-
   return (
-    <div className="space-y-6">
-      {/* Header with Department Info */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate(-1)}
-              className="rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
-                {isEditing ? "Edit Department Head" : "Department Head Details"}
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400 text-sm md:text-base">
-                {isEditing 
-                  ? `Update information for ${head.firstNameENG || ""} ${head.fatherNameENG || ""}`
-                  : `Viewing profile for ${head.firstNameENG || ""} ${head.fatherNameENG || ""}`
-                }
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            {/* Department Info */}
-            <div className="flex items-center gap-2">
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                <span className="font-medium text-gray-900 dark:text-white">
-                  Department:
-                </span>{" "}
-                {head.department?.name || "Not assigned"}
+    <div className="space-y-6 max-w-7xl mx-auto p-4 md:p-6">
+      {/* Header Card */}
+      <Card className="border-blue-100 dark:border-blue-900 shadow-sm">
+        <CardContent className="p-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                  <User className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold tracking-tight">Department Head Profile</h1>
+                  <p className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                    <Building className="h-4 w-4" />
+                    {head.department.name} Department
+                  </p>
+                </div>
               </div>
-              <Badge variant="outline" className="text-xs">
-                ID: {head.department?.id || "N/A"}
-              </Badge>
+              
+              <div className="flex items-center gap-3 mt-4">
+                <Badge 
+                  variant={head.active ? "default" : "destructive"} 
+                  className="px-3 py-1 text-sm"
+                >
+                  {head.active ? (
+                    <>
+                      <ShieldCheck className="h-3 w-3 mr-1" />
+                      Active
+                    </>
+                  ) : "Inactive"}
+                </Badge>
+                <Badge variant="outline" className="px-3 py-1">
+                  {head.gender}
+                </Badge>
+              </div>
             </div>
             
-            {/* Status and Edit Buttons */}
-            <div className="flex items-center gap-2">
-              <Badge className={`${getStatusColor(head.isActive)}`}>
-                {head.isActive ? "Active" : "Inactive"}
-              </Badge>
-              {isEditing ? (
+            <div className="flex items-center gap-3">
+              {!isEditing ? (
+                <Button 
+                  onClick={() => setIsEditing(true)} 
+                  variant="outline" 
+                  className="gap-2"
+                >
+                  <Edit className="h-4 w-4" />
+                  Edit Profile
+                </Button>
+              ) : (
                 <div className="flex gap-2">
-                  <Button
+                  <Button 
+                    onClick={() => {
+                      setIsEditing(false);
+                      setPhotoFile(null);
+                      setDocumentFile(null);
+                      // Reset photo preview to original
+                      if (head.hasPhoto && !photoFile) {
+                        loadPhoto(headId!);
+                      } else if (!head.hasPhoto) {
+                        setPhotoPreview(null);
+                      }
+                    }} 
                     variant="outline"
-                    onClick={handleCancelEdit}
-                    className="border-gray-300 dark:border-gray-600"
                     disabled={saving}
-                    size="sm"
                   >
-                    <X className="h-4 w-4 mr-1" />
+                    <X className="h-4 w-4 mr-2" />
                     Cancel
                   </Button>
-                  <Button
-                    onClick={handleSave}
+                  <Button 
+                    onClick={handleSave} 
                     disabled={saving}
-                    className="min-w-24"
-                    size="sm"
+                    className="gap-2"
                   >
                     {saving ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                        Saving
-                      </>
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <>
-                        <Save className="h-4 w-4 mr-1" />
-                        Save
-                      </>
+                      <Save className="h-4 w-4" />
                     )}
+                    Save Changes
                   </Button>
                 </div>
-              ) : (
-                <Button
-                  variant="outline"
-                  onClick={handleEditClick}
-                  className="border-blue-300 dark:border-blue-600 text-blue-600 dark:text-blue-400"
-                  size="sm"
-                >
-                  <Edit className="h-4 w-4 mr-1" />
-                  Edit
-                </Button>
               )}
             </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Profile Card */}
-        <Card className="lg:col-span-1">
-          <CardHeader className="text-center">
-            <div className="mx-auto">
-              <Avatar className="w-28 h-28 border-4 border-blue-100 dark:border-blue-900 mx-auto">
-                {head.photoBase64 ? (
-                  <AvatarImage
-                    src={`data:image/jpeg;base64,${head.photoBase64}`}
-                    alt={fullNameEnglish}
-                    className="object-cover"
-                  />
-                ) : (
-                  <AvatarFallback className="text-xl bg-blue-600 text-white font-semibold">
-                    {getInitials(head.firstNameENG, head.fatherNameENG)}
-                  </AvatarFallback>
-                )}
-              </Avatar>
-              
-              {isEditing && (
-                <div className="mt-3">
-                  <input
-                    type="file"
-                    id="photo-upload"
-                    accept="image/*"
-                    onChange={handlePhotoChange}
-                    className="hidden"
-                  />
-                  <label htmlFor="photo-upload">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                    >
-                      {photoFile ? "Change Photo" : "Upload Photo"}
-                    </Button>
-                  </label>
-                  {photoFile && (
-                    <p className="text-xs text-gray-500 mt-1 truncate">
-                      Selected: {photoFile.name}
-                    </p>
+      <div className="grid lg:grid-cols-3 gap-8">
+        {/* Profile Card */}
+        <Card className="lg:col-span-1 border-0 shadow-lg">
+          <CardContent className="pt-8 text-center space-y-6">
+            {/* Avatar Section */}
+            <div className="relative inline-block group">
+              <div className="relative">
+                <Avatar className="w-48 h-48 border-8 border-white dark:border-gray-800 shadow-xl">
+                  {photoLoading ? (
+                    <div className="flex items-center justify-center h-full">
+                      <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                    </div>
+                  ) : photoPreview ? (
+                    <AvatarImage 
+                      src={photoPreview} 
+                      alt="Profile photo" 
+                      className="object-cover"
+                    />
+                  ) : (
+                    <AvatarFallback className="text-4xl bg-gradient-to-br from-blue-500 to-blue-700 text-white">
+                      {getInitials()}
+                    </AvatarFallback>
                   )}
-                </div>
+                </Avatar>
+                
+                {isEditing && (
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-full flex items-center justify-center">
+                    <Button
+                      onClick={triggerPhotoUpload}
+                      variant="secondary"
+                      className="gap-2"
+                    >
+                      <Camera className="h-4 w-4" />
+                      Change Photo
+                    </Button>
+                  </div>
+                )}
+              </div>
+              
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoChange}
+                className="hidden"
+              />
+              
+              {isEditing && photoFile && (
+                <p className="text-sm text-green-600 mt-2">{photoFile.name}</p>
               )}
             </div>
-            <CardTitle className="mt-4 text-lg font-bold">
-              {isEditing ? (
-                <div className="space-y-2">
-                  <Input
-                    value={editForm.firstNameENG}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, firstNameENG: e.target.value }))}
-                    className="text-center"
-                    placeholder="First Name (English)"
-                  />
-                  <Input
-                    value={editForm.fatherNameENG}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, fatherNameENG: e.target.value }))}
-                    className="text-center"
-                    placeholder="Father Name (English)"
-                  />
+
+            {/* Name Section */}
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold">
+                {head.firstNameENG} {head.fatherNameENG} {head.grandfatherNameENG}
+              </h2>
+              <p className="text-lg text-gray-600 dark:text-gray-400">
+                {head.firstNameAMH} {head.fatherNameAMH} {head.grandfatherNameAMH}
+              </p>
+              <p className="text-sm text-gray-500 flex items-center justify-center gap-2">
+                <IdCard className="h-4 w-4" />
+                @{head.username}
+              </p>
+            </div>
+
+            <Separator />
+
+            {/* Contact Info */}
+            <div className="space-y-4 text-left">
+              <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-md">
+                  <Building className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 </div>
-              ) : (
-                <div>
-                  <div>{head.firstNameENG} {head.fatherNameENG}</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    {head.firstNameAMH} {head.fatherNameAMH}
+                <div className="flex-1">
+                  <p className="text-sm text-gray-500">Department</p>
+                  <p className="font-medium">{head.department.name}</p>
+                  <p className="text-xs text-gray-400">ID: {head.department.id}</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-md">
+                  <Mail className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-gray-500">Email</p>
+                  {isEditing ? (
+                    <Input
+                      name="email"
+                      value={editForm?.email || ""}
+                      onChange={handleInputChange}
+                      placeholder="Email"
+                      className="mt-1"
+                    />
+                  ) : (
+                    <p className="font-medium">{head.email}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-md">
+                  <Phone className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-gray-500">Phone</p>
+                  {isEditing ? (
+                    <Input
+                      name="phoneNumber"
+                      value={editForm?.phoneNumber || ""}
+                      onChange={handleInputChange}
+                      placeholder="Phone"
+                      className="mt-1"
+                    />
+                  ) : (
+                    <p className="font-medium">{head.phoneNumber}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-md">
+                  <Home className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-gray-500">Residence</p>
+                  <p className="font-medium">
+                    {head.residenceWoreda.name}, {head.residenceZone.name}, {head.residenceRegion.name}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-md">
+                  <Calendar className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-gray-500">Hired Date</p>
+                  <div className="space-y-1">
+                    <p className="font-medium">GC: {formatDate(head.hiredDateGC)}</p>
+                    <p className="text-sm text-gray-500">EC: {head.hiredDateEC}</p>
                   </div>
                 </div>
-              )}
-            </CardTitle>
-            <CardDescription className="mt-2">
-              @{head.username}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                {isEditing ? (
-                  <Input
-                    value={editForm.email}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
-                    placeholder="Email"
-                    className="flex-1"
-                  />
-                ) : (
-                  <span className="text-sm">{head.email || "No email"}</span>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                {isEditing ? (
-                  <Input
-                    value={editForm.phoneNumber}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, phoneNumber: e.target.value }))}
-                    placeholder="Phone"
-                    className="flex-1"
-                  />
-                ) : (
-                  <span className="text-sm">{head.phoneNumber || "No phone"}</span>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                <span className="text-sm">
-                  Appointed: {formatDate(head.hiredDateGC)}
-                </span>
               </div>
             </div>
 
             <Separator />
 
-            {/* Document Upload/Download Section */}
-            <div className="space-y-3">
-              {isEditing && (
-                <div>
+            {/* Document Section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Documents</h3>
+                {head.hasDocument && !isEditing && (
+                  <Badge variant="outline" className="text-xs">
+                    Available
+                  </Badge>
+                )}
+              </div>
+
+              {!isEditing ? (
+                head.hasDocument && (
+                  <Button 
+                    onClick={downloadDocument} 
+                    variant="outline" 
+                    className="w-full gap-2"
+                  >
+                    <FileText className="h-4 w-4" />
+                    Download Document
+                  </Button>
+                )
+              ) : (
+                <div className="space-y-3">
                   <input
+                    ref={docInputRef}
                     type="file"
-                    id="document-upload"
                     accept=".pdf,.doc,.docx"
                     onChange={handleDocumentChange}
                     className="hidden"
                   />
-                  <label htmlFor="document-upload">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                    >
-                      {documentFile ? "Change Document" : "Upload Document"}
-                    </Button>
-                  </label>
+                  <Button 
+                    onClick={triggerDocumentUpload}
+                    variant="outline" 
+                    className="w-full gap-2"
+                  >
+                    <Upload className="h-4 w-4" />
+                    {documentFile ? "Change Document" : "Upload Document"}
+                  </Button>
                   {documentFile && (
-                    <p className="text-xs text-gray-500 mt-1 truncate">
-                      Selected: {documentFile.name}
-                    </p>
+                    <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                      <p className="text-sm font-medium text-green-700 dark:text-green-400">
+                        Selected: {documentFile.name}
+                      </p>
+                      <p className="text-xs text-green-600 dark:text-green-500">
+                        Size: {(documentFile.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    </div>
                   )}
                 </div>
-              )}
-              
-              {!isEditing && head.hasDocument && (
-                <Button
-                  variant="outline"
-                  onClick={downloadDocument}
-                  className="w-full"
-                  size="sm"
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Download Document
-                </Button>
               )}
             </div>
           </CardContent>
         </Card>
 
-        {/* Right Column - Details */}
+        {/* Right Side - Details */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Personal Information */}
+          {/* Personal Information Card */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <User className="h-5 w-5 mr-2" />
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-transparent dark:from-blue-900/20">
+              <CardTitle className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg">
+                  <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
                 Personal Information
               </CardTitle>
+              <CardDescription>
+                Complete name details in English and Amharic
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <CardContent className="p-6">
+              <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label>First Name (English)</Label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    First Name (English)
+                  </label>
                   {isEditing ? (
                     <Input
-                      value={editForm.firstNameENG}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, firstNameENG: e.target.value }))}
+                      name="firstNameENG"
+                      value={editForm?.firstNameENG || ""}
+                      onChange={handleInputChange}
                     />
                   ) : (
-                    <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
-                      {head.firstNameENG}
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <p className="text-lg">{head.firstNameENG}</p>
                     </div>
                   )}
                 </div>
+                
                 <div className="space-y-2">
-                  <Label>First Name (አማርኛ)</Label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    First Name (አማርኛ)
+                  </label>
                   {isEditing ? (
                     <Input
-                      value={editForm.firstNameAMH}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, firstNameAMH: e.target.value }))}
+                      name="firstNameAMH"
+                      value={editForm?.firstNameAMH || ""}
+                      onChange={handleInputChange}
                     />
                   ) : (
-                    <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
-                      {head.firstNameAMH}
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <p className="text-lg">{head.firstNameAMH}</p>
                     </div>
                   )}
                 </div>
+                
                 <div className="space-y-2">
-                  <Label>Father's Name (English)</Label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Father's Name (English)
+                  </label>
                   {isEditing ? (
                     <Input
-                      value={editForm.fatherNameENG}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, fatherNameENG: e.target.value }))}
+                      name="fatherNameENG"
+                      value={editForm?.fatherNameENG || ""}
+                      onChange={handleInputChange}
                     />
                   ) : (
-                    <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
-                      {head.fatherNameENG}
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <p className="text-lg">{head.fatherNameENG}</p>
                     </div>
                   )}
                 </div>
+                
                 <div className="space-y-2">
-                  <Label>Father's Name (አማርኛ)</Label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Father's Name (አማርኛ)
+                  </label>
                   {isEditing ? (
                     <Input
-                      value={editForm.fatherNameAMH}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, fatherNameAMH: e.target.value }))}
+                      name="fatherNameAMH"
+                      value={editForm?.fatherNameAMH || ""}
+                      onChange={handleInputChange}
                     />
                   ) : (
-                    <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
-                      {head.fatherNameAMH}
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <p className="text-lg">{head.fatherNameAMH}</p>
                     </div>
                   )}
                 </div>
+                
                 <div className="space-y-2">
-                  <Label>Grandfather's Name (English)</Label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Grandfather's Name (English)
+                  </label>
                   {isEditing ? (
                     <Input
-                      value={editForm.grandfatherNameENG}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, grandfatherNameENG: e.target.value }))}
+                      name="grandfatherNameENG"
+                      value={editForm?.grandfatherNameENG || ""}
+                      onChange={handleInputChange}
                     />
                   ) : (
-                    <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
-                      {head.grandfatherNameENG || "Not specified"}
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <p className="text-lg">{head.grandfatherNameENG}</p>
                     </div>
                   )}
                 </div>
+                
                 <div className="space-y-2">
-                  <Label>Grandfather's Name (አማርኛ)</Label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Grandfather's Name (አማርኛ)
+                  </label>
                   {isEditing ? (
                     <Input
-                      value={editForm.grandfatherNameAMH}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, grandfatherNameAMH: e.target.value }))}
+                      name="grandfatherNameAMH"
+                      value={editForm?.grandfatherNameAMH || ""}
+                      onChange={handleInputChange}
                     />
                   ) : (
-                    <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
-                      {head.grandfatherNameAMH || "Not specified"}
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <p className="text-lg">{head.grandfatherNameAMH}</p>
                     </div>
                   )}
                 </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                <div className="space-y-2">
-                  <Label>Gender</Label>
-                  {isEditing ? (
-                    <Select
-                      value={editForm.gender}
-                      onValueChange={(value) => setEditForm(prev => ({ ...prev, gender: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select gender" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="MALE">Male</SelectItem>
-                        <SelectItem value="FEMALE">Female</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
-                      {head.gender}
-                    </div>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label>Appointment Date (GC)</Label>
-                  {isEditing ? (
-                    <Input
-                      type="date"
-                      value={formatDateForInput(editForm.hiredDateGC)}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, hiredDateGC: e.target.value }))}
-                    />
-                  ) : (
-                    <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
-                      {formatDate(head.hiredDateGC)}
-                    </div>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label>Appointment Date (EC)</Label>
-                  {isEditing ? (
-                    <Input
-                      value={editForm.hiredDateEC}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, hiredDateEC: e.target.value }))}
-                      placeholder="YYYY-MM-DD"
-                    />
-                  ) : (
-                    <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
-                      {head.hiredDateEC}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="mt-6 space-y-2">
-                <Label>Remarks</Label>
-                {isEditing ? (
-                  <Textarea
-                    value={editForm.remark}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, remark: e.target.value }))}
-                    placeholder="Add remarks..."
-                    rows={3}
-                  />
-                ) : (
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded border">
-                    {head.remark || "No remarks"}
-                  </div>
-                )}
               </div>
             </CardContent>
           </Card>
 
-          {/* Residence Information - Horizontal Layout */}
+          {/* Residence Information Card */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Home className="h-5 w-5 mr-2" />
+            <CardHeader className="bg-gradient-to-r from-green-50 to-transparent dark:from-green-900/20">
+              <CardTitle className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 dark:bg-green-800 rounded-lg">
+                  <MapPin className="h-5 w-5 text-green-600 dark:text-green-400" />
+                </div>
                 Residence Address
               </CardTitle>
               <CardDescription>
-                Current residential address
+                Current residential information
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <CardContent className="p-6">
+              <div className="grid md:grid-cols-3 gap-6">
                 <div className="space-y-2">
-                  <Label>Region</Label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Region</label>
                   {isEditing ? (
-                    <Select
-                      value={editForm.residenceRegionId}
-                      onValueChange={handleRegionChange}
-                    >
+                    <Select value={editForm?.residenceRegionCode} onValueChange={handleRegionChange}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select region" />
                       </SelectTrigger>
                       <SelectContent>
-                        {renderRegionOptions()}
+                        {regions.map(r => (
+                          <SelectItem key={r.regionCode} value={r.regionCode}>{r.region}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   ) : (
-                    <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
-                      {head.residenceRegion?.name || "Not specified"}
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <p className="text-lg">{head.residenceRegion.name}</p>
                     </div>
                   )}
                 </div>
-
+                
                 <div className="space-y-2">
-                  <Label>Zone</Label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Zone</label>
                   {isEditing ? (
                     <Select
-                      value={editForm.residenceZoneId}
+                      value={editForm?.residenceZoneCode}
                       onValueChange={handleZoneChange}
-                      disabled={!editForm.residenceRegionId}
+                      disabled={!editForm?.residenceRegionCode}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select zone" />
                       </SelectTrigger>
                       <SelectContent>
-                        {renderZoneOptions()}
+                        {zones.map(z => (
+                          <SelectItem key={z.zoneCode} value={z.zoneCode}>{z.zone}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   ) : (
-                    <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
-                      {head.residenceZone?.name || "Not specified"}
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <p className="text-lg">{head.residenceZone.name}</p>
                     </div>
                   )}
                 </div>
-
+                
                 <div className="space-y-2">
-                  <Label>Woreda</Label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Woreda</label>
                   {isEditing ? (
                     <Select
-                      value={editForm.residenceWoredaId}
-                      onValueChange={(value) => setEditForm(prev => ({ ...prev, residenceWoredaId: value }))}
-                      disabled={!editForm.residenceZoneId}
+                      value={editForm?.residenceWoredaCode}
+                      onValueChange={handleWoredaChange}
+                      disabled={!editForm?.residenceZoneCode}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select woreda" />
                       </SelectTrigger>
                       <SelectContent>
-                        {renderWoredaOptions()}
+                        {woredas.map(w => (
+                          <SelectItem key={w.woredaCode} value={w.woredaCode}>{w.woreda}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   ) : (
-                    <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
-                      {head.residenceWoreda?.name || "Not specified"}
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <p className="text-lg">{head.residenceWoreda.name}</p>
                     </div>
                   )}
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
-              {!isEditing && (
-                <div className="pt-4 border-t mt-4">
-                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <MapPin className="h-4 w-4" />
-                    <span>
-                      {[head.residenceWoreda?.name, head.residenceZone?.name, head.residenceRegion?.name]
-                        .filter(Boolean)
-                        .join(", ") || "Address not specified"}
-                    </span>
-                  </div>
+          {/* Additional Information Card */}
+          <Card>
+            <CardHeader className="bg-gradient-to-r from-purple-50 to-transparent dark:from-purple-900/20">
+              <CardTitle className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg">
+                  <Briefcase className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                 </div>
-              )}
+                Additional Information
+              </CardTitle>
+              <CardDescription>
+                Additional remarks and notes
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Remarks</label>
+                {isEditing ? (
+                  <Textarea
+                    name="remark"
+                    value={editForm?.remark || ""}
+                    onChange={handleInputChange}
+                    rows={4}
+                    placeholder="Add any remarks or notes..."
+                  />
+                ) : (
+                  <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <p className={head.remark ? "text-lg" : "text-lg text-gray-500 italic"}>
+                      {head.remark || "No remarks provided"}
+                    </p>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
       </div>
 
-      {/* Back Button */}
-      <div className="flex justify-end pt-4">
-        <Button
-          variant="outline"
-          onClick={() => navigate(-1)}
-          className="border-gray-300 dark:border-gray-600"
+      {/* Footer Actions */}
+      <div className="flex justify-between items-center pt-6 border-t">
+        <Button 
+          onClick={() => navigate(-1)} 
+          variant="ghost" 
+          className="gap-2"
         >
+          <ArrowLeft className="h-4 w-4" />
           Back to List
         </Button>
+        
+        <div className="text-sm text-gray-500">
+          Last updated: {formatDate(new Date().toISOString())}
+        </div>
       </div>
     </div>
   );
 }
-
-// Helper components
-const Label = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-  <label className={`text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block ${className || ''}`}>
-    {children}
-  </label>
-);
