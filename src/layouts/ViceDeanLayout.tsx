@@ -171,9 +171,7 @@ export default function ViceDeanLayout() {
               bg-white dark:bg-gray-800 shadow-xl
               transform transition-transform duration-300 ease-in-out
               border-r border-gray-200 dark:border-gray-700
-              ${
-                sidebarOpen ? "translate-x-0" : "-translate-x-full"
-              } lg:translate-x-0`}
+              ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div className="flex items-center justify-between h-16 px-4 bg-blue-600 shadow-md">
           <div className="flex items-center space-x-3">
@@ -189,7 +187,7 @@ export default function ViceDeanLayout() {
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden p-1 rounded hover:bg-blue-500 transition"
+            className="p-1 rounded hover:bg-blue-500 transition"
           >
             <svg
               width="24"
@@ -208,7 +206,7 @@ export default function ViceDeanLayout() {
           </button>
         </div>
 
-        <nav className="mt-8">
+        <nav className="mt-4 flex-1">
           <div className="px-4 space-y-2">
             {navigation.map((item) => {
               const isActive = location.pathname === item.href;
@@ -247,9 +245,8 @@ export default function ViceDeanLayout() {
             variant="ghost"
             size="icon"
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden"
           >
-            <Menu className="h-6 w-6" />
+            {!sidebarOpen && <Menu className="h-6 w-6" />}
           </Button>
 
           {/* Page Title */}
