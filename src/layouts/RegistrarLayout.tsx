@@ -444,7 +444,7 @@ export default function RegistrarLayout() {
                             )
                               ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
                               : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
-                            }`}
+                          }`}
                           onClick={() =>
                             window.innerWidth <= 1024 && setSidebarOpen(false)
                           }
@@ -459,7 +459,7 @@ export default function RegistrarLayout() {
                             )
                               ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
                               : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
-                            }`}
+                          }`}
                           onClick={() =>
                             window.innerWidth <= 1024 && setSidebarOpen(false)
                           }
@@ -511,7 +511,7 @@ export default function RegistrarLayout() {
                             )
                               ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
                               : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
-                            }`}
+                          }`}
                           onClick={() =>
                             window.innerWidth <= 1024 && setSidebarOpen(false)
                           }
@@ -526,7 +526,7 @@ export default function RegistrarLayout() {
                             )
                               ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
                               : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
-                            }`}
+                          }`}
                           onClick={() =>
                             window.innerWidth <= 1024 && setSidebarOpen(false)
                           }
@@ -541,7 +541,7 @@ export default function RegistrarLayout() {
                             )
                               ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
                               : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
-                            }`}
+                          }`}
                           onClick={() =>
                             window.innerWidth <= 1024 && setSidebarOpen(false)
                           }
@@ -679,13 +679,20 @@ export default function RegistrarLayout() {
       >
         {/* Top bar */}
         <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:gap-x-6 sm:px-6 lg:px-8">
-          <Button
+          {/* <Button
             variant="ghost"
             size="icon"
             onClick={() => setSidebarOpen(true)}
             className="lg:hidden"
           >
             <Menu className="h-6 w-6" />
+          </Button> */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSidebarOpen(true)}
+          >
+            {!sidebarOpen && <Menu className="h-6 w-6" />}
           </Button>
 
           <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">

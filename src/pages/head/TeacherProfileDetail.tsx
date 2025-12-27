@@ -1422,7 +1422,7 @@ export default function TeacherProfileDetail() {
               <div className="lg:col-span-1">
                 <div className="bg-card rounded-xl border shadow-sm p-6 sticky top-6">
                   {/* Header */}
-                  <div className="flex items-center justify-between mb-6">
+                  <div className=" items-center justify-between mb-6">
                     <h3 className="text-xl font-semibold flex items-center gap-3">
                       <BookOpen className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                       Course Assignments (
