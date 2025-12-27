@@ -130,6 +130,9 @@ const DeanLayout = React.lazy(() => import("./layouts/DeanLayout"));
 const DeanDashboard = React.lazy(() => import("./pages/dean/Dashboard"));
 const DeanStudents = React.lazy(() => import("./pages/dean/Students"));
 const DeanGrades = React.lazy(() => import("./pages/dean/Grades"));
+const DepartmentsManagement = React.lazy(
+  () => import("./pages/dean/DepartmentsManagement.tsx")
+);
 const DepartmentHeadsList = React.lazy(
   () => import("./pages/dean/DepartmentHeadsList.tsx")
 );
@@ -385,6 +388,7 @@ function App() {
                 path="program-level"
                 element={<ProgramLevelsManagement />}
               />
+              <Route path="departments" element={<DepartmentsManagement />} />
               <Route
                 path="create-department-head"
                 element={<CreateDepartmentHead />}
@@ -414,7 +418,7 @@ function App() {
 
             {/*Vice Dean Routes */}
             <Route path="/vice-dean" element={<ViceDeanLayout />}>
-              <Route index element={<Navigate to="dashboard" replace />} />
+              {/* <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<ViceDeanDashboard />} />
               <Route
                 path="create-department-head"
@@ -428,6 +432,31 @@ function App() {
               <Route
                 path="departments/:id"
                 element={<ViceDepartmentDetail />}
+              /> */}
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<ViceDeanDashboard />} />
+              <Route
+                path="program-level"
+                element={<ProgramLevelsManagement />}
+              />
+              <Route path="departments" element={<DepartmentsManagement />} />
+              <Route
+                path="create-department-head"
+                element={<CreateDepartmentHead />}
+              />
+              <Route
+                path="program-modality"
+                element={<ProgramModalitiesManagement />}
+              />
+              <Route path="profile" element={<ViceDean_Profile />} />
+              <Route path="students" element={<DeanStudents />} />
+
+              <Route path="grades" element={<DeanGrades />} />
+              <Route path="department" element={<DeanDepartments />} />
+              <Route path="reports" element={<DeanReports />} />
+              <Route
+                path="departments/:id"
+                element={<DeanDepartmentDetail />}
               />
             </Route>
 

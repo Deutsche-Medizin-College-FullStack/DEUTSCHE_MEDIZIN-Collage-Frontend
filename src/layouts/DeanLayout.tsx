@@ -12,6 +12,7 @@ import {
   User,
   Menu,
   ChevronDown,
+  Building,
   Key,
   LogOut,
 } from "lucide-react";
@@ -66,6 +67,7 @@ export default function DeanLayout() {
       icon: Layers,
     },
     { name: "Department Heads", href: "/dean/department-heads", icon: Users },
+    { name: "Manage Department", href: "/dean/departments", icon: Building },
 
     { name: "Grades", href: "/dean/grades", icon: BookOpen },
     { name: "Reports", href: "/dean/reports", icon: BarChart3 },
