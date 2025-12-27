@@ -11,7 +11,7 @@ const noAuthEndpoints = [
   "/departments",
   "/class-years",
   "/semesters",
-  "/program-levels",
+  //"/program-levels",
   // "/filters/options",
   // '/program-modality',
 ];
