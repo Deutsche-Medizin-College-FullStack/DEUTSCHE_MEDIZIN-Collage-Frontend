@@ -2,7 +2,7 @@ const endPoints = {
   login: "/auth/login",
   register: "/auth/register",
   applicantsRegister:
-    "https://deutschemedizin-collage-backend-production.up.railway.app/api/applicants/register",
+    "https://deutschemedizin-collage-backend-production.up.railway.app/api/applicants/register", // ← kept from main
   registrarApplicantRegister: "/auth/register/student",
   departmentHeadDashboard: "/department-heads/dashboard",
   getViceDeanProfile: "/vice-deans/profile",
@@ -12,21 +12,12 @@ const endPoints = {
   studentDashboard: "/student/dashboard",
   profile: "/students/profile",
   academicYears: "/academic-years",
-  getGeneralManagerProfile: "/general-managers/profile",
-  getAllStudentsCGPA: "/general-managers/get-all-students-cgpa",
-  getGeneralManagerDashboard: "/general-managers/dashboard",
-  updateGeneralManagerProfile: "/general-managers/update",
-  getDepartmentHeadPhoto: "/department-heads/profile/photo",
-  getActiveDeans: "/deans/active",
-  getActiveViceDeans: "/vice-deans/active",
-  getDeanById: "/deans",
-  getViceDeanById: "/vice-deans",
   teacherCourseAssignments: (teacherId: number | string) =>
-    `/teachers/${teacherId}/course-assignments`,
+    `/teachers/${teacherId}/course-assignments`, // ← function from main
   teacherCourseAssignmentDeletion: (
     teacherId: number | string,
     assignmentId: number | string
-  ) => `/teachers/${teacherId}/course-assignments/${assignmentId}`,
+  ) => `/teachers/${teacherId}/course-assignments/${assignmentId}`, // ← from main
   gradingSystem: "/grading-systems",
   getDepartmentHeadProfile: "/department-heads/profile",
   studentCopy: "/student-copy/generate",
@@ -96,33 +87,16 @@ const endPoints = {
   changePassword: "/auth/me/change-password",
   getTeacherProfile: "/teachers/profile",
   getTeacherCourses: "/teachers/my-courses",
-
-  createAssessment: "/assessments",
-  recordStudentScore: "/student-assessments",
-  updateStudentScore: "/student-assessments/:assessmentId/:studentId",
-  getCourseScores:
-    "/student-assessments/courses/:teacherCourseAssignmentId/scores",
-  getTeacherDashboard: "/teachers/dashboard",
-
-  bulkCreateAssessments: "/assessments/bulk",
-  bulkUpdateAssessments: "/assessments/bulk",
-  bulkDeleteAssessments: "/assessments/bulk",
-
-  bulkUpdateStudentScores: "/student-assessments/bulk",
-  getCourseStudents: "/teachers/courses/:teacherCourseAssignmentId/students",
-
-  approveAssessments:
-    "/assessments/assignment/:teacherCourseAssignmentId/approve",
-
-  getDepartmentHeadAssessments: "/department-heads/assessments/scores",
-  approveRejectAllAssessments:
-    "/department-heads/assignments/:teacherCourseAssignmentId/approve-all",
-
-  updateViceDeanProfile: "/vice-deans/update",
-  updateDeanProfile: "/deans/update",
-  departmentStudents: "/department-heads/my-students",
-  studentById: "/students",
-  deanDashboard: "/deans/dashboard",
+  // Your new additions go here (from your branch)
+  getGeneralManagerProfile: "/general-managers/profile",
+  getAllStudentsCGPA: "/general-managers/get-all-students-cgpa",
+  getGeneralManagerDashboard: "/general-managers/dashboard",
+  updateGeneralManagerProfile: "/general-managers/update",
+  getDepartmentHeadPhoto: "/department-heads/profile/photo",
+  getActiveDeans: "/deans/active",
+  getActiveViceDeans: "/vice-deans/active",
+  getDeanById: "/deans",
+  getViceDeanById: "/vice-deans",
+  // ... add any other endpoints you added on your branch
 };
-
 export default endPoints;

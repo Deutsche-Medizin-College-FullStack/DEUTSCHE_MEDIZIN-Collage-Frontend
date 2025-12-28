@@ -395,73 +395,79 @@ export default function LandingPage() {
           </div>
         </section>
      
-        <section className="mx-4 sm:mx-20 my-10">
-          <div
-            ref={infoRef}
-            className="grid grid-cols-1 sm:grid-cols-2 gap-x-20 gap-y-10"
-          >
-            <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              animate={infoView ? { opacity: 1, x: 0 } : { opacity: 0, x: 50 }}
-              transition={{ duration: 0.7, ease: "easeOut" }}
-            >
-              <div>
-                <h2 className="text-4xl text-blue-500 dark:text-blue-300 font-serif">
-                DEUTSCHE College at glance
-                </h2>
-                <p className="text-lg dark:text-white text-black font-poppins mb-4">
-                  For nearly five years, people have come to DEUTSCHE in the
-                  pursuit of truth, knowledge, and the betterment of society.
-                </p>
-                <img
-                  src="/assets/collegephoto.jpg"
-                  alt="College"
-                  className="w-full h-auto rounded-lg object-cover"
-                />
-              </div>
-            </motion.div>
+<section className="mx-4 sm:mx-20 my-16 md:my-24">
+  <div
+    ref={infoRef}
+    className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center"
+  >
+    <motion.div
+      initial={{ opacity: 0, x: -50 }}
+      animate={infoView ? { opacity: 1, x: 0 } : { opacity: 0, x: -50 }}
+      transition={{ duration: 0.7, ease: "easeOut" }}
+      className="space-y-6"
+    >
+      <div>
+        <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-blue-600 dark:text-blue-400 font-serif mb-4">
+          DEUTSCHE College at a Glance
+        </h2>
+        <p className="text-lg md:text-xl text-gray-700 dark:text-gray-300 font-poppins leading-relaxed mb-6">
+          For nearly five years, people have come to DEUTSCHE in the
+          pursuit of truth, knowledge, and the betterment of society.
+        </p>
+      </div>
+      <div className="relative overflow-hidden rounded-2xl shadow-xl hover:shadow-2xl transition-shadow duration-300">
+        <img
+          src="/assets/collegephoto.jpg"
+          alt="DEUTSCHE College Campus"
+          className="w-full h-auto object-cover transform hover:scale-105 transition-transform duration-700"
+        />
+      </div>
+    </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              animate={infoView ? { opacity: 1, x: 0 } : { opacity: 0, x: -50 }}
-              transition={{ duration: 0.7, ease: "easeOut" }}
-              className="flex flex-col justify-between"
-            >
-              <motion.div
-                initial={{ opacity: 0, y: -50 }}
-                animate={
-                  infoView ? { opacity: 1, y: 0 } : { opacity: 0, y: -50 }
-                }
-                transition={{ duration: 0.7, ease: "easeOut" }}
-                className="gap-y-8"
-              >
-                <h2 className="text-2xl text-blue-500 dark:text-blue-300 font-serif">
-                  2017{" "}
-                </h2>
-                <p className="text-lg dark:text-white text-black font-mono">
-                  The year Douche was founded
-                </p>
-              </motion.div>
+    <motion.div
+      initial={{ opacity: 0, x: 50 }}
+      animate={infoView ? { opacity: 1, x: 0 } : { opacity: 0, x: 50 }}
+      transition={{ duration: 0.7, ease: "easeOut", delay: 0.2 }}
+      className="space-y-10 lg:space-y-12"
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={infoView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+        transition={{ duration: 0.6, ease: "easeOut", delay: 0.3 }}
+        className="bg-gradient-to-br from-blue-50 to-white dark:from-gray-800 dark:to-gray-900 p-8 rounded-2xl shadow-lg"
+      >
+        <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full mb-6">
+          <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">2017</span>
+        </div>
+        <h3 className="text-2xl font-bold text-blue-600 dark:text-blue-400 font-serif mb-3">
+          Founded in 2017
+        </h3>
+        <p className="text-gray-700 dark:text-gray-300 font-mono text-lg">
+          The year DEUTSCHE was established, beginning our journey of academic excellence.
+        </p>
+      </motion.div>
 
-            
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={infoView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+        transition={{ duration: 0.6, ease: "easeOut", delay: 0.5 }}
+        className="bg-gradient-to-br from-blue-50 to-white dark:from-gray-800 dark:to-gray-900 p-8 rounded-2xl shadow-lg"
+      >
+        <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full mb-6">
+          <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">500+</span>
+        </div>
+        <h3 className="text-2xl font-bold text-blue-600 dark:text-blue-400 font-serif mb-3">
+          Active Community
+        </h3>
+        <p className="text-gray-700 dark:text-gray-300 font-mono text-lg">
+          Hundreds of students currently engaged in transformative learning experiences.
+        </p>
+      </motion.div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 100 }}
-                animate={
-                  infoView ? { opacity: 1, y: 0 } : { opacity: 0, y: 100 }
-                }
-                transition={{ duration: 0.7, ease: "easeOut" }}
-              >
-                <h2 className="text-2xl text-blue-500 dark:text-blue-300 font-serif">
-                  Hundreds{" "}
-                </h2>
-                <p className="text-lg dark:text-white text-black font-mono">
-                  of students currently engaged now
-                </p>
-              </motion.div>
-            </motion.div>
-          </div>
-        </section>
+
+    </motion.div>
+  </div>
+</section>
 
         <section
           id="programs"
