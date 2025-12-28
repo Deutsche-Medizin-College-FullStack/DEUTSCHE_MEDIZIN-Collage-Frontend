@@ -70,10 +70,6 @@ export default function DeanLayout() {
     },
     { name: "Department Heads", href: "/dean/department-heads", icon: Users },
     { name: "Manage Department", href: "/dean/departments", icon: Building },
-
-    { name: "Grades", href: "/dean/grades", icon: BookOpen },
-    { name: "Reports", href: "/dean/reports", icon: BarChart3 },
-    { name: "Department", href: "/dean/department", icon: Layers },
   ];
 
   const getUserInitials = () => {

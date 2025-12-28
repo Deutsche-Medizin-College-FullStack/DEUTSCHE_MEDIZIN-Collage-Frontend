@@ -81,8 +81,6 @@ export default function ViceDeanLayout() {
       href: "/vice-dean/departments",
       icon: Building,
     },
-
-    { name: "Grades", href: "/vice-dean/grades", icon: BookOpen },
   ];
 
   const getUserInitials = () => {
