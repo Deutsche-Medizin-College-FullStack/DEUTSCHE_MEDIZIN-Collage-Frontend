@@ -39,6 +39,7 @@ const endPoints = {
   teacherDashboard: "/teachers/dashboard",
   deanDashboard: "/deans/dashboard",
   getGeneralManagerDashboard: "/general-managers/dashboard",
+   getRegistrarDashboard: "/registrar/dashboard",
 
   /* =======================     Teachers & Courses  ======================== */
   teachers: "/teachers",
