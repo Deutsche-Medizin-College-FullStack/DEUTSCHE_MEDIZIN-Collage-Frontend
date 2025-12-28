@@ -20,6 +20,7 @@ import {
   ChevronDown,
   Key,
   User,
+  FileCheck,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -49,6 +50,8 @@ export default function RegistrarLayout() {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
+  const [pendingCoursesCount, setPendingCoursesCount] = useState(0);
+  const [loadingPendingCount, setLoadingPendingCount] = useState(true);
 
   const [passwordForm, setPasswordForm] = useState({
     oldPassword: "",
@@ -88,6 +91,12 @@ export default function RegistrarLayout() {
     },
     { name: "Transcript", href: "/registrar/transcripts", icon: FileText },
     { name: "Customize Tables", href: "/registrar/tables", icon: Calendar },
+    {
+      name: "Assessments",
+      href: "/registrar/assessments",
+      icon: FileCheck,
+      badgeCount: pendingCoursesCount,
+    },
   ];
 
   function logout() {
@@ -136,6 +145,32 @@ export default function RegistrarLayout() {
     }
   };
 
+  // Fetch pending courses count
+  const fetchPendingCoursesCount = async () => {
+    try {
+      setLoadingPendingCount(true);
+      const response = await apiClient.get(endPoints.getRegistrarHeadApprovedScores);
+
+      let pendingCount = 0;
+      if (response.data && Array.isArray(response.data)) {
+        pendingCount = response.data.filter((course) => {
+          return course.assessments?.some(
+            (assessment) =>
+              assessment.registrarApproval === "PENDING" &&
+              assessment.headApproval === "ACCEPTED"
+          );
+        }).length;
+      }
+
+      setPendingCoursesCount(pendingCount);
+    } catch (error) {
+      console.error("Error fetching pending courses count:", error);
+      setPendingCoursesCount(0);
+    } finally {
+      setLoadingPendingCount(false);
+    }
+  };
+
   // Fetch current user
   useEffect(() => {
     const loadUserData = async () => {
@@ -153,7 +188,15 @@ export default function RegistrarLayout() {
     };
 
     loadUserData();
+    fetchPendingCoursesCount();
   }, []);
+
+  // Refresh pending count when navigating to assessments page
+  useEffect(() => {
+    if (location.pathname === "/registrar/assessments") {
+      fetchPendingCoursesCount();
+    }
+  }, [location.pathname]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -232,11 +275,14 @@ export default function RegistrarLayout() {
           <div className="px-4 space-y-2">
             {navigation.map((item) => {
               const isActive = location.pathname.includes(item.href);
+              const hasBadge =
+                item.badgeCount !== undefined && item.badgeCount > 0;
+
               return (
                 <Link
                   key={item.name}
                   to={item.href}
-                  className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  className={`relative flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                     isActive
                       ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
                       : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
@@ -247,6 +293,20 @@ export default function RegistrarLayout() {
                 >
                   <item.icon className="mr-3 h-5 w-5" />
                   {item.name}
+
+                  {hasBadge && (
+                    <span className="absolute right-3 flex items-center justify-center h-5 w-5 rounded-full bg-red-500 text-white text-xs font-bold">
+                      {item.badgeCount}
+                    </span>
+                  )}
+
+                  {item.name === "Assessments" &&
+                    loadingPendingCount &&
+                    !hasBadge && (
+                      <span className="absolute right-3 flex items-center justify-center h-5 w-5">
+                        <div className="h-2 w-2 animate-ping rounded-full bg-blue-500"></div>
+                      </span>
+                    )}
                 </Link>
               );
             })}
@@ -679,14 +739,6 @@ export default function RegistrarLayout() {
       >
         {/* Top bar */}
         <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:gap-x-6 sm:px-6 lg:px-8">
-          {/* <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSidebarOpen(true)}
-            className="lg:hidden"
-          >
-            <Menu className="h-6 w-6" />
-          </Button> */}
           <Button
             variant="ghost"
             size="icon"
