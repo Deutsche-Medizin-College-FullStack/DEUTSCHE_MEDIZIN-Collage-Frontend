@@ -3,6 +3,8 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import NotificationDropdown from "@/components/ui/NotificationDropdown";
+
 import {
   LayoutDashboard,
   Users,
@@ -343,6 +345,7 @@ export default function DeanLayout() {
           {/* Right Section */}
           <div className="flex items-center gap-x-4 lg:gap-x-6">
             <ThemeToggle />
+            <NotificationDropdown />
 
             {/* User Dropdown */}
             <div className="relative" ref={dropdownRef}>

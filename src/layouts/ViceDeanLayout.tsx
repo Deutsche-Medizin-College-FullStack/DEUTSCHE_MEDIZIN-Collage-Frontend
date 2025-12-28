@@ -17,6 +17,8 @@ import {
   LogOut,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import NotificationDropdown from "@/components/ui/NotificationDropdown";
+
 import { useNavigate } from "react-router-dom";
 import {
   Dialog,
@@ -281,6 +283,7 @@ export default function ViceDeanLayout() {
           {/* Right Section */}
           <div className="flex items-center gap-x-4 lg:gap-x-6">
             <ThemeToggle />
+            <NotificationDropdown />
 
             {/* User Dropdown */}
             <div className="relative" ref={dropdownRef}>

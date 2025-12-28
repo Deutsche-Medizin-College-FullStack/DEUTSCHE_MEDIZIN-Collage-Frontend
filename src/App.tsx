@@ -177,8 +177,21 @@ const ViceDepartmentDetail = React.lazy(
 
 // Manager Pages
 const ManagerLayout = React.lazy(() => import("./layouts/ManagerLayout"));
-const ManagerDashboard = React.lazy(() => import("./pages/manager/Dashboard"));
-const ManagerReports = React.lazy(() => import("./pages/manager/Reports"));
+const ManagerDashboard = React.lazy(
+  () => import("./pages/manager/GeneralManagerDashboard")
+);
+const GeneralManagerProfile = React.lazy(
+  () => import("./pages/manager/GeneralManagerProfile.tsx")
+);
+const StudentsCGPAPage = React.lazy(
+  () => import("./pages/manager/StudentsCGPAPage.tsx")
+);
+const DepartmentHeadsPage = React.lazy(
+  () => import("./pages/manager/DepartmentHeadsPage.tsx")
+);
+const GeneralManagerDashboard = React.lazy(
+  () => import("./pages/manager/GeneralManagerDashboard.tsx")
+);
 // const ManagerSettings = React.lazy(() => import("./pages/manager/Settings"));
 const StudentCourseScoreTable = React.lazy(
   () => import("./pages/registrar/StudentCourseScoreTable")
@@ -216,10 +229,11 @@ const ClassYearsEditor = React.lazy(
 const ManagerStudents = React.lazy(
   () => import("./pages/manager/ManagerStudents")
 );
-const ManagerTeachers = React.lazy(
-  () => import("./pages/manager/ManagerTeachers")
-);
+
 const DeanProfile = React.lazy(() => import("./pages/manager/DeanProfile"));
+const TeachersPage = React.lazy(
+  () => import("./pages/manager/TeachersPage.tsx")
+);
 const ViceDeanProfile = React.lazy(
   () => import("./pages/manager/ViceDeanProfile")
 );
@@ -463,16 +477,17 @@ function App() {
             {/* Manager Routes */}
             <Route path="/general-manager" element={<ManagerLayout />}>
               <Route index element={<Navigate to="dashboard" replace />} />
-              <Route path="dashboard" element={<DeanDashboard />} />
-              <Route path="students" element={<ManagerStudents />} />
+              <Route path="dashboard" element={<GeneralManagerDashboard />} />
+              <Route path="profile" element={<GeneralManagerProfile />} />
+              <Route path="students" element={<StudentsCGPAPage />} />
+
               <Route path="students/:id" element={<StudentDetail />} />
-              <Route path="reports" element={<DeanReports />} />
-              <Route path="department" element={<DeanDepartments />} />
               <Route
-                path="departments/:id"
-                element={<DeanDepartmentDetail />}
+                path="department-heads"
+                element={<DepartmentHeadsPage />}
               />
-              <Route path="teachers" element={<ManagerTeachers />} />
+
+              <Route path="teachers" element={<TeachersPage />} />
               <Route path="dean" element={<DeanProfile />} />
               <Route path="vice-dean" element={<ViceDeanProfile />} />
               <Route path="registrar" element={<RegistrarProfile />} />
@@ -480,7 +495,7 @@ function App() {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
-        <Toaster />
+        <Toaster position="top-right" richColors closeButton />
       </div>
     </ThemeProvider>
   );

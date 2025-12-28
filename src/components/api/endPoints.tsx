@@ -12,7 +12,15 @@ const endPoints = {
   studentDashboard: "/student/dashboard",
   profile: "/students/profile",
   academicYears: "/academic-years",
+  getGeneralManagerProfile: "/general-managers/profile",
+  getAllStudentsCGPA: "/general-managers/get-all-students-cgpa",
+  getGeneralManagerDashboard: "/general-managers/dashboard",
+  updateGeneralManagerProfile: "/general-managers/update",
   getDepartmentHeadPhoto: "/department-heads/profile/photo",
+  getActiveDeans: "/deans/active",
+  getActiveViceDeans: "/vice-deans/active",
+  getDeanById: "/deans",
+  getViceDeanById: "/vice-deans",
   teacherCourseAssignments: (teacherId: number | string) =>
     `/teachers/${teacherId}/course-assignments`,
   teacherCourseAssignmentDeletion: (
