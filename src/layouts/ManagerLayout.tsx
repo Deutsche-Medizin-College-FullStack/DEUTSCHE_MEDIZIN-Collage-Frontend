@@ -33,8 +33,6 @@ import endPoints from "../components/api/endPoints";
 import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import NotificationDropdown from "@/components/ui/NotificationDropdown";
-
 export default function ManagerLayout() {
   function logout() {
     localStorage.removeItem("xy9a7b");
@@ -67,11 +65,6 @@ export default function ManagerLayout() {
       icon: LayoutDashboard,
     },
     {
-      name: "Profile",
-      href: "/general-manager/profile",
-      icon: User,
-    },
-    {
       name: "Students",
       href: "/general-manager/students",
       icon: Users,
@@ -89,10 +82,12 @@ export default function ManagerLayout() {
       icon: User,
     },
     {
-      name: "Department Heads",
-      href: "/general-manager/department-heads",
+      name: "Department",
+      href: "/general-manager/department",
       icon: Layers,
     },
+
+    { name: "Reports", href: "/general-manager/reports", icon: BarChart3 },
   ];
   const dropdownRef = useRef<HTMLDivElement>(null);
   const getUserInitials = () => {
@@ -285,7 +280,6 @@ export default function ManagerLayout() {
           {/* Right section */}
           <div className="flex items-center gap-x-4 lg:gap-x-6">
             <ThemeToggle />
-            <NotificationDropdown />
 
             {/* Avatar dropdown for all screen sizes */}
             <div className="relative" ref={dropdownRef}>

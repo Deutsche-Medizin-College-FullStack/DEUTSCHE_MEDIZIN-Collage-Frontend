@@ -3,8 +3,6 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import NotificationDropdown from "@/components/ui/NotificationDropdown";
-
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
   LayoutDashboard,
@@ -45,7 +43,7 @@ export default function TeacherLayout() {
     confirmPassword: "",
   });
   const [passwordLoading, setPasswordLoading] = useState(false);
-
+  
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Fetch user data
@@ -84,10 +82,7 @@ export default function TeacherLayout() {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setUserDropdownOpen(false);
       }
     };
@@ -120,7 +115,7 @@ export default function TeacherLayout() {
         oldPassword: passwordForm.oldPassword,
         newPassword: passwordForm.newPassword,
       });
-
+      
       alert("Password changed successfully!");
       setChangePasswordOpen(false);
       setPasswordForm({
@@ -139,6 +134,7 @@ export default function TeacherLayout() {
     { name: "Dashboard", href: "/teacher/dashboard", icon: LayoutDashboard },
     { name: "Profile", href: "/teacher/profile", icon: User },
     { name: "Courses", href: "/teacher/courses", icon: BookOpen },
+
   ];
 
   // Get user initials for avatar
@@ -205,6 +201,7 @@ export default function TeacherLayout() {
           )}
         </div>
 
+
         <nav className="mt-4 flex-1">
           <div className="px-4 space-y-2">
             {navigation.map((item) => {
@@ -260,7 +257,6 @@ export default function TeacherLayout() {
           {/* Right section */}
           <div className="flex items-center gap-x-4 lg:gap-x-6">
             <ThemeToggle />
-            <NotificationDropdown />
 
             {/* Avatar dropdown for all screen sizes */}
             <div className="relative" ref={dropdownRef}>
@@ -290,11 +286,7 @@ export default function TeacherLayout() {
                       {userData?.role?.toLowerCase() || "Teacher"}
                     </div>
                   </div>
-                  <ChevronDown
-                    className={`h-4 w-4 text-gray-500 dark:text-gray-400 transition-transform ${
-                      userDropdownOpen ? "rotate-180" : ""
-                    }`}
-                  />
+                  <ChevronDown className={`h-4 w-4 text-gray-500 dark:text-gray-400 transition-transform ${userDropdownOpen ? 'rotate-180' : ''}`} />
                 </div>
               </button>
 
@@ -327,7 +319,7 @@ export default function TeacherLayout() {
                       </div>
                     </div>
                   </div>
-
+                  
                   {/* Dropdown options */}
                   <div className="p-2">
                     <button
@@ -340,7 +332,7 @@ export default function TeacherLayout() {
                       <Key className="h-4 w-4 mr-3" />
                       Change Password
                     </button>
-
+                    
                     <button
                       onClick={() => {
                         logout();
@@ -370,19 +362,14 @@ export default function TeacherLayout() {
       <Dialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen}>
         <DialogContent className="sm:max-w-[425px] bg-white dark:bg-gray-800 z-[60]">
           <DialogHeader>
-            <DialogTitle className="text-gray-900 dark:text-white">
-              Change Password
-            </DialogTitle>
+            <DialogTitle className="text-gray-900 dark:text-white">Change Password</DialogTitle>
             <DialogDescription className="text-gray-600 dark:text-gray-300">
               Enter your current password and new password below.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label
-                htmlFor="oldPassword"
-                className="text-gray-700 dark:text-gray-300"
-              >
+              <Label htmlFor="oldPassword" className="text-gray-700 dark:text-gray-300">
                 Current Password
               </Label>
               <Input
@@ -400,10 +387,7 @@ export default function TeacherLayout() {
               />
             </div>
             <div className="grid gap-2">
-              <Label
-                htmlFor="newPassword"
-                className="text-gray-700 dark:text-gray-300"
-              >
+              <Label htmlFor="newPassword" className="text-gray-700 dark:text-gray-300">
                 New Password
               </Label>
               <Input
@@ -421,10 +405,7 @@ export default function TeacherLayout() {
               />
             </div>
             <div className="grid gap-2">
-              <Label
-                htmlFor="confirmPassword"
-                className="text-gray-700 dark:text-gray-300"
-              >
+              <Label htmlFor="confirmPassword" className="text-gray-700 dark:text-gray-300">
                 Confirm New Password
               </Label>
               <Input

@@ -3,8 +3,6 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
-import NotificationDropdown from "@/components/ui/NotificationDropdown";
-
 import {
   LayoutDashboard,
   Users,
@@ -14,7 +12,6 @@ import {
   User,
   Menu,
   ChevronDown,
-  Building,
   Key,
   LogOut,
 } from "lucide-react";
@@ -69,7 +66,10 @@ export default function DeanLayout() {
       icon: Layers,
     },
     { name: "Department Heads", href: "/dean/department-heads", icon: Users },
-    { name: "Manage Department", href: "/dean/departments", icon: Building },
+
+    { name: "Grades", href: "/dean/grades", icon: BookOpen },
+    { name: "Reports", href: "/dean/reports", icon: BarChart3 },
+    { name: "Department", href: "/dean/department", icon: Layers },
   ];
 
   const getUserInitials = () => {
@@ -341,7 +341,6 @@ export default function DeanLayout() {
           {/* Right Section */}
           <div className="flex items-center gap-x-4 lg:gap-x-6">
             <ThemeToggle />
-            <NotificationDropdown />
 
             {/* User Dropdown */}
             <div className="relative" ref={dropdownRef}>
