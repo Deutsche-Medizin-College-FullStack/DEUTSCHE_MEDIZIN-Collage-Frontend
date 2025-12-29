@@ -146,50 +146,51 @@ export default function StudentCourseScoreTable() {
   };
 
   const applyBatchUpdate = async () => {
-    try {
-      const updates = selectedRowKeys.map(key => {
-        const row = data.find(item => item.key === key);
-        if (!row) return null;
+        try {
+          const updates = selectedRowKeys.map(key => {
+            const row = data.find(item => item.key === key);
+            if (!row) return null;
 
-        const updateData = {};
-        
-        if (batchValues.score !== "") {
-          updateData.score = parseFloat(batchValues.score);
+            const updateData = {};
+            
+            if (batchValues.score !== "") {
+              updateData.score = parseFloat(batchValues.score);
+            }
+            
+            if (batchValues.isReleased !== null) {
+              updateData.isReleased = batchValues.isReleased;
+            }
+
+            if (batchValues.courseSource) {
+              updateData.courseSourceId = batchValues.courseSource;
+            }
+
+            return {
+              id: row.id,
+              ...updateData
+            };
+          }).filter(Boolean);
+
+          await apiClient.put(endPoints.bulkUpdateScores, { updates });
+          
+          message.success("Batch update completed successfully");
+          
+          // Refresh data
+          fetchStudentCourseScores();
+          
+          // Reset selection and batch values
+          setSelectedRowKeys([]);
+          setBatchValues({
+            score: "",
+            courseSource: "",
+            isReleased: null,
+          });
+        } catch (error) {
+          message.error("Failed to apply batch update");
+          console.error("Error applying batch update:", error);
         }
-        
-        if (batchValues.isReleased !== null) {
-          updateData.isReleased = batchValues.isReleased;
-        }
-
-        if (batchValues.courseSource) {
-          updateData.courseSourceId = batchValues.courseSource;
-        }
-
-        return {
-          id: row.id,
-          ...updateData
-        };
-      }).filter(Boolean);
-
-      await apiClient.put(endPoints.bulkUpdateScores, { updates });
-      
-      message.success("Batch update completed successfully");
-      
-      // Refresh data
-      fetchStudentCourseScores();
-      
-      // Reset selection and batch values
-      setSelectedRowKeys([]);
-      setBatchValues({
-        score: "",
-        courseSource: "",
-        isReleased: null,
-      });
-    } catch (error) {
-      message.error("Failed to apply batch update");
-      console.error("Error applying batch update:", error);
-    }
-  };
+      }
+  
 
   const handleSearch = (value) => {
     setSearchText(value);
@@ -324,20 +325,21 @@ export default function StudentCourseScoreTable() {
           <Select
             value={filters.department || undefined}
             onChange={(value) => handleFilterChange("department", value)}
-            className="w-full dark:[&_.ant-select-selector]:bg-gray-800 dark:[&_.ant-select-selector]:border-gray-700 dark:[&_.ant-select-selector]:text-gray-200 dark:[&_.ant-select-selection-placeholder]:text-gray-500"
+            className="w-full dark:[&_.ant-select-selector]:bg-gray-800 dark:[&_.ant-select-selector]:border-gray-700 dark:[&_.ant-select-selector]:text-gray-200 dark:[&_.ant-select-selection-placeholder]:text-gray-400"
             size="middle"
-            placeholder={<span className="dark:text-gray-400">All Departments</span>}
+            placeholder="All Departments"
             allowClear
             showSearch
             filterOption={(input, option) =>
               option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
             }
+            popupClassName="dark:bg-gray-800 dark:text-gray-200"
           >
             {filterOptions.departments.map((dept) => (
               <Select.Option 
                 key={dept.id} 
                 value={dept.id} 
-                className="dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+                className="dark:bg-gray-800 dark:text-gray-200 dark:hover:!bg-gray-700"
               >
                 {dept.name}
               </Select.Option>
@@ -353,20 +355,21 @@ export default function StudentCourseScoreTable() {
           <Select
             value={filters.status || undefined}
             onChange={(value) => handleFilterChange("status", value)}
-            className="w-full dark:[&_.ant-select-selector]:bg-gray-800 dark:[&_.ant-select-selector]:border-gray-700 dark:[&_.ant-select-selector]:text-gray-200 dark:[&_.ant-select-selection-placeholder]:text-gray-500"
+            className="w-full dark:[&_.ant-select-selector]:bg-gray-800 dark:[&_.ant-select-selector]:border-gray-700 dark:[&_.ant-select-selector]:text-gray-200 dark:[&_.ant-select-selection-placeholder]:text-gray-400"
             size="middle"
-            placeholder={<span className="dark:text-gray-400">All Status</span>}
+            placeholder="All Status"
             allowClear
             showSearch
             filterOption={(input, option) =>
               option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
             }
+            popupClassName="dark:bg-gray-800 dark:text-gray-200"
           >
             {filterOptions.studentStatuses.map((status) => (
               <Select.Option 
                 key={status.id} 
                 value={status.id} 
-                className="dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+                className="dark:bg-gray-800 dark:text-gray-200 dark:hover:!bg-gray-700"
               >
                 {status.name}
               </Select.Option>
@@ -382,20 +385,21 @@ export default function StudentCourseScoreTable() {
           <Select
             value={filters.batchClassYearSemester || undefined}
             onChange={(value) => handleFilterChange("batchClassYearSemester", value)}
-            className="w-full dark:[&_.ant-select-selector]:bg-gray-800 dark:[&_.ant-select-selector]:border-gray-700 dark:[&_.ant-select-selector]:text-gray-200 dark:[&_.ant-select-selection-placeholder]:text-gray-500"
+            className="w-full dark:[&_.ant-select-selector]:bg-gray-800 dark:[&_.ant-select-selector]:border-gray-700 dark:[&_.ant-select-selector]:text-gray-200 dark:[&_.ant-select-selection-placeholder]:text-gray-400"
             size="middle"
-            placeholder={<span className="dark:text-gray-400">All Batch/Year/Semester</span>}
+            placeholder="All Batch/Year/Semester"
             allowClear
             showSearch
             filterOption={(input, option) =>
               option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
             }
+            popupClassName="dark:bg-gray-800 dark:text-gray-200"
           >
             {filterOptions.batchClassYearSemesters.map((bcys) => (
               <Select.Option 
                 key={bcys.id} 
                 value={bcys.id} 
-                className="dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+                className="dark:bg-gray-800 dark:text-gray-200 dark:hover:!bg-gray-700"
               >
                 {bcys.name}
               </Select.Option>
@@ -408,14 +412,23 @@ export default function StudentCourseScoreTable() {
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Search
           </label>
-          <Input.Search
-            value={searchText}
-            onChange={(e) => handleSearch(e.target.value)}
-            placeholder="Search by Student ID or Name"
-            className="w-full dark:[&_input]:bg-gray-800 dark:[&_input]:border-gray-700 dark:[&_input]:text-gray-200 dark:[&_input]::placeholder-gray-500"
-            size="middle"
-            allowClear
-          />
+          <div className="relative">
+            <input
+              type="text"
+              value={searchText}
+              onChange={(e) => handleSearch(e.target.value)}
+              placeholder="Search by Student ID or Name"
+              className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-600 dark:focus:border-blue-600"
+            />
+            {searchText && (
+              <button
+                onClick={() => handleSearch("")}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="flex items-end">
@@ -428,71 +441,75 @@ export default function StudentCourseScoreTable() {
         </div>
       </div>
 
-      {/* Batch Update Section - Always visible */}
-      <div className="flex flex-wrap items-center gap-3 mb-6">
-        <InputNumber
-          placeholder="Score"
-          min={0}
-          max={100}
-          step={0.1}
-          value={batchValues.score}
-          onChange={(value) => setBatchValues({ ...batchValues, score: value })}
-          className="w-32 dark:[&_input]:bg-gray-800 dark:[&_input]:text-gray-200 dark:[&_input]:border-gray-700 dark:[&_input]::placeholder-gray-500"
-          size="middle"
-        />
-        
-        <Select
-          placeholder="Course Source"
-          value={batchValues.courseSource || undefined}
-          onChange={(value) => setBatchValues({ ...batchValues, courseSource: value })}
-          className="w-40 dark:[&_.ant-select-selector]:bg-gray-800 dark:[&_.ant-select-selector]:text-gray-200 dark:[&_.ant-select-selector]:border-gray-700 dark:[&_.ant-select-selection-placeholder]:text-gray-500"
-          size="middle"
-          allowClear
-        >
-          <Select.Option value="">Select Course Source</Select.Option>
-          {filterOptions.courseSources.map((source) => (
-            <Select.Option key={source.id} value={source.id} className="dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">
-              {source.name}
-            </Select.Option>
-          ))}
-        </Select>
-        
-        <div className="flex items-center space-x-2">
-          <span className="text-gray-600 dark:text-gray-300 text-sm font-medium">
-            Release to Student
-          </span>
-          <Select
-            value={batchValues.isReleased !== null ? (batchValues.isReleased ? 'yes' : 'no') : undefined}
-            onChange={(value) => setBatchValues({ ...batchValues, isReleased: value === 'yes' ? true : value === 'no' ? false : null })}
-            className="w-32 dark:[&_.ant-select-selector]:bg-gray-800 dark:[&_.ant-select-selector]:text-gray-200 dark:[&_.ant-select-selector]:border-gray-700 dark:[&_.ant-select-selection-placeholder]:text-gray-500"
-            size="middle"
-            placeholder="Select Status"
-            allowClear
-          >
-            <Select.Option value="yes" className="dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">Release</Select.Option>
-            <Select.Option value="no" className="dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">Don't Release</Select.Option>
-          </Select>
-        </div>
-        
-        <button
-          type="button"
-          disabled={selectedRowKeys.length === 0}
-          onClick={applyBatchUpdate}
-          className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 dark:disabled:text-gray-400 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
-        >
-          Apply to Selected ({selectedRowKeys.length})
-        </button>
+      {/* Batch Update Section - Only visible when students are selected */}
+      {selectedRowKeys.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+          <div className="flex flex-wrap items-center gap-3">
+            <InputNumber
+              placeholder="Score"
+              min={0}
+              max={100}
+              step={0.1}
+              value={batchValues.score}
+              onChange={(value) => setBatchValues({ ...batchValues, score: value })}
+              className="w-32"
+              size="middle"
+            />
+            
+            <Select
+              placeholder="Course Source"
+              value={batchValues.courseSource || undefined}
+              onChange={(value) => setBatchValues({ ...batchValues, courseSource: value })}
+              className="w-40"
+              size="middle"
+              allowClear
+            >
+              <Select.Option value="">Select Course Source</Select.Option>
+              {filterOptions.courseSources.map((source) => (
+                <Select.Option key={source.id} value={source.id}>
+                  {source.name}
+                </Select.Option>
+              ))}
+            </Select>
+            
+            <div className="flex items-center space-x-2">
+              <span className="text-gray-600 dark:text-gray-300 text-sm font-medium">
+                Release to Student
+              </span>
+              <Select
+                value={batchValues.isReleased !== null ? (batchValues.isReleased ? 'yes' : 'no') : undefined}
+                onChange={(value) => setBatchValues({ ...batchValues, isReleased: value === 'yes' ? true : value === 'no' ? false : null })}
+                className="w-32"
+                size="middle"
+                placeholder="Select Status"
+                allowClear
+              >
+                <Select.Option value="yes">Release</Select.Option>
+                <Select.Option value="no">Don't Release</Select.Option>
+              </Select>
+            </div>
+            
+            <button
+              type="button"
+              onClick={applyBatchUpdate}
+              className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 transition-all duration-200 shadow-sm"
+            >
+              Apply to Selected ({selectedRowKeys.length})
+            </button>
 
-        {selectedRowKeys.length > 0 && (
-          <button
-            type="button"
-            onClick={clearBatchUpdate}
-            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-          >
-            Clear Selection
-          </button>
-        )}
-      </div>
+            <button
+              type="button"
+              onClick={clearBatchUpdate}
+              className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+            >
+              Clear Selection
+            </button>
+          </div>
+          <div className="text-sm text-blue-600 dark:text-blue-300 mt-2">
+            ⓘ Batch update settings will be applied to all {selectedRowKeys.length} selected students
+          </div>
+        </div>
+      )}
 
       {/* Table Section */}
       <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 overflow-x-auto">
@@ -775,13 +792,109 @@ export default function StudentCourseScoreTable() {
                 min={0}
                 max={100}
                 step={0.1}
-                className="w-full dark:[&_input]:bg-gray-800 dark:[&_input]:text-gray-200 dark:[&_input]:border-gray-700"
+                className="w-full"
                 placeholder="Enter new score"
               />
             </div>
           </div>
         )}
       </Modal>
+
+      {/* Global CSS to fix Ant Design dark mode issues */}
+      <style jsx global>{`
+        /* Fix InputNumber dark mode */
+        .ant-input-number {
+          background-color: #1f2937 !important;
+          border-color: #4b5563 !important;
+        }
+        
+        .ant-input-number-input {
+          color: #d1d5db !important;
+        }
+        
+        .ant-input-number-input::placeholder {
+          color: #9ca3af !important;
+        }
+        
+        .ant-input-number:hover,
+        .ant-input-number:focus {
+          border-color: #60a5fa !important;
+        }
+        
+        /* Fix Select dropdown dark mode */
+        .ant-select-dropdown {
+          background-color: #1f2937 !important;
+          border-color: #4b5563 !important;
+        }
+        
+        .ant-select-item {
+          color: #d1d5db !important;
+        }
+        
+        .ant-select-item:hover {
+          background-color: #374151 !important;
+        }
+        
+        .ant-select-item-option-selected {
+          background-color: #4b5563 !important;
+        }
+        
+        .ant-select-selection-item {
+          color: #d1d5db !important;
+        }
+        
+        .ant-select-clear {
+          background-color: #1f2937 !important;
+          color: #9ca3af !important;
+        }
+        
+        /* Fix Modal dark mode */
+        .ant-modal-content {
+          background-color: #1f2937 !important;
+        }
+        
+        .ant-modal-title {
+          color: #f9fafb !important;
+        }
+        
+        .ant-modal-body {
+          color: #d1d5db !important;
+        }
+        
+        .ant-modal-close {
+          color: #9ca3af !important;
+        }
+        
+        .ant-modal-close:hover {
+          color: #d1d5db !important;
+        }
+        
+        /* Fix the batch update section Select components */
+        .flex-wrap.items-center.gap-3 .ant-select-selector {
+          background-color: #1f2937 !important;
+          border-color: #4b5563 !important;
+          color: #d1d5db !important;
+        }
+        
+        .flex-wrap.items-center.gap-3 .ant-select-selection-placeholder {
+          color: #9ca3af !important;
+        }
+        
+        .flex-wrap.items-center.gap-3 .ant-select-arrow {
+          color: #9ca3af !important;
+        }
+        
+        /* Fix pagination dropdown */
+        select.border-gray-300.dark\:border-gray-600 {
+          background-color: #1f2937 !important;
+          color: #d1d5db !important;
+        }
+        
+        select.border-gray-300.dark\:border-gray-600 option {
+          background-color: #1f2937 !important;
+          color: #d1d5db !important;
+        }
+      `}</style>
     </div>
   );
 }
