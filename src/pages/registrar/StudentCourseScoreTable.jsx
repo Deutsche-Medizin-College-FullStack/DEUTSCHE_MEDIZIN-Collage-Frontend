@@ -7,6 +7,7 @@ const initialData = [];
 
 export default function StudentCourseScoreTable() {
   const [data, setData] = useState(initialData);
+  const [allData, setAllData] = useState(initialData); // Store all data for client-side filtering
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
@@ -41,7 +42,6 @@ export default function StudentCourseScoreTable() {
     current: 1,
     pageSize: 10,
     total: 0,
-    totalPages: 0,
   });
   
   const [searchText, setSearchText] = useState("");
@@ -55,7 +55,31 @@ export default function StudentCourseScoreTable() {
   // Fetch student course scores when pagination or filters change
   useEffect(() => {
     fetchStudentCourseScores();
-  }, [pagination.current, pagination.pageSize, filters]);
+  }, [pagination.current, pagination.pageSize, filters.department, filters.status, filters.search]);
+
+  // Client-side filtering for batchClassYearSemester
+  useEffect(() => {
+    if (filters.batchClassYearSemester && allData.length > 0) {
+      // Filter data client-side for batchClassYearSemester
+      const filteredData = allData.filter(item => 
+        item.batchClassYearSemester.id === filters.batchClassYearSemester
+      );
+      setData(filteredData);
+      setPagination(prev => ({
+        ...prev,
+        total: filteredData.length,
+        current: 1 // Reset to first page when filtering
+      }));
+    } else if (!filters.batchClassYearSemester && allData.length > 0) {
+      // Reset to all data when filter is cleared
+      setData(allData);
+      setPagination(prev => ({
+        ...prev,
+        total: allData.length,
+        current: 1
+      }));
+    }
+  }, [filters.batchClassYearSemester, allData]);
 
   const fetchFilterOptions = async () => {
     try {
@@ -81,21 +105,20 @@ export default function StudentCourseScoreTable() {
   const fetchStudentCourseScores = async () => {
     setLoading(true);
     try {
-      // Prepare params for API call
       const params = {
-        page: pagination.current - 1, // Convert to 0-based for API
+        page: pagination.current - 1, // Convert to 0-based index for API
         size: pagination.pageSize,
         ...(filters.search && { search: filters.search }),
         ...(filters.department && { departmentId: filters.department }),
         ...(filters.status && { statusId: filters.status }),
-        ...(filters.batchClassYearSemester && { bcysId: filters.batchClassYearSemester }),
+        // Note: batchClassYearSemester is handled client-side
       };
 
-      console.log("Fetching with params:", params);
+      console.log("Fetching with params:", params); // Debug log
 
       const response = await apiClient.get(endPoints.getAllScores, { params });
       
-      console.log("API Response:", response.data);
+      console.log("API Response:", response.data); // Debug log
       
       if (response.data) {
         const formattedData = response.data.content.map((item) => ({
@@ -117,14 +140,15 @@ export default function StudentCourseScoreTable() {
         }));
         
         setData(formattedData);
+        setAllData(formattedData); // Store all data for client-side filtering
         
         // Update pagination from API response
         setPagination(prev => ({
           ...prev,
-          total: response.data.totalElements || 0,
-          pageSize: response.data.size || 10,
-          current: (response.data.page || 0) + 1, // Convert from 0-based to 1-based
-          totalPages: response.data.totalPages || 1
+          total: response.data.totalElements,
+          pageSize: response.data.size,
+          current: response.data.page + 1, // Convert from 0-based to 1-based
+          totalPages: response.data.totalPages
         }));
       }
     } catch (error) {
@@ -146,70 +170,68 @@ export default function StudentCourseScoreTable() {
   };
 
   const handleSelectAll = () => {
-    if (selectedRowKeys.length === data.length) {
+    if (selectedRowKeys.length === currentPageData.length) {
       setSelectedRowKeys([]);
     } else {
-      setSelectedRowKeys(data.map(item => item.key));
+      setSelectedRowKeys(currentPageData.map(item => item.key));
     }
   };
 
   const applyBatchUpdate = async () => {
-    try {
-      const updates = selectedRowKeys.map(key => {
-        const row = data.find(item => item.key === key);
-        if (!row) return null;
+ 
+        try {
+          const updates = selectedRowKeys.map(key => {
+            const row = data.find(item => item.key === key);
+            if (!row) return null;
 
-        const updateData = {};
-        
-        if (batchValues.score !== "") {
-          updateData.score = parseFloat(batchValues.score);
+            const updateData = {};
+            
+            if (batchValues.score !== "") {
+              updateData.score = parseFloat(batchValues.score);
+            }
+            
+            if (batchValues.isReleased !== null) {
+              updateData.isReleased = batchValues.isReleased;
+            }
+
+            if (batchValues.courseSource) {
+              updateData.courseSourceId = batchValues.courseSource;
+            }
+
+            return {
+              id: row.id,
+              ...updateData
+            };
+          }).filter(Boolean);
+
+          await apiClient.put(endPoints.bulkUpdateScores, { updates });
+          
+          message.success("Batch update completed successfully");
+          
+          // Refresh data
+          fetchStudentCourseScores();
+          
+          // Reset selection and batch values
+          setSelectedRowKeys([]);
+          setBatchValues({
+            score: "",
+            courseSource: "",
+            isReleased: null,
+          });
+        } catch (error) {
+          message.error("Failed to apply batch update");
+          console.error("Error applying batch update:", error);
         }
-        
-        if (batchValues.isReleased !== null) {
-          updateData.isReleased = batchValues.isReleased;
-        }
+      }
 
-        if (batchValues.courseSource) {
-          updateData.courseSourceId = batchValues.courseSource;
-        }
-
-        return {
-          id: row.id,
-          ...updateData
-        };
-      }).filter(Boolean);
-
-      await apiClient.put(endPoints.bulkUpdateScores, { updates });
-      
-      message.success("Batch update completed successfully");
-      
-      // Refresh data
-      fetchStudentCourseScores();
-      
-      // Reset selection and batch values
-      setSelectedRowKeys([]);
-      setBatchValues({
-        score: "",
-        courseSource: "",
-        isReleased: null,
-      });
-    } catch (error) {
-      message.error("Failed to apply batch update");
-      console.error("Error applying batch update:", error);
-    }
-  };
 
   const handleSearch = (value) => {
     setSearchText(value);
     setFilters(prev => ({ ...prev, search: value }));
-    // Reset to first page when searching
-    setPagination(prev => ({ ...prev, current: 1 }));
   };
 
   const handleFilterChange = (filterName, value) => {
     setFilters(prev => ({ ...prev, [filterName]: value }));
-    // Reset to first page when filter changes
-    setPagination(prev => ({ ...prev, current: 1 }));
   };
 
   const handleEditScoreClick = (record) => {
@@ -288,6 +310,8 @@ export default function StudentCourseScoreTable() {
     });
     setSearchText("");
     setPagination(prev => ({ ...prev, current: 1 }));
+    // Reset to fetch all data from API
+    fetchStudentCourseScores();
   };
 
   const clearBatchUpdate = () => {
@@ -308,10 +332,11 @@ export default function StudentCourseScoreTable() {
     setPagination(prev => ({ ...prev, pageSize, current: 1 }));
   };
 
-  // Get pagination info from state
-  const totalPages = pagination.totalPages || 1;
-  const startIndex = (pagination.current - 1) * pagination.pageSize + 1;
-  const endIndex = Math.min(startIndex + pagination.pageSize - 1, pagination.total);
+  // Calculate pagination for displayed data
+  const totalPages = Math.ceil(pagination.total / pagination.pageSize);
+  const startIndex = (pagination.current - 1) * pagination.pageSize;
+  const endIndex = Math.min(startIndex + pagination.pageSize, data.length);
+  const currentPageData = data.slice(startIndex, endIndex);
 
   return (
     <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl dark:shadow-gray-900 max-w-full mx-auto">
@@ -521,162 +546,160 @@ export default function StudentCourseScoreTable() {
         </div>
       )}
 
-      {/* Table Section - Horizontal scroll only for table */}
-      <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-900">
+      {/* Table Section */}
+      <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead className="bg-gray-50 dark:bg-gray-900">
+            <tr>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <input
+                  type="checkbox"
+                  checked={selectedRowKeys.length > 0 && selectedRowKeys.length === currentPageData.length}
+                  onChange={handleSelectAll}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700"
+                />
+              </th>
+              <th 
+                scope="col" 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+                onClick={() => handleSort('studentId')}
+              >
+                Student ID {sortConfig.key === 'studentId' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
+              </th>
+              <th 
+                scope="col" 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+                onClick={() => handleSort('studentName')}
+              >
+                Student Name {sortConfig.key === 'studentName' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
+              </th>
+              <th 
+                scope="col" 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+                onClick={() => handleSort('course')}
+              >
+                Course {sortConfig.key === 'course' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
+              </th>
+              <th 
+                scope="col" 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+                onClick={() => handleSort('batchClassYearSemester')}
+              >
+                Batch/Year/Semester {sortConfig.key === 'batchClassYearSemester' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
+              </th>
+              <th 
+                scope="col" 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+                onClick={() => handleSort('courseSource')}
+              >
+                Course Source {sortConfig.key === 'courseSource' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
+              </th>
+              <th 
+                scope="col" 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+                onClick={() => handleSort('score')}
+              >
+                Score {sortConfig.key === 'score' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
+              </th>
+              <th 
+                scope="col" 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+                onClick={() => handleSort('isReleased')}
+              >
+                Released {sortConfig.key === 'isReleased' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            {loading ? (
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  <input
-                    type="checkbox"
-                    checked={selectedRowKeys.length > 0 && selectedRowKeys.length === data.length}
-                    onChange={handleSelectAll}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700"
-                  />
-                </th>
-                <th 
-                  scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
-                  onClick={() => handleSort('studentId')}
-                >
-                  Student ID {sortConfig.key === 'studentId' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
-                </th>
-                <th 
-                  scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
-                  onClick={() => handleSort('studentName')}
-                >
-                  Student Name {sortConfig.key === 'studentName' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
-                </th>
-                <th 
-                  scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
-                  onClick={() => handleSort('course')}
-                >
-                  Course {sortConfig.key === 'course' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
-                </th>
-                <th 
-                  scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
-                  onClick={() => handleSort('batchClassYearSemester')}
-                >
-                  Batch/Year/Semester {sortConfig.key === 'batchClassYearSemester' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
-                </th>
-                <th 
-                  scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
-                  onClick={() => handleSort('courseSource')}
-                >
-                  Course Source {sortConfig.key === 'courseSource' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
-                </th>
-                <th 
-                  scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
-                  onClick={() => handleSort('score')}
-                >
-                  Score {sortConfig.key === 'score' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
-                </th>
-                <th 
-                  scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
-                  onClick={() => handleSort('isReleased')}
-                >
-                  Released {sortConfig.key === 'isReleased' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Actions
-                </th>
+                <td colSpan="9" className="px-6 py-8 text-center">
+                  <div className="flex justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                  </div>
+                </td>
               </tr>
-            </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {loading ? (
-                <tr>
-                  <td colSpan="9" className="px-6 py-8 text-center">
-                    <div className="flex justify-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            ) : currentPageData.length === 0 ? (
+              <tr>
+                <td colSpan="9" className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                  No student course scores found
+                </td>
+              </tr>
+            ) : (
+              currentPageData.map((item, index) => (
+                <tr 
+                  key={item.key} 
+                  className={`
+                    ${index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-900'}
+                    hover:bg-gray-100 dark:hover:bg-gray-700
+                    ${selectedRowKeys.includes(item.key) ? 'bg-blue-50 dark:bg-blue-900/20' : ''}
+                  `}
+                >
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <input
+                      type="checkbox"
+                      checked={selectedRowKeys.includes(item.key)}
+                      onChange={() => handleRowSelection(item.key)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700"
+                    />
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
+                    {item.studentId.id}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
+                    {item.studentId.student?.name || "N/A"}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
+                    {item.course.displayName}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
+                    {item.batchClassYearSemester.displayName || "N/A"}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
+                    {item.courseSource.displayName}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-300">
+                    {item.score !== null && item.score !== undefined ? item.score.toFixed(2) : "N/A"}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      item.isReleased 
+                        ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' 
+                        : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                    }`}>
+                      {item.isReleased ? "Yes" : "No"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleEditScoreClick(item)}
+                        className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition-colors dark:bg-blue-600 dark:hover:bg-blue-700"
+                      >
+                        Edit Score
+                      </button>
+                      <button
+                        onClick={() => handleToggleRelease(item)}
+                        className={`px-3 py-1 text-sm rounded transition-colors ${
+                          item.isReleased 
+                            ? 'bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-700' 
+                            : 'bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700'
+                        } text-white`}
+                      >
+                        {item.isReleased ? "Unrelease" : "Release"}
+                      </button>
                     </div>
                   </td>
                 </tr>
-              ) : data.length === 0 ? (
-                <tr>
-                  <td colSpan="9" className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                    No student course scores found
-                  </td>
-                </tr>
-              ) : (
-                data.map((item, index) => (
-                  <tr 
-                    key={item.key} 
-                    className={`
-                      ${index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-900'}
-                      hover:bg-gray-100 dark:hover:bg-gray-700
-                      ${selectedRowKeys.includes(item.key) ? 'bg-blue-50 dark:bg-blue-900/20' : ''}
-                    `}
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <input
-                        type="checkbox"
-                        checked={selectedRowKeys.includes(item.key)}
-                        onChange={() => handleRowSelection(item.key)}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700"
-                      />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
-                      {item.studentId.id}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
-                      {item.studentId.student?.name || "N/A"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
-                      {item.course.displayName}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
-                      {item.batchClassYearSemester.displayName || "N/A"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
-                      {item.courseSource.displayName}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-300">
-                      {item.score !== null && item.score !== undefined ? item.score.toFixed(2) : "N/A"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        item.isReleased 
-                          ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' 
-                          : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
-                      }`}>
-                        {item.isReleased ? "Yes" : "No"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleEditScoreClick(item)}
-                          className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition-colors dark:bg-blue-600 dark:hover:bg-blue-700"
-                        >
-                          Edit Score
-                        </button>
-                        <button
-                          onClick={() => handleToggleRelease(item)}
-                          className={`px-3 py-1 text-sm rounded transition-colors ${
-                            item.isReleased 
-                              ? 'bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-700' 
-                              : 'bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700'
-                          } text-white`}
-                        >
-                          {item.isReleased ? "Unrelease" : "Release"}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+              ))
+            )}
+          </tbody>
+        </table>
 
-        {/* Pagination - Fixed at bottom, not scrolling */}
+        {/* Pagination */}
         <div className="bg-gray-50 dark:bg-gray-900 px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 sm:px-6">
           <div className="flex-1 flex justify-between sm:hidden">
             <button
@@ -697,7 +720,7 @@ export default function StudentCourseScoreTable() {
           <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
             <div>
               <p className="text-sm text-gray-700 dark:text-gray-300">
-                Showing <span className="font-medium">{startIndex}</span> to{' '}
+                Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
                 <span className="font-medium">{endIndex}</span> of{' '}
                 <span className="font-medium">{pagination.total}</span> results
               </p>
