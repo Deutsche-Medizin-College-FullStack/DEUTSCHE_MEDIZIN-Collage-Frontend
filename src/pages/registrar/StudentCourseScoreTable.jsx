@@ -7,7 +7,7 @@ const initialData = [];
 
 export default function StudentCourseScoreTable() {
   const [data, setData] = useState(initialData);
-  const [originalData, setOriginalData] = useState(initialData); // Store original unfiltered data
+  const [originalData, setOriginalData] = useState(initialData);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
@@ -53,7 +53,7 @@ export default function StudentCourseScoreTable() {
     fetchFilterOptions();
   }, []);
 
-  // Fetch student course scores
+  // Fetch student course scores when pagination changes
   useEffect(() => {
     fetchStudentCourseScores();
   }, [pagination.current, pagination.pageSize]);
@@ -85,10 +85,15 @@ export default function StudentCourseScoreTable() {
       const params = {
         page: pagination.current - 1, // Backend expects 0-based index
         size: pagination.pageSize,
+        // Add filters to API call for server-side filtering
+        ...(filters.search && { search: filters.search }),
+        ...(filters.batchClassYearSemester && { bcysId: filters.batchClassYearSemester }),
+        ...(filters.department && { departmentId: filters.department }),
+        ...(filters.status && { statusId: filters.status }),
       };
 
       console.log("Fetching with params:", params);
-      const response = await apiClient.get(endPoints.getAll, { params });
+      const response = await apiClient.get(endPoints.getAllScores, { params });
       
       if (response.data) {
         const formattedData = response.data.content.map((item, index) => ({
@@ -96,9 +101,9 @@ export default function StudentCourseScoreTable() {
           id: item.id,
           studentId: { 
             id: item.studentId?.toString() || "N/A",
-            student: item.student || {}
+            student: { name: item.studentName || "N/A" } // Fixed: using studentName from API
           },
-          course: item.course || { name: "N/A", displayName: "N/A" },
+          course: item.course || { id: null, name: "N/A", displayName: "N/A" },
           batchClassYearSemester: item.bcys || { 
             batch: "N/A", 
             year: "N/A", 
@@ -106,14 +111,13 @@ export default function StudentCourseScoreTable() {
             displayName: "N/A",
             id: null
           },
-          courseSource: item.courseSource || { name: "N/A", displayName: "N/A" },
+          courseSource: item.courseSource || { id: null, name: "N/A", displayName: "N/A" },
           score: item.score,
           isReleased: item.isReleased,
-          rawData: item // Keep raw data for updates
+          rawData: item
         }));
         
-        setOriginalData(formattedData); // Store original data
-        setData(formattedData); // Set initial data
+        setData(formattedData);
         
         setPagination(prev => ({
           ...prev,
@@ -130,56 +134,14 @@ export default function StudentCourseScoreTable() {
     }
   };
 
-  // Apply client-side filtering when filters change
+  // Refresh data when filters change (server-side filtering)
   useEffect(() => {
-    if (originalData.length > 0) {
-      applyClientSideFilters();
+    if (pagination.current === 1) {
+      fetchStudentCourseScores();
+    } else {
+      setPagination(prev => ({ ...prev, current: 1 }));
     }
-  }, [filters, originalData]);
-
-  const applyClientSideFilters = () => {
-    let filteredData = [...originalData];
-
-    // Apply search filter
-    if (filters.search) {
-      const searchTerm = filters.search.toLowerCase();
-      filteredData = filteredData.filter(item => {
-        const studentId = item.studentId.id?.toString().toLowerCase() || '';
-        const studentName = item.studentId.student?.name?.toLowerCase() || '';
-        return studentId.includes(searchTerm) || studentName.includes(searchTerm);
-      });
-    }
-
-    // Apply batch/class/year/semester filter
-    if (filters.batchClassYearSemester) {
-      filteredData = filteredData.filter(item => 
-        item.batchClassYearSemester.id?.toString() === filters.batchClassYearSemester
-      );
-    }
-
-    // Apply department filter (if we had department data in the response)
-    // Note: The current API response doesn't include department info
-    // if (filters.department) {
-    //   filteredData = filteredData.filter(item => 
-    //     item.departmentId?.toString() === filters.department
-    //   );
-    // }
-
-    // Apply status filter (if we had status data in the response)
-    // Note: The current API response doesn't include status info
-    // if (filters.status) {
-    //   filteredData = filteredData.filter(item => 
-    //     item.statusId?.toString() === filters.status
-    //   );
-    // }
-
-    setData(filteredData);
-    setPagination(prev => ({
-      ...prev,
-      current: 1, // Reset to first page when filtering
-      total: filteredData.length, // Update total for client-side pagination
-    }));
-  };
+  }, [filters]);
 
   const rowSelection = {
     selectedRowKeys,
@@ -191,7 +153,7 @@ export default function StudentCourseScoreTable() {
       message.warning("Please select at least one row to update");
       return;
     }
-
+    alert("Are you sure you want to apply the batch update?");
     try {
       const updates = selectedRowKeys.map(key => {
         const row = data.find(item => item.key === key);
@@ -199,7 +161,6 @@ export default function StudentCourseScoreTable() {
 
         const updateData = {};
         
-        // Only include fields that have been changed
         if (batchValues.score !== "") {
           updateData.score = parseFloat(batchValues.score);
         }
@@ -208,13 +169,17 @@ export default function StudentCourseScoreTable() {
           updateData.isReleased = batchValues.isReleased;
         }
 
+        if (batchValues.courseSource) {
+          updateData.courseSourceId = batchValues.courseSource;
+        }
+
         return {
           id: row.id,
           ...updateData
         };
       }).filter(Boolean);
 
-      await apiClient.put(endPoints.bulkUpdate, { updates });
+      await apiClient.put(endPoints.bulkUpdateScores, { updates });
       
       message.success("Batch update completed successfully");
       
@@ -303,7 +268,7 @@ export default function StudentCourseScoreTable() {
       dataIndex: "isReleased",
       key: "isReleased",
       render: (val) => (
-        <span className={`px-2 py-1 rounded text-xs font-medium ${val ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+        <span className={`px-2 py-1 rounded text-xs font-medium ${val ? 'bg-green-100 dark:bg-green-900 dark:text-green-200 text-green-800' : 'bg-red-100 dark:bg-red-900 dark:text-red-200 text-red-800'}`}>
           {val ? "Yes" : "No"}
         </span>
       ),
@@ -404,13 +369,6 @@ export default function StudentCourseScoreTable() {
     setPagination(prev => ({ ...prev, current: 1 }));
   };
 
-  // Calculate paginated data for client-side pagination
-  const paginatedData = useMemo(() => {
-    const start = (pagination.current - 1) * pagination.pageSize;
-    const end = start + pagination.pageSize;
-    return data.slice(start, end);
-  }, [data, pagination.current, pagination.pageSize]);
-
   return (
     <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl dark:shadow-gray-900 max-w-full mx-auto">
       {/* Batch Update Section */}
@@ -422,7 +380,7 @@ export default function StudentCourseScoreTable() {
           step={0.1}
           value={batchValues.score}
           onChange={(value) => setBatchValues({ ...batchValues, score: value })}
-          className="w-32"
+          className="w-32 dark:[&_input]:bg-gray-700 dark:[&_input]:text-gray-200 dark:[&_input]:border-gray-600"
           size="middle"
         />
         
@@ -430,7 +388,7 @@ export default function StudentCourseScoreTable() {
           placeholder="Course Source"
           value={batchValues.courseSource || undefined}
           onChange={(value) => setBatchValues({ ...batchValues, courseSource: value })}
-          className="w-40"
+          className="w-40 dark:[&_.ant-select-selector]:bg-gray-700 dark:[&_.ant-select-selector]:text-gray-200 dark:[&_.ant-select-selector]:border-gray-600"
           size="middle"
           allowClear
         >
@@ -449,7 +407,7 @@ export default function StudentCourseScoreTable() {
           <Select
             value={batchValues.isReleased !== null ? (batchValues.isReleased ? 'yes' : 'no') : undefined}
             onChange={(value) => setBatchValues({ ...batchValues, isReleased: value === 'yes' ? true : value === 'no' ? false : null })}
-            className="w-32"
+            className="w-32 dark:[&_.ant-select-selector]:bg-gray-700 dark:[&_.ant-select-selector]:text-gray-200 dark:[&_.ant-select-selector]:border-gray-600"
             size="middle"
             placeholder="Select Status"
             allowClear
@@ -463,7 +421,7 @@ export default function StudentCourseScoreTable() {
           type="button"
           disabled={selectedRowKeys.length === 0}
           onClick={applyBatchUpdate}
-          className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-500 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
+          className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 dark:disabled:text-gray-400 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
         >
           Apply to Selected ({selectedRowKeys.length})
         </button>
@@ -475,7 +433,7 @@ export default function StudentCourseScoreTable() {
         <Select
           value={filters.department || undefined}
           onChange={(value) => handleFilterChange("department", value)}
-          className="w-full sm:w-48"
+          className="w-full sm:w-48 dark:[&_.ant-select-selector]:bg-gray-700 dark:[&_.ant-select-selector]:text-gray-200 dark:[&_.ant-select-selector]:border-gray-600"
           size="middle"
           placeholder="All Departments"
           allowClear
@@ -495,7 +453,7 @@ export default function StudentCourseScoreTable() {
         <Select
           value={filters.status || undefined}
           onChange={(value) => handleFilterChange("status", value)}
-          className="w-full sm:w-48"
+          className="w-full sm:w-48 dark:[&_.ant-select-selector]:bg-gray-700 dark:[&_.ant-select-selector]:text-gray-200 dark:[&_.ant-select-selector]:border-gray-600"
           size="middle"
           placeholder="All Status"
           allowClear
@@ -515,7 +473,7 @@ export default function StudentCourseScoreTable() {
         <Select
           value={filters.batchClassYearSemester || undefined}
           onChange={(value) => handleFilterChange("batchClassYearSemester", value)}
-          className="w-full sm:w-48"
+          className="w-full sm:w-48 dark:[&_.ant-select-selector]:bg-gray-700 dark:[&_.ant-select-selector]:text-gray-200 dark:[&_.ant-select-selector]:border-gray-600"
           size="middle"
           placeholder="All Batch/Year/Semester"
           allowClear
@@ -535,9 +493,8 @@ export default function StudentCourseScoreTable() {
         <Input.Search
           value={searchText}
           onChange={(e) => handleSearch(e.target.value)}
-          onSearch={() => {}} // Removed fetch call since we're doing client-side filtering
           placeholder="🔍 Search by ID or Name"
-          className="w-full sm:w-64"
+          className="w-full sm:w-64 dark:[&_input]:bg-gray-700 dark:[&_input]:text-gray-200 dark:[&_input]:border-gray-600"
           size="middle"
           allowClear
         />
@@ -556,15 +513,17 @@ export default function StudentCourseScoreTable() {
           rowSelection={rowSelection}
           pagination={{
             ...pagination,
-            total: data.length, // Use client-side filtered total
             showTotal: (total, range) => 
-              `${range[0]}-${range[1]} of ${total} items`,
+              `Showing ${range[0]}-${range[1]} of ${total} items (Page ${pagination.current} of ${Math.ceil(pagination.total / pagination.pageSize)})`,
             onChange: (page, pageSize) => {
-              setPagination({ ...pagination, current: page, pageSize });
+              setPagination(prev => ({ ...prev, current: page, pageSize }));
             },
             onShowSizeChange: (current, size) => {
-              setPagination({ ...pagination, current, pageSize: size });
+              setPagination(prev => ({ ...prev, current: 1, pageSize: size }));
             },
+            position: ['bottomCenter'],
+            showQuickJumper: true,
+            showSizeChanger: true,
           }}
           onChange={handleTableChange}
           className="min-w-full bg-white dark:bg-gray-800"
@@ -573,7 +532,7 @@ export default function StudentCourseScoreTable() {
               ? "bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800"
               : "bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
           }
-          dataSource={paginatedData} // Use paginated data
+          dataSource={data}
           columns={columns}
           loading={loading}
           size="middle"
@@ -591,6 +550,7 @@ export default function StudentCourseScoreTable() {
         }}
         okText="Update Score"
         cancelText="Cancel"
+        className="dark:[&_.ant-modal-content]:bg-gray-800 dark:[&_.ant-modal-title]:text-gray-200"
       >
         {editingRecord && (
           <div className="space-y-4">
@@ -612,7 +572,7 @@ export default function StudentCourseScoreTable() {
                 min={0}
                 max={100}
                 step={0.1}
-                className="w-full"
+                className="w-full dark:[&_input]:bg-gray-700 dark:[&_input]:text-gray-200 dark:[&_input]:border-gray-600"
                 placeholder="Enter new score"
               />
             </div>
