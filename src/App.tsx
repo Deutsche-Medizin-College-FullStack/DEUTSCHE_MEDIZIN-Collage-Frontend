@@ -99,8 +99,14 @@ const StudentDetail = React.lazy(
 const ApplicantDetail = React.lazy(
   () => import("./pages/registrar/ApplicantDetail")
 );
-const CustomStudentTable = React.lazy(
-  () => import("./pages/registrar/CustomStudentTable")
+// const CustomStudentTable = React.lazy(
+//   () => import("./pages/registrar/CustomStudentTable.tsx")
+// );
+// const CustomizableStudentTable = React.lazy(
+//   () => import("./pages/registrar/CustomStudentTable.tsx")
+// );
+const CustomizableStudentTable = React.lazy(
+  () => import("./pages/registrar/CustomizableStudentTable.tsx")
 );
 const RejectedApplications = React.lazy(
   () => import("./pages/registrar/RejectedApplications")
@@ -382,7 +388,8 @@ function App() {
               <Route path="add-student" element={<AddStudent />} />
               <Route path="assessments" element={<RegistrarAssessments />} />
               <Route path="scores" element={<StudentCourseScoreTable />} />
-              <Route path="tables" element={<CustomStudentTable />} />
+              {/* <Route path="tables" element={<CustomizableStudentTable />} /> */}
+              <Route path="tables" element={<CustomizableStudentTable />} />
               <Route path="notifications" element={<NotificationsPage />} />
             </Route>
 

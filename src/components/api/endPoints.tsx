@@ -268,6 +268,7 @@ const endPoints = {
   getActiveDeans: "/deans/active",
   getActiveViceDeans: "/vice-deans/active",
   getDeanById: "/deans",
+  fields: "/students/fields",
   getViceDeanById: "/vice-deans", // ← This one was missing earlier, now included
 };
 
