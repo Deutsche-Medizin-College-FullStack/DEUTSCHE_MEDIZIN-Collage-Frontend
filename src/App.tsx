@@ -29,12 +29,9 @@ const StudentSetting = React.lazy(() => import("./pages/student/Setting"));
 const TeacherLayout = React.lazy(() => import("./layouts/TeacherLayout"));
 const TeacherDashboard = React.lazy(() => import("./pages/teacher/Dashboard"));
 const TeacherCourses = React.lazy(() => import("./pages/teacher/Courses"));
-const TeacherStudents = React.lazy(
-  () => import("./pages/teacher/TeacherStudents")
-);
-const AssessmentPage = React.lazy(
-  () => import("./pages/teacher/AssessmentPage")
-);
+const TeacherStudents = React.lazy(  () => import("./pages/teacher/TeacherStudents"));
+const AssessmentPage = React.lazy(  () => import("./pages/teacher/AssessmentPage"));
+const TeacherProfile = React.lazy(  () => import("./pages/teacher/TeacherProfile.tsx"));
 
 // Department Head Pages
 const HeadLayout = React.lazy(() => import("./layouts/HeadLayout"));
@@ -93,9 +90,9 @@ const DepartmentDetail = React.lazy(
 const EnrollmentTypesEditor = React.lazy(
   () => import("./pages/registrar/settings/EnrollmentTypesEditor.tsx")
 );
-const StudentDetail = React.lazy(
-  () => import("./pages/registrar/StudentDetail")
-);
+const StudentDetail = React.lazy(  () => import("./pages/registrar/StudentDetail"));
+const RegistrarAssessment  = React.lazy(  () => import("./pages/registrar/registrarAssessment.tsx"));
+const RegistrarAssessmentDetail  = React.lazy(  () => import("./pages/registrar/registrarAssessmentDetail.tsx"));
 const ApplicantDetail = React.lazy(
   () => import("./pages/registrar/ApplicantDetail")
 );
@@ -136,9 +133,6 @@ const DeanLayout = React.lazy(() => import("./layouts/DeanLayout"));
 const DeanDashboard = React.lazy(() => import("./pages/dean/Dashboard"));
 const DeanStudents = React.lazy(() => import("./pages/dean/Students"));
 const DeanGrades = React.lazy(() => import("./pages/dean/Grades"));
-const DepartmentsManagement = React.lazy(
-  () => import("./pages/dean/DepartmentsManagement.tsx")
-);
 const DepartmentHeadsList = React.lazy(
   () => import("./pages/dean/DepartmentHeadsList.tsx")
 );
@@ -174,8 +168,8 @@ const ViceDeanReports = React.lazy(() => import("./pages/vice-dean/Reports"));
 const ViceCreateDepartmentHead = React.lazy(
   () => import("./pages/vice-dean/CreateDepartmentHead")
 );
-const ViceDeanDepartmentsOverview = React.lazy(
-  () => import("./pages/vice-dean/ViceDeanDepartmentsOverview.tsx")
+const ViceDeanDepartments = React.lazy(
+  () => import("./pages/vice-dean/ViceDepartments")
 );
 const ViceDepartmentDetail = React.lazy(
   () => import("./pages/vice-dean/ViceDepartmentDetail")
@@ -183,21 +177,8 @@ const ViceDepartmentDetail = React.lazy(
 
 // Manager Pages
 const ManagerLayout = React.lazy(() => import("./layouts/ManagerLayout"));
-const ManagerDashboard = React.lazy(
-  () => import("./pages/manager/GeneralManagerDashboard")
-);
-const GeneralManagerProfile = React.lazy(
-  () => import("./pages/manager/GeneralManagerProfile.tsx")
-);
-const StudentsCGPAPage = React.lazy(
-  () => import("./pages/manager/StudentsCGPAPage.tsx")
-);
-const DepartmentHeadsPage = React.lazy(
-  () => import("./pages/manager/DepartmentHeadsPage.tsx")
-);
-const GeneralManagerDashboard = React.lazy(
-  () => import("./pages/manager/GeneralManagerDashboard.tsx")
-);
+const ManagerDashboard = React.lazy(() => import("./pages/manager/Dashboard"));
+const ManagerReports = React.lazy(() => import("./pages/manager/Reports"));
 // const ManagerSettings = React.lazy(() => import("./pages/manager/Settings"));
 const StudentCourseScoreTable = React.lazy(
   () => import("./pages/registrar/StudentCourseScoreTable")
@@ -235,11 +216,10 @@ const ClassYearsEditor = React.lazy(
 const ManagerStudents = React.lazy(
   () => import("./pages/manager/ManagerStudents")
 );
-
-const DeanProfile = React.lazy(() => import("./pages/manager/DeanProfile"));
-const TeachersPage = React.lazy(
-  () => import("./pages/manager/TeachersPage.tsx")
+const ManagerTeachers = React.lazy(
+  () => import("./pages/manager/ManagerTeachers")
 );
+const DeanProfile = React.lazy(() => import("./pages/manager/DeanProfile"));
 const ViceDeanProfile = React.lazy(
   () => import("./pages/manager/ViceDeanProfile")
 );
@@ -283,14 +263,9 @@ function App() {
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<TeacherDashboard />} />
               <Route path="courses" element={<TeacherCourses />} />
-              <Route
-                path="students/:assignmentId"
-                element={<TeacherStudents />}
-              />
-              <Route
-                path="assessments/:assignmentId"
-                element={<AssessmentPage />}
-              />
+              <Route  path="students/:assignmentId" element={<TeacherStudents />} />
+              <Route path="assessments/:assignmentId"  element={<AssessmentPage />}/>
+              <Route path="profile"  element={<TeacherProfile />}/>
             </Route>
 
             {/* Department Head Routes */}
@@ -322,6 +297,8 @@ function App() {
               <Route path="students/:id" element={<StudentDetail />} />
               <Route path="dashboard" element={<RegistrarDashboard />} />
               <Route path="applications" element={<RegistrarApplications />} />
+              <Route path="assessments" element={<RegistrarAssessment  />} />
+              <Route path="assessments/:assignmentId" element={<RegistrarAssessmentDetail  />} />
               <Route path="transcripts" element={<Transcript_Generate />} />
               <Route path="settings/location" element={<LocationEditor />} />
               <Route
@@ -409,7 +386,6 @@ function App() {
                 path="program-level"
                 element={<ProgramLevelsManagement />}
               />
-              <Route path="departments" element={<DepartmentsManagement />} />
               <Route
                 path="create-department-head"
                 element={<CreateDepartmentHead />}
@@ -419,7 +395,7 @@ function App() {
                 element={<ProgramModalitiesManagement />}
               />
               <Route path="profile" element={<Dean_Profile />} />
-              <Route path="students" element={<StudentsCGPAPage />} />
+              <Route path="students" element={<DeanStudents />} />
               <Route
                 path="department-heads"
                 element={<DepartmentHeadsList />}
@@ -428,7 +404,9 @@ function App() {
                 path="department-heads/:id"
                 element={<DepartmentHeadDetail />}
               />
-
+              <Route path="grades" element={<DeanGrades />} />
+              <Route path="department" element={<DeanDepartments />} />
+              <Route path="reports" element={<DeanReports />} />
               <Route
                 path="departments/:id"
                 element={<DeanDepartmentDetail />}
@@ -437,7 +415,7 @@ function App() {
 
             {/*Vice Dean Routes */}
             <Route path="/vice-dean" element={<ViceDeanLayout />}>
-              {/* <Route index element={<Navigate to="dashboard" replace />} />
+              <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<ViceDeanDashboard />} />
               <Route
                 path="create-department-head"
@@ -451,45 +429,22 @@ function App() {
               <Route
                 path="departments/:id"
                 element={<ViceDepartmentDetail />}
-              /> */}
-              <Route index element={<Navigate to="dashboard" replace />} />
-              <Route path="dashboard" element={<ViceDeanDashboard />} />
-              <Route
-                path="program-level"
-                element={<ProgramLevelsManagement />}
               />
-              <Route
-                path="departments"
-                element={<ViceDeanDepartmentsOverview />}
-              />
-              <Route
-                path="create-department-head"
-                element={<CreateDepartmentHead />}
-              />
-              <Route
-                path="program-modality"
-                element={<ProgramModalitiesManagement />}
-              />
-              <Route path="profile" element={<ViceDean_Profile />} />
-              <Route path="students" element={<StudentsCGPAPage />} />
-
-              <Route path="department" element={<DeanDepartments />} />
             </Route>
 
             {/* Manager Routes */}
             <Route path="/general-manager" element={<ManagerLayout />}>
               <Route index element={<Navigate to="dashboard" replace />} />
-              <Route path="dashboard" element={<GeneralManagerDashboard />} />
-              <Route path="profile" element={<GeneralManagerProfile />} />
-              <Route path="students" element={<StudentsCGPAPage />} />
-
+              <Route path="dashboard" element={<DeanDashboard />} />
+              <Route path="students" element={<ManagerStudents />} />
               <Route path="students/:id" element={<StudentDetail />} />
+              <Route path="reports" element={<DeanReports />} />
+              <Route path="department" element={<DeanDepartments />} />
               <Route
-                path="department-heads"
-                element={<DepartmentHeadsPage />}
+                path="departments/:id"
+                element={<DeanDepartmentDetail />}
               />
-
-              <Route path="teachers" element={<TeachersPage />} />
+              <Route path="teachers" element={<ManagerTeachers />} />
               <Route path="dean" element={<DeanProfile />} />
               <Route path="vice-dean" element={<ViceDeanProfile />} />
               <Route path="registrar" element={<RegistrarProfile />} />
@@ -497,7 +452,7 @@ function App() {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
-        <Toaster position="top-right" richColors closeButton />
+        <Toaster />
       </div>
     </ThemeProvider>
   );

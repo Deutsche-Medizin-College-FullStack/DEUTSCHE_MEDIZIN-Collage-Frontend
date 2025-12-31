@@ -60,7 +60,7 @@ export default function TeacherDashboard() {
         setLoading(true);
         setError(null);
         const response = await apiClient.get<TeacherDashboardResponse>(
-          endPoints.getTeacherDashboard
+          endPoints.teacherDashboard
         );
         setDashboardData(response.data);
       } catch (err: any) {

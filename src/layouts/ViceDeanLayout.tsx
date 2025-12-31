@@ -11,14 +11,11 @@ import {
   Layers,
   Menu,
   User,
-  Building,
   ChevronDown,
   Key,
   LogOut,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
-import NotificationDropdown from "@/components/ui/NotificationDropdown";
-
 import { useNavigate } from "react-router-dom";
 import {
   Dialog,
@@ -55,32 +52,13 @@ export default function ViceDeanLayout() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const navigation = [
-    // { name: "Dashboard", href: "/vice-dean/dashboard", icon: LayoutDashboard },
-    // { name: "Profile", href: "/vice-dean/profile", icon: User },
-
-    // { name: "Students", href: "/vice-dean/students", icon: Users },
-    // { name: "Grades", href: "/vice-dean/grades", icon: BookOpen },
-    // { name: "Reports", href: "/vice-dean/reports", icon: BarChart3 },
-    // { name: "Department", href: "/vice-dean/department", icon: Layers },
     { name: "Dashboard", href: "/vice-dean/dashboard", icon: LayoutDashboard },
-    { name: "Students", href: "/vice-dean/students", icon: Users },
     { name: "Profile", href: "/vice-dean/profile", icon: User },
-    {
-      name: "Manage Program Level",
-      href: "/vice-dean/program-level",
-      icon: BookOpen,
-    },
-    {
-      name: "Manage Program Modality",
-      href: "/vice-dean/program-modality",
-      icon: Layers,
-    },
 
-    {
-      name: "Manage Department",
-      href: "/vice-dean/departments",
-      icon: Building,
-    },
+    { name: "Students", href: "/vice-dean/students", icon: Users },
+    { name: "Grades", href: "/vice-dean/grades", icon: BookOpen },
+    { name: "Reports", href: "/vice-dean/reports", icon: BarChart3 },
+    { name: "Department", href: "/vice-dean/department", icon: Layers },
   ];
 
   const getUserInitials = () => {
@@ -281,7 +259,6 @@ export default function ViceDeanLayout() {
           {/* Right Section */}
           <div className="flex items-center gap-x-4 lg:gap-x-6">
             <ThemeToggle />
-            <NotificationDropdown />
 
             {/* User Dropdown */}
             <div className="relative" ref={dropdownRef}>
