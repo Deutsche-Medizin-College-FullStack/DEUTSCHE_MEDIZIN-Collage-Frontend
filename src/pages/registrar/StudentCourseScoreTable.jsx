@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { message, Input, Modal, InputNumber, Select } from "antd";
 import apiClient from "../../components/api/apiClient";
 import endPoints from "../../components/api/endPoints";
+import { Pencil, Eye, EyeOff } from "lucide-react";
 
 const initialData = [];
 
@@ -60,7 +61,6 @@ export default function StudentCourseScoreTable() {
     filters.search,
   ]);
 
-  // Client-side filter for batchClassYearSemester only
   useEffect(() => {
     if (filters.batchClassYearSemester && allData.length > 0) {
       const filtered = allData.filter(
@@ -156,30 +156,38 @@ export default function StudentCourseScoreTable() {
     }
   };
 
-  const applyBatchUpdate = async () => {
+  // Reusable function to apply update via bulk endpoint (works for single & multiple)
+  const applyUpdateViaBulk = async (updates) => {
     try {
-      const updates = selectedRowKeys
-        .map((key) => {
-          const row = data.find((item) => item.key === key);
-          if (!row) return null;
-
-          const updateData = {};
-          if (batchValues.score !== "") updateData.score = parseFloat(batchValues.score);
-          if (batchValues.isReleased !== null) updateData.isReleased = batchValues.isReleased;
-          if (batchValues.courseSource) updateData.courseSourceId = batchValues.courseSource;
-
-          return { id: row.id, ...updateData };
-        })
-        .filter(Boolean);
-
       await apiClient.put(endPoints.bulkUpdateScores, { updates });
-      message.success("Batch update completed successfully");
+      message.success("Update successful");
       fetchStudentCourseScores();
-      setSelectedRowKeys([]);
-      setBatchValues({ score: "", courseSource: "", isReleased: null });
     } catch (error) {
-      message.error("Failed to apply batch update");
+      console.error("Update failed:", error);
+      message.error(error.response?.data?.error || "Update failed");
     }
+  };
+
+  const applyBatchUpdate = async () => {
+    const updates = selectedRowKeys
+      .map((key) => {
+        const row = data.find((item) => item.key === key);
+        if (!row) return null;
+
+        const updateData = {};
+        if (batchValues.score !== "") updateData.score = parseFloat(batchValues.score);
+        if (batchValues.isReleased !== null) updateData.isReleased = batchValues.isReleased;
+        if (batchValues.courseSource) updateData.courseSourceId = batchValues.courseSource;
+
+        return { id: row.id, ...updateData };
+      })
+      .filter(Boolean);
+
+    if (updates.length === 0) return;
+
+    await applyUpdateViaBulk(updates);
+    setSelectedRowKeys([]);
+    setBatchValues({ score: "", courseSource: "", isReleased: null });
   };
 
   const handleSearch = (value) => {
@@ -207,43 +215,37 @@ export default function StudentCourseScoreTable() {
       return;
     }
 
-    try {
-      await apiClient.put(
-        endPoints.updateScore
-          .replace(":studentId", editingRecord.studentId.id)
-          .replace(":courseId", editingRecord.course.id)
-          .replace(":batchClassYearSemesterId", editingRecord.batchClassYearSemester.id),
-        { score: scoreValue }
-      );
-      message.success("Score updated successfully");
-      setEditScoreModalVisible(false);
-      setEditingRecord(null);
-      fetchStudentCourseScores();
-    } catch (error) {
-      message.error("Failed to update score");
-    }
+    const updates = [{
+      id: editingRecord.id,
+      score: scoreValue
+    }];
+
+    await applyUpdateViaBulk(updates);
+    setEditScoreModalVisible(false);
+    setEditingRecord(null);
   };
 
-  const handleToggleRelease = async (record) => {
+  const handleToggleRelease = (record) => {
     Modal.confirm({
-      title: "Confirm Release Status Change",
-      content: `Are you sure you want to ${record.isReleased ? "unrelease" : "release"} this score?`,
-      okText: "Yes",
+      title: "Confirm Release Status",
+      content: (
+        <p>
+          Are you sure you want to{" "}
+          <strong>{record.isReleased ? "unrelease" : "release"}</strong> this score
+          for <strong>{record.studentId.student?.name || record.studentId.id}</strong>?
+        </p>
+      ),
+      okText: record.isReleased ? "Unrelease" : "Release",
+      okButtonProps: {
+        className: record.isReleased ? "bg-orange-500 hover:bg-orange-600" : "bg-green-500 hover:bg-green-600"
+      },
       cancelText: "Cancel",
       onOk: async () => {
-        try {
-          await apiClient.put(
-            endPoints.updateReleaseStatus
-              .replace(":studentId", record.studentId.id)
-              .replace(":courseId", record.course.id)
-              .replace(":batchClassYearSemesterId", record.batchClassYearSemester.id),
-            { isReleased: !record.isReleased }
-          );
-          message.success("Release status updated successfully");
-          fetchStudentCourseScores();
-        } catch (error) {
-          message.error("Failed to update release status");
-        }
+        const updates = [{
+          id: record.id,
+          isReleased: !record.isReleased
+        }];
+        await applyUpdateViaBulk(updates);
       },
     });
   };
@@ -269,7 +271,6 @@ export default function StudentCourseScoreTable() {
     setPagination((prev) => ({ ...prev, pageSize, current: 1 }));
   };
 
-  // Calculate showing range
   const from = pagination.total === 0 ? 0 : (pagination.current - 1) * pagination.pageSize + 1;
   const to = Math.min(pagination.current * pagination.pageSize, pagination.total);
   const totalPages = Math.ceil(pagination.total / pagination.pageSize);
@@ -284,7 +285,6 @@ export default function StudentCourseScoreTable() {
 
       {/* Filters */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
-        {/* Department */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Department</label>
           <Select
@@ -294,6 +294,7 @@ export default function StudentCourseScoreTable() {
             allowClear
             showSearch
             className="w-full"
+            dropdownClassName="dark:bg-gray-800"
           >
             {filterOptions.departments.map((d) => (
               <Select.Option key={d.id} value={d.id}>{d.name}</Select.Option>
@@ -301,7 +302,6 @@ export default function StudentCourseScoreTable() {
           </Select>
         </div>
 
-        {/* Status */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
           <Select
@@ -310,6 +310,7 @@ export default function StudentCourseScoreTable() {
             placeholder="All Status"
             allowClear
             className="w-full"
+            dropdownClassName="dark:bg-gray-800"
           >
             {filterOptions.studentStatuses.map((s) => (
               <Select.Option key={s.id} value={s.id}>{s.name}</Select.Option>
@@ -317,7 +318,6 @@ export default function StudentCourseScoreTable() {
           </Select>
         </div>
 
-        {/* Batch/Year/Semester */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Batch/Year/Semester</label>
           <Select
@@ -326,6 +326,7 @@ export default function StudentCourseScoreTable() {
             placeholder="All"
             allowClear
             className="w-full"
+            dropdownClassName="dark:bg-gray-800"
           >
             {filterOptions.batchClassYearSemesters.map((b) => (
               <Select.Option key={b.id} value={b.id}>{b.name}</Select.Option>
@@ -333,7 +334,6 @@ export default function StudentCourseScoreTable() {
           </Select>
         </div>
 
-        {/* Search */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Search</label>
           <div className="relative">
@@ -342,7 +342,7 @@ export default function StudentCourseScoreTable() {
               value={searchText}
               onChange={(e) => handleSearch(e.target.value)}
               placeholder="Student ID or Name"
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-200"
+              className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-200"
             />
             {searchText && (
               <button onClick={() => handleSearch("")} className="absolute right-3 top-3 text-gray-500">✕</button>
@@ -351,7 +351,7 @@ export default function StudentCourseScoreTable() {
         </div>
       </div>
 
-      {/* Clear Filters Button */}
+      {/* Clear Filters */}
       <div className="mb-4 text-right">
         <button
           onClick={clearFilters}
@@ -423,15 +423,29 @@ export default function StudentCourseScoreTable() {
                   <td className="px-6 py-4 text-sm">{item.courseSource.displayName}</td>
                   <td className="px-6 py-4 text-sm font-medium">{item.score?.toFixed(2) || "N/A"}</td>
                   <td className="px-6 py-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${item.isReleased ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${item.isReleased ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300" : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"}`}>
                       {item.isReleased ? "Yes" : "No"}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm">
-                    <button onClick={() => handleEditScoreClick(item)} className="mr-2 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs">Edit</button>
-                    <button onClick={() => handleToggleRelease(item)} className={`px-3 py-1 text-white rounded text-xs ${item.isReleased ? "bg-orange-500 hover:bg-orange-600" : "bg-green-600 hover:bg-green-700"}`}>
-                      {item.isReleased ? "Unrelease" : "Release"}
-                    </button>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => handleEditScoreClick(item)}
+                        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200"
+                        title="Edit Score"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleToggleRelease(item)}
+                        className={item.isReleased 
+                          ? "text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-200" 
+                          : "text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200"}
+                        title={item.isReleased ? "Unrelease" : "Release"}
+                      >
+                        {item.isReleased ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -439,7 +453,7 @@ export default function StudentCourseScoreTable() {
           </tbody>
         </table>
 
-        {/* Visible & Beautiful Pagination */}
+        {/* Pagination */}
         <div className="bg-gray-50 dark:bg-gray-900 px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="text-sm text-gray-700 dark:text-gray-300">
             Showing <strong>{from}</strong> to <strong>{to}</strong> of <strong>{pagination.total}</strong> results
@@ -464,12 +478,11 @@ export default function StudentCourseScoreTable() {
               <button
                 onClick={() => handlePageChange(pagination.current - 1)}
                 disabled={pagination.current === 1}
-                className="px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-gray-700"
+                className="px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 disabled:opacity-50 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 ← Previous
               </button>
 
-              {/* Page numbers */}
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                 let pageNum;
                 if (totalPages <= 5) pageNum = i + 1;
@@ -495,7 +508,7 @@ export default function StudentCourseScoreTable() {
               <button
                 onClick={() => handlePageChange(pagination.current + 1)}
                 disabled={pagination.current === totalPages || totalPages === 0}
-                className="px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-gray-700"
+                className="px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 disabled:opacity-50 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 Next →
               </button>
@@ -504,20 +517,24 @@ export default function StudentCourseScoreTable() {
         </div>
       </div>
 
-      {/* Edit Modal */}
+      {/* Edit Score Modal */}
       <Modal
         title="Edit Score"
         open={editScoreModalVisible}
         onOk={handleEditScoreSubmit}
-        onCancel={() => { setEditScoreModalVisible(false); setEditingRecord(null); }}
-        okText="Update"
+        onCancel={() => {
+          setEditScoreModalVisible(false);
+          setEditingRecord(null);
+        }}
+        okText="Update Score"
         cancelText="Cancel"
+        className="dark:[&_.ant-modal-content]:bg-gray-800 dark:[&_.ant-modal-title]:text-gray-200"
       >
         {editingRecord && (
-          <>
+          <div className="space-y-4">
             <p><strong>Student:</strong> {editingRecord.studentId.student?.name || editingRecord.studentId.id}</p>
             <p><strong>Course:</strong> {editingRecord.course.displayName}</p>
-            <div className="mt-4">
+            <div>
               <label className="block text-sm font-medium mb-2">New Score (0-100)</label>
               <InputNumber
                 min={0}
@@ -528,9 +545,33 @@ export default function StudentCourseScoreTable() {
                 className="w-full"
               />
             </div>
-          </>
+          </div>
         )}
       </Modal>
+
+      {/* Dark mode fixes for AntD Select */}
+      <style jsx global>{`
+        .ant-select-selector {
+          background-color: #1f2937 !important;
+          border-color: #4b5563 !important;
+          color: #d1d5db !important;
+        }
+        .ant-select-selection-placeholder {
+          color: #9ca3af !important;
+        }
+        .ant-select-arrow {
+          color: #9ca3af !important;
+        }
+        .ant-select-dropdown {
+          background-color: #1f2937 !important;
+        }
+        .ant-select-item {
+          color: #d1d5db !important;
+        }
+        .ant-select-item:hover {
+          background-color: #374151 !important;
+        }
+      `}</style>
     </div>
   );
 }
