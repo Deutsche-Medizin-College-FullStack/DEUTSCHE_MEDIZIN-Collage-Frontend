@@ -10,7 +10,7 @@ const endPoints = {
   changePassword: "/auth/me/change-password",
   resetStudentPassword:
     "/auth/registrar/students/:studentUserId/reset-password",
-
+  applicantAccept: "/applicants/:id/accept",
   applicantsRegister:
     "https://deutschemedizin-collage-backend-production.up.railway.app/api/applicants/register",
 

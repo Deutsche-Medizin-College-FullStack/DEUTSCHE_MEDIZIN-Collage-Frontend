@@ -29,9 +29,15 @@ const StudentSetting = React.lazy(() => import("./pages/student/Setting"));
 const TeacherLayout = React.lazy(() => import("./layouts/TeacherLayout"));
 const TeacherDashboard = React.lazy(() => import("./pages/teacher/Dashboard"));
 const TeacherCourses = React.lazy(() => import("./pages/teacher/Courses"));
-const TeacherStudents = React.lazy(  () => import("./pages/teacher/TeacherStudents"));
-const AssessmentPage = React.lazy(  () => import("./pages/teacher/AssessmentPage"));
-const TeacherProfile = React.lazy(  () => import("./pages/teacher/TeacherProfile.tsx"));
+const TeacherStudents = React.lazy(
+  () => import("./pages/teacher/TeacherStudents")
+);
+const AssessmentPage = React.lazy(
+  () => import("./pages/teacher/AssessmentPage")
+);
+const TeacherProfile = React.lazy(
+  () => import("./pages/teacher/TeacherProfile.tsx")
+);
 
 // Department Head Pages
 const HeadLayout = React.lazy(() => import("./layouts/HeadLayout"));
@@ -90,9 +96,15 @@ const DepartmentDetail = React.lazy(
 const EnrollmentTypesEditor = React.lazy(
   () => import("./pages/registrar/settings/EnrollmentTypesEditor.tsx")
 );
-const StudentDetail = React.lazy(  () => import("./pages/registrar/StudentDetail"));
-const RegistrarAssessment  = React.lazy(  () => import("./pages/registrar/registrarAssessment.tsx"));
-const RegistrarAssessmentDetail  = React.lazy(  () => import("./pages/registrar/registrarAssessmentDetail.tsx"));
+const StudentDetail = React.lazy(
+  () => import("./pages/registrar/StudentDetail")
+);
+const RegistrarAssessment = React.lazy(
+  () => import("./pages/registrar/registrarAssessment.tsx")
+);
+const RegistrarAssessmentDetail = React.lazy(
+  () => import("./pages/registrar/registrarAssessmentDetail.tsx")
+);
 const ApplicantDetail = React.lazy(
   () => import("./pages/registrar/ApplicantDetail")
 );
@@ -263,9 +275,15 @@ function App() {
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<TeacherDashboard />} />
               <Route path="courses" element={<TeacherCourses />} />
-              <Route  path="students/:assignmentId" element={<TeacherStudents />} />
-              <Route path="assessments/:assignmentId"  element={<AssessmentPage />}/>
-              <Route path="profile"  element={<TeacherProfile />}/>
+              <Route
+                path="students/:assignmentId"
+                element={<TeacherStudents />}
+              />
+              <Route
+                path="assessments/:assignmentId"
+                element={<AssessmentPage />}
+              />
+              <Route path="profile" element={<TeacherProfile />} />
             </Route>
 
             {/* Department Head Routes */}
@@ -297,8 +315,11 @@ function App() {
               <Route path="students/:id" element={<StudentDetail />} />
               <Route path="dashboard" element={<RegistrarDashboard />} />
               <Route path="applications" element={<RegistrarApplications />} />
-              <Route path="assessments" element={<RegistrarAssessment  />} />
-              <Route path="assessments/:assignmentId" element={<RegistrarAssessmentDetail  />} />
+              <Route path="assessments" element={<RegistrarAssessment />} />
+              <Route
+                path="assessments/:assignmentId"
+                element={<RegistrarAssessmentDetail />}
+              />
               <Route path="transcripts" element={<Transcript_Generate />} />
               <Route path="settings/location" element={<LocationEditor />} />
               <Route
@@ -452,7 +473,7 @@ function App() {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
-        <Toaster />
+        <Toaster position="top-right" richColors closeButton />
       </div>
     </ThemeProvider>
   );

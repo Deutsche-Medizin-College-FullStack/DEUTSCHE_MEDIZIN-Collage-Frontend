@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import apiClient from "@/components/api/apiClient";
+import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -49,26 +51,206 @@ export default function ApplicantDetail() {
     classYears: [],
     semesters: [],
   });
-  
+
   const { id } = useParams();
   const { openModal, closeModal } = useModal() as any;
   const [actionBusy, setActionBusy] = useState(false);
 
   // Fetch dropdown data for mapping IDs to names
+  // async function acceptApplication(data: {
+  //   username: string;
+  //   password: string;
+  //   dateEnrolledGC: string; // ← add UI field(s)
+  //   academicYearCode: string; // ← add UI field or take from dropdown
+  //   batchClassYearSemesterId: number; // ← add UI field or mapping
+  //   isTransfer: boolean;
+  //   grade12Result?: number;
+  //   remark?: string;
+
+  //   studentPhoto?: File | null; // ← changed
+  //   document?: File | null;
+  // }) {
+  //   if (!id) return false;
+
+  //   setActionBusy(true);
+
+  //   try {
+  //     console.log(endPoints.applicantAccept, "what");
+  //     const formData = new FormData();
+
+  //     // JSON part – very important: named "request"
+  //     const requestPayload = {
+  //       username: data.username,
+  //       password: data.password,
+  //       dateEnrolledGC: data.dateEnrolledGC, // must be added
+  //       academicYearCode: data.academicYearCode, // must be added
+  //       batchClassYearSemesterId: data.batchClassYearSemesterId, // must be added
+  //       studentRecentStatusId: 1, // most systems use 1 = active
+  //       isTransfer: data.isTransfer,
+  //       grade12Result: data.grade12Result,
+  //       remark: data.remark || undefined,
+  //       // add dateEnrolledEC, exitExam* fields if your institution requires them
+  //     };
+
+  //     formData.append("request", JSON.stringify(requestPayload));
+
+  //     if (data.studentPhoto) {
+  //       formData.append("studentPhoto", data.studentPhoto);
+  //     }
+  //     if (data.document) {
+  //       formData.append("document", data.document);
+  //     }
+  //     console.log(endPoints.applicantAccept, "shkshka");
+  //     const token = localStorage.getItem("xy9a7b");
+  //     console.log(token, "good token");
+  //     const response = await apiClient.post(
+  //       endPoints.applicantAccept.replace(":id", id),
+  //       formData
+  //       // {
+  //       //   headers: {
+  //       //     "Content-Type": `application/json`,
+  //       //   },
+  //       // }
+  //       // {
+  //       //   // headers: { "Content-Type": "application/json" },
+  //       // }
+  //     );
+  //     console.log(endPoints.applicantAccept.replace(":id", id));
+  //     // On success → maybe navigate or show success alert
+  //     alert("Student registered successfully!\nUsername: " + data.username);
+  //     navigate("/registrar/applications"); // or wherever you want
+
+  //     return true;
+  //   } catch (err: any) {
+  //     console.error(err);
+  //     const msg = err.response?.data?.error || "Failed to accept application";
+  //     alert(msg); // improve: use toast / better alert component
+  //     toast.error("Accepting Student Failed", {
+  //       description: err,
+  //       duration: 6000,
+  //     });
+  //     return false;
+  //   } finally {
+  //     setActionBusy(false);
+  //   }
+  // }
+  const acceptApplication = async (data: {
+    username: string;
+    password: string;
+    dateEnrolledGC: string;
+    dateEnrolledEc: string;
+    academicYearCode: string;
+    batchClassYearSemesterId: number;
+    isTransfer: boolean;
+    grade12Result?: number;
+    remark?: string;
+    studentPhoto?: File | null;
+    document?: File | null;
+  }) => {
+    if (!id) return false;
+    setActionBusy(true);
+
+    try {
+      // 1. Prepare the JSON part as a Blob
+      const jsonPayload = {
+        username: data.username,
+        password: data.password,
+        dateEnrolledEC: "2016-09-01",
+        dateEnrolledGC: data.dateEnrolledGC,
+        exitExamUserID: null,
+        exitExamScore: null,
+        isStudentPassExitExam: null,
+
+        academicYearCode: data.academicYearCode,
+        batchClassYearSemesterId: data.batchClassYearSemesterId,
+        studentRecentStatusId: 1,
+        isTransfer: data.isTransfer,
+        grade12Result: data.grade12Result,
+        remark: data.remark || undefined,
+      };
+
+      const jsonBlob = new Blob([JSON.stringify(jsonPayload)], {
+        type: "application/json",
+      });
+
+      // 2. Create FormData
+      const formData = new FormData();
+      formData.append("request", jsonBlob, "request.json"); // name + filename helps some parsers
+
+      if (data.studentPhoto) {
+        formData.append("studentPhoto", data.studentPhoto);
+      }
+      if (data.document) {
+        formData.append("document", data.document);
+      }
+
+      // 3. Get fresh token
+      const token = localStorage.getItem("xy9a7b");
+      if (!token) {
+        toast({
+          title: "Not authenticated",
+          description: "Please log in again.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      // 4. Send — let Axios set multipart automatically (do NOT force application/json here)
+      await apiClient.post(
+        endPoints.applicantAccept.replace(":id", id),
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            // Do NOT set Content-Type — Axios will add multipart/form-data + boundary
+          },
+        }
+      );
+
+      toast.success("Student Registered", {
+        description: `Student registered! Username: ${data.username}`,
+        duration: 6000,
+      });
+
+      navigate("/registrar/applications");
+      return true;
+    } catch (err: any) {
+      console.log(err, "failure to register");
+      const message =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        "Failed to accept application.";
+
+      toast.error("Adding Student failed", {
+        description: message,
+        duration: 6000,
+      });
+
+      console.error(err);
+      return false;
+    } finally {
+      setActionBusy(false);
+    }
+  };
   useEffect(() => {
     const fetchDropdownData = async () => {
       try {
         const endpoints = [
-          { key: 'departments', url: '/departments' },
-          { key: 'programModalities', url: '/program-modality' },
-          { key: 'schoolBackgrounds', url: '/school-backgrounds' },
-          { key: 'classYears', url: '/class-years' },
-          { key: 'semesters', url: '/semesters' },
+          { key: "departments", url: "/departments" },
+          { key: "programModalities", url: "/program-modality" },
+          { key: "schoolBackgrounds", url: "/school-backgrounds" },
+          { key: "classYears", url: "/class-years" },
+          { key: "semesters", url: "/semesters" },
+          { key: "academicYears", url: "/academic-years" },
+          {
+            key: "batchClassYearSemesters",
+            url: "/bcsy",
+          },
         ];
 
         const promises = endpoints.map(async ({ key, url }) => {
           try {
-            const response = await apiService.get(url);
+            const response = await apiClient.get(url);
             return { key, data: response.data || [] };
           } catch (error) {
             console.error(`Error fetching ${key}:`, error);
@@ -84,7 +266,7 @@ export default function ApplicantDetail() {
 
         setDropdownData(newDropdownData);
       } catch (error) {
-        console.error('Error fetching dropdown data:', error);
+        console.error("Error fetching dropdown data:", error);
       }
     };
 
@@ -92,46 +274,51 @@ export default function ApplicantDetail() {
   }, []);
 
   // Helper function to get display name from ID/code
-  const getDisplayName = (type: string, idOrCode: string | number | undefined) => {
+  const getDisplayName = (
+    type: string,
+    idOrCode: string | number | undefined
+  ) => {
     if (!idOrCode) return "N/A";
-    
+
     switch (type) {
-      case 'department': {
+      case "department": {
         const department = dropdownData.departments.find(
           (dept: { dptID?: string; id?: string; deptName?: string }) =>
             dept.dptID === idOrCode || dept.id === idOrCode
         );
         return department?.deptName || idOrCode;
       }
-      
-      case 'programModality': {
+
+      case "programModality": {
         const modality = dropdownData.programModalities.find(
-          (mod: { modalityCode?: string; modality?: string }) => mod.modalityCode === idOrCode
+          (mod: { modalityCode?: string; modality?: string }) =>
+            mod.modalityCode === idOrCode
         );
         return modality?.modality || idOrCode;
       }
-      
-      case 'schoolBackground': {
+
+      case "schoolBackground": {
         const background = dropdownData.schoolBackgrounds.find(
           (bg: { id?: string; background?: string }) => bg.id === idOrCode
         );
-        return background?.background ||  idOrCode;
+        return background?.background || idOrCode;
       }
-      
-      case 'classYear': {
+
+      case "classYear": {
         const classYear = dropdownData.classYears.find(
           (cy: { id?: string; classYear?: string }) => cy.id === idOrCode
         );
-        return classYear?.classYear ||  idOrCode;
+        return classYear?.classYear || idOrCode;
       }
-      
-      case 'semester': {
+
+      case "semester": {
         const semester = dropdownData.semesters.find(
-          (sem: { academicPeriodCode?: string; academicPeriod?: string }) => sem.academicPeriodCode === idOrCode
+          (sem: { academicPeriodCode?: string; academicPeriod?: string }) =>
+            sem.academicPeriodCode === idOrCode
         );
         return semester?.academicPeriod || `Semester ${idOrCode}`;
       }
-      
+
       default:
         return idOrCode;
     }
@@ -156,7 +343,7 @@ export default function ApplicantDetail() {
   useEffect(() => {
     let revokedPhotoUrl: string | null = null;
     let revokedDocumentUrl: string | null = null;
-    
+
     async function loadBlobs() {
       if (!id) return;
       try {
@@ -166,7 +353,11 @@ export default function ApplicantDetail() {
           {},
           { responseType: "blob", headers: { requiresAuth: true } }
         );
-        if (photoBlob && photoBlob.size > 0 && photoBlob.type.startsWith("image")) {
+        if (
+          photoBlob &&
+          photoBlob.size > 0 &&
+          photoBlob.type.startsWith("image")
+        ) {
           const url = URL.createObjectURL(photoBlob);
           setPhotoUrl(url);
           revokedPhotoUrl = url;
@@ -199,142 +390,620 @@ export default function ApplicantDetail() {
     };
   }, [id]);
 
-  async function callUpdateStatus(payload: any) {
-    if (!id) return;
+  const callUpdateStatus = async (payload: {
+    status: string;
+    remark?: string;
+  }) => {
+    if (!id) return false;
     setActionBusy(true);
+
     try {
       const url = endPoints.applicantUpdateStatus.replace(":id", id);
-      const response = await apiService.put(
-        url,
-        payload,
-        { headers: { requiresAuth: true } }
-      );
-      setStatus(payload.status === "ACCEPTED" ? "accepted" : payload.status === "REJECTED" ? "rejected" : payload.status);
-      if (response) {
-        setApplicant((prev: any) => ({ ...(prev || {}), applicationStatus: payload.status }));
-      }
+      await apiClient.put(url, payload);
+
+      setStatus(payload.status.toLowerCase());
+      setApplicant((prev: any) => ({
+        ...prev,
+        applicationStatus: payload.status,
+      }));
+
       return true;
-    } catch (e) {
-      console.error("Failed to update status", e);
+    } catch (err) {
+      console.error("Status update failed", err);
       return false;
     } finally {
       setActionBusy(false);
     }
-  }
+  };
 
+  // function openAcceptModal() {
+  //   const AcceptForm = () => {
+  //     const [username, setUsername] = useState("");
+  //     const [passwordLocal, setPasswordLocal] = useState("");
+  //     const [documentStatus, setDocumentStatus] = useState<
+  //       "COMPLETE" | "INCOMPLETE" | ""
+  //     >("");
+  //     const [form, setForm] = useState({
+  //       username: "",
+  //       password: "",
+  //       dateEnrolledGC: "2024-09-11", // ← default or from semester start
+  //       academicYearCode: "2024", // ← from dropdown / current year
+  //       batchClassYearSemesterId: 15, // ← you need UI for this
+  //       isTransfer: false,
+  //       grade12Result: "",
+  //       remark: "",
+  //       studentPhoto: null as File | null,
+  //       document: null as File | null,
+  //     });
+  //     const [remark, setRemark] = useState("");
+  //     const [isTransfer, setIsTransfer] = useState(false);
+  //     const [grade12Result, setGrade12Result] = useState<string>("");
+  //     return (
+  //       <div className="w-[92vw] sm:w-[560px] max-w-[95vw] p-6">
+  //         <h2 className="text-xl font-semibold mb-4">Accept Applicant</h2>
+  //         <div className="space-y-4">
+  //           <div>
+  //             <label className="block text-sm font-medium mb-1">Username</label>
+  //             <input
+  //               className="w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-900"
+  //               value={username}
+  //               onChange={(e) => setUsername(e.target.value)}
+  //               placeholder="Enter username"
+  //             />
+  //           </div>
+  //           <div>
+  //             <label className="block text-sm font-medium mb-1">Password</label>
+  //             <input
+  //               type="password"
+  //               className="w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-900"
+  //               value={passwordLocal}
+  //               onChange={(e) => setPasswordLocal(e.target.value)}
+  //               placeholder="Enter password"
+  //             />
+  //           </div>
+  //           <div>
+  //             <label>Date Enrolled (GC)</label>
+  //             <input
+  //               type="date"
+  //               value={form.dateEnrolledGC}
+  //               onChange={(e) =>
+  //                 setForm({ ...form, dateEnrolledGC: e.target.value })
+  //               }
+  //               required
+  //             />
+  //           </div>
+  //           <div>
+  //             <label>Student Photo (optional)</label>
+  //             <input
+  //               type="file"
+  //               accept="image/*"
+  //               onChange={(e) =>
+  //                 setForm({
+  //                   ...form,
+  //                   studentPhoto: e.target.files?.[0] ?? null,
+  //                 })
+  //               }
+  //             />
+  //           </div>
+  //           <div>
+  //             <label>Document (optional replacement)</label>
+  //             <input
+  //               type="file"
+  //               accept=".pdf"
+  //               onChange={(e) =>
+  //                 setForm({ ...form, document: e.target.files?.[0] ?? null })
+  //               }
+  //             />
+  //           </div>
+  //           <div>
+  //             <label className="block text-sm font-medium mb-1">
+  //               Document Status
+  //             </label>
+  //             <select
+  //               className="w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-900"
+  //               value={documentStatus}
+  //               onChange={(e) => setDocumentStatus(e.target.value as any)}
+  //             >
+  //               <option value="">Select status</option>
+  //               <option value="COMPLETE">COMPLETE</option>
+  //               <option value="INCOMPLETE">INCOMPLETE</option>
+  //             </select>
+  //           </div>
+  //           <div>
+  //             <label className="block text-sm font-medium mb-1">
+  //               Remark (optional)
+  //             </label>
+  //             <textarea
+  //               className="w-full px-3 py-2 border rounded-md h-24 bg-white dark:bg-gray-900"
+  //               value={remark}
+  //               onChange={(e) => setRemark(e.target.value)}
+  //               placeholder="Write any notes..."
+  //             />
+  //           </div>
+  //           <div className="flex items-center space-x-2">
+  //             <input
+  //               id="acceptIsTransfer"
+  //               type="checkbox"
+  //               className="h-4 w-4"
+  //               checked={isTransfer}
+  //               onChange={(e) => setIsTransfer(e.target.checked)}
+  //             />
+  //             <label htmlFor="acceptIsTransfer" className="text-sm">
+  //               Is Transfer
+  //             </label>
+  //           </div>
+  //           <div>
+  //             <label className="block text-sm font-medium mb-1">
+  //               Grade 12 Result (optional)
+  //             </label>
+  //             <input
+  //               type="number"
+  //               min={0}
+  //               max={700}
+  //               className="w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-900"
+  //               value={grade12Result}
+  //               onChange={(e) => setGrade12Result(e.target.value)}
+  //               placeholder="0 - 700"
+  //             />
+  //           </div>
+  //         </div>
+  //         <div className="mt-6 flex justify-end space-x-3">
+  //           <button
+  //             className="px-4 py-2 rounded-md border"
+  //             onClick={closeModal}
+  //             disabled={actionBusy}
+  //           >
+  //             Cancel
+  //           </button>
+  //           <button
+  //             onClick={async () => {
+  //               // validation...
+  //               if (!form.username || !form.password || !form.dateEnrolledGC) {
+  //                 alert("Required fields missing");
+  //                 return;
+  //               }
+
+  //               const ok = await acceptApplication({
+  //                 ...form,
+  //                 grade12Result: form.grade12Result
+  //                   ? Number(form.grade12Result)
+  //                   : undefined,
+  //               });
+
+  //               if (ok) closeModal();
+  //             }}
+  //           >
+  //             Confirm & Register Student
+  //           </button>
+  //         </div>
+  //       </div>
+  //     );
+  //   };
+  //   openModal(<AcceptForm />);
+  // }
+  // function openAcceptModal() {
+  //   const AcceptForm = () => {
+  //     const [form, setForm] = useState({
+  //       username: "",
+  //       password: "",
+  //       dateEnrolledGC: "2026-09-11", // sensible default: around Ethiopian New Year 2019 EC
+  //       academicYearCode: "2018", // adjust to current Ethiopian year (see note below)
+  //       batchClassYearSemesterId: 15, // ← temporary hardcoded; replace with real select later
+  //       isTransfer: false,
+  //       grade12Result: "",
+  //       remark: "",
+  //       studentPhoto: null as File | null,
+  //       document: null as File | null,
+  //     });
+
+  //     const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  //     const validate = () => {
+  //       const newErrors: typeof errors = {};
+  //       if (!form.username.trim()) newErrors.username = "Username is required";
+  //       if (!form.password.trim()) newErrors.password = "Password is required";
+  //       if (!form.dateEnrolledGC)
+  //         newErrors.dateEnrolledGC = "Enrollment date is required";
+  //       // Add more if needed (e.g. password strength, username format)
+
+  //       setErrors(newErrors);
+  //       return Object.keys(newErrors).length === 0;
+  //     };
+
+  //     const handleSubmit = async () => {
+  //       if (!validate()) return;
+
+  //       const payload = {
+  //         ...form,
+  //         grade12Result: form.grade12Result
+  //           ? Number(form.grade12Result)
+  //           : undefined,
+  //       };
+
+  //       const ok = await acceptApplication(payload);
+  //       if (ok) closeModal();
+  //     };
+
+  //     return (
+  //       <div className="w-[92vw] sm:w-[580px] max-w-[95vw] max-h-[85vh] overflow-y-auto p-6 space-y-6 bg-white dark:bg-gray-950 rounded-lg shadow-xl">
+  //         {" "}
+  //         <h2 className="text-xl font-semibold">Accept & Register Applicant</h2>
+  //         <div className="space-y-4">
+  //           <div>
+  //             <Label>Username (usually phone number)</Label>
+  //             <Input
+  //               value={form.username}
+  //               onChange={(e) => setForm({ ...form, username: e.target.value })}
+  //               placeholder="09xxxxxxxx or email"
+  //               className={errors.username ? "border-red-500" : ""}
+  //             />
+  //             {errors.username && (
+  //               <p className="text-red-500 text-sm mt-1">{errors.username}</p>
+  //             )}
+  //           </div>
+
+  //           <div>
+  //             <Label>Password</Label>
+  //             <Input
+  //               type="password"
+  //               value={form.password}
+  //               onChange={(e) => setForm({ ...form, password: e.target.value })}
+  //               placeholder="Enter secure password"
+  //               className={errors.password ? "border-red-500" : ""}
+  //             />
+  //             {errors.password && (
+  //               <p className="text-red-500 text-sm mt-1">{errors.password}</p>
+  //             )}
+  //           </div>
+  //         </div>
+  //         <div className="space-y-4 pt-4 border-t">
+  //           <div>
+  //             <Label>Date Enrolled (Gregorian)</Label>
+  //             <Input
+  //               type="date"
+  //               value={form.dateEnrolledGC}
+  //               onChange={(e) =>
+  //                 setForm({ ...form, dateEnrolledGC: e.target.value })
+  //               }
+  //               className={errors.dateEnrolledGC ? "border-red-500" : ""}
+  //             />
+  //             {errors.dateEnrolledGC && (
+  //               <p className="text-red-500 text-sm mt-1">
+  //                 {errors.dateEnrolledGC}
+  //               </p>
+  //             )}
+  //           </div>
+
+  //           <div>
+  //             <Label>Academic Year Code</Label>
+  //             <Input
+  //               value={form.academicYearCode}
+  //               onChange={(e) =>
+  //                 setForm({ ...form, academicYearCode: e.target.value })
+  //               }
+  //               placeholder="e.g. 2018 or 2025/26"
+  //             />
+  //           </div>
+
+  //           <div>
+  //             <Label>Batch / Class-Year-Semester ID</Label>
+  //             <Input
+  //               type="number"
+  //               value={form.batchClassYearSemesterId}
+  //               onChange={(e) =>
+  //                 setForm({
+  //                   ...form,
+  //                   batchClassYearSemesterId: Number(e.target.value) || 15,
+  //                 })
+  //               }
+  //               placeholder="ID from system"
+  //             />
+  //           </div>
+  //         </div>
+  //         <div className="space-y-4 pt-4 border-t text-sm text-gray-600">
+  //           <div className="flex items-center space-x-2">
+  //             <input
+  //               id="isTransfer"
+  //               type="checkbox"
+  //               checked={form.isTransfer}
+  //               onChange={(e) =>
+  //                 setForm({ ...form, isTransfer: e.target.checked })
+  //               }
+  //               className="h-4 w-4"
+  //             />
+  //             <Label htmlFor="isTransfer">This is a transfer student</Label>
+  //           </div>
+
+  //           <div>
+  //             <Label>Grade 12 Result (if applicable)</Label>
+  //             <Input
+  //               type="number"
+  //               min={0}
+  //               max={700}
+  //               value={form.grade12Result}
+  //               onChange={(e) =>
+  //                 setForm({ ...form, grade12Result: e.target.value })
+  //               }
+  //               placeholder="0–700 or GPA"
+  //             />
+  //           </div>
+
+  //           <div>
+  //             <Label>Remark / Notes</Label>
+  //             <textarea
+  //               className="w-full px-3 py-2 border rounded-md h-20 bg-white dark:bg-gray-900"
+  //               value={form.remark}
+  //               onChange={(e) => setForm({ ...form, remark: e.target.value })}
+  //               placeholder="Documents verified, special notes..."
+  //             />
+  //           </div>
+
+  //           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+  //             <div>
+  //               <Label>Replace Student Photo (optional)</Label>
+  //               <Input
+  //                 type="file"
+  //                 accept="image/*"
+  //                 onChange={(e) =>
+  //                   setForm({
+  //                     ...form,
+  //                     studentPhoto: e.target.files?.[0] ?? null,
+  //                   })
+  //                 }
+  //               />
+  //             </div>
+  //             <div>
+  //               <Label>Replace/Upload Document (optional)</Label>
+  //               <Input
+  //                 type="file"
+  //                 accept=".pdf"
+  //                 onChange={(e) =>
+  //                   setForm({ ...form, document: e.target.files?.[0] ?? null })
+  //                 }
+  //               />
+  //             </div>
+  //           </div>
+  //         </div>
+  //         <div className="flex justify-end space-x-3 pt-6 border-t sticky bottom-0 bg-inherit z-10">
+  //           <Button
+  //             variant="outline"
+  //             onClick={closeModal}
+  //             disabled={actionBusy}
+  //           >
+  //             Cancel
+  //           </Button>
+  //           <Button
+  //             onClick={handleSubmit}
+  //             disabled={actionBusy}
+  //             className="bg-green-600 hover:bg-green-700"
+  //           >
+  //             {actionBusy ? "Processing..." : "Confirm & Register Student"}
+  //           </Button>
+  //         </div>
+  //       </div>
+  //     );
+  //   };
+
+  //   openModal(<AcceptForm />);
+  // }
   function openAcceptModal() {
     const AcceptForm = () => {
-      const [username, setUsername] = useState("");
-      const [passwordLocal, setPasswordLocal] = useState("");
-      const [documentStatus, setDocumentStatus] = useState<"COMPLETE" | "INCOMPLETE" | "">("");
-      const [remark, setRemark] = useState("");
-      const [isTransfer, setIsTransfer] = useState(false);
-      const [grade12Result, setGrade12Result] = useState<string>("");
+      const [form, setForm] = useState({
+        username: "",
+        password: "",
+        dateEnrolledEc: "2018-05-11",
+        dateEnrolledGC: "2026-09-11",
+        academicYearCode: "", // will be selected
+        batchClassYearSemesterId: null as number | null,
+        isTransfer: false,
+        grade12Result: "",
+        remark: "",
+        studentPhoto: null as File | null,
+        document: null as File | null,
+      });
+
+      const [errors, setErrors] = useState<Record<string, string>>({});
+
+      const validate = () => {
+        const errs: typeof errors = {};
+        if (!form.username.trim()) errs.username = "Username is required";
+        if (!form.password.trim()) errs.password = "Password is required";
+        if (!form.dateEnrolledGC) errs.dateEnrolledGC = "Date required";
+        if (!form.academicYearCode)
+          errs.academicYearCode = "Academic year required";
+        if (!form.batchClassYearSemesterId)
+          errs.batchClassYearSemesterId = "Batch/semester required";
+
+        setErrors(errs);
+        return Object.keys(errs).length === 0;
+      };
+
+      const handleSubmit = async () => {
+        if (!validate()) return;
+
+        const payload = {
+          ...form,
+          batchClassYearSemesterId: form.batchClassYearSemesterId!,
+          grade12Result: form.grade12Result
+            ? Number(form.grade12Result)
+            : undefined,
+        };
+
+        const ok = await acceptApplication(payload);
+        if (ok) closeModal();
+      };
+
       return (
-        <div className="w-[92vw] sm:w-[560px] max-w-[95vw] p-6">
-          <h2 className="text-xl font-semibold mb-4">Accept Applicant</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Username</label>
-              <input
-                className="w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-900"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter username"
-              />
+        <div className="w-[92vw] sm:w-[620px] max-w-[95vw] max-h-[90vh] overflow-y-auto p-6 space-y-6 bg-white dark:bg-gray-950 rounded-xl shadow-2xl">
+          <h2 className="text-2xl font-bold">Accept & Register Applicant</h2>
+
+          {/* Required credentials */}
+          <div className="space-y-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label>Username *</Label>
+                <Input
+                  value={form.username}
+                  onChange={(e) =>
+                    setForm({ ...form, username: e.target.value })
+                  }
+                  placeholder="09xxxxxxxx or email"
+                  className={errors.username ? "border-red-500" : ""}
+                />
+                {errors.username && (
+                  <p className="text-red-500 text-sm mt-1">{errors.username}</p>
+                )}
+              </div>
+
+              <div>
+                <Label>Password *</Label>
+                <Input
+                  type="password"
+                  value={form.password}
+                  onChange={(e) =>
+                    setForm({ ...form, password: e.target.value })
+                  }
+                  placeholder="Enter secure password"
+                  className={errors.password ? "border-red-500" : ""}
+                />
+                {errors.password && (
+                  <p className="text-red-500 text-sm mt-1">{errors.password}</p>
+                )}
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Password</label>
-              <input
-                type="password"
-                className="w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-900"
-                value={passwordLocal}
-                onChange={(e) => setPasswordLocal(e.target.value)}
-                placeholder="Enter password"
-              />
+          </div>
+
+          {/* Enrollment info */}
+          <div className="space-y-5 pt-5 border-t">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label>Date Enrolled (GC) *</Label>
+                <Input
+                  type="date"
+                  value={form.dateEnrolledGC}
+                  onChange={(e) =>
+                    setForm({ ...form, dateEnrolledGC: e.target.value })
+                  }
+                  className={errors.dateEnrolledGC ? "border-red-500" : ""}
+                />
+                {errors.dateEnrolledGC && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.dateEnrolledGC}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <Label>Academic Year *</Label>
+                <select
+                  value={form.academicYearCode}
+                  onChange={(e) =>
+                    setForm({ ...form, academicYearCode: e.target.value })
+                  }
+                  className={`w-full px-3 py-2 border rounded-md ${
+                    errors.academicYearCode ? "border-red-500" : "border-input"
+                  }`}
+                >
+                  <option value="">Select academic year</option>
+                  {dropdownData.academicYears?.map((year: any) => (
+                    <option
+                      key={year["Academic Year Code"] || year.id}
+                      value={year["Academic Year Code"] || year.id}
+                    >
+                      {year["Academic Year EC"] || year.code || year.year}
+                    </option>
+                  ))}
+                </select>
+                {errors.academicYearCode && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.academicYearCode}
+                  </p>
+                )}
+              </div>
             </div>
+
             <div>
-              <label className="block text-sm font-medium mb-1">Document Status</label>
+              <Label>Batch / Class-Year / Semester *</Label>
               <select
-                className="w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-900"
-                value={documentStatus}
-                onChange={(e) => setDocumentStatus(e.target.value as any)}
+                value={form.batchClassYearSemesterId || ""}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    batchClassYearSemesterId: Number(e.target.value) || null,
+                  })
+                }
+                className={`w-full px-3 py-2 border rounded-md ${
+                  errors.batchClassYearSemesterId
+                    ? "border-red-500"
+                    : "border-input"
+                }`}
               >
-                <option value="">Select status</option>
-                <option value="COMPLETE">COMPLETE</option>
-                <option value="INCOMPLETE">INCOMPLETE</option>
+                <option value="">Select batch/semester</option>
+                {dropdownData.batchClassYearSemesters?.map((item: any) => (
+                  <option key={item.bcysId} value={item.bcysId}>
+                    {item.name ||
+                      `${item.classYear || ""} - ${item.semester || ""}`}
+                  </option>
+                ))}
               </select>
+              {errors.batchClassYearSemesterId && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.batchClassYearSemesterId}
+                </p>
+              )}
             </div>
+          </div>
+
+          {/* Optional fields */}
+          <div className="space-y-5 pt-5 border-t text-sm text-gray-600">
+            {/* Is transfer, grade12Result, remark, files — keep as is */}
+            {/* ... your existing optional fields code ... */}
             <div>
-              <label className="block text-sm font-medium mb-1">Remark (optional)</label>
-              <textarea
-                className="w-full px-3 py-2 border rounded-md h-24 bg-white dark:bg-gray-900"
-                value={remark}
-                onChange={(e) => setRemark(e.target.value)}
-                placeholder="Write any notes..."
+              <Label>Replace Student Photo (optional)</Label>
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    studentPhoto: e.target.files?.[0] ?? null,
+                  })
+                }
               />
             </div>
-            <div className="flex items-center space-x-2">
-              <input
-                id="acceptIsTransfer"
-                type="checkbox"
-                className="h-4 w-4"
-                checked={isTransfer}
-                onChange={(e) => setIsTransfer(e.target.checked)}
-              />
-              <label htmlFor="acceptIsTransfer" className="text-sm">Is Transfer</label>
-            </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Grade 12 Result (optional)</label>
-              <input
-                type="number"
-                min={0}
-                max={700}
-                className="w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-900"
-                value={grade12Result}
-                onChange={(e) => setGrade12Result(e.target.value)}
-                placeholder="0 - 700"
+              <Label>Replace/Upload Document (optional)</Label>
+              <Input
+                type="file"
+                accept=".pdf"
+                onChange={(e) =>
+                  setForm({ ...form, document: e.target.files?.[0] ?? null })
+                }
               />
             </div>
           </div>
-          <div className="mt-6 flex justify-end space-x-3">
-            <button
-              className="px-4 py-2 rounded-md border"
+
+          {/* Buttons */}
+          <div className="flex justify-end space-x-4 pt-6 border-t sticky bottom-0 bg-inherit z-10">
+            <Button
+              variant="outline"
               onClick={closeModal}
               disabled={actionBusy}
             >
               Cancel
-            </button>
-            <button
-              className="px-4 py-2 rounded-md bg-blue-600 text-white disabled:opacity-60"
-              onClick={async () => {
-                if (!username.trim()) { alert("Username is required"); return; }
-                if (!passwordLocal.trim()) { alert("Password is required"); return; }
-                if (!documentStatus) { alert("Please select document status"); return; }
-                const g12 = grade12Result ? Number(grade12Result) : undefined;
-                if (g12 !== undefined && (isNaN(g12) || g12 < 0 || g12 > 700)) {
-                  alert("Grade 12 result must be a number between 0 and 700");
-                  return;
-                }
-                const ok = await callUpdateStatus({
-                  status: "ACCEPTED",
-                  username,
-                  password: passwordLocal,
-                  documentStatus,
-                  remark: remark || undefined,
-                  isTransfer,
-                  grade12Result: g12,
-                });
-                if (ok) closeModal();
-              }}
+            </Button>
+            <Button
+              onClick={handleSubmit}
               disabled={actionBusy}
+              className="bg-green-600 hover:bg-green-700"
             >
-              Confirm
-            </button>
+              {actionBusy ? "Processing..." : "Confirm & Register Student"}
+            </Button>
           </div>
         </div>
       );
     };
+
     openModal(<AcceptForm />);
   }
 
@@ -374,7 +1043,10 @@ export default function ApplicantDetail() {
         <div className="flex space-x-2">
           <Link
             to={"/registrar/applications"}
-            onClick={(e) => { e.preventDefault(); navigate(-1); }}
+            onClick={(e) => {
+              e.preventDefault();
+              navigate(-1);
+            }}
             className="inline-flex items-center text-blue-600 dark:text-blue-400 px-4 py-2 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors"
           >
             <span className="mr-2">&larr;</span>
@@ -388,9 +1060,8 @@ export default function ApplicantDetail() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
         {/* Profile Picture and Basic Info */}
-        
+
         <Card className="lg:col-span-1">
           <CardHeader className="text-center">
             <div className="relative mx-auto">
@@ -413,10 +1084,14 @@ export default function ApplicantDetail() {
               {applicantData.firstNameENG} {applicantData.fatherNameENG}
             </CardTitle>
             <CardDescription>
-              {getDisplayName('department', applicantData.departmentEnrolledId)} Applicant
+              {getDisplayName("department", applicantData.departmentEnrolledId)}{" "}
+              Applicant
             </CardDescription>
             <Badge variant="secondary" className="mt-2">
-              {getDisplayName('programModality', applicantData.programModalityCode)}
+              {getDisplayName(
+                "programModality",
+                applicantData.programModalityCode
+              )}
             </Badge>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -606,7 +1281,10 @@ export default function ApplicantDetail() {
               <Label htmlFor="departmentEnrolled">Department Applied</Label>
               <Input
                 id="departmentEnrolled"
-                value={getDisplayName('department', applicantData.departmentEnrolledId)}
+                value={getDisplayName(
+                  "department",
+                  applicantData.departmentEnrolledId
+                )}
                 readOnly
               />
             </div>
@@ -614,7 +1292,10 @@ export default function ApplicantDetail() {
               <Label htmlFor="programModality">Program Modality</Label>
               <Input
                 id="programModality"
-                value={getDisplayName('programModality', applicantData.programModalityCode)}
+                value={getDisplayName(
+                  "programModality",
+                  applicantData.programModalityCode
+                )}
                 readOnly
               />
             </div>
@@ -622,7 +1303,10 @@ export default function ApplicantDetail() {
               <Label htmlFor="schoolBackground">School Background</Label>
               <Input
                 id="schoolBackground"
-                value={getDisplayName('schoolBackground', applicantData.schoolBackgroundId)}
+                value={getDisplayName(
+                  "schoolBackground",
+                  applicantData.schoolBackgroundId
+                )}
                 readOnly
               />
             </div>
@@ -633,7 +1317,7 @@ export default function ApplicantDetail() {
               <Label htmlFor="classYear">Academic Year</Label>
               <Input
                 id="classYear"
-                value={getDisplayName('classYear', applicantData.classYearId)}
+                value={getDisplayName("classYear", applicantData.classYearId)}
                 readOnly
               />
             </div>
@@ -641,7 +1325,7 @@ export default function ApplicantDetail() {
               <Label htmlFor="semester">Semester</Label>
               <Input
                 id="semester"
-                value={getDisplayName('semester', applicantData.semesterCode)}
+                value={getDisplayName("semester", applicantData.semesterCode)}
                 readOnly
               />
             </div>
@@ -666,7 +1350,9 @@ export default function ApplicantDetail() {
                 className="w-64 h-36 object-cover rounded-lg border-2 border-gray-200 dark:border-gray-700"
               />
             ) : (
-              <div className="text-sm text-gray-500">No grade 12 result available</div>
+              <div className="text-sm text-gray-500">
+                No grade 12 result available
+              </div>
             )}
           </div>
         </CardContent>
@@ -684,7 +1370,11 @@ export default function ApplicantDetail() {
           {documentUrl ? (
             <div className="space-y-3">
               <div className="w-full h-96 border rounded-lg overflow-hidden">
-                <iframe title="Applicant Document" src={documentUrl} className="w-full h-full" />
+                <iframe
+                  title="Applicant Document"
+                  src={documentUrl}
+                  className="w-full h-full"
+                />
               </div>
               <div>
                 <a
