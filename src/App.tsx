@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "./components/theme-provider";
 import { Toaster } from "sonner";
 import PageLoader from "./components/ui/PageLoader";
+import ProtectedRoute from "./components/auth/ProtectedRoute.tsx"
 
 // Lazy load all components for code splitting
 const LandingPage = React.lazy(() => import("./pages/public/LandingPage"));
@@ -29,15 +30,10 @@ const StudentSetting = React.lazy(() => import("./pages/student/Setting"));
 const TeacherLayout = React.lazy(() => import("./layouts/TeacherLayout"));
 const TeacherDashboard = React.lazy(() => import("./pages/teacher/Dashboard"));
 const TeacherCourses = React.lazy(() => import("./pages/teacher/Courses"));
-const TeacherStudents = React.lazy(
-  () => import("./pages/teacher/TeacherStudents")
-);
-const AssessmentPage = React.lazy(
-  () => import("./pages/teacher/AssessmentPage")
-);
-const TeacherProfile = React.lazy(
-  () => import("./pages/teacher/TeacherProfile.tsx")
-);
+
+const TeacherStudents = React.lazy(() => import("./pages/teacher/TeacherStudents"));
+const AssessmentPage = React.lazy(() => import("./pages/teacher/AssessmentPage"));
+const TeacherProfile = React.lazy(() => import("./pages/teacher/TeacherProfile.tsx"));
 
 // Department Head Pages
 const HeadLayout = React.lazy(() => import("./layouts/HeadLayout"));
@@ -61,8 +57,8 @@ const HeadAssessmentDetail = React.lazy(
 const TeacherProfileDetail = React.lazy(
   () => import("./pages/head/TeacherProfileDetail.tsx")
 );
-// Registrar Pages
 
+// Registrar Pages
 const RegistrarLayout = React.lazy(() => import("./layouts/RegistrarLayout"));
 const SchoolBackgroundsEditor = React.lazy(
   () => import("./pages/registrar/settings/SchoolBackgroundsEditor.tsx")
@@ -96,15 +92,10 @@ const DepartmentDetail = React.lazy(
 const EnrollmentTypesEditor = React.lazy(
   () => import("./pages/registrar/settings/EnrollmentTypesEditor.tsx")
 );
-const StudentDetail = React.lazy(
-  () => import("./pages/registrar/StudentDetail")
-);
-const RegistrarAssessment = React.lazy(
-  () => import("./pages/registrar/registrarAssessment.tsx")
-);
-const RegistrarAssessmentDetail = React.lazy(
-  () => import("./pages/registrar/registrarAssessmentDetail.tsx")
-);
+
+const StudentDetail = React.lazy(() => import("./pages/registrar/StudentDetail"));
+const RegistrarAssessment  = React.lazy(() => import("./pages/registrar/registrarAssessment.tsx"));
+const RegistrarAssessmentDetail  = React.lazy(() => import("./pages/registrar/registrarAssessmentDetail.tsx"));
 const ApplicantDetail = React.lazy(
   () => import("./pages/registrar/ApplicantDetail")
 );
@@ -165,6 +156,7 @@ const ProgramLevelsManagement = React.lazy(
 const ProgramModalitiesManagement = React.lazy(
   () => import("./pages/dean/ProgramModalitiesManagement.tsx")
 );
+const Dean_Profile = React.lazy(() => import("./pages/dean/Dean_Profile"));
 
 // Vice-Dean Pages
 const ViceDeanLayout = React.lazy(() => import("./layouts/ViceDeanLayout"));
@@ -191,7 +183,6 @@ const ViceDepartmentDetail = React.lazy(
 const ManagerLayout = React.lazy(() => import("./layouts/ManagerLayout"));
 const ManagerDashboard = React.lazy(() => import("./pages/manager/Dashboard"));
 const ManagerReports = React.lazy(() => import("./pages/manager/Reports"));
-// const ManagerSettings = React.lazy(() => import("./pages/manager/Settings"));
 const StudentCourseScoreTable = React.lazy(
   () => import("./pages/registrar/StudentCourseScoreTable")
 );
@@ -235,7 +226,6 @@ const DeanProfile = React.lazy(() => import("./pages/manager/DeanProfile"));
 const ViceDeanProfile = React.lazy(
   () => import("./pages/manager/ViceDeanProfile")
 );
-const Dean_Profile = React.lazy(() => import("./pages/dean/Dean_Profile"));
 const RegistrarProfile = React.lazy(
   () => import("./pages/manager/RegistrarProfile")
 );
@@ -256,220 +246,163 @@ function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/learn-more" element={<LearnMore />} />
             <Route path="/login" element={<SigningUp />} />
-            {/* <Route path="/some" element={<TenColumnEditableTablePage />} /> */}
-            <Route path="/some" element={<LocationEditor />} />
             <Route path="/register" element={<MultiStepRegistrationForm />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            
+            {/* Testing/Development Routes - Consider removing in production */}
+            <Route path="/some" element={<TenColumnEditableTablePage />} />
+            <Route path="/location-test" element={<LocationEditor />} />
 
+            {/* Protected Routes */}
             {/* Student Routes */}
-            <Route path="/student" element={<StudentLayout />}>
-              <Route index element={<Navigate to="dashboard" replace />} />
-              <Route path="dashboard" element={<StudentDashboard />} />
-              <Route path="profile" element={<StudentProfile />} />
-              <Route path="grades" element={<StudentGrades />} />
-              <Route path="settings" element={<StudentSetting />} />
+            <Route element={<ProtectedRoute />}>
+              <Route path="/student" element={<StudentLayout />}>
+                <Route index element={<Navigate to="dashboard" replace />} />
+                <Route path="dashboard" element={<StudentDashboard />} />
+                <Route path="profile" element={<StudentProfile />} />
+                <Route path="grades" element={<StudentGrades />} />
+                <Route path="settings" element={<StudentSetting />} />
+              </Route>
             </Route>
 
             {/* Teacher Routes */}
-            <Route path="/teacher" element={<TeacherLayout />}>
-              <Route index element={<Navigate to="dashboard" replace />} />
-              <Route path="dashboard" element={<TeacherDashboard />} />
-              <Route path="courses" element={<TeacherCourses />} />
-              <Route
-                path="students/:assignmentId"
-                element={<TeacherStudents />}
-              />
-              <Route
-                path="assessments/:assignmentId"
-                element={<AssessmentPage />}
-              />
-              <Route path="profile" element={<TeacherProfile />} />
+
+            <Route element={<ProtectedRoute />}>
+              <Route path="/teacher" element={<TeacherLayout />}>
+                <Route index element={<Navigate to="dashboard" replace />} />
+                <Route path="dashboard" element={<TeacherDashboard />} />
+                <Route path="courses" element={<TeacherCourses />} />
+                <Route path="students/:assignmentId" element={<TeacherStudents />} />
+                <Route path="assessments/:assignmentId" element={<AssessmentPage />} />
+                <Route path="profile" element={<TeacherProfile />} />
+              </Route>
             </Route>
 
             {/* Department Head Routes */}
-            <Route path="/head" element={<HeadLayout />}>
-              <Route index element={<Navigate to="dashboard" replace />} />
-              <Route path="dashboard" element={<HeadDashboard />} />
-              <Route path="students" element={<HeadStudents />} />
-              <Route path="students/:id" element={<HeadStudentDetail />} />
-              <Route path="teachers" element={<HeadTeachers />} />
-              <Route path="create-teacher" element={<CreateTeacher />} />
-              <Route path="teachers/:id" element={<TeacherProfileDetail />} />
-              <Route path="grades" element={<HeadGrades />} />
-              <Route path="courses" element={<HeadCourses />} />
-              <Route path="reports" element={<HeadReports />} />
-              <Route path="assessments" element={<HeadAssessments />} />{" "}
-              <Route
-                path="assessments/:assignmentId"
-                element={<HeadAssessmentDetail />}
-              />
-              <Route path="profile" element={<DepartmentHeadProfile />} />
+            <Route element={<ProtectedRoute />}>
+              <Route path="/head" element={<HeadLayout />}>
+                <Route index element={<Navigate to="dashboard" replace />} />
+                <Route path="dashboard" element={<HeadDashboard />} />
+                <Route path="students" element={<HeadStudents />} />
+                <Route path="students/:id" element={<HeadStudentDetail />} />
+                <Route path="teachers" element={<HeadTeachers />} />
+                <Route path="create-teacher" element={<CreateTeacher />} />
+                <Route path="teachers/:id" element={<TeacherProfileDetail />} />
+                <Route path="grades" element={<HeadGrades />} />
+                <Route path="courses" element={<HeadCourses />} />
+                <Route path="reports" element={<HeadReports />} />
+                <Route path="assessments" element={<HeadAssessments />} />
+                <Route path="assessments/:assignmentId" element={<HeadAssessmentDetail />} />
+                <Route path="profile" element={<DepartmentHeadProfile />} />
+              </Route>
             </Route>
 
             {/* Registrar Routes */}
-            <Route path="/registrar" element={<RegistrarLayout />}>
-              <Route index element={<Navigate to="dashboard" replace />} />
-              <Route path="departments" element={<RegistrarDepartments />} />
-              <Route path="departments/:id" element={<DepartmentDetail />} />
-              <Route path="applications/:id" element={<ApplicantDetail />} />
-              <Route path="students/:id" element={<StudentDetail />} />
-              <Route path="dashboard" element={<RegistrarDashboard />} />
-              <Route path="applications" element={<RegistrarApplications />} />
-              <Route path="assessments" element={<RegistrarAssessment />} />
-              <Route
-                path="assessments/:assignmentId"
-                element={<RegistrarAssessmentDetail />}
-              />
-              <Route path="transcripts" element={<Transcript_Generate />} />
-              <Route path="settings/location" element={<LocationEditor />} />
-              <Route
-                path="settings/academic-years"
-                element={<AcademicYearEditor />}
-              />
-              <Route
-                path="settings/batches/:id"
-                element={<SingleBatchPage />}
-              />
-              <Route path="settings/batches" element={<BatchesEditor />} />
-              <Route path="settings/semesters" element={<SemestersEditor />} />
-              <Route
-                path="settings/school-background"
-                element={<SchoolBackgroundsEditor />}
-              />
-              <Route
-                path="settings/enrollment"
-                element={<EnrollmentTypesEditor />}
-              />
-              <Route
-                path="settings/grading-systems"
-                element={<GradingSystemEditor />}
-              />
-              <Route
-                path="settings/class-years"
-                element={<ClassYearsEditor />}
-              />
-              <Route
-                path="settings/impairments"
-                element={<ImpairmentEditor />}
-              />
-              <Route
-                path="settings/program-modality"
-                element={<ProgramModalitiesEditor />}
-              />
-              <Route
-                path="settings/program-level"
-                element={<ProgramLevelsEditor />}
-              />
-              <Route
-                path="settings/course-category"
-                element={<CourseCategoriesEditor />}
-              />
-              <Route path="settings/courses" element={<CoursesEditor />} />
-              <Route
-                path="settings/course-source"
-                element={<CourseSourcesEditor />}
-              />
-              <Route
-                path="settings/attritions"
-                element={<AttritionCausesEditor />}
-              />
-              <Route
-                path="rejected-applications"
-                element={<RejectedApplications />}
-              />
-              <Route
-                path="rejected-applications/:id"
-                element={<ApplicantDetail />}
-              />
-              <Route path="students" element={<RegistrarStudents />} />
-              <Route path="registration-slips" element={<RegistrationSlip />} />
-              <Route path="add-student" element={<AddStudent />} />
-              <Route path="assessments" element={<RegistrarAssessments />} />
-              <Route path="scores" element={<StudentCourseScoreTable />} />
-              {/* <Route path="tables" element={<CustomizableStudentTable />} /> */}
-              <Route path="tables" element={<CustomizableStudentTable />} />
-              <Route path="notifications" element={<NotificationsPage />} />
+
+            <Route element={<ProtectedRoute />}>
+              <Route path="/registrar" element={<RegistrarLayout />}>
+                <Route index element={<Navigate to="dashboard" replace />} />
+                <Route path="departments" element={<RegistrarDepartments />} />
+                <Route path="departments/:id" element={<DepartmentDetail />} />
+                <Route path="applications/:id" element={<ApplicantDetail />} />
+                <Route path="students/:id" element={<StudentDetail />} />
+                <Route path="dashboard" element={<RegistrarDashboard />} />
+                <Route path="applications" element={<RegistrarApplications />} />
+                <Route path="assessments" element={<RegistrarAssessment />} />
+                <Route path="assessments/:assignmentId" element={<RegistrarAssessmentDetail />} />
+                <Route path="transcripts" element={<Transcript_Generate />} />
+                <Route path="settings/location" element={<LocationEditor />} />
+                <Route path="settings/academic-years" element={<AcademicYearEditor />} />
+                <Route path="settings/batches/:id" element={<SingleBatchPage />} />
+                <Route path="settings/batches" element={<BatchesEditor />} />
+                <Route path="settings/semesters" element={<SemestersEditor />} />
+                <Route path="settings/school-background" element={<SchoolBackgroundsEditor />} />
+                <Route path="settings/enrollment" element={<EnrollmentTypesEditor />} />
+                <Route path="settings/grading-systems" element={<GradingSystemEditor />} />
+                <Route path="settings/class-years" element={<ClassYearsEditor />} />
+                <Route path="settings/impairments" element={<ImpairmentEditor />} />
+                <Route path="settings/program-modality" element={<ProgramModalitiesEditor />} />
+                <Route path="settings/program-level" element={<ProgramLevelsEditor />} />
+                <Route path="settings/course-category" element={<CourseCategoriesEditor />} />
+                <Route path="settings/courses" element={<CoursesEditor />} />
+                <Route path="settings/course-source" element={<CourseSourcesEditor />} />
+                <Route path="settings/attritions" element={<AttritionCausesEditor />} />
+                <Route path="rejected-applications" element={<RejectedApplications />} />
+                <Route path="rejected-applications/:id" element={<ApplicantDetail />} />
+                <Route path="students" element={<RegistrarStudents />} />
+                <Route path="registration-slips" element={<RegistrationSlip />} />
+                <Route path="add-student" element={<AddStudent />} />
+                <Route path="courses" element={<RegistrarCourses />} />
+                <Route path="assessments" element={<RegistrarAssessments />} />
+                <Route path="scores" element={<StudentCourseScoreTable />} />
+                <Route path="tables" element={<CustomStudentTable />} />
+                <Route path="notifications" element={<NotificationsPage />} />
+              </Route>
             </Route>
 
             {/* Finance Routes */}
-            <Route path="/finance" element={<FinanceLayout />}>
-              <Route path="dashboard" element={<FinanceDashboard />} />
-              <Route path="payments" element={<FinancePayments />} />
-              <Route path="history" element={<FinanceHistory />} />
-              <Route path="reports" element={<FinanceReports />} />
+            <Route element={<ProtectedRoute />}>
+              <Route path="/finance" element={<FinanceLayout />}>
+                <Route index element={<Navigate to="dashboard" replace />} />
+                <Route path="dashboard" element={<FinanceDashboard />} />
+                <Route path="payments" element={<FinancePayments />} />
+                <Route path="history" element={<FinanceHistory />} />
+                <Route path="reports" element={<FinanceReports />} />
+              </Route>
             </Route>
 
             {/* Dean Routes */}
-            <Route path="/dean" element={<DeanLayout />}>
-              <Route index element={<Navigate to="dashboard" replace />} />
-              <Route path="dashboard" element={<DeanDashboard />} />
-              <Route
-                path="program-level"
-                element={<ProgramLevelsManagement />}
-              />
-              <Route
-                path="create-department-head"
-                element={<CreateDepartmentHead />}
-              />
-              <Route
-                path="program-modality"
-                element={<ProgramModalitiesManagement />}
-              />
-              <Route path="profile" element={<Dean_Profile />} />
-              <Route path="students" element={<DeanStudents />} />
-              <Route
-                path="department-heads"
-                element={<DepartmentHeadsList />}
-              />
-              <Route
-                path="department-heads/:id"
-                element={<DepartmentHeadDetail />}
-              />
-              <Route path="grades" element={<DeanGrades />} />
-              <Route path="department" element={<DeanDepartments />} />
-              <Route path="reports" element={<DeanReports />} />
-              <Route
-                path="departments/:id"
-                element={<DeanDepartmentDetail />}
-              />
+            <Route element={<ProtectedRoute />}>
+              <Route path="/dean" element={<DeanLayout />}>
+                <Route index element={<Navigate to="dashboard" replace />} />
+                <Route path="dashboard" element={<DeanDashboard />} />
+                <Route path="program-level" element={<ProgramLevelsManagement />} />
+                <Route path="create-department-head" element={<CreateDepartmentHead />} />
+                <Route path="program-modality" element={<ProgramModalitiesManagement />} />
+                <Route path="profile" element={<Dean_Profile />} />
+                <Route path="students" element={<DeanStudents />} />
+                <Route path="department-heads" element={<DepartmentHeadsList />} />
+                <Route path="department-heads/:id" element={<DepartmentHeadDetail />} />
+                <Route path="grades" element={<DeanGrades />} />
+                <Route path="department" element={<DeanDepartments />} />
+                <Route path="reports" element={<DeanReports />} />
+                <Route path="departments/:id" element={<DeanDepartmentDetail />} />
+              </Route>
             </Route>
 
-            {/*Vice Dean Routes */}
-            <Route path="/vice-dean" element={<ViceDeanLayout />}>
-              <Route index element={<Navigate to="dashboard" replace />} />
-              <Route path="dashboard" element={<ViceDeanDashboard />} />
-              <Route
-                path="create-department-head"
-                element={<ViceCreateDepartmentHead />}
-              />
-              <Route path="students" element={<ViceDeanStudents />} />
-              <Route path="grades" element={<ViceDeanGrades />} />
-              <Route path="reports" element={<ViceDeanReports />} />
-              <Route path="department" element={<ViceDeanDepartments />} />
-              <Route path="profile" element={<ViceDean_Profile />} />
-              <Route
-                path="departments/:id"
-                element={<ViceDepartmentDetail />}
-              />
+            {/* Vice Dean Routes */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/vice-dean" element={<ViceDeanLayout />}>
+                <Route index element={<Navigate to="dashboard" replace />} />
+                <Route path="dashboard" element={<ViceDeanDashboard />} />
+                <Route path="create-department-head" element={<ViceCreateDepartmentHead />} />
+                <Route path="students" element={<ViceDeanStudents />} />
+                <Route path="grades" element={<ViceDeanGrades />} />
+                <Route path="reports" element={<ViceDeanReports />} />
+                <Route path="department" element={<ViceDeanDepartments />} />
+                <Route path="profile" element={<ViceDean_Profile />} />
+                <Route path="departments/:id" element={<ViceDepartmentDetail />} />
+              </Route>
             </Route>
 
             {/* Manager Routes */}
-            <Route path="/general-manager" element={<ManagerLayout />}>
-              <Route index element={<Navigate to="dashboard" replace />} />
-              <Route path="dashboard" element={<DeanDashboard />} />
-              <Route path="students" element={<ManagerStudents />} />
-              <Route path="students/:id" element={<StudentDetail />} />
-              <Route path="reports" element={<DeanReports />} />
-              <Route path="department" element={<DeanDepartments />} />
-              <Route
-                path="departments/:id"
-                element={<DeanDepartmentDetail />}
-              />
-              <Route path="teachers" element={<ManagerTeachers />} />
-              <Route path="dean" element={<DeanProfile />} />
-              <Route path="vice-dean" element={<ViceDeanProfile />} />
-              <Route path="registrar" element={<RegistrarProfile />} />
+            <Route element={<ProtectedRoute />}>
+              <Route path="/general-manager" element={<ManagerLayout />}>
+                <Route index element={<Navigate to="dashboard" replace />} />
+                <Route path="dashboard" element={<ManagerDashboard />} />
+                <Route path="students" element={<ManagerStudents />} />
+                <Route path="students/:id" element={<StudentDetail />} />
+                <Route path="reports" element={<ManagerReports />} />
+                <Route path="department" element={<DeanDepartments />} />
+                <Route path="departments/:id" element={<DeanDepartmentDetail />} />
+                <Route path="teachers" element={<ManagerTeachers />} />
+                <Route path="dean" element={<DeanProfile />} />
+                <Route path="vice-dean" element={<ViceDeanProfile />} />
+                <Route path="registrar" element={<RegistrarProfile />} />
+              </Route>
             </Route>
+
+            {/* 404 Route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
