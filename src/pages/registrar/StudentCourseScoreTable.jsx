@@ -156,8 +156,9 @@ export default function StudentCourseScoreTable() {
     }
   };
 
-  // Reusable function to apply update via bulk endpoint (works for single & multiple)
+  // Reusable bulk update function (used for batch, single edit, and single release)
   const applyUpdateViaBulk = async (updates) => {
+    if (updates.length === 0) return;
     try {
       await apiClient.put(endPoints.bulkUpdateScores, { updates });
       message.success("Update successful");
@@ -182,8 +183,6 @@ export default function StudentCourseScoreTable() {
         return { id: row.id, ...updateData };
       })
       .filter(Boolean);
-
-    if (updates.length === 0) return;
 
     await applyUpdateViaBulk(updates);
     setSelectedRowKeys([]);
@@ -215,39 +214,15 @@ export default function StudentCourseScoreTable() {
       return;
     }
 
-    const updates = [{
-      id: editingRecord.id,
-      score: scoreValue
-    }];
-
+    const updates = [{ id: editingRecord.id, score: scoreValue }];
     await applyUpdateViaBulk(updates);
     setEditScoreModalVisible(false);
     setEditingRecord(null);
   };
 
-  const handleToggleRelease = (record) => {
-    Modal.confirm({
-      title: "Confirm Release Status",
-      content: (
-        <p>
-          Are you sure you want to{" "}
-          <strong>{record.isReleased ? "unrelease" : "release"}</strong> this score
-          for <strong>{record.studentId.student?.name || record.studentId.id}</strong>?
-        </p>
-      ),
-      okText: record.isReleased ? "Unrelease" : "Release",
-      okButtonProps: {
-        className: record.isReleased ? "bg-orange-500 hover:bg-orange-600" : "bg-green-500 hover:bg-green-600"
-      },
-      cancelText: "Cancel",
-      onOk: async () => {
-        const updates = [{
-          id: record.id,
-          isReleased: !record.isReleased
-        }];
+  const handleToggleRelease = async (record) => {
+        const updates = [{ id: record.id, isReleased: !record.isReleased }];
         await applyUpdateViaBulk(updates);
-      },
-    });
   };
 
   const clearFilters = () => {
@@ -365,13 +340,34 @@ export default function StudentCourseScoreTable() {
       {selectedRowKeys.length > 0 && (
         <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-300 dark:border-blue-700">
           <div className="flex flex-wrap items-center gap-4">
-            <InputNumber min={0} max={100} step={0.1} value={batchValues.score} onChange={(v) => setBatchValues({ ...batchValues, score: v })} placeholder="Score" />
-            <Select value={batchValues.courseSource || undefined} onChange={(v) => setBatchValues({ ...batchValues, courseSource: v })} placeholder="Course Source" allowClear className="w-48">
-              {filterOptions.courseSources.map((s) => <Select.Option key={s.id} value={s.id}>{s.name}</Select.Option>)}
+            <InputNumber
+              min={0}
+              max={100}
+              step={0.1}
+              value={batchValues.score}
+              onChange={(v) => setBatchValues({ ...batchValues, score: v })}
+              placeholder="Score"
+              className="w-32 [&_.ant-input-number-input]:text-gray-900 [&_.ant-input-number-input]:dark:text-gray-200 [&_.ant-input-number-input::placeholder]:text-gray-500 [&_.ant-input-number-input::placeholder]:dark:text-gray-400"
+            />
+            <Select
+              value={batchValues.courseSource || undefined}
+              onChange={(v) => setBatchValues({ ...batchValues, courseSource: v })}
+              placeholder="Course Source"
+              allowClear
+              className="w-48"
+            >
+              {filterOptions.courseSources.map((s) => (
+                <Select.Option key={s.id} value={s.id}>{s.name}</Select.Option>
+              ))}
             </Select>
             <Select
               value={batchValues.isReleased !== null ? (batchValues.isReleased ? "yes" : "no") : undefined}
-              onChange={(v) => setBatchValues({ ...batchValues, isReleased: v === "yes" ? true : v === "no" ? false : null })}
+              onChange={(v) =>
+                setBatchValues({
+                  ...batchValues,
+                  isReleased: v === "yes" ? true : v === "no" ? false : null,
+                })
+              }
               placeholder="Release?"
               allowClear
               className="w-40"
@@ -382,7 +378,7 @@ export default function StudentCourseScoreTable() {
             <button onClick={applyBatchUpdate} className="px-5 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
               Apply ({selectedRowKeys.length})
             </button>
-            <button onClick={clearBatchUpdate} className="px-4 py-2 bg-gray-300 dark:bg-gray-600 rounded hover:bg-gray-400">
+            <button onClick={clearBatchUpdate} className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-400 dark:hover:bg-gray-500">
               Cancel
             </button>
           </div>
@@ -395,7 +391,12 @@ export default function StudentCourseScoreTable() {
           <thead className="bg-gray-50 dark:bg-gray-900">
             <tr>
               <th className="px-6 py-3 text-left">
-                <input type="checkbox" checked={selectedRowKeys.length === data.length && data.length > 0} onChange={handleSelectAll} className="rounded" />
+                <input
+                  type="checkbox"
+                  checked={selectedRowKeys.length === data.length && data.length > 0}
+                  onChange={handleSelectAll}
+                  className="rounded"
+                />
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Student ID</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Student Name</th>
@@ -409,13 +410,21 @@ export default function StudentCourseScoreTable() {
           </thead>
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {loading ? (
-              <tr><td colSpan={9} className="text-center py-10"><div className="animate-spin inline-block w-8 h-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></td></tr>
+              <tr>
+                <td colSpan={9} className="text-center py-10">
+                  <div className="animate-spin inline-block w-8 h-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+                </td>
+              </tr>
             ) : data.length === 0 ? (
-              <tr><td colSpan={9} className="text-center py-10 text-gray-500">No records found</td></tr>
+              <tr>
+                <td colSpan={9} className="text-center py-10 text-gray-500 dark:text-gray-400">No records found</td>
+              </tr>
             ) : (
               data.map((item) => (
                 <tr key={item.key} className={selectedRowKeys.includes(item.key) ? "bg-blue-50 dark:bg-blue-900/30" : ""}>
-                  <td className="px-6 py-4"><input type="checkbox" checked={selectedRowKeys.includes(item.key)} onChange={() => handleRowSelection(item.key)} /></td>
+                  <td className="px-6 py-4">
+                    <input type="checkbox" checked={selectedRowKeys.includes(item.key)} onChange={() => handleRowSelection(item.key)} />
+                  </td>
                   <td className="px-6 py-4 text-sm">{item.studentId.id}</td>
                   <td className="px-6 py-4 text-sm">{item.studentId.student?.name || "N/A"}</td>
                   <td className="px-6 py-4 text-sm">{item.course.displayName}</td>
@@ -428,7 +437,7 @@ export default function StudentCourseScoreTable() {
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-4">
                       <button
                         onClick={() => handleEditScoreClick(item)}
                         className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200"
@@ -438,8 +447,8 @@ export default function StudentCourseScoreTable() {
                       </button>
                       <button
                         onClick={() => handleToggleRelease(item)}
-                        className={item.isReleased 
-                          ? "text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-200" 
+                        className={item.isReleased
+                          ? "text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-200"
                           : "text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200"}
                         title={item.isReleased ? "Unrelease" : "Release"}
                       >
@@ -458,7 +467,6 @@ export default function StudentCourseScoreTable() {
           <div className="text-sm text-gray-700 dark:text-gray-300">
             Showing <strong>{from}</strong> to <strong>{to}</strong> of <strong>{pagination.total}</strong> results
           </div>
-
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-700 dark:text-gray-300">Rows per page:</span>
@@ -473,7 +481,6 @@ export default function StudentCourseScoreTable() {
                 <option value={50}>50</option>
               </select>
             </div>
-
             <nav className="flex items-center gap-1">
               <button
                 onClick={() => handlePageChange(pagination.current - 1)}
@@ -482,7 +489,6 @@ export default function StudentCourseScoreTable() {
               >
                 ← Previous
               </button>
-
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                 let pageNum;
                 if (totalPages <= 5) pageNum = i + 1;
@@ -504,7 +510,6 @@ export default function StudentCourseScoreTable() {
                   </button>
                 );
               })}
-
               <button
                 onClick={() => handlePageChange(pagination.current + 1)}
                 disabled={pagination.current === totalPages || totalPages === 0}
@@ -528,29 +533,33 @@ export default function StudentCourseScoreTable() {
         }}
         okText="Update Score"
         cancelText="Cancel"
-        className="dark:[&_.ant-modal-content]:bg-gray-800 dark:[&_.ant-modal-title]:text-gray-200"
+        className="dark:[&_.ant-modal-content]:bg-gray-800 dark:[&_.ant-modal-header]:bg-gray-800 dark:[&_.ant-modal-title]:text-gray-100 dark:[&_.ant-modal-body]:text-gray-100 dark:[&_.ant-modal-footer]:bg-gray-800"
       >
         {editingRecord && (
-          <div className="space-y-4">
+          <div className="space-y-4 text-gray-900 dark:text-gray-100">
             <p><strong>Student:</strong> {editingRecord.studentId.student?.name || editingRecord.studentId.id}</p>
             <p><strong>Course:</strong> {editingRecord.course.displayName}</p>
             <div>
-              <label className="block text-sm font-medium mb-2">New Score (0-100)</label>
+              <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-200">
+                New Score (0-100)
+              </label>
               <InputNumber
                 min={0}
                 max={100}
                 step={0.1}
                 value={editScoreValue}
                 onChange={setEditScoreValue}
-                className="w-full"
+                className="w-full [&_.ant-input-number]:bg-gray-700 [&_.ant-input-number]:dark:bg-gray-700 [&_.ant-input-number-input]:text-gray-100"
+                placeholder="Enter new score"
               />
             </div>
           </div>
         )}
       </Modal>
 
-      {/* Dark mode fixes for AntD Select */}
+      {/* Global Dark Mode Fixes */}
       <style jsx global>{`
+        /* Select dropdown input */
         .ant-select-selector {
           background-color: #1f2937 !important;
           border-color: #4b5563 !important;
@@ -562,6 +571,21 @@ export default function StudentCourseScoreTable() {
         .ant-select-arrow {
           color: #9ca3af !important;
         }
+
+        /* InputNumber in dark mode */
+        .ant-input-number {
+          background-color: #1f2937 !important;
+          border-color: #4b5563 !important;
+        }
+        .ant-input-number-input {
+          background-color: #1f2937 !important;
+          color: #d1d5db !important;
+        }
+        .ant-input-number-handler-wrap {
+          background-color: #1f2937 !important;
+        }
+
+        /* Dropdown menu */
         .ant-select-dropdown {
           background-color: #1f2937 !important;
         }
