@@ -46,7 +46,7 @@ export default function StudentLayout() {
   });
   const [passwordLoading, setPasswordLoading] = useState(false);
   const { t } = useTranslation(["navigation", "common", "auth"]);
-  
+
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Fetch user data
@@ -85,7 +85,10 @@ export default function StudentLayout() {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setUserDropdownOpen(false);
       }
     };
@@ -118,7 +121,7 @@ export default function StudentLayout() {
         oldPassword: passwordForm.oldPassword,
         newPassword: passwordForm.newPassword,
       });
-      
+
       alert("Password changed successfully!");
       setChangePasswordOpen(false);
       setPasswordForm({
@@ -178,7 +181,9 @@ export default function StudentLayout() {
             <div className="text-white">
               <div className="text-sm font-bold">DHFM COLLEGE</div>
               <div className="text-xs opacity-75">
-                {userData?.role === "TEACHER" ? "Teacher Portal" : "Student Portal"}
+                {userData?.role === "TEACHER"
+                  ? "Teacher Portal"
+                  : "Student Portal"}
               </div>
             </div>
           </div>
@@ -249,7 +254,9 @@ export default function StudentLayout() {
           {/* Page title */}
           <div className="flex flex-1 items-center">
             <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {userData?.role === "TEACHER" ? "Teacher Portal" : "Student Portal"}
+              {userData?.role === "TEACHER"
+                ? "Teacher Portal"
+                : "Student Portal"}
             </h1>
           </div>
 
@@ -285,7 +292,11 @@ export default function StudentLayout() {
                       {userData?.role?.toLowerCase() || "User"}
                     </div>
                   </div>
-                  <ChevronDown className={`h-4 w-4 text-gray-500 dark:text-gray-400 transition-transform ${userDropdownOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown
+                    className={`h-4 w-4 text-gray-500 dark:text-gray-400 transition-transform ${
+                      userDropdownOpen ? "rotate-180" : ""
+                    }`}
+                  />
                 </div>
               </button>
 
@@ -318,7 +329,7 @@ export default function StudentLayout() {
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Dropdown options */}
                   <div className="p-2">
                     <button
@@ -331,7 +342,7 @@ export default function StudentLayout() {
                       <Key className="h-4 w-4 mr-3" />
                       Change Password
                     </button>
-                    
+
                     <button
                       onClick={() => {
                         logout();
@@ -361,14 +372,19 @@ export default function StudentLayout() {
       <Dialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen}>
         <DialogContent className="sm:max-w-[425px] bg-white dark:bg-gray-800 z-[60]">
           <DialogHeader>
-            <DialogTitle className="text-gray-900 dark:text-white">Change Password</DialogTitle>
+            <DialogTitle className="text-gray-900 dark:text-white">
+              Change Password
+            </DialogTitle>
             <DialogDescription className="text-gray-600 dark:text-gray-300">
               Enter your current password and new password below.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="oldPassword" className="text-gray-700 dark:text-gray-300">
+              <Label
+                htmlFor="oldPassword"
+                className="text-gray-700 dark:text-gray-300"
+              >
                 Current Password
               </Label>
               <Input
@@ -386,7 +402,10 @@ export default function StudentLayout() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="newPassword" className="text-gray-700 dark:text-gray-300">
+              <Label
+                htmlFor="newPassword"
+                className="text-gray-700 dark:text-gray-300"
+              >
                 New Password
               </Label>
               <Input
@@ -404,7 +423,10 @@ export default function StudentLayout() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="confirmPassword" className="text-gray-700 dark:text-gray-300">
+              <Label
+                htmlFor="confirmPassword"
+                className="text-gray-700 dark:text-gray-300"
+              >
                 Confirm New Password
               </Label>
               <Input

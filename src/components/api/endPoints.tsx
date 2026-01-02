@@ -10,7 +10,7 @@ const endPoints = {
   changePassword: "/auth/me/change-password",
   resetStudentPassword:
     "/auth/registrar/students/:studentUserId/reset-password",
-
+  applicantAccept: "/applicants/:id/accept",
   applicantsRegister:
     "https://deutschemedizin-collage-backend-production.up.railway.app/api/applicants/register",
 
@@ -24,10 +24,8 @@ const endPoints = {
   getDepartmentHeadProfile: "/department-heads/profile",
   departmentHeads: "/department-heads",
 
-  getDepartmentHeadById: (id: string | number) =>
-    `/department-heads/${id}`,
-  updateDepartmentHead: (id: string | number) =>
-    `/department-heads/${id}`,
+  getDepartmentHeadById: (id: string | number) => `/department-heads/${id}`,
+  updateDepartmentHead: (id: string | number) => `/department-heads/${id}`,
   getDepartmentHeadPhoto: (id: string | number) =>
     `/department-heads/get-photo/${id}`,
   getDepartmentHeadDocument: (id: string | number) =>
@@ -39,7 +37,7 @@ const endPoints = {
   teacherDashboard: "/teachers/dashboard",
   deanDashboard: "/deans/dashboard",
   getGeneralManagerDashboard: "/general-managers/dashboard",
-   getRegistrarDashboard: "/registrar/dashboard",
+  getRegistrarDashboard: "/registrar/dashboard",
 
   /* =======================     Teachers & Courses  ======================== */
   teachers: "/teachers",
@@ -55,12 +53,10 @@ const endPoints = {
   teacherCourseAssignmentDeletion: (
     teacherId: string | number,
     assignmentId: string | number
-  ) =>
-    `/teachers/${teacherId}/course-assignments/${assignmentId}`,
+  ) => `/teachers/${teacherId}/course-assignments/${assignmentId}`,
 
   getTeacherCourses: "/teachers/my-courses",
-  getCourseStudents:
-    "/teachers/courses/:teacherCourseAssignmentId/students",
+  getCourseStudents: "/teachers/courses/:teacherCourseAssignmentId/students",
 
   /* =======================     Students  ======================== */
   students: "/students",
@@ -84,8 +80,7 @@ const endPoints = {
   approveAssessments:
     "/assessments/assignment/:teacherCourseAssignmentId/approve",
 
-  getDepartmentHeadAssessments:
-    "/department-heads/assessments/scores",
+  getDepartmentHeadAssessments: "/department-heads/assessments/scores",
 
   approveRejectAllAssessments:
     "/department-heads/assignments/:teacherCourseAssignmentId/approve-all",
@@ -165,12 +160,14 @@ const endPoints = {
   getActiveDeans: "/deans/active",
   getActiveViceDeans: "/vice-deans/active",
   getDeanById: "/deans",
+  fields: "/students/fields",
+
   getViceDeanById: "/vice-deans",
 
-    /* =======================     Registrar  ======================== */
-    getRegistrarHeadApprovedScores: "/registrar/head-approved-scores",
-    registrarFinalApproveAll: "/registrar/assignments/:teacherCourseAssignmentId/final-approve-all",
+  /* =======================     Registrar  ======================== */
+  getRegistrarHeadApprovedScores: "/registrar/head-approved-scores",
+  registrarFinalApproveAll:
+    "/registrar/assignments/:teacherCourseAssignmentId/final-approve-all",
 };
-
 
 export default endPoints;

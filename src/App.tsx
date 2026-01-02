@@ -30,6 +30,7 @@ const StudentSetting = React.lazy(() => import("./pages/student/Setting"));
 const TeacherLayout = React.lazy(() => import("./layouts/TeacherLayout"));
 const TeacherDashboard = React.lazy(() => import("./pages/teacher/Dashboard"));
 const TeacherCourses = React.lazy(() => import("./pages/teacher/Courses"));
+
 const TeacherStudents = React.lazy(() => import("./pages/teacher/TeacherStudents"));
 const AssessmentPage = React.lazy(() => import("./pages/teacher/AssessmentPage"));
 const TeacherProfile = React.lazy(() => import("./pages/teacher/TeacherProfile.tsx"));
@@ -91,14 +92,21 @@ const DepartmentDetail = React.lazy(
 const EnrollmentTypesEditor = React.lazy(
   () => import("./pages/registrar/settings/EnrollmentTypesEditor.tsx")
 );
+
 const StudentDetail = React.lazy(() => import("./pages/registrar/StudentDetail"));
 const RegistrarAssessment  = React.lazy(() => import("./pages/registrar/registrarAssessment.tsx"));
 const RegistrarAssessmentDetail  = React.lazy(() => import("./pages/registrar/registrarAssessmentDetail.tsx"));
 const ApplicantDetail = React.lazy(
   () => import("./pages/registrar/ApplicantDetail")
 );
-const CustomStudentTable = React.lazy(
-  () => import("./pages/registrar/CustomStudentTable")
+// const CustomStudentTable = React.lazy(
+//   () => import("./pages/registrar/CustomStudentTable.tsx")
+// );
+// const CustomizableStudentTable = React.lazy(
+//   () => import("./pages/registrar/CustomStudentTable.tsx")
+// );
+const CustomizableStudentTable = React.lazy(
+  () => import("./pages/registrar/CustomizableStudentTable.tsx")
 );
 const RejectedApplications = React.lazy(
   () => import("./pages/registrar/RejectedApplications")
@@ -258,6 +266,7 @@ function App() {
             </Route>
 
             {/* Teacher Routes */}
+
             <Route element={<ProtectedRoute />}>
               <Route path="/teacher" element={<TeacherLayout />}>
                 <Route index element={<Navigate to="dashboard" replace />} />
@@ -289,6 +298,7 @@ function App() {
             </Route>
 
             {/* Registrar Routes */}
+
             <Route element={<ProtectedRoute />}>
               <Route path="/registrar" element={<RegistrarLayout />}>
                 <Route index element={<Navigate to="dashboard" replace />} />
@@ -396,7 +406,7 @@ function App() {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
-        <Toaster />
+        <Toaster position="top-right" richColors closeButton />
       </div>
     </ThemeProvider>
   );
