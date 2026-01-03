@@ -160,14 +160,18 @@ const endPoints = {
   getActiveDeans: "/deans/active",
   getActiveViceDeans: "/vice-deans/active",
   getDeanById: "/deans",
-  fields: "/students/fields",
+    fields: "/students/fields",
+    /* =======================     Registrar  ======================== */
+    getRegistrarHeadApprovedScores: "/registrar/head-approved-scores",
+    registrarFinalApproveAll: "/registrar/assignments/:teacherCourseAssignmentId/final-approve-all",
 
-  getViceDeanById: "/vice-deans",
+    /* =======================     Vice Deans  ======================== */
+createViceDean: "/auth/register/vice-dean",
+getViceDeanById: "/vice-deans", 
+updateViceDean: "/vice-deans", 
+getViceDeanPhoto: "/vice-deans/get-photo",
+getViceDeanDocument: "/vice-deans/get-document",
 
-  /* =======================     Registrar  ======================== */
-  getRegistrarHeadApprovedScores: "/registrar/head-approved-scores",
-  registrarFinalApproveAll:
-    "/registrar/assignments/:teacherCourseAssignmentId/final-approve-all",
 };
 
 export default endPoints;
