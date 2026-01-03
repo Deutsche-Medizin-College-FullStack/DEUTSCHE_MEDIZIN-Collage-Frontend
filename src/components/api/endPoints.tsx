@@ -165,11 +165,18 @@ const endPoints = {
   getActiveDeans: "/deans/active",
   getActiveViceDeans: "/vice-deans/active",
   getDeanById: "/deans",
-  getViceDeanById: "/vice-deans",
+  // getViceDeanById: "/vice-deans",
 
     /* =======================     Registrar  ======================== */
     getRegistrarHeadApprovedScores: "/registrar/head-approved-scores",
     registrarFinalApproveAll: "/registrar/assignments/:teacherCourseAssignmentId/final-approve-all",
+
+    /* =======================     Vice Deans  ======================== */
+createViceDean: "/auth/register/vice-dean",
+getViceDeanById: "/vice-deans", 
+updateViceDean: "/vice-deans", 
+getViceDeanPhoto: "/vice-deans/get-photo",
+getViceDeanDocument: "/vice-deans/get-document",
 };
 
 
