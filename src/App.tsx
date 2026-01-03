@@ -30,6 +30,7 @@ const StudentSetting = React.lazy(() => import("./pages/student/Setting"));
 const TeacherLayout = React.lazy(() => import("./layouts/TeacherLayout"));
 const TeacherDashboard = React.lazy(() => import("./pages/teacher/Dashboard"));
 const TeacherCourses = React.lazy(() => import("./pages/teacher/Courses"));
+
 const TeacherStudents = React.lazy(() => import("./pages/teacher/TeacherStudents"));
 const AssessmentPage = React.lazy(() => import("./pages/teacher/AssessmentPage"));
 const TeacherProfile = React.lazy(() => import("./pages/teacher/TeacherProfile"));
@@ -58,6 +59,7 @@ const RegistrarDepartments = React.lazy(  () => import("./pages/registrar/Depart
 const RegistrarStudents = React.lazy(  () => import("./pages/registrar/Students"));
 const AddStudent = React.lazy(() => import("./pages/registrar/AddStudent"));
 const RegistrarCourses = React.lazy(() => import("./pages/registrar/Courses"));
+
 const RegistrarAssessments = React.lazy(  () => import("./pages/registrar/Assessments"));
 const SingleBatchPage = React.lazy(  () => import("./pages/registrar/settings/SingleBatchPage "));
 const GradingSystemEditor = React.lazy(  () => import("./pages/registrar/settings/GradingSystemEditor"));
@@ -189,6 +191,7 @@ function App() {
             </Route>
 
             {/* Teacher Routes */}
+
             <Route element={<ProtectedRoute />}>
               <Route path="/teacher" element={<TeacherLayout />}>
                 <Route index element={<Navigate to="dashboard" replace />} />
@@ -220,6 +223,7 @@ function App() {
             </Route>
 
             {/* Registrar Routes */}
+
             <Route element={<ProtectedRoute />}>
               <Route path="/registrar" element={<RegistrarLayout />}>
                 <Route index element={<Navigate to="dashboard" replace />} />
@@ -331,7 +335,7 @@ function App() {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
-        <Toaster />
+        <Toaster position="top-right" richColors closeButton />
       </div>
     </ThemeProvider>
   );
