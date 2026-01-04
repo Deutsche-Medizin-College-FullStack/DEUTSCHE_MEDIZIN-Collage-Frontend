@@ -2572,3 +2572,19 @@ const MultiStepRegistrationForm = () => {
 };
 
 export default MultiStepRegistrationForm;
+// case "GENERAL_MANAGER":
+//           navigate("/general-manager");
+//           break;
+//         case "TEACHER":
+//           navigate("/teacher");
+//           break;
+//         case "DEPARTMENT_HEAD":
+//           navigate("/head");
+//           break;
+//         case "VICE_DEAN":
+//           navigate("/vice-dean");
+//           break;
+//         case "DEAN":
+//           navigate("/dean");
+//           break;
+//         default:
