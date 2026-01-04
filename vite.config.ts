@@ -31,6 +31,9 @@ export default defineConfig(({ mode }) => ({
   optimizeDeps: {
     // Avoid esbuild trying to prebundle canvg which pulls core-js internals
     exclude: ["canvg"],
+    esbuildOptions: {
+      target: 'es2020',
+    },
   },
   build: {
     chunkSizeWarningLimit: 1000,
@@ -38,9 +41,6 @@ export default defineConfig(({ mode }) => ({
     minify: 'esbuild',
     sourcemap: false,
     rollupOptions: {
-      external: [
-        /core-js\/.*/, // externalize any core-js imports (e.g., core-js/modules/es.promise.js)
-      ],
       output: {
         manualChunks: (id) => {
           // Create chunks based on node_modules
