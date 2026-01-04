@@ -1963,7 +1963,7 @@ const MultiStepRegistrationForm = () => {
             // }
           ),
           apiService.get(
-            endPoints.programModality
+            endPoints.programModalities
             //   {
             //   headers: { requiresAuth: false },
             // }
@@ -2028,7 +2028,6 @@ const MultiStepRegistrationForm = () => {
     };
     loadDropdowns();
   }, []);
-
   // Cascading dropdown functions
   const fetchZonesByRegion = async (regionCode, target) => {
     try {
@@ -2181,12 +2180,23 @@ const MultiStepRegistrationForm = () => {
         formDataObj.append("document", formData.document);
       }
 
-      const response = await apiService.post(endPoints.applicantsRegister, formDataObj, {
-        // headers: { requiresAuth: false }
-      });
+      const response = await apiService.post(
+        endPoints.applicantsRegister,
+        formDataObj,
+        {
+          // headers: { requiresAuth: false }
+        }
+      );
 
-      console.log("%cRegistration success", "color: green; font-weight: bold", response.data);
-      toast({ title: "Registration submitted", description: "Your application was submitted successfully." });
+      console.log(
+        "%cRegistration success",
+        "color: green; font-weight: bold",
+        response.data
+      );
+      toast({
+        title: "Registration submitted",
+        description: "Your application was submitted successfully.",
+      });
 
       // Clear localStorage on successful submission
       localStorage.removeItem("registrationFormData");
@@ -2196,7 +2206,11 @@ const MultiStepRegistrationForm = () => {
 
       return response.data;
     } catch (error) {
-      console.error("%cSubmission error:", "color: red; font-weight: bold", error);
+      console.error(
+        "%cSubmission error:",
+        "color: red; font-weight: bold",
+        error
+      );
 
       // Extract error message from different possible error structures
       let errorMsg = "An unexpected error occurred. Please try again.";
@@ -2242,7 +2256,11 @@ const MultiStepRegistrationForm = () => {
       }
 
       setErrorMessage(errorMsg);
-      toast({ title: "Submission failed", description: errorMsg, variant: "destructive" });
+      toast({
+        title: "Submission failed",
+        description: errorMsg,
+        variant: "destructive",
+      });
       throw error;
     } finally {
       setIsSubmitting(false);
