@@ -171,6 +171,7 @@ function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/learn-more" element={<LearnMore />} />
             <Route path="/login" element={<SigningUp />} />
+            {/* <Route path="/some" element={<TenColumnEditableTablePage />} /> */}
             <Route path="/register" element={<MultiStepRegistrationForm />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             

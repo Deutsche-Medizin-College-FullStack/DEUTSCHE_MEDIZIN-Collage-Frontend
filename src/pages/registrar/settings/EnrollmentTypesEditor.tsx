@@ -41,7 +41,7 @@ const EnrollmentTypesEditor = () => {
         setLoading(true);
         setError(null);
         const response = await apiService.get(
-          endPoints.enrollmentTypes || "/api/enrollment-type"
+          endPoints.enrollmentTypes || "/enrollment-type"
         );
         console.log("API Response:", response);
         setEnrollmentTypes(response); // Direct array from apiService
@@ -128,7 +128,7 @@ const EnrollmentTypesEditor = () => {
           enrollmentTypeName: formData.enrollmentTypeName,
         };
         const response = await apiService.put(
-          `/api/enrollment-type/${formData.enrollmentTypeCode}`,
+          `/enrollment-type/${formData.enrollmentTypeCode}`,
           body
         );
         setEnrollmentTypes((prev) =>
@@ -145,7 +145,7 @@ const EnrollmentTypesEditor = () => {
           enrollmentTypeCode: formData.enrollmentTypeCode,
           enrollmentTypeName: formData.enrollmentTypeName,
         };
-        const response = await apiService.post("/api/enrollment-type", body);
+        const response = await apiService.post("/enrollment-type", body);
         setEnrollmentTypes((prev) => [...prev, response]);
       }
       handleCloseModal();
@@ -164,7 +164,7 @@ const EnrollmentTypesEditor = () => {
     if (!window.confirm(`Delete enrollment type "${code}"?`)) return;
 
     try {
-      await apiService.delete(`/api/enrollment-type/${code}`);
+      await apiService.delete(`/enrollment-type/${code}`);
       setEnrollmentTypes((prev) =>
         prev.filter((et) => et.enrollmentTypeCode !== code)
       );
