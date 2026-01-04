@@ -39,53 +39,11 @@ export default defineConfig(({ mode }) => ({
     chunkSizeWarningLimit: 1500,
     target: 'es2020',
     minify: 'esbuild',
-    sourcemap: true,
+    sourcemap: false,
     commonjsOptions: {
       include: [/node_modules/],
       transformMixedEsModules: true,
     },
-    rollupOptions: {
-      output: {
-        manualChunks: (id) => {
-          // Simplified chunking to avoid circular dependencies
-          if (id.includes('node_modules')) {
-            // Keep React and React DOM together to avoid initialization issues
-            if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
-              return 'react-vendor';
-            }
-            
-            // Keep router with React
-            if (id.includes('react-router')) {
-              return 'react-vendor';
-            }
-            
-            // Large UI libraries get their own chunks
-            if (id.includes('antd')) {
-              return 'antd';
-            }
-            
-            if (id.includes('@radix-ui')) {
-              return 'radix-ui';
-            }
-            
-            // Large utility libraries
-            if (id.includes('chart.js') || id.includes('react-chartjs-2')) {
-              return 'charts';
-            }
-            
-            if (id.includes('jspdf')) {
-              return 'pdf';
-            }
-            
-            if (id.includes('xlsx')) {
-              return 'excel';
-            }
-            
-            // Everything else goes into vendor to avoid circular deps
-            return 'vendor';
-          }
-        },
-      },
-    },
+
   },
 }));
