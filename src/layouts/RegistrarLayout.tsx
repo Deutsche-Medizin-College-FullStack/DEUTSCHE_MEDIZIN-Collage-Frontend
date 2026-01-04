@@ -149,7 +149,9 @@ export default function RegistrarLayout() {
   const fetchPendingCoursesCount = async () => {
     try {
       setLoadingPendingCount(true);
-      const response = await apiClient.get(endPoints.getRegistrarHeadApprovedScores);
+      const response = await apiClient.get(
+        endPoints.getRegistrarHeadApprovedScores
+      );
 
       let pendingCount = 0;
       if (response.data && Array.isArray(response.data)) {
@@ -271,7 +273,7 @@ export default function RegistrarLayout() {
         </div>
 
         {/* Navigation */}
-        <nav className="mt-6 mb-12 flex-1 overflow-y-auto sidebar-scroll">
+        <nav className="mt-6 mb-12 flex-1 pb-6 overflow-y-auto sidebar-scroll">
           <div className="px-4 space-y-2">
             {navigation.map((item) => {
               const isActive = location.pathname.includes(item.href);
