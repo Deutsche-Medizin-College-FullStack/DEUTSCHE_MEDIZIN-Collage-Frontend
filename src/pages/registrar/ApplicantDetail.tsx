@@ -17,7 +17,6 @@ import {
   Mail,
   Phone,
   MapPin,
-  Calendar,
   GraduationCap,
   Edit,
   Camera,
@@ -36,7 +35,7 @@ import UserNotFound from "@/designs/UserNotFound";
 export default function ApplicantDetail() {
   const navigate = useNavigate();
   const [status, setStatus] = useState<string | null>(null);
-  const [remarks, setRemarks] = useState("");
+  const [remarks] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
@@ -44,7 +43,13 @@ export default function ApplicantDetail() {
   const [loading, setIsLoading] = useState(true);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [documentUrl, setDocumentUrl] = useState<string | null>(null);
-  const [dropdownData, setDropdownData] = useState({
+  const [dropdownData, setDropdownData] = useState<{
+    departments: Array<{ dptID?: string; id?: string; deptName?: string }>;
+    programModalities: Array<{ modalityCode?: string; modality?: string }>;
+    schoolBackgrounds: Array<{ id?: string; background?: string }>;
+    classYears: Array<{ id?: string; classYear?: string }>;
+    semesters: Array<{ academicPeriodCode?: string; academicPeriod?: string }>;
+  }>({
     departments: [],
     programModalities: [],
     schoolBackgrounds: [],
@@ -138,7 +143,6 @@ export default function ApplicantDetail() {
     username: string;
     password: string;
     dateEnrolledGC: string;
-    dateEnrolledEc: string;
     academicYearCode: string;
     batchClassYearSemesterId: number;
     isTransfer: boolean;
@@ -151,16 +155,12 @@ export default function ApplicantDetail() {
     setActionBusy(true);
 
     try {
-      // 1. Prepare the JSON part as a Blob
-      const jsonPayload = {
+      const formData = new FormData();
+
+      const requestPayload = {
         username: data.username,
         password: data.password,
-        dateEnrolledEC: "2016-09-01",
         dateEnrolledGC: data.dateEnrolledGC,
-        exitExamUserID: null,
-        exitExamScore: null,
-        isStudentPassExitExam: null,
-
         academicYearCode: data.academicYearCode,
         batchClassYearSemesterId: data.batchClassYearSemesterId,
         studentRecentStatusId: 1,
@@ -169,13 +169,7 @@ export default function ApplicantDetail() {
         remark: data.remark || undefined,
       };
 
-      const jsonBlob = new Blob([JSON.stringify(jsonPayload)], {
-        type: "application/json",
-      });
-
-      // 2. Create FormData
-      const formData = new FormData();
-      formData.append("request", jsonBlob, "request.json"); // name + filename helps some parsers
+      formData.append("request", JSON.stringify(requestPayload));
 
       if (data.studentPhoto) {
         formData.append("studentPhoto", data.studentPhoto);
@@ -184,49 +178,52 @@ export default function ApplicantDetail() {
         formData.append("document", data.document);
       }
 
-      // 3. Get fresh token
+      // Get token manually to make sure it's there
       const token = localStorage.getItem("xy9a7b");
+
       if (!token) {
-        toast({
-          title: "Not authenticated",
-          description: "Please log in again.",
-          variant: "destructive",
-        });
+        toast.error("No authentication token found. Please log in again.");
         return false;
       }
 
-      // 4. Send — let Axios set multipart automatically (do NOT force application/json here)
+      console.log("Sending with token:", token.substring(0, 40) + "...");
+
       await apiClient.post(
         endPoints.applicantAccept.replace(":id", id),
         formData,
         {
           headers: {
+            // Force what worked in Postman
+            "Content-Type": "application/json",
+            // Force token so we bypass any interceptor issues
             Authorization: `Bearer ${token}`,
-            // Do NOT set Content-Type — Axios will add multipart/form-data + boundary
           },
         }
       );
 
-      toast.success("Student Registered", {
-        description: `Student registered! Username: ${data.username}`,
-        duration: 6000,
-      });
+      toast.success(`Student registered! Username: ${data.username}`);
 
       navigate("/registrar/applications");
       return true;
     } catch (err: any) {
-      console.log(err, "failure to register");
-      const message =
-        err.response?.data?.message ||
-        err.response?.data?.error ||
-        "Failed to accept application.";
+      let message = "Failed to register student.";
 
-      toast.error("Adding Student failed", {
-        description: message,
-        duration: 6000,
-      });
+      if (err.response) {
+        if (err.response.status === 401) {
+          message =
+            "Unauthorized – please log in again or check your permissions.";
+        } else if (err.response.data?.message) {
+          message = err.response.data.message;
+        } else {
+          message = `Server error: ${err.response.status}`;
+        }
+      } else {
+        message = err.message || "Network error – check your connection.";
+      }
 
-      console.error(err);
+      toast.error(message);
+
+      console.error("Accept failed:", err);
       return false;
     } finally {
       setActionBusy(false);
@@ -241,16 +238,11 @@ export default function ApplicantDetail() {
           { key: "schoolBackgrounds", url: "/school-backgrounds" },
           { key: "classYears", url: "/class-years" },
           { key: "semesters", url: "/semesters" },
-          { key: "academicYears", url: "/academic-years" },
-          {
-            key: "batchClassYearSemesters",
-            url: "/bcsy",
-          },
         ];
 
         const promises = endpoints.map(async ({ key, url }) => {
           try {
-            const response = await apiClient.get(url);
+            const response = await apiService.get(url);
             return { key, data: response.data || [] };
           } catch (error) {
             console.error(`Error fetching ${key}:`, error);
@@ -581,220 +573,14 @@ export default function ApplicantDetail() {
   //   };
   //   openModal(<AcceptForm />);
   // }
-  // function openAcceptModal() {
-  //   const AcceptForm = () => {
-  //     const [form, setForm] = useState({
-  //       username: "",
-  //       password: "",
-  //       dateEnrolledGC: "2026-09-11", // sensible default: around Ethiopian New Year 2019 EC
-  //       academicYearCode: "2018", // adjust to current Ethiopian year (see note below)
-  //       batchClassYearSemesterId: 15, // ← temporary hardcoded; replace with real select later
-  //       isTransfer: false,
-  //       grade12Result: "",
-  //       remark: "",
-  //       studentPhoto: null as File | null,
-  //       document: null as File | null,
-  //     });
-
-  //     const [errors, setErrors] = useState<{ [key: string]: string }>({});
-
-  //     const validate = () => {
-  //       const newErrors: typeof errors = {};
-  //       if (!form.username.trim()) newErrors.username = "Username is required";
-  //       if (!form.password.trim()) newErrors.password = "Password is required";
-  //       if (!form.dateEnrolledGC)
-  //         newErrors.dateEnrolledGC = "Enrollment date is required";
-  //       // Add more if needed (e.g. password strength, username format)
-
-  //       setErrors(newErrors);
-  //       return Object.keys(newErrors).length === 0;
-  //     };
-
-  //     const handleSubmit = async () => {
-  //       if (!validate()) return;
-
-  //       const payload = {
-  //         ...form,
-  //         grade12Result: form.grade12Result
-  //           ? Number(form.grade12Result)
-  //           : undefined,
-  //       };
-
-  //       const ok = await acceptApplication(payload);
-  //       if (ok) closeModal();
-  //     };
-
-  //     return (
-  //       <div className="w-[92vw] sm:w-[580px] max-w-[95vw] max-h-[85vh] overflow-y-auto p-6 space-y-6 bg-white dark:bg-gray-950 rounded-lg shadow-xl">
-  //         {" "}
-  //         <h2 className="text-xl font-semibold">Accept & Register Applicant</h2>
-  //         <div className="space-y-4">
-  //           <div>
-  //             <Label>Username (usually phone number)</Label>
-  //             <Input
-  //               value={form.username}
-  //               onChange={(e) => setForm({ ...form, username: e.target.value })}
-  //               placeholder="09xxxxxxxx or email"
-  //               className={errors.username ? "border-red-500" : ""}
-  //             />
-  //             {errors.username && (
-  //               <p className="text-red-500 text-sm mt-1">{errors.username}</p>
-  //             )}
-  //           </div>
-
-  //           <div>
-  //             <Label>Password</Label>
-  //             <Input
-  //               type="password"
-  //               value={form.password}
-  //               onChange={(e) => setForm({ ...form, password: e.target.value })}
-  //               placeholder="Enter secure password"
-  //               className={errors.password ? "border-red-500" : ""}
-  //             />
-  //             {errors.password && (
-  //               <p className="text-red-500 text-sm mt-1">{errors.password}</p>
-  //             )}
-  //           </div>
-  //         </div>
-  //         <div className="space-y-4 pt-4 border-t">
-  //           <div>
-  //             <Label>Date Enrolled (Gregorian)</Label>
-  //             <Input
-  //               type="date"
-  //               value={form.dateEnrolledGC}
-  //               onChange={(e) =>
-  //                 setForm({ ...form, dateEnrolledGC: e.target.value })
-  //               }
-  //               className={errors.dateEnrolledGC ? "border-red-500" : ""}
-  //             />
-  //             {errors.dateEnrolledGC && (
-  //               <p className="text-red-500 text-sm mt-1">
-  //                 {errors.dateEnrolledGC}
-  //               </p>
-  //             )}
-  //           </div>
-
-  //           <div>
-  //             <Label>Academic Year Code</Label>
-  //             <Input
-  //               value={form.academicYearCode}
-  //               onChange={(e) =>
-  //                 setForm({ ...form, academicYearCode: e.target.value })
-  //               }
-  //               placeholder="e.g. 2018 or 2025/26"
-  //             />
-  //           </div>
-
-  //           <div>
-  //             <Label>Batch / Class-Year-Semester ID</Label>
-  //             <Input
-  //               type="number"
-  //               value={form.batchClassYearSemesterId}
-  //               onChange={(e) =>
-  //                 setForm({
-  //                   ...form,
-  //                   batchClassYearSemesterId: Number(e.target.value) || 15,
-  //                 })
-  //               }
-  //               placeholder="ID from system"
-  //             />
-  //           </div>
-  //         </div>
-  //         <div className="space-y-4 pt-4 border-t text-sm text-gray-600">
-  //           <div className="flex items-center space-x-2">
-  //             <input
-  //               id="isTransfer"
-  //               type="checkbox"
-  //               checked={form.isTransfer}
-  //               onChange={(e) =>
-  //                 setForm({ ...form, isTransfer: e.target.checked })
-  //               }
-  //               className="h-4 w-4"
-  //             />
-  //             <Label htmlFor="isTransfer">This is a transfer student</Label>
-  //           </div>
-
-  //           <div>
-  //             <Label>Grade 12 Result (if applicable)</Label>
-  //             <Input
-  //               type="number"
-  //               min={0}
-  //               max={700}
-  //               value={form.grade12Result}
-  //               onChange={(e) =>
-  //                 setForm({ ...form, grade12Result: e.target.value })
-  //               }
-  //               placeholder="0–700 or GPA"
-  //             />
-  //           </div>
-
-  //           <div>
-  //             <Label>Remark / Notes</Label>
-  //             <textarea
-  //               className="w-full px-3 py-2 border rounded-md h-20 bg-white dark:bg-gray-900"
-  //               value={form.remark}
-  //               onChange={(e) => setForm({ ...form, remark: e.target.value })}
-  //               placeholder="Documents verified, special notes..."
-  //             />
-  //           </div>
-
-  //           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-  //             <div>
-  //               <Label>Replace Student Photo (optional)</Label>
-  //               <Input
-  //                 type="file"
-  //                 accept="image/*"
-  //                 onChange={(e) =>
-  //                   setForm({
-  //                     ...form,
-  //                     studentPhoto: e.target.files?.[0] ?? null,
-  //                   })
-  //                 }
-  //               />
-  //             </div>
-  //             <div>
-  //               <Label>Replace/Upload Document (optional)</Label>
-  //               <Input
-  //                 type="file"
-  //                 accept=".pdf"
-  //                 onChange={(e) =>
-  //                   setForm({ ...form, document: e.target.files?.[0] ?? null })
-  //                 }
-  //               />
-  //             </div>
-  //           </div>
-  //         </div>
-  //         <div className="flex justify-end space-x-3 pt-6 border-t sticky bottom-0 bg-inherit z-10">
-  //           <Button
-  //             variant="outline"
-  //             onClick={closeModal}
-  //             disabled={actionBusy}
-  //           >
-  //             Cancel
-  //           </Button>
-  //           <Button
-  //             onClick={handleSubmit}
-  //             disabled={actionBusy}
-  //             className="bg-green-600 hover:bg-green-700"
-  //           >
-  //             {actionBusy ? "Processing..." : "Confirm & Register Student"}
-  //           </Button>
-  //         </div>
-  //       </div>
-  //     );
-  //   };
-
-  //   openModal(<AcceptForm />);
-  // }
   function openAcceptModal() {
     const AcceptForm = () => {
       const [form, setForm] = useState({
         username: "",
         password: "",
-        dateEnrolledEc: "2018-05-11",
-        dateEnrolledGC: "2026-09-11",
-        academicYearCode: "", // will be selected
-        batchClassYearSemesterId: null as number | null,
+        dateEnrolledGC: "2026-09-11", // sensible default: around Ethiopian New Year 2019 EC
+        academicYearCode: "2018", // adjust to current Ethiopian year (see note below)
+        batchClassYearSemesterId: 15, // ← temporary hardcoded; replace with real select later
         isTransfer: false,
         grade12Result: "",
         remark: "",
@@ -802,20 +588,18 @@ export default function ApplicantDetail() {
         document: null as File | null,
       });
 
-      const [errors, setErrors] = useState<Record<string, string>>({});
+      const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
       const validate = () => {
-        const errs: typeof errors = {};
-        if (!form.username.trim()) errs.username = "Username is required";
-        if (!form.password.trim()) errs.password = "Password is required";
-        if (!form.dateEnrolledGC) errs.dateEnrolledGC = "Date required";
-        if (!form.academicYearCode)
-          errs.academicYearCode = "Academic year required";
-        if (!form.batchClassYearSemesterId)
-          errs.batchClassYearSemesterId = "Batch/semester required";
+        const newErrors: typeof errors = {};
+        if (!form.username.trim()) newErrors.username = "Username is required";
+        if (!form.password.trim()) newErrors.password = "Password is required";
+        if (!form.dateEnrolledGC)
+          newErrors.dateEnrolledGC = "Enrollment date is required";
+        // Add more if needed (e.g. password strength, username format)
 
-        setErrors(errs);
-        return Object.keys(errs).length === 0;
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
       };
 
       const handleSubmit = async () => {
@@ -823,7 +607,6 @@ export default function ApplicantDetail() {
 
         const payload = {
           ...form,
-          batchClassYearSemesterId: form.batchClassYearSemesterId!,
           grade12Result: form.grade12Result
             ? Number(form.grade12Result)
             : undefined,
@@ -834,157 +617,151 @@ export default function ApplicantDetail() {
       };
 
       return (
-        <div className="w-[92vw] sm:w-[620px] max-w-[95vw] max-h-[90vh] overflow-y-auto p-6 space-y-6 bg-white dark:bg-gray-950 rounded-xl shadow-2xl">
-          <h2 className="text-2xl font-bold">Accept & Register Applicant</h2>
-
+        <div className="w-[92vw] sm:w-[580px] max-w-[95vw] max-h-[85vh] overflow-y-auto p-6 space-y-6 bg-white dark:bg-gray-950 rounded-lg shadow-xl">
+          {" "}
+          <h2 className="text-xl font-semibold">Accept & Register Applicant</h2>
           {/* Required credentials */}
-          <div className="space-y-5">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label>Username *</Label>
-                <Input
-                  value={form.username}
-                  onChange={(e) =>
-                    setForm({ ...form, username: e.target.value })
-                  }
-                  placeholder="09xxxxxxxx or email"
-                  className={errors.username ? "border-red-500" : ""}
-                />
-                {errors.username && (
-                  <p className="text-red-500 text-sm mt-1">{errors.username}</p>
-                )}
-              </div>
-
-              <div>
-                <Label>Password *</Label>
-                <Input
-                  type="password"
-                  value={form.password}
-                  onChange={(e) =>
-                    setForm({ ...form, password: e.target.value })
-                  }
-                  placeholder="Enter secure password"
-                  className={errors.password ? "border-red-500" : ""}
-                />
-                {errors.password && (
-                  <p className="text-red-500 text-sm mt-1">{errors.password}</p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Enrollment info */}
-          <div className="space-y-5 pt-5 border-t">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label>Date Enrolled (GC) *</Label>
-                <Input
-                  type="date"
-                  value={form.dateEnrolledGC}
-                  onChange={(e) =>
-                    setForm({ ...form, dateEnrolledGC: e.target.value })
-                  }
-                  className={errors.dateEnrolledGC ? "border-red-500" : ""}
-                />
-                {errors.dateEnrolledGC && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.dateEnrolledGC}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <Label>Academic Year *</Label>
-                <select
-                  value={form.academicYearCode}
-                  onChange={(e) =>
-                    setForm({ ...form, academicYearCode: e.target.value })
-                  }
-                  className={`w-full px-3 py-2 border rounded-md ${
-                    errors.academicYearCode ? "border-red-500" : "border-input"
-                  }`}
-                >
-                  <option value="">Select academic year</option>
-                  {dropdownData.academicYears?.map((year: any) => (
-                    <option
-                      key={year["Academic Year Code"] || year.id}
-                      value={year["Academic Year Code"] || year.id}
-                    >
-                      {year["Academic Year EC"] || year.code || year.year}
-                    </option>
-                  ))}
-                </select>
-                {errors.academicYearCode && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.academicYearCode}
-                  </p>
-                )}
-              </div>
+          <div className="space-y-4">
+            <div>
+              <Label>Username (usually phone number)</Label>
+              <Input
+                value={form.username}
+                onChange={(e) => setForm({ ...form, username: e.target.value })}
+                placeholder="09xxxxxxxx or email"
+                className={errors.username ? "border-red-500" : ""}
+              />
+              {errors.username && (
+                <p className="text-red-500 text-sm mt-1">{errors.username}</p>
+              )}
             </div>
 
             <div>
-              <Label>Batch / Class-Year / Semester *</Label>
-              <select
-                value={form.batchClassYearSemesterId || ""}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    batchClassYearSemesterId: Number(e.target.value) || null,
-                  })
-                }
-                className={`w-full px-3 py-2 border rounded-md ${
-                  errors.batchClassYearSemesterId
-                    ? "border-red-500"
-                    : "border-input"
-                }`}
-              >
-                <option value="">Select batch/semester</option>
-                {dropdownData.batchClassYearSemesters?.map((item: any) => (
-                  <option key={item.bcysId} value={item.bcysId}>
-                    {item.name ||
-                      `${item.classYear || ""} - ${item.semester || ""}`}
-                  </option>
-                ))}
-              </select>
-              {errors.batchClassYearSemesterId && (
-                <p className="text-red-500 text-sm mt-1">
-                  {errors.batchClassYearSemesterId}
-                </p>
+              <Label>Password</Label>
+              <Input
+                type="password"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                placeholder="Enter secure password"
+                className={errors.password ? "border-red-500" : ""}
+              />
+              {errors.password && (
+                <p className="text-red-500 text-sm mt-1">{errors.password}</p>
               )}
             </div>
           </div>
-
-          {/* Optional fields */}
-          <div className="space-y-5 pt-5 border-t text-sm text-gray-600">
-            {/* Is transfer, grade12Result, remark, files — keep as is */}
-            {/* ... your existing optional fields code ... */}
+          {/* Enrollment info */}
+          <div className="space-y-4 pt-4 border-t">
             <div>
-              <Label>Replace Student Photo (optional)</Label>
+              <Label>Date Enrolled (Gregorian)</Label>
               <Input
-                type="file"
-                accept="image/*"
+                type="date"
+                value={form.dateEnrolledGC}
+                onChange={(e) =>
+                  setForm({ ...form, dateEnrolledGC: e.target.value })
+                }
+                className={errors.dateEnrolledGC ? "border-red-500" : ""}
+              />
+              {errors.dateEnrolledGC && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.dateEnrolledGC}
+                </p>
+              )}
+            </div>
+
+            {/* You can later replace these with selects populated from dropdownData */}
+            <div>
+              <Label>Academic Year Code</Label>
+              <Input
+                value={form.academicYearCode}
+                onChange={(e) =>
+                  setForm({ ...form, academicYearCode: e.target.value })
+                }
+                placeholder="e.g. 2018 or 2025/26"
+              />
+            </div>
+
+            <div>
+              <Label>Batch / Class-Year-Semester ID</Label>
+              <Input
+                type="number"
+                value={form.batchClassYearSemesterId}
                 onChange={(e) =>
                   setForm({
                     ...form,
-                    studentPhoto: e.target.files?.[0] ?? null,
+                    batchClassYearSemesterId: Number(e.target.value) || 15,
                   })
                 }
-              />
-            </div>
-            <div>
-              <Label>Replace/Upload Document (optional)</Label>
-              <Input
-                type="file"
-                accept=".pdf"
-                onChange={(e) =>
-                  setForm({ ...form, document: e.target.files?.[0] ?? null })
-                }
+                placeholder="ID from system"
               />
             </div>
           </div>
+          {/* Optional fields */}
+          <div className="space-y-4 pt-4 border-t text-sm text-gray-600">
+            <div className="flex items-center space-x-2">
+              <input
+                id="isTransfer"
+                type="checkbox"
+                checked={form.isTransfer}
+                onChange={(e) =>
+                  setForm({ ...form, isTransfer: e.target.checked })
+                }
+                className="h-4 w-4"
+              />
+              <Label htmlFor="isTransfer">This is a transfer student</Label>
+            </div>
 
+            <div>
+              <Label>Grade 12 Result (if applicable)</Label>
+              <Input
+                type="number"
+                min={0}
+                max={700}
+                value={form.grade12Result}
+                onChange={(e) =>
+                  setForm({ ...form, grade12Result: e.target.value })
+                }
+                placeholder="0–700 or GPA"
+              />
+            </div>
+
+            <div>
+              <Label>Remark / Notes</Label>
+              <textarea
+                className="w-full px-3 py-2 border rounded-md h-20 bg-white dark:bg-gray-900"
+                value={form.remark}
+                onChange={(e) => setForm({ ...form, remark: e.target.value })}
+                placeholder="Documents verified, special notes..."
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label>Replace Student Photo (optional)</Label>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      studentPhoto: e.target.files?.[0] ?? null,
+                    })
+                  }
+                />
+              </div>
+              <div>
+                <Label>Replace/Upload Document (optional)</Label>
+                <Input
+                  type="file"
+                  accept=".pdf"
+                  onChange={(e) =>
+                    setForm({ ...form, document: e.target.files?.[0] ?? null })
+                  }
+                />
+              </div>
+            </div>
+          </div>
           {/* Buttons */}
-          <div className="flex justify-end space-x-4 pt-6 border-t sticky bottom-0 bg-inherit z-10">
+          <div className="flex justify-end space-x-3 pt-6 border-t sticky bottom-0 bg-inherit z-10">
             <Button
               variant="outline"
               onClick={closeModal}

@@ -8,9 +8,9 @@ import LightRays from "@/designs/LightRays";
 import { useTranslation } from "react-i18next";
 import Select, { components } from "react-select";
 import { Combobox } from "@headlessui/react";
-import useApi from "../hooks/useApi";
+import useApi from "@/hooks/useApi";
 import endPoints from "@/components/api/endPoints";
-import DarkVeil from "../designs/DarkVeil";
+import DarkVeil from "@/designs/DarkVeil";
 import apiService from "@/components/api/apiService";
 import { toast } from "@/hooks/use-toast";
 const DropdownIndicator = (props) => (

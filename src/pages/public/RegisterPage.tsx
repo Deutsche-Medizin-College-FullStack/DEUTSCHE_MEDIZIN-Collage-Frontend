@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import apiClient from "./apiClient"; // Import the axios instance
+import apiClient from "@/components/api/apiClient"; // Import the axios instance
 
 const StudentRegistrationForm = () => {
   const [currentStep, setCurrentStep] = useState(1);

@@ -4,12 +4,6 @@
     { "path": "./tsconfig.app.json" },
     { "path": "./tsconfig.node.json" }
   ],
-  // "compilerOptions": {
-  //   "baseUrl": ".",
-  //   "paths": {
-  //     "@/*": ["./src/*"]
-  //   }
-  // }
   "compilerOptions": {
     "noEmitOnError": false,
     "jsx": "react-jsx",
@@ -17,7 +11,5 @@
     "module": "ESNext",
     "moduleResolution": "Node",
     "strict": true
-    // other options...
-  },
-  "include": ["src"]
+  }
 }

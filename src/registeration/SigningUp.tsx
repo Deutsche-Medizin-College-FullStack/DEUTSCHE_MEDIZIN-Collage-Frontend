@@ -69,9 +69,6 @@ export default function SignInPage() {
         case "DEAN":
           navigate("/dean");
           break;
-        case "VICE_DEAN":
-          navigate("/vice-dean");
-          break;
         default:
           console.log("Role not handled:", responses.role);
       }
