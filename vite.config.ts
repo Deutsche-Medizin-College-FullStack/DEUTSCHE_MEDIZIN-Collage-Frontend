@@ -39,7 +39,7 @@ export default defineConfig(({ mode }) => ({
     chunkSizeWarningLimit: 1500,
     target: 'es2020',
     minify: 'esbuild',
-    sourcemap: false,
+    sourcemap: true,
     commonjsOptions: {
       include: [/node_modules/],
       transformMixedEsModules: true,
