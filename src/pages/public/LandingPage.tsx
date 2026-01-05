@@ -280,41 +280,8 @@ export default function LandingPage() {
           </div>
 
           {/* Mobile Menu */}
-          {isOpen && (
-            <div style={{ display: windowWidth < 768 ? 'block' : 'none' }} className="fixed inset-0 z-40 bg-white dark:bg-gray-900 mt-16">
-              <div className="flex justify-between items-center p-4 border-b dark:border-gray-700">
-                <div className="flex items-center space-x-2">
-                  <img
-                    src="/assets/companylogo.jpg"
-                    alt="Company Logo"
-                    className="h-8 w-8 rounded-full object-cover"
-                  />
-                  <span className="text-sm font-bold text-gray-800 dark:text-gray-100">
-                    DEUTSCHE HOCHSCHULE FÜR
-                  </span>
-                </div>
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="text-gray-700 dark:text-gray-200 p-2"
-                  aria-label="Close menu"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-              
+          {isOpen && (  
+            <div style={{ display: windowWidth < 768 ? 'block' : 'none' }} className="fixed inset-0 z-40 bg-white dark:bg-gray-900 mt-16">              
               {/* Mobile Navigation Links */}
               <nav className="flex flex-col p-6 space-y-2 bg-white dark:bg-gray-900">
                 <a
