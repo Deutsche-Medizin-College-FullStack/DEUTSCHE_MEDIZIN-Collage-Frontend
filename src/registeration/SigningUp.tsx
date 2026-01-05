@@ -38,7 +38,9 @@ export default function SignInPage() {
   // Submit handler
   const handleSubmit = async () => {
     if (!email || !password) {
-      toast.error("Please enter both username and password");
+      toast.error("Please enter both username and password", {
+        position: "bottom-right"
+      });
       return;
     }
 
@@ -59,8 +61,10 @@ export default function SignInPage() {
       setResponse(responses.message);
       localStorage.setItem("xy9a7b", responses.jwt);
       
-      // Show success toast
-      toast.success("Login successful! Redirecting...");
+      // Show success toast at bottom
+      toast.success("Login successful! Redirecting...", {
+        position: "bottom-right"
+      });
       
       // Navigate based on role from backend
       switch (responses.role) {
@@ -86,13 +90,17 @@ export default function SignInPage() {
           navigate("/dean");
           break;
         default:
-          toast.warning("Role not recognized. Please contact administrator.");
+          toast.warning("Role not recognized. Please contact administrator.", {
+            position: "bottom-right"
+          });
           console.log("Role not handled:", responses.role);
       }
     } catch (err) {
       const errorMessage = err?.response?.data?.error || "Failed to login. Please try again.";
       setError(errorMessage);
-      toast.error(errorMessage);
+      toast.error(errorMessage, {
+        position: "bottom-right"
+      });
       console.error("Error:", err);
     } finally {
       setIsLoading(false);
