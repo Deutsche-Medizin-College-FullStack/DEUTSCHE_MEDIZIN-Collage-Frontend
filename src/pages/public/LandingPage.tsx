@@ -178,183 +178,186 @@ export default function LandingPage() {
             <ChevronUpIcon className="h-6 w-6" />
           </button>
         )}
-        
 
-        {/* NAVBAR - GUARANTEED WORKING VERSION WITH INLINE STYLES */}
-{/* NAVBAR - FIXED VERSION */}
-<header className="fixed top-0 left-0 w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-md shadow-lg z-50" style={{ backdropFilter: 'blur(12px)' }}>
-  <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-    {/* Logo - Takes less space */}
-    <div className="flex items-center space-x-2 flex-shrink-0">
-      <img
-        src="/assets/companylogo.jpg"
-        alt="Company Logo"
-        className="h-10 w-10 rounded-full object-cover shadow-sm"
-      />
-      <span className="text-lg font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap hidden sm:block">
-        DEUTSCHE HOCHSCHULE FÜR
-      </span>
-      <span className="text-lg font-bold text-gray-800 dark:text-gray-100 sm:hidden">
-        DHF
-      </span>
-    </div>
-
-    {/* Desktop Navigation - Using CSS media queries as fallback */}
-    <div style={{ display: windowWidth >= 768 ? 'flex' : 'none' }} className="items-center space-x-6 justify-end flex-grow">
-      <nav className="flex items-center space-x-6">
-        <a
-          href="#home"
-          className="text-gray-700 dark:text-gray-200 font-medium hover:text-blue-500 dark:hover:text-blue-400 transition-colors duration-300"
-        >
-          Home
-        </a>
-        <a
-          href="#mission"
-          className="text-gray-700 dark:text-gray-200 font-medium hover:text-blue-500 dark:hover:text-blue-400 transition-colors duration-300"
-        >
-          Mission
-        </a>
-        <a
-          href="#hero"
-          className="text-gray-700 dark:text-gray-200 font-medium hover:text-blue-500 dark:hover:text-blue-400 transition-colors duration-300"
-        >
-          Services
-        </a>
-        <a
-          href="#contact"
-          className="text-gray-700 dark:text-gray-200 font-medium hover:text-blue-500 dark:hover:text-blue-400 transition-colors duration-300"
-        >
-          Contact
-        </a>
-      </nav>
-      
-      {/* Desktop Utilities */}
-      <div className="flex items-center space-x-4 ml-6">
-        <LanguageSwitcher />
-        <ThemeToggle />
-        <Link to="/login">
-          <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-all duration-300 shadow-sm whitespace-nowrap">
-            Login
-          </button>
-        </Link>
-      </div>
-    </div>
-
-    {/* Mobile Menu Button and Utilities */}
-    <div style={{ display: windowWidth < 768 ? 'flex' : 'none' }} className="items-center space-x-4 justify-end flex-grow">
-      <LanguageSwitcher />
-      <ThemeToggle />
-      <button
-        className="flex items-center text-gray-700 dark:text-gray-200 focus:outline-none"
-        onClick={() => setIsOpen(!isOpen)}
-        aria-label="Toggle menu"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-6 w-6"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          {isOpen ? (
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          ) : (
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 6h16M4 12h16M4 18h16"
-            />
-          )}
-        </svg>
-      </button>
-    </div>
-  </div>
-
-  {/* Mobile Menu */}
-  {isOpen && (
-    <div style={{ display: windowWidth < 768 ? 'block' : 'none' }} className="fixed inset-0 z-40 bg-white dark:bg-gray-900 mt-16">
-      <div className="flex justify-between items-center p-4 border-b dark:border-gray-700">
-        <div className="flex items-center space-x-2">
+        {/* NAVBAR - FIXED VERSION */}
+        <header className="fixed top-0 left-0 w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-md shadow-lg z-50" style={{ backdropFilter: 'blur(12px)' }}>
+          <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+            {/* Logo - Takes less space */}
+            
+        <div className="flex items-center space-x-2 flex-shrink-0">
           <img
             src="/assets/companylogo.jpg"
             alt="Company Logo"
-            className="h-8 w-8 rounded-full object-cover"
+            className="h-10 w-10 rounded-full object-cover shadow-sm"
           />
-          <span className="text-sm font-bold text-gray-800 dark:text-gray-100">
-            DEUTSCHE HOCHSCHULE FÜR
-          </span>
+          {/* Show full name based on screen size using JavaScript */}
+          {windowWidth >= 768 ? (
+            <span className="text-lg font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">
+              DEUTSCHE HOCHSCHULE FÜR
+            </span>
+          ) : (
+            <span className="text-lg font-bold text-gray-800 dark:text-gray-100">
+              DHF
+            </span>
+          )}
         </div>
-        <button
-          onClick={() => setIsOpen(false)}
-          className="text-gray-700 dark:text-gray-200 p-2"
-          aria-label="Close menu"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
-      </div>
-      
-      {/* Mobile Navigation Links */}
-      <nav className="flex flex-col p-6 space-y-2 bg-white dark:bg-gray-900">
-        <a
-          href="#home"
-          className="text-gray-700 dark:text-gray-200 font-medium hover:text-blue-500 dark:hover:text-blue-400 transition-colors duration-300 py-3 px-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-lg"
-          onClick={() => setIsOpen(false)}
-        >
-          Home
-        </a>
-        <a
-          href="#mission"
-          className="text-gray-700 dark:text-gray-200 font-medium hover:text-blue-500 dark:hover:text-blue-400 transition-colors duration-300 py-3 px-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-lg"
-          onClick={() => setIsOpen(false)}
-        >
-          Mission
-        </a>
-        <a
-          href="#hero"
-          className="text-gray-700 dark:text-gray-200 font-medium hover:text-blue-500 dark:hover:text-blue-400 transition-colors duration-300 py-3 px-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-lg"
-          onClick={() => setIsOpen(false)}
-        >
-          Services
-        </a>
-        <a
-          href="#contact"
-          className="text-gray-700 dark:text-gray-200 font-medium hover:text-blue-500 dark:hover:text-blue-400 transition-colors duration-300 py-3 px-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-lg"
-          onClick={() => setIsOpen(false)}
-        >
-          Contact
-        </a>
-        
-        {/* Mobile Login Button */}
-        <div className="pt-6 px-4">
-          <Link to="/login" onClick={() => setIsOpen(false)}>
-            <button className="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-lg transition-all duration-300 shadow-sm text-lg font-medium">
-              Login
-            </button>
-          </Link>
-        </div>
-      </nav>
-    </div>
-  )}
-</header>
+
+            {/* Desktop Navigation - Using CSS media queries as fallback */}
+            <div style={{ display: windowWidth >= 768 ? 'flex' : 'none' }} className="items-center space-x-6 justify-end flex-grow">
+              <nav className="flex items-center space-x-6">
+                <a
+                  href="#home"
+                  className="text-gray-700 dark:text-gray-200 font-medium hover:text-blue-500 dark:hover:text-blue-400 transition-colors duration-300"
+                >
+                  Home
+                </a>
+                <a
+                  href="#mission"
+                  className="text-gray-700 dark:text-gray-200 font-medium hover:text-blue-500 dark:hover:text-blue-400 transition-colors duration-300"
+                >
+                  Mission
+                </a>
+                <a
+                  href="#hero"
+                  className="text-gray-700 dark:text-gray-200 font-medium hover:text-blue-500 dark:hover:text-blue-400 transition-colors duration-300"
+                >
+                  Services
+                </a>
+                <a
+                  href="#contact"
+                  className="text-gray-700 dark:text-gray-200 font-medium hover:text-blue-500 dark:hover:text-blue-400 transition-colors duration-300"
+                >
+                  Contact
+                </a>
+              </nav>
+              
+              {/* Desktop Utilities */}
+              <div className="flex items-center space-x-4 ml-6">
+                <LanguageSwitcher />
+                <ThemeToggle />
+                <Link to="/login">
+                  <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-all duration-300 shadow-sm whitespace-nowrap">
+                    Login
+                  </button>
+                </Link>
+              </div>
+            </div>
+
+            {/* Mobile Menu Button and Utilities */}
+            <div style={{ display: windowWidth < 768 ? 'flex' : 'none' }} className="items-center space-x-4 justify-end flex-grow">
+              <LanguageSwitcher />
+              <ThemeToggle />
+              <button
+                className="flex items-center text-gray-700 dark:text-gray-200 focus:outline-none"
+                onClick={() => setIsOpen(!isOpen)}
+                aria-label="Toggle menu"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  {isOpen ? (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  ) : (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
+                  )}
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile Menu */}
+          {isOpen && (
+            <div style={{ display: windowWidth < 768 ? 'block' : 'none' }} className="fixed inset-0 z-40 bg-white dark:bg-gray-900 mt-16">
+              <div className="flex justify-between items-center p-4 border-b dark:border-gray-700">
+                <div className="flex items-center space-x-2">
+                  <img
+                    src="/assets/companylogo.jpg"
+                    alt="Company Logo"
+                    className="h-8 w-8 rounded-full object-cover"
+                  />
+                  <span className="text-sm font-bold text-gray-800 dark:text-gray-100">
+                    DEUTSCHE HOCHSCHULE FÜR
+                  </span>
+                </div>
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="text-gray-700 dark:text-gray-200 p-2"
+                  aria-label="Close menu"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+              
+              {/* Mobile Navigation Links */}
+              <nav className="flex flex-col p-6 space-y-2 bg-white dark:bg-gray-900">
+                <a
+                  href="#home"
+                  className="text-gray-700 dark:text-gray-200 font-medium hover:text-blue-500 dark:hover:text-blue-400 transition-colors duration-300 py-3 px-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-lg"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Home
+                </a>
+                <a
+                  href="#mission"
+                  className="text-gray-700 dark:text-gray-200 font-medium hover:text-blue-500 dark:hover:text-blue-400 transition-colors duration-300 py-3 px-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-lg"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Mission
+                </a>
+                <a
+                  href="#hero"
+                  className="text-gray-700 dark:text-gray-200 font-medium hover:text-blue-500 dark:hover:text-blue-400 transition-colors duration-300 py-3 px-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-lg"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Services
+                </a>
+                <a
+                  href="#contact"
+                  className="text-gray-700 dark:text-gray-200 font-medium hover:text-blue-500 dark:hover:text-blue-400 transition-colors duration-300 py-3 px-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-lg"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Contact
+                </a>
+                
+                {/* Mobile Login Button */}
+                <div className="pt-6 px-4">
+                  <Link to="/login" onClick={() => setIsOpen(false)}>
+                    <button className="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-lg transition-all duration-300 shadow-sm text-lg font-medium">
+                      Login
+                    </button>
+                  </Link>
+                </div>
+              </nav>
+            </div>
+          )}
+        </header>
 
         {/* Add padding-top to account for fixed header */}
         <div className="pt-16 md:pt-20">
@@ -452,7 +455,7 @@ export default function LandingPage() {
                 <div className="flex flex-col sm:flex-row gap-4 justify-center sm:justify-start">
                   <Link to="/register">
                     <Button size="lg" className="text-lg px-8 py-3">
-                      Register <ArrowRight className="ml-2 h-5 w-5" />
+                      Apply now <ArrowRight className="ml-2 h-5 w-5" />
                     </Button>
                   </Link>
                   <Link to="/learn-more">
