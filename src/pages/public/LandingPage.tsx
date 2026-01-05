@@ -185,19 +185,24 @@ export default function LandingPage() {
 <header className="fixed top-0 left-0 w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-md shadow-lg z-50" style={{ backdropFilter: 'blur(12px)' }}>
   <div className="container mx-auto px-4 py-3 flex justify-between items-center">
     {/* Logo - Takes less space */}
-    <div className="flex items-center space-x-2 flex-shrink-0">
-      <img
-        src="/assets/companylogo.jpg"
-        alt="Company Logo"
-        className="h-10 w-10 rounded-full object-cover shadow-sm"
-      />
-      <span className="text-lg font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap hidden sm:block">
-        DEUTSCHE HOCHSCHULE FÜR
-      </span>
-      <span className="text-lg font-bold text-gray-800 dark:text-gray-100 sm:hidden">
-        DHF
-      </span>
-    </div>
+    
+<div className="flex items-center space-x-2 flex-shrink-0">
+  <img
+    src="/assets/companylogo.jpg"
+    alt="Company Logo"
+    className="h-10 w-10 rounded-full object-cover shadow-sm"
+  />
+  {/* Show full name based on screen size using JavaScript */}
+  {windowWidth >= 768 ? (
+    <span className="text-lg font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">
+      DEUTSCHE HOCHSCHULE FÜR
+    </span>
+  ) : (
+    <span className="text-lg font-bold text-gray-800 dark:text-gray-100">
+      DHF
+    </span>
+  )}
+</div>
 
     {/* Desktop Navigation - Using CSS media queries as fallback */}
     <div style={{ display: windowWidth >= 768 ? 'flex' : 'none' }} className="items-center space-x-6 justify-end flex-grow">
