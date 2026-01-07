@@ -12,6 +12,10 @@ const apiService = {
     const response = await apiClient.put(url, data, config);
     return response.data;
   },
+  patch: async (url, data, config = {}) => {
+    const response = await apiClient.patch(url, data, config);
+    return response.data;
+  },
   delete: async (url, config = {}) => {
     const response = await apiClient.delete(url, config);
     return response.data;
