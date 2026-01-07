@@ -10,17 +10,18 @@ import { Link } from "react-router-dom";
 
 export interface DataTypes {
   key: string;
+  studentId: number;   
+  id: string;          
   name: string;
   amharicName: string;
   year: number;
-  id: string;
   status: string;
   department: string;
   photo?: string;
   batch: string;
-  // Activity flag independent of academic status
   isDisabled?: boolean;
 }
+
 
 interface EditableTableProps {
   initialData: DataTypes[];
@@ -53,8 +54,8 @@ const EditableTableApplicant: React.FC<EditableTableProps> = ({
     try {
       const url =
         action === "disable"
-          ? endPoints.studentsDeactivation.replace(":id", record.id)
-          : endPoints.studentsActivation.replace(":id", record.id);
+          ? endPoints.studentsDeactivation.replace(":id", String(record.studentId))
+          : endPoints.studentsActivation.replace(":id", String(record.studentId));
 
       // Server expects POST for these actions (Allow: POST)
       await apiService.post(url, {});

@@ -12,64 +12,57 @@ export default function RegistrarStudents() {
     status: "",
   });
   const [searchText, setSearchText] = useState("");
-  const [students, setStudents] = useState<DataTypes[]>([]);
+  const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const objectUrlRefs = useRef<string[]>([]);
 
-  useEffect(() => {
-    let cancelled = false;
+useEffect(() => {
+  let cancelled = false;
 
-    async function load() {
-      try {
-        setLoading(true);
-        const list = await apiService.get(endPoints.students);
+  async function load() {
+    try {
+      setLoading(true);
+      const list = await apiService.get(endPoints.students);
 
-        const mapped: DataTypes[] = (list || []).map((s: any) => {
-          // Build full names
-          const englishName = [
-            s.firstNameENG,
-            s.fatherNameENG,
-            s.grandfatherNameENG,
-          ]
-            .filter(Boolean)
-            .join(" ");
+      const mapped: DataTypes[] = (list || []).map((s: any) => {
+        // Build full names
+        const englishName = [s.firstNameENG, s.fatherNameENG, s.grandfatherNameENG]
+          .filter(Boolean)
+          .join(" ");
 
-          const amharicName = [
-            s.firstNameAMH,
-            s.fatherNameAMH,
-            s.grandfatherNameAMH,
-          ]
-            .filter(Boolean)
-            .join(" ");
+        const amharicName = [s.firstNameAMH, s.fatherNameAMH, s.grandfatherNameAMH]
+          .filter(Boolean)
+          .join(" ");
 
-          // Fix base64 photo
-          const photoUrl = s.studentPhoto
-            ? `data:image/jpeg;base64,${s.studentPhoto}`
-            : undefined;
+        // Fix base64 photo
+        const photoUrl = s.studentPhoto
+          ? `data:image/jpeg;base64,${s.studentPhoto}`
+          : undefined;
 
-          return {
-            key: String(s.id),
-            id: s.username || String(s.id), // use username if available
-            name: englishName || "No Name",
-            amharicName: amharicName || "ስም የለም",
-            status: s.studentRecentStatus || "Unknown",
-            departmentEnrolled: s.departmentEnrolled || "-",
-            department: s.departmentEnrolled || "-", // mapped for DataTypes
-            batchClassYearSemester: s.batchClassYearSemester || "-",
-            batch: s.batchClassYearSemester || s.batch || "-", // mapped for DataTypes
-            year: s.academicYear || s.year || "-", // mapped for DataTypes
-            photo: photoUrl,
-            isDisabled: s.accountStatus === "DISABLED",
-          } as DataTypes;
-        });
+        return {
+          key: String(s.id),
+          studentId: s.id,                 
+          id: s.username || String(s.id),                
+          name: englishName || "No Name",
+          amharicName: amharicName || "ስም የለም",
+          status: s.studentRecentStatus || "Unknown",
+          departmentEnrolled: s.departmentEnrolled || "-",
+          department: s.departmentEnrolled || "-",
+          batchClassYearSemester: s.batchClassYearSemester || "-",
+          batch: s.batchClassYearSemester || "-",
+          year: s.academicYear || "-",
+          photo: photoUrl,
+          isDisabled: s.accountStatus === "DISABLED",
+        } as DataTypes;
 
-        if (!cancelled) setStudents(mapped);
-      } catch (err) {
-        console.error("Failed to load students:", err);
-        if (!cancelled) setStudents([]);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+      });
+
+      if (!cancelled) setStudents(mapped);
+    } catch (err) {
+      console.error("Failed to load students:", err);
+      if (!cancelled) setStudents([]);
+    } finally {
+      if (!cancelled) setLoading(false);
     }
 
     load();
