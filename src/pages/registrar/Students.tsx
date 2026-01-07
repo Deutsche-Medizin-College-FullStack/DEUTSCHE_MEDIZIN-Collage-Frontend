@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import EditableTableApplicant, { type DataTypes } from "@/components/Extra/EditableTableApplicant";
+import EditableTableApplicant, {
+  type DataTypes,
+} from "@/components/Extra/EditableTableApplicant";
 import apiService from "@/components/api/apiService";
 import endPoints from "@/components/api/endPoints";
-
 
 export default function RegistrarStudents() {
   const [filters, setFilters] = useState({
@@ -41,7 +42,7 @@ useEffect(() => {
         return {
           key: String(s.id),
           studentId: s.id,                 
-          id: s.username,                  
+          id: s.username || String(s.id),                
           name: englishName || "No Name",
           amharicName: amharicName || "ስም የለም",
           status: s.studentRecentStatus || "Unknown",
@@ -63,20 +64,21 @@ useEffect(() => {
     } finally {
       if (!cancelled) setLoading(false);
     }
-  }
 
-  load();
+    load();
 
-  return () => {
-    cancelled = true;
-  };
-}, []);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const filteredData = useMemo(() => {
     const list = students;
     const search = searchText.toLowerCase();
     return list.filter((item: DataTypes) => {
-      const matchedStatus = filters.status ? filters.status === item.status : true;
+      const matchedStatus = filters.status
+        ? filters.status === item.status
+        : true;
       const matchedBatch = filters.batch ? filters.batch === item.batch : true;
       const matchedDepartment = filters.department
         ? filters.department === item.department
@@ -86,7 +88,10 @@ useEffect(() => {
         .join(" ")
         .toLowerCase();
       return (
-        searchable.includes(search) && matchedStatus && matchedBatch && matchedDepartment
+        searchable.includes(search) &&
+        matchedStatus &&
+        matchedBatch &&
+        matchedDepartment
       );
     });
   }, [students, searchText, filters]);
@@ -101,49 +106,6 @@ useEffect(() => {
           </h1>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mt-4 sm:mt-6 mb-8 sm:mb-12">
-            {[
-              {
-                title: "Registration",
-                value: "350,897",
-                change: "↑ 3.48% Since last month",
-                color: "text-green-500",
-              },
-              {
-                title: "NEW Students",
-                value: "2,356",
-                change: "↓ 3.48% Since last week",
-                color: "text-red-500",
-              },
-              {
-                title: "Graduation",
-                value: "924",
-                change: "↓ 1.10% Since yesterday",
-                color: "text-orange-500",
-              },
-              {
-                title: "Education",
-                value: "49,65%",
-                change: "↑ 12% Since last month",
-                color: "text-green-500",
-              },
-            ].map((stat, index) => (
-              <div
-                key={index}
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-5"
-              >
-                <p className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">
-                  {stat.title}
-                </p>
-                <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  {stat.value}
-                </h2>
-                <p className={`text-xs sm:text-sm ${stat.color} mt-1`}>
-                  {stat.change}
-                </p>
-              </div>
-            ))}
-          </div>
         </div>
 
         {/* Page Content */}
