@@ -288,19 +288,19 @@ export default function StudentProfile() {
       // Create FormData
       const formData = new FormData();
       
-      // Prepare payload
+      // Prepare payload according to API documentation
       const payload = {
         // Personal Info
-        firstNameAMH: studentData.firstNameAMH || '',
         firstNameENG: studentData.firstNameENG || '',
-        fatherNameAMH: studentData.fatherNameAMH || '',
+        firstNameAMH: studentData.firstNameAMH || '',
         fatherNameENG: studentData.fatherNameENG || '',
-        grandfatherNameAMH: studentData.grandfatherNameAMH || '',
+        fatherNameAMH: studentData.fatherNameAMH || '',
         grandfatherNameENG: studentData.grandfatherNameENG || '',
-        motherNameAMH: studentData.motherNameAMH || '',
+        grandfatherNameAMH: studentData.grandfatherNameAMH || '',
         motherNameENG: studentData.motherNameENG || '',
-        motherFatherNameAMH: studentData.motherFatherNameAMH || '',
+        motherNameAMH: studentData.motherNameAMH || '',
         motherFatherNameENG: studentData.motherFatherNameENG || '',
+        motherFatherNameAMH: studentData.motherFatherNameAMH || '',
         gender: studentData.gender || 'MALE',
         age: studentData.age ? parseInt(studentData.age) : null,
         phoneNumber: studentData.phoneNumber || '',
@@ -308,6 +308,7 @@ export default function StudentProfile() {
         dateOfBirthGC: studentData.dateOfBirthGC || null,
         dateOfBirthEC: studentData.dateOfBirthEC || null,
         maritalStatus: studentData.maritalStatus || 'SINGLE',
+        grade12Result: studentData.grade12Result ? parseFloat(studentData.grade12Result) : null,
         
         // Place of Birth
         placeOfBirthWoredaCode: studentData.placeOfBirthWoredaCode || null,
@@ -326,17 +327,16 @@ export default function StudentProfile() {
         programModalityCode: studentData.programModalityCode || 'RG',
         batchClassYearSemesterId: studentData.batchClassYearSemesterId ? parseInt(studentData.batchClassYearSemesterId) : null,
         studentRecentStatusId: studentData.studentRecentStatusId ? parseInt(studentData.studentRecentStatusId) : null,
-        grade12Result: studentData.grade12Result ? parseFloat(studentData.grade12Result) : null,
         
         // Enrollment Dates
         dateEnrolledGC: studentData.dateEnrolledGC || null,
         dateEnrolledEC: studentData.dateEnrolledEC || null,
         
         // Emergency Contact
-        contactPersonFirstNameAMH: studentData.contactPersonFirstNameAMH || '',
         contactPersonFirstNameENG: studentData.contactPersonFirstNameENG || '',
-        contactPersonLastNameAMH: studentData.contactPersonLastNameAMH || '',
+        contactPersonFirstNameAMH: studentData.contactPersonFirstNameAMH || '',
         contactPersonLastNameENG: studentData.contactPersonLastNameENG || '',
+        contactPersonLastNameAMH: studentData.contactPersonLastNameAMH || '',
         contactPersonPhoneNumber: studentData.contactPersonPhoneNumber || '',
         contactPersonRelation: studentData.contactPersonRelation || '',
         
@@ -347,7 +347,7 @@ export default function StudentProfile() {
         isTransfer: studentData.isTransfer || false,
       };
 
-      console.log("Saving payload:", payload);
+      console.log("Saving payload:", JSON.stringify(payload, null, 2));
 
       // Add data as JSON blob
       formData.append('data', new Blob([JSON.stringify(payload)], {
@@ -357,15 +357,20 @@ export default function StudentProfile() {
       // If there's a selected photo file, add it
       if (selectedPhotoFile) {
         formData.append('studentPhoto', selectedPhotoFile);
+        console.log("Adding photo file:", selectedPhotoFile.name);
       }
 
       // Debug FormData
       console.log("FormData entries:");
       for (let [key, value] of formData.entries()) {
-        console.log(key, value);
+        if (key === 'data') {
+          console.log(key, "Blob with JSON data");
+        } else {
+          console.log(key, value);
+        }
       }
 
-      // Use fetch directly for FormData
+      // Use fetch directly with your API base URL
       const token = localStorage.getItem("xy9a7b");
       const response = await fetch(
         `https://growing-crayfish-firstly.ngrok-free.app/api/students/${id}`,
@@ -381,7 +386,17 @@ export default function StudentProfile() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
+        console.error("Server error response:", errorText);
+        let errorMessage = `HTTP ${response.status}`;
+        
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.error || errorJson.message || errorText;
+        } catch {
+          errorMessage = errorText;
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();
@@ -389,11 +404,19 @@ export default function StudentProfile() {
       
       alert("Student profile updated successfully!");
       setEditMode(false);
-      setSelectedPhotoFile(null); // Clear selected photo
-      fetchStudentData();
+      setSelectedPhotoFile(null);
+      
+      // Update local state with new data
+      if (result.student) {
+        setStudentData(result.student);
+        setOriginalData(result.student);
+      } else {
+        // Refresh data from server
+        fetchStudentData();
+      }
     } catch (err: any) {
       console.error("Error updating profile:", err);
-      alert("Failed to update profile. " + (err.message || ""));
+      alert("Failed to update profile: " + (err.message || "Unknown error"));
     }
   };
 
@@ -434,6 +457,32 @@ export default function StudentProfile() {
     try {
       return new Date(date).toISOString().split('T')[0];
     } catch (err) {
+      return date;
+    }
+  };
+
+  const formatDateForInput = (date: string) => {
+    if (!date) return '';
+    try {
+      // Handle both date formats (YYYY-MM-DD and DD-MM-YYYY)
+      if (date.includes('-')) {
+        const parts = date.split('-');
+        if (parts[0].length === 4) {
+          // Already in YYYY-MM-DD format
+          return date;
+        } else if (parts[2].length === 4) {
+          // Convert DD-MM-YYYY to YYYY-MM-DD
+          return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+        }
+      }
+      // If it's a Date object or ISO string
+      const d = new Date(date);
+      if (!isNaN(d.getTime())) {
+        return d.toISOString().split('T')[0];
+      }
+      return date;
+    } catch (err) {
+      console.error("Error formatting date:", date, err);
       return date;
     }
   };
@@ -489,7 +538,7 @@ export default function StudentProfile() {
           {isEditable && (
             editMode ? (
               <>
-                <Button onClick={handleSave} className="bg-green-600">Save</Button>
+                <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700">Save</Button>
                 <Button variant="destructive" onClick={handleCancel}>Cancel</Button>
               </>
             ) : (
@@ -711,13 +760,23 @@ export default function StudentProfile() {
 
               <div>
                 <Label>Date of Birth (GC)</Label>
-                {editMode ? <Input type="date" name="dateOfBirthGC" value={formatDate(studentData.dateOfBirthGC)} onChange={handleInputChange} />
+                {editMode ? <Input 
+                  type="date" 
+                  name="dateOfBirthGC" 
+                  value={formatDateForInput(studentData.dateOfBirthGC)} 
+                  onChange={handleInputChange} 
+                />
                   : <div>{formatDate(studentData.dateOfBirthGC) || 'N/A'}</div>}
               </div>
 
               <div>
                 <Label>Date of Birth (EC)</Label>
-                {editMode ? <Input type="date" name="dateOfBirthEC" value={formatDate(studentData.dateOfBirthEC)} onChange={handleInputChange} />
+                {editMode ? <Input 
+                  type="date" 
+                  name="dateOfBirthEC" 
+                  value={formatDateForInput(studentData.dateOfBirthEC)} 
+                  onChange={handleInputChange} 
+                />
                   : <div>{formatDate(studentData.dateOfBirthEC) || 'N/A'}</div>}
               </div>
 
@@ -1011,13 +1070,23 @@ export default function StudentProfile() {
 
               <div>
                 <Label>Date Enrolled (GC)</Label>
-                {editMode ? <Input type="date" name="dateEnrolledGC" value={formatDate(studentData.dateEnrolledGC)} onChange={handleInputChange} />
+                {editMode ? <Input 
+                  type="date" 
+                  name="dateEnrolledGC" 
+                  value={formatDateForInput(studentData.dateEnrolledGC)} 
+                  onChange={handleInputChange} 
+                />
                   : <div>{formatDate(studentData.dateEnrolledGC) || 'N/A'}</div>}
               </div>
 
               <div>
                 <Label>Date Enrolled (EC)</Label>
-                {editMode ? <Input type="date" name="dateEnrolledEC" value={formatDate(studentData.dateEnrolledEC)} onChange={handleInputChange} />
+                {editMode ? <Input 
+                  type="date" 
+                  name="dateEnrolledEC" 
+                  value={formatDateForInput(studentData.dateEnrolledEC)} 
+                  onChange={handleInputChange} 
+                />
                   : <div>{formatDate(studentData.dateEnrolledEC) || 'N/A'}</div>}
               </div>
 

@@ -1,9 +1,28 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import EditableTableApplicant, {
-  type DataTypes,
-} from "@/components/Extra/EditableTableApplicant";
+import { useEffect, useMemo, useState } from "react";
+import { Table } from "antd";
+import { useNavigate, Link } from "react-router-dom";
+import { useModal } from "@/hooks/Modal";
+import { ImageModal } from "@/hooks/ImageModal";
 import apiService from "@/components/api/apiService";
 import endPoints from "@/components/api/endPoints";
+
+interface FilterOption {
+  id: string | number;
+  name: string;
+}
+
+export interface DataTypes {
+  key: string;
+  studentId: number;
+  id: string;
+  name: string;
+  amharicName: string;
+  status: string;
+  department: string;
+  batch: string;
+  photo?: string;
+  isDisabled?: boolean;
+}
 
 export default function RegistrarStudents() {
   const [filters, setFilters] = useState({
@@ -11,196 +30,758 @@ export default function RegistrarStudents() {
     batch: "",
     status: "",
   });
+
+  const [options, setOptions] = useState<{
+    departments: FilterOption[];
+    batchClassYearSemesters: FilterOption[];
+    studentStatuses: FilterOption[];
+  }>({
+    departments: [],
+    batchClassYearSemesters: [],
+    studentStatuses: [],
+  });
+
   const [searchText, setSearchText] = useState("");
-  const [students, setStudents] = useState<any[]>([]);
+  const [students, setStudents] = useState<DataTypes[]>([]);
   const [loading, setLoading] = useState(true);
-  const objectUrlRefs = useRef<string[]>([]);
+  const [showAmharic, setShowAmharic] = useState(false);
+  
+  const { openModal, closeModal } = useModal() as any;
+  const navigate = useNavigate();
 
-useEffect(() => {
-  let cancelled = false;
+  /* ===================== Load filter options ===================== */
+  useEffect(() => {
+    async function loadFilters() {
+      try {
+        const res = await apiService.get(endPoints.lookupsDropdown);
+        setOptions({
+          departments: res.departments || [],
+          batchClassYearSemesters: res.batchClassYearSemesters || [],
+          studentStatuses: res.studentStatuses || [],
+        });
+      } catch (e) {
+        console.error("Failed to load filters", e);
+      }
+    }
+    loadFilters();
+  }, []);
 
-  async function load() {
-    try {
-      setLoading(true);
-      const list = await apiService.get(endPoints.students);
+  /* ===================== Load students ===================== */
+  useEffect(() => {
+    let cancelled = false;
 
-      const mapped: DataTypes[] = (list || []).map((s: any) => {
-        // Build full names
-        const englishName = [s.firstNameENG, s.fatherNameENG, s.grandfatherNameENG]
-          .filter(Boolean)
-          .join(" ");
+    async function loadStudents() {
+      try {
+        setLoading(true);
+        const list = await apiService.get(endPoints.students);
 
-        const amharicName = [s.firstNameAMH, s.fatherNameAMH, s.grandfatherNameAMH]
-          .filter(Boolean)
-          .join(" ");
+        const mapped: DataTypes[] = (list || []).map((s: any) => {
+          const englishName = [
+            s.firstNameENG,
+            s.fatherNameENG,
+            s.grandfatherNameENG,
+          ]
+            .filter(Boolean)
+            .join(" ");
 
-        // Fix base64 photo
-        const photoUrl = s.studentPhoto
-          ? `data:image/jpeg;base64,${s.studentPhoto}`
-          : undefined;
+          const amharicName = [
+            s.firstNameAMH,
+            s.fatherNameAMH,
+            s.grandfatherNameAMH,
+          ]
+            .filter(Boolean)
+            .join(" ");
 
-        return {
-          key: String(s.id),
-          studentId: s.id,                 
-          id: s.username || String(s.id),                
-          name: englishName || "No Name",
-          amharicName: amharicName || "ስም የለም",
-          status: s.studentRecentStatus || "Unknown",
-          departmentEnrolled: s.departmentEnrolled || "-",
-          department: s.departmentEnrolled || "-",
-          batchClassYearSemester: s.batchClassYearSemester || "-",
-          batch: s.batchClassYearSemester || "-",
-          year: s.academicYear || "-",
-          photo: photoUrl,
-          isDisabled: s.accountStatus === "DISABLED",
-        } as DataTypes;
+          const photoUrl = s.studentPhoto
+            ? `data:image/jpeg;base64,${s.studentPhoto}`
+            : undefined;
 
-      });
+          return {
+            key: String(s.id),
+            studentId: s.id,
+            id: s.username,
+            name: englishName || "No Name",
+            amharicName: amharicName || "ስም የለም",
+            status: s.studentRecentStatus || "Unknown",
+            department: s.departmentEnrolled || "-",
+            batch: s.batchClassYearSemester || "-",
+            photo: photoUrl,
+            isDisabled: s.accountStatus === "DISABLED",
+          };
+        });
 
-      if (!cancelled) setStudents(mapped);
-    } catch (err) {
-      console.error("Failed to load students:", err);
-      if (!cancelled) setStudents([]);
-    } finally {
-      if (!cancelled) setLoading(false);
+        if (!cancelled) setStudents(mapped);
+      } catch (e) {
+        console.error(e);
+        if (!cancelled) setStudents([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
 
-    load();
-
+    loadStudents();
     return () => {
       cancelled = true;
     };
   }, []);
 
+  /* ===================== Handle Status Change ===================== */
+  const handleStatusChange = async (
+    record: DataTypes,
+    action: "enable" | "disable"
+  ) => {
+    const url =
+      action === "disable"
+        ? endPoints.studentsDeactivation.replace(
+            ":id",
+            String(record.studentId)
+          )
+        : endPoints.studentsActivation.replace(
+            ":id",
+            String(record.studentId)
+          );
+
+    await apiService.post(url, {});
+    setStudents((prev) =>
+      prev.map((s) =>
+        s.studentId === record.studentId
+          ? { ...s, isDisabled: action === "disable" }
+          : s
+      )
+    );
+    closeModal();
+  };
+
+  /* ===================== Filtering ===================== */
   const filteredData = useMemo(() => {
-    const list = students;
     const search = searchText.toLowerCase();
-    return list.filter((item: DataTypes) => {
-      const matchedStatus = filters.status
-        ? filters.status === item.status
+
+    return students.filter((s: DataTypes) => {
+      const matchDepartment = filters.department
+        ? s.department === filters.department
         : true;
-      const matchedBatch = filters.batch ? filters.batch === item.batch : true;
-      const matchedDepartment = filters.department
-        ? filters.department === item.department
+
+      const matchBatch = filters.batch ? s.batch === filters.batch : true;
+
+      const matchStatus = filters.status
+        ? s.status === filters.status
         : true;
-      const searchable = [item.name, item.amharicName, item.id, item.department]
-        .filter(Boolean)
+
+      const searchable = [s.name, s.amharicName, s.id, s.department]
         .join(" ")
         .toLowerCase();
+
       return (
         searchable.includes(search) &&
-        matchedStatus &&
-        matchedBatch &&
-        matchedDepartment
+        matchDepartment &&
+        matchBatch &&
+        matchStatus
       );
     });
-  }, [students, searchText, filters]);
+  }, [students, filters, searchText]);
+
+  /* ===================== Table Columns ===================== */
+  const columns = [
+    {
+      title: "Photo",
+      dataIndex: "photo",
+      width: 80,
+      render: (text: string) =>
+        text ? (
+          <img
+            src={text}
+            onClick={(e) => {
+              e.stopPropagation();
+              openModal(<ImageModal imageSrc={text} />);
+            }}
+            className="w-12 h-12 rounded object-cover cursor-pointer"
+            alt="Student"
+          />
+        ) : (
+          <div className="w-12 h-12 rounded bg-gray-300 dark:bg-gray-700 flex items-center justify-center text-xs">
+            No Photo
+          </div>
+        ),
+    },
+    {
+      title: "ID",
+      dataIndex: "id",
+      width: 100,
+      render: (_: any, r: DataTypes) => (
+        <Link
+          to={`/registrar/students/${r.key}`}
+          className="text-blue-600 dark:text-blue-400 hover:underline"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {r.id}
+        </Link>
+      ),
+    },
+    {
+      title: (
+        <div className="flex items-center gap-1">
+          <span>Name</span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowAmharic(!showAmharic);
+            }}
+            className="text-xs px-1 py-0.5 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
+          >
+            {showAmharic ? "EN" : "AM"}
+          </button>
+        </div>
+      ),
+      width: 160,
+      render: (_: any, r: DataTypes) => (
+        <span className="font-medium text-sm">
+          {showAmharic ? r.amharicName : r.name}
+        </span>
+      ),
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      width: 100,
+      render: (t: string) => (
+        <span className="px-2 py-1 rounded-full text-xs bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+          {t}
+        </span>
+      ),
+    },
+    { 
+      title: "BCY", 
+      dataIndex: "batch", 
+      width: 100 
+    },
+    { 
+      title: "Department", 
+      dataIndex: "department", 
+      width: 140 
+    },
+    {
+      title: "Account",
+      width: 100,
+      render: (_: any, r: DataTypes) => (
+        <span
+          className={`px-2 py-1 rounded-full text-xs ${
+            r.isDisabled
+              ? "bg-red-200 dark:bg-red-900/40 text-red-800 dark:text-red-200"
+              : "bg-green-200 dark:bg-green-900/40 text-green-800 dark:text-green-200"
+          }`}
+        >
+          {r.isDisabled ? "Disabled" : "Active"}
+        </span>
+      ),
+    },
+    {
+      title: "",
+      width: 60,
+      render: (_: any, r: DataTypes) => (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            openModal(
+              <div className="p-6 bg-white dark:bg-gray-800 rounded-xl max-w-md">
+                <h3 className="font-bold text-lg mb-3 text-gray-900 dark:text-gray-100">
+                  Manage Student Account
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  {r.isDisabled 
+                    ? `Enabling will allow ${r.name} to access the system again. The student will be able to log in and use all features.`
+                    : `Disabling will prevent ${r.name} from accessing the system. The student will not be able to log in until re-enabled.`
+                  }
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-500 mb-6">
+                  Student ID: <span className="font-medium">{r.id}</span>
+                </p>
+                <div className="flex gap-3 justify-end">
+                  <button
+                    onClick={closeModal}
+                    className="px-4 py-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => handleStatusChange(r, "disable")}
+                    className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={r.isDisabled}
+                  >
+                    Disable
+                  </button>
+                  <button
+                    onClick={() => handleStatusChange(r, "enable")}
+                    className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={!r.isDisabled}
+                  >
+                    Enable
+                  </button>
+                </div>
+              </div>
+            );
+          }}
+          className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800 text-xl"
+          title="Manage student account"
+        >
+          •••
+        </button>
+      ),
+    },
+  ];
 
   return (
-    <div className="min-h-screen">
-      <div className="p-4 sm:p-6 md:p-8 space-y-6 md:space-y-8">
-        {/* Blue Header */}
-        <div className="w-full bg-blue-500 px-4 sm:px-6 md:px-8 py-8 sm:py-10 md:py-12 flex flex-col justify-center rounded-lg">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white">
-            Student Records
+    <div className="min-h-screen p-4">
+      <div className="bg-white dark:bg-gray-900 p-4 md:p-6 space-y-4 md:space-y-6">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+            Students Management
           </h1>
-
-          {/* Stats Cards */}
-        </div>
-
-        {/* Page Content */}
-        <div className="flex-1 px-4  sm:px-6 md:px-8 py-6 sm:py-8 md:py-10 -mt-12 sm:-mt-16 md:-mt-20">
-          <div className="rounded-3xl bg-gray-50 dark:bg-gray-900 p-4 sm:p-6">
-            {/* Filters */}
-            <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 items-start sm:items-center mb-4 sm:mb-6">
-              {["department", "status", "batch"].map((filter) => (
-                <select
-                  key={filter}
-                  onChange={(e) =>
-                    setFilters((prev) => ({
-                      ...prev,
-                      [filter]: e.target.value,
-                    }))
-                  }
-                  className="w-full sm:w-auto px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 
-                    bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm sm:text-base
-                    focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                >
-                  {filter === "department" && (
-                    <>
-                      <option value="">All Departments</option>
-                      <option value="Pharmacy">Pharmacy</option>
-                      <option value="Medicine">Medicine</option>
-                      <option value="Nurse">Nurse</option>
-                    </>
-                  )}
-                  {filter === "status" && (
-                    <>
-                      <option value="">All Status</option>
-                      <option value="Active">Active</option>
-                      <option value="Graduated">Graduated</option>
-                      <option value="Student">Student</option>
-                    </>
-                  )}
-                  {filter === "batch" && (
-                    <>
-                      <option value="">All Years</option>
-                      <option value="1">Year 1</option>
-                      <option value="2">Year 2</option>
-                      <option value="3">Year 3</option>
-                      <option value="4">Year 4</option>
-                    </>
-                  )}
-                </select>
-              ))}
-
-              <input
-                onChange={(e) => setSearchText(e.target.value)}
-                type="text"
-                placeholder="🔍 Search students..."
-                className="w-full sm:w-64 md:w-80 lg:w-96 px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base
-                  rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800
-                  text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500
-                  focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 shadow-sm"
-              />
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+              <span className="text-xs text-gray-600 dark:text-gray-400">Active</span>
             </div>
-
-            {/* Table */}
-            <div className="overflow-x-auto rounded-2xl min-h-[200px] flex items-center justify-center">
-              {loading ? (
-                <div className="flex items-center justify-center py-10">
-                  <div className="animate-spin rounded-full h-10 w-10 border-4 border-blue-500 border-t-transparent"></div>
-                </div>
-              ) : filteredData.length === 0 ? (
-                <div className="text-sm text-gray-500">No data</div>
-              ) : (
-                <EditableTableApplicant initialData={filteredData} />
-              )}
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-red-500"></div>
+              <span className="text-xs text-gray-600 dark:text-gray-400">Disabled</span>
             </div>
           </div>
         </div>
 
-        {/* Animations */}
-        <style>{`
-          .animate-fadeIn {
-            animation: fadeIn 0.7s ease-in-out forwards;
-          }
-          @keyframes fadeIn {
-            0% {
-              opacity: 0;
-              transform: translateY(10px);
+        {/* Filters */}
+        <div className="flex flex-wrap gap-2 items-center">
+          {/* Department */}
+          <select
+            className="filter-select"
+            onChange={(e) =>
+              setFilters((p) => ({ ...p, department: e.target.value }))
             }
-            100% {
-              opacity: 1;
-              transform: translateY(0);
+            value={filters.department}
+          >
+            <option value="">All Departments</option>
+            {options.departments.map((d) => (
+              <option key={d.id} value={d.name}>
+                {d.name}
+              </option>
+            ))}
+          </select>
+
+          {/* Student Status */}
+          <select
+            className="filter-select"
+            onChange={(e) =>
+              setFilters((p) => ({ ...p, status: e.target.value }))
             }
-          }
-          .EditableTableApplicant tr:hover {
-            background-color: rgba(59, 130, 246, 0.1);
-            transition: background-color 0.3s ease;
-          }
-        `}</style>
+            value={filters.status}
+          >
+            <option value="">All Status</option>
+            {options.studentStatuses.map((s) => (
+              <option key={s.id} value={s.name}>
+                {s.name.replaceAll("_", " ")}
+              </option>
+            ))}
+          </select>
+
+          {/* BCY */}
+          <select
+            className="filter-select"
+            onChange={(e) =>
+              setFilters((p) => ({ ...p, batch: e.target.value }))
+            }
+            value={filters.batch}
+          >
+            <option value="">All BCY</option>
+            {options.batchClassYearSemesters.map((b) => (
+              <option key={b.id} value={b.name}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+
+          {/* Search */}
+          <div className="flex-grow md:max-w-sm">
+            <input
+              placeholder="🔍 Search students"
+              className="filter-input w-full"
+              onChange={(e) => setSearchText(e.target.value)}
+              value={searchText}
+            />
+          </div>
+
+          {/* Clear Filters */}
+          {(filters.department || filters.batch || filters.status || searchText) && (
+            <button
+              onClick={() => {
+                setFilters({ department: "", batch: "", status: "" });
+                setSearchText("");
+              }}
+              className="px-3 py-1.5 rounded-lg bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 text-sm text-gray-700 dark:text-gray-300"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
+        {/* Info Bar */}
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+          <div>
+            Showing <span className="font-medium text-gray-900 dark:text-gray-200">{filteredData.length}</span> of <span className="font-medium text-gray-900 dark:text-gray-200">{students.length}</span> students
+          </div>
+          {loading && (
+            <div className="text-blue-600 dark:text-blue-400 text-sm">
+              Loading...
+            </div>
+          )}
+        </div>
+
+        {/* Table */}
+        {loading ? (
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+            <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 dark:border-blue-400"></div>
+            <p className="mt-2 text-sm">Loading students...</p>
+          </div>
+        ) : filteredData.length === 0 ? (
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+            <div className="text-3xl mb-2">📋</div>
+            <p className="text-base font-medium mb-1">No students found</p>
+            <p className="text-sm">Try adjusting your search or filters</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table<DataTypes>
+              dataSource={filteredData}
+              columns={columns}
+              rowKey="key"
+              pagination={{ 
+                pageSize: 10,
+                showSizeChanger: true,
+                showQuickJumper: true,
+                showTotal: (total, range) => `${range[0]}-${range[1]} of ${total}`,
+                size: "small",
+                className: "px-3 py-2"
+              }}
+              onRow={(r) => ({
+                onClick: () => navigate(`/registrar/students/${r.key}`),
+              })}
+              className="compact-table"
+              rowClassName={(r) =>
+                `
+                cursor-pointer
+                ${r.isDisabled
+                  ? "bg-red-50 dark:bg-red-900/10"
+                  : "bg-white dark:bg-gray-800"
+                }
+                hover:!bg-gray-50 dark:hover:!bg-gray-750
+                text-gray-900 dark:text-gray-100
+                `
+              }
+              scroll={{ x: 800 }}
+            />
+          </div>
+        )}
       </div>
+
+      {/* Styles */}
+      <style>{`
+        .filter-select {
+          padding: 0.375rem 0.75rem;
+          border-radius: 0.375rem;
+          border: 1px solid #d1d5db;
+          background: white;
+          color: #374151;
+          font-size: 0.875rem;
+          min-width: 140px;
+          height: 36px;
+        }
+        
+        .filter-select:focus {
+          outline: none;
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1);
+        }
+        
+        .dark .filter-select {
+          background: #1f2937;
+          border-color: #4b5563;
+          color: #e5e7eb;
+        }
+        
+        .dark .filter-select:focus {
+          border-color: #60a5fa;
+          box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.1);
+        }
+        
+        .filter-input {
+          padding: 0.375rem 0.75rem;
+          border-radius: 0.375rem;
+          border: 1px solid #d1d5db;
+          background: white;
+          color: #374151;
+          font-size: 0.875rem;
+          height: 36px;
+        }
+        
+        .filter-input:focus {
+          outline: none;
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1);
+        }
+        
+        .dark .filter-input {
+          background: #1f2937;
+          border-color: #4b5563;
+          color: #e5e7eb;
+        }
+        
+        .dark .filter-input:focus {
+          border-color: #60a5fa;
+          box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.1);
+        }
+        
+        /* Compact Table Styles */
+        .compact-table .ant-table {
+          background: transparent;
+          font-size: 0.875rem;
+        }
+        
+        .compact-table .ant-table-thead > tr > th {
+          background: #f9fafb !important;
+          border-bottom: 1px solid #e5e7eb !important;
+          color: #374151 !important;
+          font-weight: 600 !important;
+          padding: 0.5rem 0.75rem !important;
+          white-space: nowrap;
+          font-size: 0.875rem;
+        }
+        
+        .dark .compact-table .ant-table-thead > tr > th {
+          background: #111827 !important;
+          border-bottom: 1px solid #374151 !important;
+          color: #e5e7eb !important;
+        }
+        
+        .compact-table .ant-table-tbody > tr > td {
+          border-bottom: 1px solid #e5e7eb !important;
+          padding: 0.5rem 0.75rem !important;
+          font-size: 0.875rem;
+        }
+        
+        .dark .compact-table .ant-table-tbody > tr > td {
+          border-bottom: 1px solid #374151 !important;
+        }
+        
+        /* Remove all scale transforms and transitions */
+        .compact-table .ant-table-tbody > tr,
+        .compact-table .ant-table-tbody > tr > td,
+        .compact-table .ant-table-tbody > tr:hover > td {
+          transform: none !important;
+          transition: none !important;
+          scale: 1 !important;
+        }
+        
+        /* Fix white flash on hover */
+        .compact-table .ant-table-tbody > tr.ant-table-row:hover > td {
+          background: inherit !important;
+        }
+
+        /* Fix white flash specifically for disabled rows */
+        .compact-table .ant-table-tbody > tr.bg-red-50:hover > td,
+        .compact-table .ant-table-tbody > tr.bg-red-900\\/10:hover > td {
+          background: inherit !important;
+        }
+        
+        /* Simple hover background without scale */
+        .compact-table .ant-table-tbody > tr:hover {
+          background: #f9fafb !important;
+        }
+        
+        .dark .compact-table .ant-table-tbody > tr:hover {
+          background: #1f2937 !important;
+        }
+        
+        /* Disabled rows hover */
+        .compact-table .ant-table-tbody > tr.bg-red-50:hover,
+        .compact-table .ant-table-tbody > tr.bg-red-50\\/10:hover {
+          background: #fef2f2 !important;
+        }
+        
+        .dark .compact-table .ant-table-tbody > tr.bg-red-900\\/10:hover {
+          background: rgba(127, 29, 29, 0.2) !important;
+        }
+        
+        /* Compact Pagination */
+        .compact-table .ant-pagination {
+          margin: 0 !important;
+          padding: 0.75rem !important;
+          background: #f9fafb;
+          border-top: 1px solid #e5e7eb;
+          font-size: 0.875rem;
+        }
+        
+        .dark .compact-table .ant-pagination {
+          background: #111827;
+          border-top: 1px solid #374151;
+          color: #e5e7eb !important;
+        }
+        
+        /* Add spacing between pagination items */
+        .compact-table .ant-pagination-item {
+          margin-right: 6px !important;
+          margin-bottom: 4px !important;
+          border-radius: 0.25rem;
+          border: 1px solid #d1d5db;
+          background: white;
+          min-width: 28px;
+          height: 28px;
+          line-height: 26px;
+          font-size: 0.875rem;
+        }
+        
+        .compact-table .ant-pagination-item:last-child {
+          margin-right: 0 !important;
+        }
+        
+        .compact-table .ant-pagination-prev,
+        .compact-table .ant-pagination-next {
+          margin-right: 6px !important;
+        }
+        
+        .compact-table .ant-pagination-jump-prev,
+        .compact-table .ant-pagination-jump-next {
+          margin-right: 6px !important;
+        }
+        
+        /* Ensure pagination items have enough space */
+        .compact-table .ant-pagination {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 4px;
+        }
+        
+        .compact-table .ant-pagination > * {
+          flex-shrink: 0;
+        }
+        
+        .dark .compact-table .ant-pagination-item {
+          background: #1f2937;
+          border-color: #4b5563;
+        }
+        
+        .compact-table .ant-pagination-item a {
+          color: #4b5563;
+          font-size: 0.875rem;
+        }
+        
+        .dark .compact-table .ant-pagination-item a {
+          color: #e5e7eb !important;
+        }
+        
+        .compact-table .ant-pagination-item-active {
+          border-color: #3b82f6;
+          background: #3b82f6;
+        }
+        
+        .compact-table .ant-pagination-item-active a {
+          color: white !important;
+          font-weight: 500;
+        }
+        
+        .dark .compact-table .ant-pagination-item-active {
+          border-color: #60a5fa;
+          background: #60a5fa;
+        }
+        
+        /* Prev/next buttons */
+        .compact-table .ant-pagination-prev,
+        .compact-table .ant-pagination-next {
+          min-width: 28px;
+          height: 28px;
+        }
+        
+        .compact-table .ant-pagination-prev .ant-pagination-item-link,
+        .compact-table .ant-pagination-next .ant-pagination-item-link {
+          border-radius: 0.25rem;
+          border: 1px solid #d1d5db;
+          background: white;
+          color: #4b5563;
+          height: 28px;
+          line-height: 26px;
+        }
+        
+        .dark .compact-table .ant-pagination-prev .ant-pagination-item-link,
+        .dark .compact-table .ant-pagination-next .ant-pagination-item-link {
+          background: #1f2937;
+          border-color: #4b5563;
+          color: #e5e7eb !important;
+        }
+        
+        /* Page size selector */
+        .compact-table .ant-select-selector {
+          border-radius: 0.25rem !important;
+          border: 1px solid #d1d5db !important;
+          background: white !important;
+          height: 28px !important;
+          min-height: 28px !important;
+          font-size: 0.875rem;
+        }
+        
+        .dark .compact-table .ant-select-selector {
+          background: #1f2937 !important;
+          border-color: #4b5563 !important;
+        }
+        
+        .compact-table .ant-select-selection-item {
+          line-height: 26px !important;
+          color: #4b5563 !important;
+          font-size: 0.875rem;
+        }
+        
+        .dark .compact-table .ant-select-selection-item {
+          color: #e5e7eb !important;
+        }
+        
+        /* Quick jumper */
+        .compact-table .ant-pagination-options-quick-jumper {
+          font-size: 0.875rem;
+          height: 28px;
+        }
+        
+        .compact-table .ant-pagination-options-quick-jumper input {
+          height: 28px;
+          padding: 0 8px;
+          font-size: 0.875rem;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+          .filter-select {
+            min-width: 120px;
+            flex: 1;
+            font-size: 0.8125rem;
+          }
+          
+          .filter-input {
+            font-size: 0.8125rem;
+          }
+          
+          .compact-table .ant-table-thead > tr > th,
+          .compact-table .ant-table-tbody > tr > td {
+            padding: 0.375rem 0.5rem !important;
+            font-size: 0.8125rem;
+          }
+          
+          .compact-table .ant-pagination {
+            padding: 0.5rem !important;
+            font-size: 0.8125rem;
+          }
+        }
+        
+        /* Subtle dark mode hover */
+        .dark .bg-gray-750 {
+          background-color: #2d3748;
+        }
+      `}</style>
     </div>
   );
 }
