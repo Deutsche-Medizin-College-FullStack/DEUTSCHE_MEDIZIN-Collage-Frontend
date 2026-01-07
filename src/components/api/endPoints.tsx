@@ -60,6 +60,7 @@ const endPoints = {
 
   /* =======================     Students  ======================== */
   students: "/students",
+  allStudents: "/all-students",
   studentById: "/students",
   studentStatus: "/student-statuses",
   studentGradeReports: "/student/grade-reports",
@@ -160,18 +161,18 @@ const endPoints = {
   getActiveDeans: "/deans/active",
   getActiveViceDeans: "/vice-deans/active",
   getDeanById: "/deans",
-    fields: "/students/fields",
-    /* =======================     Registrar  ======================== */
-    getRegistrarHeadApprovedScores: "/registrar/head-approved-scores",
-    registrarFinalApproveAll: "/registrar/assignments/:teacherCourseAssignmentId/final-approve-all",
+  fields: "/students/fields",
+  /* =======================     Registrar  ======================== */
+  getRegistrarHeadApprovedScores: "/registrar/head-approved-scores",
+  registrarFinalApproveAll:
+    "/registrar/assignments/:teacherCourseAssignmentId/final-approve-all",
 
-    /* =======================     Vice Deans  ======================== */
-createViceDean: "/auth/register/vice-dean",
-getViceDeanById: "/vice-deans", 
-updateViceDean: "/vice-deans", 
-getViceDeanPhoto: "/vice-deans/get-photo",
-getViceDeanDocument: "/vice-deans/get-document",
-
+  /* =======================     Vice Deans  ======================== */
+  createViceDean: "/auth/register/vice-dean",
+  getViceDeanById: "/vice-deans",
+  updateViceDean: "/vice-deans",
+  getViceDeanPhoto: "/vice-deans/get-photo",
+  getViceDeanDocument: "/vice-deans/get-document",
 };
 
 export default endPoints;

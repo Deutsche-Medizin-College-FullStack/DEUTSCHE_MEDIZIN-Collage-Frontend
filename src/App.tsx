@@ -65,6 +65,9 @@ const TeacherProfileDetail = React.lazy(
 );
 
 // Registrar Pages
+const StudentCourseScoreTab = React.lazy(
+  () => import("./pages/registrar/Courses")
+);
 const RegistrarLayout = React.lazy(() => import("./layouts/RegistrarLayout"));
 const SchoolBackgroundsEditor = React.lazy(
   () => import("./pages/registrar/settings/SchoolBackgroundsEditor")
@@ -82,8 +85,11 @@ const RegistrarStudents = React.lazy(
   () => import("./pages/registrar/Students")
 );
 const AddStudent = React.lazy(() => import("./pages/registrar/AddStudent"));
+const StudentCourseScoreTable = React.lazy(
+  () => import("./pages/registrar/StudentCourseScoreTable")
+);
 const RegistrarCourses = React.lazy(() => import("./pages/registrar/Courses"));
-
+//trouble
 const RegistrarAssessments = React.lazy(
   () => import("./pages/registrar/Assessments")
 );
@@ -190,20 +196,31 @@ const ViceDepartmentDetail = React.lazy(
 
 // Manager Pages
 const ManagerLayout = React.lazy(() => import("./layouts/ManagerLayout"));
-const ManagerDashboard = React.lazy(() => import("./pages/manager/Dashboard"));
 const ManagerReports = React.lazy(() => import("./pages/manager/Reports"));
-const StudentCourseScoreTable = React.lazy(
-  () => import("./pages/registrar/StudentCourseScoreTable")
+
+// const ManagerDashboard = React.lazy(
+//   () => import("./pages/manager/GeneralManagerDashboard")
+// );
+const GeneralManagerProfile = React.lazy(
+  () => import("./pages/manager/GeneralManagerProfile")
 );
+const StudentsCGPAPage = React.lazy(
+  () => import("./pages/manager/StudentsCGPAPage")
+);
+const DepartmentHeadsPage = React.lazy(
+  () => import("./pages/manager/DepartmentHeadsPage")
+);
+const GeneralManagerDashboard = React.lazy(
+  () => import("./pages/manager/GeneralManagerDashboard")
+);
+const TeachersPage = React.lazy(() => import("./pages/manager/TeachersPage"));
 const TenColumnEditableTablePage = React.lazy(
   () => import("./TenColumnEditableTablePage")
 );
 const BatchesEditor = React.lazy(
   () => import("./pages/registrar/settings/BatchesEditor")
 );
-const CoursesEditor = React.lazy(
-  () => import("./pages/registrar/settings/CoursesEditor")
-);
+
 const CourseSourcesEditor = React.lazy(
   () => import("./pages/registrar/settings/CourseSourcesEditor")
 );
@@ -382,7 +399,6 @@ function App() {
                   path="settings/course-category"
                   element={<CourseCategoriesEditor />}
                 />
-                <Route path="settings/courses" element={<CoursesEditor />} />
                 <Route
                   path="settings/course-source"
                   element={<CourseSourcesEditor />}
@@ -406,6 +422,7 @@ function App() {
                 />
                 <Route path="add-student" element={<AddStudent />} />
                 <Route path="courses" element={<RegistrarCourses />} />
+                {/*another trouble*/}
                 <Route path="assessments" element={<RegistrarAssessments />} />
                 <Route path="scores" element={<StudentCourseScoreTable />} />
                 <Route path="tables" element={<CustomStudentTable />} />
@@ -490,16 +507,19 @@ function App() {
             <Route element={<ProtectedRoute />}>
               <Route path="/general-manager" element={<ManagerLayout />}>
                 <Route index element={<Navigate to="dashboard" replace />} />
-                <Route path="dashboard" element={<ManagerDashboard />} />
-                <Route path="students" element={<ManagerStudents />} />
+                <Route path="dashboard" element={<GeneralManagerDashboard />} />
                 <Route path="students/:id" element={<StudentDetail />} />
-                <Route path="reports" element={<ManagerReports />} />
-                <Route path="department" element={<DeanDepartments />} />
+                <Route path="profile" element={<GeneralManagerProfile />} />
+                <Route path="students" element={<StudentsCGPAPage />} />
                 <Route
                   path="departments/:id"
                   element={<DeanDepartmentDetail />}
                 />
-                <Route path="teachers" element={<ManagerTeachers />} />
+                <Route
+                  path="department-heads"
+                  element={<DepartmentHeadsPage />}
+                />
+                <Route path="teachers" element={<TeachersPage />} />
                 <Route path="dean" element={<DeanProfile />} />
                 <Route path="vice-dean" element={<ViceDeanProfile />} />
                 <Route path="registrar" element={<RegistrarProfile />} />

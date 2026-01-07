@@ -33,7 +33,7 @@ const ProgramModalitiesEditor = () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await apiService.get(endPoints.programModality);
+        const response = await apiService.get(endPoints.programModalities);
         console.log("API Response:", response);
         setModalities(response);
       } catch (err: any) {

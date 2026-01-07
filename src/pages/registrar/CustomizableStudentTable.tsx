@@ -487,7 +487,9 @@ export default function CustomizableStudentTable() {
         );
 
         // 2. Get actual student records — keep using endPoints.students
-        const studentsRes = await apiClient.get<Student[]>(endPoints.students);
+        const studentsRes = await apiClient.get<Student[]>(
+          endPoints.allStudents
+        );
         if (mounted) {
           setStudents(studentsRes.data ?? []);
         }

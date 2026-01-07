@@ -137,7 +137,7 @@ const CrudSection = ({
   const [showAll, setShowAll] = useState(false);
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const [manyGradingSystem, setManyGradingSystem] = useState<string>("all");
-
+  const [manyDepartments, setManyDepartments] = useState<string>("all");
   const emptyInterval: Interval = {
     id: null,
     description: "",
@@ -157,6 +157,7 @@ const CrudSection = ({
   });
 
   const [formError, setFormError] = useState("");
+  const [department, setDeparment] = useState([]);
   const [gradingSystems, setGradingSystems] = useState<GradingSystem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -175,6 +176,18 @@ const CrudSection = ({
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+  const fetchDepartments = async () => {
+    try {
+      const response = await apiService.get(endPoints.departments);
+      setDeparment(response);
+    } catch (e: any) {
+      console.error("Failed to fetch grading systems:", e);
+      setError(
+        e.response?.data?.message ||
+          "Failed to load grading systems. Please try again."
+      );
+    }
+  };
   const fetchGradingSystems = async () => {
     try {
       setLoading(true);
@@ -192,6 +205,12 @@ const CrudSection = ({
       setLoading(false);
     }
   };
+  useEffect(() => {
+    fetchDepartments();
+  }, []);
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, showAll]);
 
   useEffect(() => {
     fetchGradingSystems();
@@ -591,15 +610,15 @@ const CrudSection = ({
               />
 
               <select
-                value={manyGradingSystem}
-                onChange={(e) => setManyGradingSystem(e.target.value)}
+                value={manyDepartments}
+                onChange={(e) => setManyDepartments(e.target.value)}
                 className="w-full sm:w-56 px-3 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm sm:text-base text-gray-800 dark:text-gray-100 focus:border-blue-600 dark:focus:border-blue-500 outline-none"
               >
-                <option value="">Select Grading System</option>
+                <option value="">Select Department</option>
 
-                {gradingSystems.map((d) => (
-                  <option key={d.versionName} value={d.versionName}>
-                    {d.versionName}
+                {department.map((d) => (
+                  <option key={d.deptName} value={d.dptID}>
+                    {d.deptName}
                   </option>
                 ))}
               </select>

@@ -29,7 +29,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import apiClient from "../components/api/apiClient";
 import endPoints from "../components/api/endPoints";
-
+import NotificationDropdown from "@/components/ui/NotificationDropdown";
 export default function DeanLayout() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -55,8 +55,16 @@ export default function DeanLayout() {
     { name: "Dashboard", href: "/dean/dashboard", icon: LayoutDashboard },
     { name: "Students", href: "/dean/students", icon: Users },
     { name: "Profile", href: "/dean/profile", icon: User },
-    { name: "Manage Program Level", href: "/dean/program-level", icon: BookOpen, },
-    { name: "Manage Program Modality",  href: "/dean/program-modality", icon: Layers,    },
+    {
+      name: "Manage Program Level",
+      href: "/dean/program-level",
+      icon: BookOpen,
+    },
+    {
+      name: "Manage Program Modality",
+      href: "/dean/program-modality",
+      icon: Layers,
+    },
     { name: "Department Heads", href: "/dean/department-heads", icon: Users },
     { name: "Vice Deans", href: "/dean/vice-deans", icon: Users },
     { name: "Grades", href: "/dean/grades", icon: BookOpen },
@@ -184,9 +192,7 @@ export default function DeanLayout() {
             />
             <div className="text-white">
               <div className="text-sm font-bold">DHFM COLLEGE</div>
-              <div className="text-xs opacity-75">
-                Dean Portal
-              </div>
+              <div className="text-xs opacity-75">Dean Portal</div>
             </div>
           </div>
           <button
@@ -263,6 +269,7 @@ export default function DeanLayout() {
           {/* Right Section */}
           <div className="flex items-center gap-x-4 lg:gap-x-6">
             <ThemeToggle />
+            <NotificationDropdown />
 
             {/* User Dropdown */}
             <div className="relative" ref={dropdownRef}>

@@ -566,21 +566,6 @@ export default function RegistrarLayout() {
                     {courseOpen && (
                       <div className="pl-6 space-y-1">
                         <Link
-                          to="/registrar/settings/courses"
-                          className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                            location.pathname.includes(
-                              "/registrar/settings/courses"
-                            )
-                              ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
-                              : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
-                          }`}
-                          onClick={() =>
-                            window.innerWidth <= 1024 && setSidebarOpen(false)
-                          }
-                        >
-                          Course
-                        </Link>
-                        <Link
                           to="/registrar/settings/course-category"
                           className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
                             location.pathname.includes(
