@@ -125,6 +125,7 @@ const endPoints = {
   classYears: "/class-years",
   BatchClassYearSemesters: "/bcsy",
   batchClassSemsterYear: "/bcsy",
+  courseSources: "/course-sources",
 
   /* =======================     Locations  ======================== */
   regions: "/region",
