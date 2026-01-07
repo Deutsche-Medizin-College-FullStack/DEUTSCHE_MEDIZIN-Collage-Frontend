@@ -11,7 +11,7 @@ export default function RegistrarStudents() {
     status: "",
   });
   const [searchText, setSearchText] = useState("");
-  const [students, setStudents] = useState<DataTypes[]>([]);
+  const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const objectUrlRefs = useRef<string[]>([]);
 
@@ -40,18 +40,20 @@ useEffect(() => {
 
         return {
           key: String(s.id),
-          id: s.username || String(s.id), // use username if available
+          studentId: s.id,                 
+          id: s.username,                  
           name: englishName || "No Name",
           amharicName: amharicName || "ስም የለም",
           status: s.studentRecentStatus || "Unknown",
           departmentEnrolled: s.departmentEnrolled || "-",
-          department: s.departmentEnrolled || "-", // mapped for DataTypes
+          department: s.departmentEnrolled || "-",
           batchClassYearSemester: s.batchClassYearSemester || "-",
-          batch: s.batchClassYearSemester || s.batch || "-", // mapped for DataTypes
-          year: s.academicYear || s.year || "-", // mapped for DataTypes
+          batch: s.batchClassYearSemester || "-",
+          year: s.academicYear || "-",
           photo: photoUrl,
           isDisabled: s.accountStatus === "DISABLED",
         } as DataTypes;
+
       });
 
       if (!cancelled) setStudents(mapped);
