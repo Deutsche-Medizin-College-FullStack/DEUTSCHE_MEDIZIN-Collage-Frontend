@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import EditableTableApplicant, { type DataTypes } from "@/components/Extra/EditableTableApplicant";
+import EditableTableApplicant, {
+  type DataTypes,
+} from "@/components/Extra/EditableTableApplicant";
 import apiService from "@/components/api/apiService";
 import endPoints from "@/components/api/endPoints";
-
 
 export default function RegistrarStudents() {
   const [filters, setFilters] = useState({
@@ -15,66 +16,76 @@ export default function RegistrarStudents() {
   const [loading, setLoading] = useState(true);
   const objectUrlRefs = useRef<string[]>([]);
 
-useEffect(() => {
-  let cancelled = false;
+  useEffect(() => {
+    let cancelled = false;
 
-  async function load() {
-    try {
-      setLoading(true);
-      const list = await apiService.get(endPoints.students);
+    async function load() {
+      try {
+        setLoading(true);
+        const list = await apiService.get(endPoints.students);
 
-      const mapped: DataTypes[] = (list || []).map((s: any) => {
-        // Build full names
-        const englishName = [s.firstNameENG, s.fatherNameENG, s.grandfatherNameENG]
-          .filter(Boolean)
-          .join(" ");
+        const mapped: DataTypes[] = (list || []).map((s: any) => {
+          // Build full names
+          const englishName = [
+            s.firstNameENG,
+            s.fatherNameENG,
+            s.grandfatherNameENG,
+          ]
+            .filter(Boolean)
+            .join(" ");
 
-        const amharicName = [s.firstNameAMH, s.fatherNameAMH, s.grandfatherNameAMH]
-          .filter(Boolean)
-          .join(" ");
+          const amharicName = [
+            s.firstNameAMH,
+            s.fatherNameAMH,
+            s.grandfatherNameAMH,
+          ]
+            .filter(Boolean)
+            .join(" ");
 
-        // Fix base64 photo
-        const photoUrl = s.studentPhoto
-          ? `data:image/jpeg;base64,${s.studentPhoto}`
-          : undefined;
+          // Fix base64 photo
+          const photoUrl = s.studentPhoto
+            ? `data:image/jpeg;base64,${s.studentPhoto}`
+            : undefined;
 
-        return {
-          key: String(s.id),
-          id: s.username || String(s.id), // use username if available
-          name: englishName || "No Name",
-          amharicName: amharicName || "ስም የለም",
-          status: s.studentRecentStatus || "Unknown",
-          departmentEnrolled: s.departmentEnrolled || "-",
-          department: s.departmentEnrolled || "-", // mapped for DataTypes
-          batchClassYearSemester: s.batchClassYearSemester || "-",
-          batch: s.batchClassYearSemester || s.batch || "-", // mapped for DataTypes
-          year: s.academicYear || s.year || "-", // mapped for DataTypes
-          photo: photoUrl,
-          isDisabled: s.accountStatus === "DISABLED",
-        } as DataTypes;
-      });
+          return {
+            key: String(s.id),
+            id: s.username || String(s.id), // use username if available
+            name: englishName || "No Name",
+            amharicName: amharicName || "ስም የለም",
+            status: s.studentRecentStatus || "Unknown",
+            departmentEnrolled: s.departmentEnrolled || "-",
+            department: s.departmentEnrolled || "-", // mapped for DataTypes
+            batchClassYearSemester: s.batchClassYearSemester || "-",
+            batch: s.batchClassYearSemester || s.batch || "-", // mapped for DataTypes
+            year: s.academicYear || s.year || "-", // mapped for DataTypes
+            photo: photoUrl,
+            isDisabled: s.accountStatus === "DISABLED",
+          } as DataTypes;
+        });
 
-      if (!cancelled) setStudents(mapped);
-    } catch (err) {
-      console.error("Failed to load students:", err);
-      if (!cancelled) setStudents([]);
-    } finally {
-      if (!cancelled) setLoading(false);
+        if (!cancelled) setStudents(mapped);
+      } catch (err) {
+        console.error("Failed to load students:", err);
+        if (!cancelled) setStudents([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
-  }
 
-  load();
+    load();
 
-  return () => {
-    cancelled = true;
-  };
-}, []);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const filteredData = useMemo(() => {
     const list = students;
     const search = searchText.toLowerCase();
     return list.filter((item: DataTypes) => {
-      const matchedStatus = filters.status ? filters.status === item.status : true;
+      const matchedStatus = filters.status
+        ? filters.status === item.status
+        : true;
       const matchedBatch = filters.batch ? filters.batch === item.batch : true;
       const matchedDepartment = filters.department
         ? filters.department === item.department
@@ -84,7 +95,10 @@ useEffect(() => {
         .join(" ")
         .toLowerCase();
       return (
-        searchable.includes(search) && matchedStatus && matchedBatch && matchedDepartment
+        searchable.includes(search) &&
+        matchedStatus &&
+        matchedBatch &&
+        matchedDepartment
       );
     });
   }, [students, searchText, filters]);
@@ -99,49 +113,6 @@ useEffect(() => {
           </h1>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mt-4 sm:mt-6 mb-8 sm:mb-12">
-            {[
-              {
-                title: "Registration",
-                value: "350,897",
-                change: "↑ 3.48% Since last month",
-                color: "text-green-500",
-              },
-              {
-                title: "NEW Students",
-                value: "2,356",
-                change: "↓ 3.48% Since last week",
-                color: "text-red-500",
-              },
-              {
-                title: "Graduation",
-                value: "924",
-                change: "↓ 1.10% Since yesterday",
-                color: "text-orange-500",
-              },
-              {
-                title: "Education",
-                value: "49,65%",
-                change: "↑ 12% Since last month",
-                color: "text-green-500",
-              },
-            ].map((stat, index) => (
-              <div
-                key={index}
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-5"
-              >
-                <p className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">
-                  {stat.title}
-                </p>
-                <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  {stat.value}
-                </h2>
-                <p className={`text-xs sm:text-sm ${stat.color} mt-1`}>
-                  {stat.change}
-                </p>
-              </div>
-            ))}
-          </div>
         </div>
 
         {/* Page Content */}
