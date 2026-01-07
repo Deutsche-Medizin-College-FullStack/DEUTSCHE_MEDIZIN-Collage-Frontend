@@ -1961,6 +1961,7 @@ const MultiStepRegistrationForm = () => {
             //   {
             //   headers: { requiresAuth: false },
             // }
+            ///
           ),
           apiService.get(
             endPoints.programModalities
@@ -2028,7 +2029,8 @@ const MultiStepRegistrationForm = () => {
     };
     loadDropdowns();
   }, []);
-  // Cascading dropdown functions
+
+  // Cascading dropdown functionso
   const fetchZonesByRegion = async (regionCode, target) => {
     try {
       const zones = await apiService.get(
