@@ -37,127 +37,138 @@ export default function LearnMore() {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-          <FadeInSection className="rounded-xl border border-border bg-card/50 backdrop-blur p-6">
-            <h2 className="text-2xl font-bold mb-3">Welcome to DHMC</h2>
-            <p className="leading-8">
-              Deutsche Hochschule für Medizin College (DHMC) is a premier private medical college dedicated to preparing competent healthcare professionals with cutting-edge knowledge and practical skills to meet regional and global healthcare needs.
-            </p>
-          </FadeInSection>
-          <FadeInSection delay={0.05} className="rounded-xl border border-border bg-card/50 backdrop-blur p-6">
-            <h2 className="text-2xl font-bold mb-3">About the College</h2>
-            <p className="leading-8">
-              Recognized as a leading private medical college in Ethiopia, DHMC delivers high-quality education, innovative research, and active community engagement to foster improvements in public health.
-            </p>
-          </FadeInSection>
-        </div>
+        {/* Vision Section */}
+        <FadeInSection className="rounded-xl border border-border bg-card/50 backdrop-blur p-6 mb-8">
+          <h2 className="text-2xl font-bold mb-4 text-primary">Vision</h2>
+          <p className="leading-8 text-lg">
+            The college aspires to become a leading private higher learning Medical institution and center of excellence by offering quality education and training accompanied by research activities so as to produce competent medical doctors who can provide top health services in rural and urban settings of our country by the year 2030.
+          </p>
+        </FadeInSection>
 
-        <FadeInSection className="rounded-xl border border-border bg-card/50 backdrop-blur p-6 mb-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Mission Section */}
+        <FadeInSection className="rounded-xl border border-border bg-card/50 backdrop-blur p-6 mb-8">
+          <h2 className="text-2xl font-bold mb-4 text-primary">Mission</h2>
+          <div className="space-y-4">
+            <p className="leading-8 text-lg">
+              To produce Medical professionals capable of providing integrated health services to communities in rural and urban settings.
+            </p>
+            <p className="leading-8 text-lg">
+              To enable the health professionals to have the understanding of intellectual skill, attitudes to practice and a habit of lifelong learning necessary for a constant and promising development in health services in the future.
+            </p>
+            <p className="leading-8 text-lg">
+              To be directly engaged in creation, transformation and evaluation of knowledge in the pursuit of excellence in academic scholarship and intellectual inquiry through teaching, research and provision of advisory and public services.
+            </p>
+          </div>
+        </FadeInSection>
+
+        {/* Values Section */}
+        <FadeInSection className="rounded-xl border border-border bg-card/50 backdrop-blur p-6 mb-8">
+          <h2 className="text-2xl font-bold mb-4 text-primary">Values</h2>
+          <p className="leading-8 text-lg mb-4">
+            The college has the following core values:
+          </p>
+          <div className="space-y-6">
             <div>
-          <h2 className="text-2xl font-bold mb-4">Vision</h2>
-          <p className="leading-8">
-                To be a renowned institution recognized for innovative education, impactful research, and leadership in healthcare development regionally and globally.
+              <h3 className="text-xl font-semibold mb-2 text-primary">1. Excellence</h3>
+              <p className="leading-7">
+                Striving for standards in teaching, research, community service and endeavors to exceed the expectations of stakeholders and attain highest standards in academic performance.
               </p>
             </div>
             <div>
-              <h2 className="text-2xl font-bold mb-4">Mission</h2>
-              <p className="leading-8">
-                To deliver high-quality, competency-based education and research that prepares healthcare professionals committed to ethical standards, community service, and lifelong learning.
+              <h3 className="text-xl font-semibold mb-2 text-primary">2. Academic Freedom</h3>
+              <p className="leading-7">
+                Committed to provide the college community the right to exercise free expression of ideas and opinions.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold mb-2 text-primary">3. Respect</h3>
+              <p className="leading-7">
+                Valuing integrity, fairness, justice, honesty and culture of teamwork.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold mb-2 text-primary">4. Accountability and positivity</h3>
+              <p className="leading-7">
+                Believing in commitment to results and accountability for actions; valuing positive teamwork environment and celebrating successes.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold mb-2 text-primary">5. Diversity</h3>
+              <p className="leading-7">
+                Committed to cultural diversity among college community; ensure a respectful, ethical academic environment and principles of gender equality.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold mb-2 text-primary">6. Collaboration and communication</h3>
+              <p className="leading-7">
+                Believing in teamwork, partnership and listening to stakeholders' opinion; ensure accurate and timely communication.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold mb-2 text-primary">7. Teaching and Learning</h3>
+              <p className="leading-7">
+                Committed to professional development and personal growth of staffs and stakeholders.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold mb-2 text-primary">8. Students Centeredness</h3>
+              <p className="leading-7">
+                Committed to provide academic challenge and support in learning environment that motivates students to be actively engaged in learning, decision making and governance.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold mb-2 text-primary">9. Education, Research, Clinical and community engagement</h3>
+              <p className="leading-7">
+                Committed to support the four pillars of the college to highest standards and ensure commitment to serve the community, country and the world through medical care and health education.
               </p>
             </div>
           </div>
         </FadeInSection>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-          <FadeInSection className="rounded-xl border border-border bg-card/50 backdrop-blur p-6">
-            <h3 className="text-xl font-semibold mb-2">Academic Excellence</h3>
-            <ul className="list-disc ml-5 space-y-2 leading-8">
-              <li><span className="font-medium">Comprehensive Programs</span>: Undergraduate and postgraduate studies in Medicine, Nursing, and Medical Radiology.</li>
-              <li><span className="font-medium">Integrated Curriculum</span>: Theoretical learning blended with hands-on training and clinical exposure.</li>
-            </ul>
-          </FadeInSection>
-          <FadeInSection delay={0.05} className="rounded-xl border border-border bg-card/50 backdrop-blur p-6">
-            <h3 className="text-xl font-semibold mb-2">State-of-the-Art Facilities</h3>
-            <ul className="list-disc ml-5 space-y-2 leading-8">
-              <li><span className="font-medium">Healthcare Network</span>: Affiliated hospitals, clinics, and training centers for real clinical exposure.</li>
-              <li><span className="font-medium">Digital Learning</span>: Moodle-powered e-learning platform for resources and remote interaction.</li>
-          </ul>
-          </FadeInSection>
-          <FadeInSection delay={0.1} className="rounded-xl border border-border bg-card/50 backdrop-blur p-6">
-            <h3 className="text-xl font-semibold mb-2">Accreditation & Recognition</h3>
-            <p className="leading-8">
-              All programs are accredited by the Ethiopian Ministry of Education and align with national and international standards, ensuring academic credibility and global recognition.
-            </p>
-          </FadeInSection>
-          <FadeInSection delay={0.15} className="rounded-xl border border-border bg-card/50 backdrop-blur p-6">
-            <h3 className="text-xl font-semibold mb-2">Research & Innovation</h3>
-            <p className="leading-8">
-              With active research institutes, DHMC supports faculty and student projects and collaborates with international partners to advance medical science and healthcare solutions.
-            </p>
-          </FadeInSection>
-          <FadeInSection delay={0.2} className="rounded-xl border border-border bg-card/50 backdrop-blur p-6">
-            <h3 className="text-xl font-semibold mb-2">Quality Assurance</h3>
-            <p className="leading-8">
-              A dedicated Quality Assurance Unit ensures continuous improvement through assessments, audits, and stakeholder feedback, upholding academic excellence and institutional integrity.
-            </p>
-          </FadeInSection>
-          <FadeInSection delay={0.25} className="rounded-xl border border-border bg-card/50 backdrop-blur p-6">
-            <h3 className="text-xl font-semibold mb-2">International Partnerships</h3>
-            <p className="leading-8">
-              Active collaborations with universities and research institutions worldwide enable academic exchange and joint research initiatives.
-            </p>
-          </FadeInSection>
-        </div>
-
-        <FadeInSection className="rounded-xl border border-border bg-card/50 backdrop-blur p-6 mb-12">
-          <h2 className="text-2xl font-bold mb-4">Student Support & Community Engagement</h2>
-          <p className="leading-8">
-            We provide academic advising, counselling, extracurricular activities, and community outreach opportunities that enrich student life and foster professional growth.
-          </p>
-        </FadeInSection>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-          <FadeInSection className="rounded-xl border border-border bg-card/50 backdrop-blur p-6">
-            <h2 className="text-2xl font-bold mb-3">Academic Schools & Programs</h2>
-            <ul className="list-disc ml-5 space-y-2 leading-8">
-              <li><span className="font-medium">School of Medicine</span>: Emphasizes clinical skills, medical knowledge, and patient-centred care.</li>
-              <li><span className="font-medium">School of Health Sciences</span>: Offers Nursing and Medical Radiology Sciences.</li>
-          </ul>
-          </FadeInSection>
-          <FadeInSection delay={0.05} className="rounded-xl border border-border bg-card/50 backdrop-blur p-6">
-            <h2 className="text-2xl font-bold mb-3">Healthcare Services & Practical Training</h2>
-            <p className="leading-8">
-              An extensive network of healthcare facilities serves as training grounds and community service hubs. This integration provides real-world clinical experience and enhances readiness for practice.
-            </p>
-          </FadeInSection>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-          <FadeInSection className="rounded-xl border border-border bg-card/50 backdrop-blur p-6">
-            <h2 className="text-2xl font-bold mb-3">Admissions</h2>
-            <p className="leading-8">
-              Our admission process is transparent, structured, and student-centric. We guide prospective students through requirements, procedures, and deadlines, valuing diversity and commitment to healthcare excellence.
-            </p>
-          </FadeInSection>
-          <FadeInSection delay={0.05} className="rounded-xl border border-border bg-card/50 backdrop-blur p-6">
-            <h2 className="text-2xl font-bold mb-3">Research & Community Development</h2>
-            <p className="leading-8">
-              DHMC fosters a vibrant research culture across disciplines and partners with community organizations to promote health awareness and service delivery.
-            </p>
-          </FadeInSection>
-        </div>
-
+        {/* Educational Objectives Section */}
         <FadeInSection className="rounded-xl border border-border bg-card/50 backdrop-blur p-6">
-          <h2 className="text-2xl font-bold mb-3">Our Students & Alumni</h2>
-          <ul className="list-disc ml-5 space-y-2 leading-8">
-            <li><span className="font-medium">Student-Focused Environment</span>: A supportive atmosphere that nurtures academic excellence and personal development.</li>
-            <li><span className="font-medium">Alumni Network</span>: Graduates contribute to healthcare locally and internationally with ongoing mentorship, networking, and professional development.</li>
-          </ul>
+          <h2 className="text-2xl font-bold mb-6 text-primary">Educational Objectives</h2>
+          
+          <div className="mb-8">
+            <h3 className="text-xl font-semibold mb-4 text-primary">1. General Objectives</h3>
+            <ul className="list-disc ml-5 space-y-3">
+              <li className="leading-7 text-lg">
+                To provide students with both theoretical and practical trainings to Medical doctors,
+              </li>
+              <li className="leading-7 text-lg">
+                To provide a comprehensive understanding of the processes and goals of the entire health professionals
+              </li>
+              <li className="leading-7 text-lg">
+                To prepare students not only for a career in medical, and other health professions but to equip them with the skills and competencies needed for discharging their responsibilities.
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="text-xl font-semibold mb-4 text-primary">2. Specific Objectives</h3>
+            <ul className="list-disc ml-5 space-y-3">
+              <li className="leading-7 text-lg">
+                To teach and train medical students to become not only highly competent doctors but also appreciate the value of lifelong learning.
+              </li>
+              <li className="leading-7 text-lg">
+                To make them equipped with good communication skills and to understand the important of resource management;
+              </li>
+              <li className="leading-7 text-lg">
+                To enable the graduating medical students to provide the highest standards of clinical service;
+              </li>
+              <li className="leading-7 text-lg">
+                To enable the graduates conduct scholarly research in the clinical, biomedical and public health spheres;
+              </li>
+              <li className="leading-7 text-lg">
+                To train medical students who will be active in community health activities. Short attachments, detachments or electives shall be provided to psychiatry, ophthalmology, radiology, dermatology and ENT depending on diseases pattern and Institutional preparedness. The clinical teaching shall include practical and self-directed learning opportunities. Students should have enough exposure to patients to acquire knowledge, attitude & skills necessary to assume clinical responsibility upon graduation. In order to enhance learning, coaching of skills should be emphasized.
+              </li>
+              <li className="leading-7 text-lg">
+                In clinical years, more student-centered and problem- oriented teaching method shall be employed.
+              </li>
+            </ul>
+          </div>
         </FadeInSection>
       </div>
     </div>
   );
 }
-
-
