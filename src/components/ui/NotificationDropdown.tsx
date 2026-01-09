@@ -5,15 +5,17 @@ import notificationService, { type Notification } from '../api/notificationServi
 
 interface NotificationDropdownProps {
   className?: string;
+  userRole?: string; // Add this
 }
 
-export default function NotificationDropdown({ className = '' }: NotificationDropdownProps) {
+export default function NotificationDropdown({ className = '',  userRole = ''  }: NotificationDropdownProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showDropdown, setShowDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
 
   // Get icon for sender role
   const getSenderIcon = (senderRole: string) => {
@@ -35,6 +37,35 @@ export default function NotificationDropdown({ className = '' }: NotificationDro
     }
   };
 
+  // Get notification route based on user role
+const getNotificationRoute = () => {
+    const role = userRole?.toLowerCase() || '';
+    switch (role) {
+      case 'student':
+        return '/student/notifications';
+      case 'teacher':
+        return '/teacher/notifications';
+      case 'registrar':
+        return '/registrar/notifications';
+      case 'dean':
+        return '/dean/notifications';
+      case 'vice_dean':
+      case 'vicedean':
+        return '/vice-dean/notifications';
+      case 'department_head':
+      case 'head':
+        return '/head/notifications';
+      default:
+        // Fallback to URL detection
+        const path = window.location.pathname;
+        if (path.includes('/teacher/')) return '/teacher/notifications';
+        if (path.includes('/registrar/')) return '/registrar/notifications';
+        if (path.includes('/dean/')) return '/dean/notifications';
+        if (path.includes('/vice-dean/')) return '/vice-dean/notifications';
+        if (path.includes('/head/')) return '/head/notifications';
+        return '/student/notifications';
+    }
+  };
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -53,17 +84,14 @@ export default function NotificationDropdown({ className = '' }: NotificationDro
   const fetchLatestNotifications = async () => {
     try {
       setLoading(true);
-      // Fetch all notifications to get accurate unread count
       const allNotifications = await notificationService.getAllNotifications();
       const latestNotifications = await notificationService.getLatestNotifications();
       
       const sortedNotifications = notificationService.sortNotificationsByPriority(latestNotifications);
-      setNotifications(sortedNotifications.slice(0, 3)); // Show only 3 latest
-      // Use all notifications for accurate unread count
+      setNotifications(sortedNotifications.slice(0, 3));
       setUnreadCount(notificationService.getUnreadCount(allNotifications));
     } catch (error) {
       console.error('Error fetching notifications:', error);
-      // Do not show mock data; show empty state
       setNotifications([]);
       setUnreadCount(0);
     } finally {
@@ -80,7 +108,6 @@ export default function NotificationDropdown({ className = '' }: NotificationDro
   const handleNotificationClick = async (notificationId: number) => {
     try {
       await notificationService.markNotificationAsRead(notificationId);
-      // Update local state
       setNotifications(prev => 
         prev.map(notif => 
           notif.id === notificationId ? { ...notif, isRead: true } : notif
@@ -89,7 +116,6 @@ export default function NotificationDropdown({ className = '' }: NotificationDro
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
       console.error('Error marking notification as read:', error);
-      // Fallback: still update local state
       setNotifications(prev => 
         prev.map(notif => 
           notif.id === notificationId ? { ...notif, isRead: true } : notif
@@ -99,10 +125,11 @@ export default function NotificationDropdown({ className = '' }: NotificationDro
     }
   };
 
-  // Handle view more click
+  // Handle view more click - Fixed to redirect to appropriate layout
   const handleViewMore = () => {
     setShowDropdown(false);
-    navigate('/registrar/notifications');
+    const route = getNotificationRoute();
+    navigate(route);
   };
 
   // Toggle dropdown

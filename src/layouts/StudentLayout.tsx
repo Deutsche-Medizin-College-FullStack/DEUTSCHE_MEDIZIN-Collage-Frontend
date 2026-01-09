@@ -4,6 +4,7 @@ import { Outlet, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { ThemeToggle } from "@/components/theme-toggle";
+import NotificationDropdown from "@/components/ui/NotificationDropdown";
 import {
   ClipboardList,
   LayoutDashboard,
@@ -13,6 +14,7 @@ import {
   Key,
   LogOut,
   ChevronDown,
+  Bell,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
@@ -138,6 +140,7 @@ export default function StudentLayout() {
 
   const navigation = [
     { name: t("dashboard"), href: "/student/dashboard", icon: LayoutDashboard },
+    { name: "Notification", href: "/student/notifications", icon: Bell },
     { name: t("profile"), href: "/student/profile", icon: User },
     { name: t("grades"), href: "/student/grades", icon: ClipboardList },
     { name: t("settings"), href: "/student/settings", icon: Settings },
@@ -263,6 +266,9 @@ export default function StudentLayout() {
           {/* Right section */}
           <div className="flex items-center gap-x-4 lg:gap-x-6">
             <ThemeToggle />
+            
+            {/* Notification Dropdown - ADDED */}
+            <NotificationDropdown userRole={userData?.role} />
 
             {/* Avatar dropdown for all screen sizes */}
             <div className="relative" ref={dropdownRef}>

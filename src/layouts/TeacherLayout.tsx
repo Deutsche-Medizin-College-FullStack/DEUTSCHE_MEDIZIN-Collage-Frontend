@@ -4,6 +4,7 @@ import { Outlet, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { ThemeToggle } from "@/components/theme-toggle";
+import NotificationDropdown from "@/components/ui/NotificationDropdown";
 import {
   LayoutDashboard,
   BookOpen,
@@ -12,6 +13,7 @@ import {
   Key,
   ChevronDown,
   User,
+  Bell,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
@@ -132,9 +134,9 @@ export default function TeacherLayout() {
 
   const navigation = [
     { name: "Dashboard", href: "/teacher/dashboard", icon: LayoutDashboard },
+    { name: "Notification", href: "/teacher/notifications", icon: Bell },
     { name: "Profile", href: "/teacher/profile", icon: User },
     { name: "Courses", href: "/teacher/courses", icon: BookOpen },
-
   ];
 
   // Get user initials for avatar
@@ -201,7 +203,6 @@ export default function TeacherLayout() {
           )}
         </div>
 
-
         <nav className="mt-4 flex-1">
           <div className="px-4 space-y-2">
             {navigation.map((item) => {
@@ -257,6 +258,9 @@ export default function TeacherLayout() {
           {/* Right section */}
           <div className="flex items-center gap-x-4 lg:gap-x-6">
             <ThemeToggle />
+            
+            {/* Notification Dropdown - ADDED */}
+            <NotificationDropdown userRole={userData?.role} />
 
             {/* Avatar dropdown for all screen sizes */}
             <div className="relative" ref={dropdownRef}>

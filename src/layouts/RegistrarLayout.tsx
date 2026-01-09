@@ -21,6 +21,7 @@ import {
   Key,
   User,
   FileCheck,
+  Bell,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -76,6 +77,7 @@ export default function RegistrarLayout() {
 
   const navigation = [
     { name: "Dashboard", href: "/registrar/dashboard", icon: LayoutDashboard },
+    { name: "Notification", href: "/registrar/notifications", icon: Bell },
     { name: "Add New Student", href: "/registrar/add-student", icon: UserPlus },
     { name: "Students", href: "/registrar/students", icon: Users },
     { name: "Departments", href: "/registrar/departments", icon: Layers },
@@ -746,7 +748,7 @@ export default function RegistrarLayout() {
             <div className="flex items-center gap-x-4 lg:gap-x-6">
               <ThemeToggle />
               {/* Notification Dropdown */}
-              <NotificationDropdown />
+              <NotificationDropdown userRole={userData?.role} />
 
               {/* User Dropdown */}
               <div className="relative" ref={dropdownRef}>
