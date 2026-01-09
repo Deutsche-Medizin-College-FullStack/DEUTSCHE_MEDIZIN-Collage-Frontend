@@ -3,6 +3,7 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import NotificationDropdown from "@/components/ui/NotificationDropdown";
 import {
   LayoutDashboard,
   Users,
@@ -14,6 +15,7 @@ import {
   ChevronDown,
   Key,
   LogOut,
+  Bell,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -53,8 +55,8 @@ export default function ViceDeanLayout() {
 
   const navigation = [
     { name: "Dashboard", href: "/vice-dean/dashboard", icon: LayoutDashboard },
+    { name: "Notification", href: "/vice-dean/notifications", icon: Bell },
     { name: "Profile", href: "/vice-dean/profile", icon: User },
-
     { name: "Students", href: "/vice-dean/students", icon: Users },
     { name: "Grades", href: "/vice-dean/grades", icon: BookOpen },
     { name: "Reports", href: "/vice-dean/reports", icon: BarChart3 },
@@ -259,6 +261,9 @@ export default function ViceDeanLayout() {
           {/* Right Section */}
           <div className="flex items-center gap-x-4 lg:gap-x-6">
             <ThemeToggle />
+            
+            {/* Notification Dropdown - ADDED */}
+            <NotificationDropdown userRole={userData?.role} />
 
             {/* User Dropdown */}
             <div className="relative" ref={dropdownRef}>

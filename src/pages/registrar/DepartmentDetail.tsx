@@ -229,81 +229,14 @@ export default function DepartmentDetail() {
   }, [departmentId]);
 
   // Fetch department courses
-  useEffect(() => {
-    const fetchDepartmentCourses = async () => {
-      if (!departmentId) return;
+  const fetchDepartmentCourses = async () => {
+    if (!departmentId) return;
 
-      try {
-        setIsLoading(true);
-        const departmentCourses = await apiService.get(`/courses/department/${departmentId}`);
+    try {
+      setIsLoading(true);
+      const departmentCourses = await apiService.get(`/courses/department/${departmentId}`);
 
-        if (!departmentCourses || departmentCourses.length === 0) {
-          setDepartment({
-            id: id || "",
-            name: departmentDetails?.deptName || id || "",
-            description: `${departmentDetails?.deptName || id} Department`,
-            programLevelCode: finalProgramLevelCode,
-            modalityCode: finalModalityCode,
-            programLevelName,
-            modalityName,
-            courses: [],
-            departmentData: departmentDetails || undefined,
-          });
-          setIsLoading(false);
-          return;
-        }
-
-        const groupedCourses = departmentCourses.reduce((acc: any, course: Course) => {
-          const year = course.classYear?.name || "Unknown";
-          const semester = course.semester?.name || "Unknown Semester";
-
-          if (!acc[year]) acc[year] = {};
-          if (!acc[year][semester]) acc[year][semester] = [];
-
-          acc[year][semester].push({
-            id: course.id.toString(),
-            name: course.ctitle,
-            code: course.ccode,
-            creditHours: course.theoryHrs + course.labHrs,
-            prerequisites: course.prerequisites?.map((p: any) => p.ccode || p.prerequisiteCode) || [],
-            teacher: "Not Assigned", // API doesn't have teacher field
-            theoryHrs: course.theoryHrs,
-            labHrs: course.labHrs,
-            category: course.courseCategory?.name || "Unknown",
-            originalCourse: course,
-          });
-
-          return acc;
-        }, {});
-
-        const departmentInfo: DepartmentInfo = {
-          id: id || "",
-          name: departmentDetails?.deptName || departmentCourses[0]?.department.name || id || "",
-          description: `${departmentDetails?.deptName || departmentCourses[0]?.department.name || id} Department`,
-          programLevelCode: finalProgramLevelCode,
-          modalityCode: finalModalityCode,
-          programLevelName,
-          modalityName,
-          courses: departmentCourses,
-          years: Object.entries(groupedCourses).map(([year, semesters]: [string, any]) => ({
-            id: `year${year}`,
-            name: `${year} Year`,
-            semesters: Object.entries(semesters).map(([semester, courses]: [string, any], index) => ({
-              id: `sem${index + 1}`,
-              name: semester,
-              courses: courses,
-            })),
-          })),
-          departmentData: departmentDetails || undefined,
-        };
-
-        setDepartment(departmentInfo);
-
-        if (departmentInfo.years && departmentInfo.years.length > 0) {
-          setExpandedYears(new Set([departmentInfo.years[0].id]));
-        }
-      } catch (error) {
-        console.error("Error fetching department courses:", error);
+      if (!departmentCourses || departmentCourses.length === 0) {
         setDepartment({
           id: id || "",
           name: departmentDetails?.deptName || id || "",
@@ -315,11 +248,78 @@ export default function DepartmentDetail() {
           courses: [],
           departmentData: departmentDetails || undefined,
         });
-      } finally {
         setIsLoading(false);
+        return;
       }
-    };
 
+      const groupedCourses = departmentCourses.reduce((acc: any, course: Course) => {
+        const year = course.classYear?.name || "Unknown";
+        const semester = course.semester?.name || "Unknown Semester";
+
+        if (!acc[year]) acc[year] = {};
+        if (!acc[year][semester]) acc[year][semester] = [];
+
+        acc[year][semester].push({
+          id: course.id.toString(),
+          name: course.ctitle,
+          code: course.ccode,
+          creditHours: course.theoryHrs + course.labHrs,
+          prerequisites: course.prerequisites?.map((p: any) => p.ccode || p.prerequisiteCode) || [],
+          teacher: "Not Assigned", // API doesn't have teacher field
+          theoryHrs: course.theoryHrs,
+          labHrs: course.labHrs,
+          category: course.courseCategory?.name || "Unknown",
+          originalCourse: course,
+        });
+
+        return acc;
+      }, {});
+
+      const departmentInfo: DepartmentInfo = {
+        id: id || "",
+        name: departmentDetails?.deptName || departmentCourses[0]?.department.name || id || "",
+        description: `${departmentDetails?.deptName || departmentCourses[0]?.department.name || id} Department`,
+        programLevelCode: finalProgramLevelCode,
+        modalityCode: finalModalityCode,
+        programLevelName,
+        modalityName,
+        courses: departmentCourses,
+        years: Object.entries(groupedCourses).map(([year, semesters]: [string, any]) => ({
+          id: `year${year}`,
+          name: `${year} Year`,
+          semesters: Object.entries(semesters).map(([semester, courses]: [string, any], index) => ({
+            id: `sem${index + 1}`,
+            name: semester,
+            courses: courses,
+          })),
+        })),
+        departmentData: departmentDetails || undefined,
+      };
+
+      setDepartment(departmentInfo);
+
+      if (departmentInfo.years && departmentInfo.years.length > 0) {
+        setExpandedYears(new Set([departmentInfo.years[0].id]));
+      }
+    } catch (error) {
+      console.error("Error fetching department courses:", error);
+      setDepartment({
+        id: id || "",
+        name: departmentDetails?.deptName || id || "",
+        description: `${departmentDetails?.deptName || id} Department`,
+        programLevelCode: finalProgramLevelCode,
+        modalityCode: finalModalityCode,
+        programLevelName,
+        modalityName,
+        courses: [],
+        departmentData: departmentDetails || undefined,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     if (departmentId) {
       fetchDepartmentCourses();
     } else {
@@ -391,7 +391,24 @@ export default function DepartmentDetail() {
 
       if (response) {
         alert("Course added successfully!");
-        window.location.reload();
+        // Refresh the course list
+        await fetchDepartmentCourses();
+        // Refresh prerequisites list
+        const courses = await apiService.get(`/courses/department/${departmentId}`);
+        setDepartmentCoursesForPrerequisites(courses);
+        // Reset form
+        setNewCourse({
+          cTitle: "",
+          cCode: "",
+          theoryHrs: "",
+          labHrs: "",
+          courseCategoryID: "",
+          departmentID: "",
+          classYearID: "",
+          semesterCode: "",
+          prerequisiteIds: [],
+        });
+        setIsFormOpen(false);
       }
     } catch (error: any) {
       alert(error.response?.data?.error || "Failed to add course");
@@ -432,13 +449,26 @@ export default function DepartmentDetail() {
         prerequisiteIds: editValues.prerequisiteIds,
       });
 
-      if (response.message === "Course updated successfully") {
+      // Check for success message - adjust based on your API response
+      if (response && (response.message === "Course updated successfully" || response.id)) {
         alert("Course updated successfully!");
         setEditingCourse(null);
-        window.location.reload();
+        // Refresh the course list to show updated data
+        await fetchDepartmentCourses();
+        // Refresh prerequisites list
+        const courses = await apiService.get(`/courses/department/${departmentId}`);
+        setDepartmentCoursesForPrerequisites(courses);
+      } else {
+        // If no clear success message but response exists, assume success
+        alert("Course updated successfully!");
+        setEditingCourse(null);
+        await fetchDepartmentCourses();
+        const courses = await apiService.get(`/courses/department/${departmentId}`);
+        setDepartmentCoursesForPrerequisites(courses);
       }
     } catch (error: any) {
-      alert(error.response?.data?.error || "Failed to update course");
+      console.error("Update error:", error);
+      alert(error.response?.data?.error || error.message || "Failed to update course");
     }
   };
 
@@ -449,7 +479,11 @@ export default function DepartmentDetail() {
       const response = await apiService.delete(`/courses/${courseId}`);
       if (response.message === "Course deleted successfully") {
         alert("Course deleted successfully!");
-        window.location.reload();
+        // Refresh the course list
+        await fetchDepartmentCourses();
+        // Refresh prerequisites list
+        const courses = await apiService.get(`/courses/department/${departmentId}`);
+        setDepartmentCoursesForPrerequisites(courses);
       }
     } catch (error: any) {
       alert(error.response?.data?.error || "Failed to delete course");

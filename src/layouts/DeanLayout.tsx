@@ -14,6 +14,7 @@ import {
   ChevronDown,
   Key,
   LogOut,
+  Bell,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -53,6 +54,7 @@ export default function DeanLayout() {
 
   const navigation = [
     { name: "Dashboard", href: "/dean/dashboard", icon: LayoutDashboard },
+    { name: "Notification", href: "/dean/notifications", icon: Bell },
     { name: "Students", href: "/dean/students", icon: Users },
     { name: "Profile", href: "/dean/profile", icon: User },
     {
@@ -269,7 +271,7 @@ export default function DeanLayout() {
           {/* Right Section */}
           <div className="flex items-center gap-x-4 lg:gap-x-6">
             <ThemeToggle />
-            <NotificationDropdown />
+            <NotificationDropdown userRole={userData?.role} />
 
             {/* User Dropdown */}
             <div className="relative" ref={dropdownRef}>

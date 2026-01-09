@@ -16,6 +16,7 @@ import {
   School,
   LogOut,
   FileCheck,
+  Bell,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -57,6 +58,7 @@ export default function HeadLayout() {
 
   const navigation = [
     { name: "Dashboard", href: "/head/dashboard", icon: LayoutDashboard },
+    { name: "Notification", href: "/head/notifications", icon: Bell },
     { name: "Course", href: "/head/courses", icon: School },
     { name: "Profile", href: "/head/profile", icon: User },
     { name: "Students", href: "/head/students", icon: Users },
@@ -405,7 +407,7 @@ export default function HeadLayout() {
           {/* Right Section */}
           <div className="flex items-center gap-x-4 lg:gap-x-6">
             <ThemeToggle />
-            <NotificationDropdown />
+            <NotificationDropdown userRole={userData?.role} />
 
             {/* User Dropdown */}
             <div className="relative" ref={dropdownRef}>
