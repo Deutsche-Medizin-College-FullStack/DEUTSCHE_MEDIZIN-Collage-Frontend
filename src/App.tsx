@@ -68,7 +68,7 @@ const TeacherProfileDetail = React.lazy(
 const StudentCourseScoreTab = React.lazy(
   () => import("./pages/registrar/Courses")
 );
-const RegistrarNotifications = React.lazy(() => import("./pages/student/Notifications"));
+const RegistrarNotifications = React.lazy(() => import("./pages/registrar/Notifications"));
 const RegistrarLayout = React.lazy(() => import("./layouts/RegistrarLayout"));
 const SchoolBackgroundsEditor = React.lazy(
   () => import("./pages/registrar/settings/SchoolBackgroundsEditor")
