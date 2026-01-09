@@ -22,15 +22,28 @@ interface Department {
   deptName: string;
   totalCrHr: number | null;
   departmentCode: string;
-  icon: React.ReactNode;
-  color: string;
+  // Remove icon and color from the interface as they're not in API response
   programLevelCode?: string;
   modalityCode?: string;
+  programModality?: {
+    modalityCode: string;
+    modality: string;
+    programLevel: {
+      code: string;
+      name: string;
+      active: boolean;
+    };
+  };
+  programLevel?: {
+    code: string;
+    name: string;
+    active: boolean;
+  };
 }
 
 // ---------------------------------------------------------------------
-// Icons & Colors (you can extend these as you wish)
-const getDepartmentIcon = (deptName: string) => {
+// Icons & Colors - Keep these as utility functions
+const getDepartmentIcon = (deptName: string): React.ReactNode => {
   const name = deptName.toLowerCase();
   if (name.includes("nursing") || name.includes("health")) return <HeartPulse className="w-10 h-10" />;
   if (name.includes("medicine")) return <Stethoscope className="w-10 h-10" />;
@@ -39,7 +52,7 @@ const getDepartmentIcon = (deptName: string) => {
   return <GraduationCap className="w-10 h-10" />;
 };
 
-const getDepartmentColor = (deptName: string) => {
+const getDepartmentColor = (deptName: string): string => {
   const name = deptName.toLowerCase();
   if (name.includes("nursing") || name.includes("health")) return "from-green-500 to-emerald-600";
   if (name.includes("medicine")) return "from-red-500 to-pink-600";
@@ -68,7 +81,7 @@ export default function RegistrarDepartments() {
     const fetchProgramLevels = async () => {
       try {
         setIsLoadingLevels(true);
-        const response = await apiService.get("/program-levels"); // <-- endpoint you gave
+        const response = await apiService.get("/program-levels");
         const activeLevels = response.filter((lvl: ProgramLevel) => lvl.active);
         setProgramLevels(activeLevels);
       } catch (err) {
@@ -92,7 +105,7 @@ export default function RegistrarDepartments() {
     const fetchModalities = async () => {
       try {
         setIsLoadingModalities(true);
-        const response = await apiService.get("/program-modality"); // all modalities
+        const response = await apiService.get("/program-modality");
         const filtered = response.filter(
           (m: ProgramModality) => m.programLevelCode === selectedLevel
         );
@@ -107,9 +120,9 @@ export default function RegistrarDepartments() {
     fetchModalities();
   }, [selectedLevel]);
 
-  // 3. When a modality is selected → fetch departments (you already have /departments)
+  // 3. When a modality is selected → fetch departments and filter by selected level and modality
   useEffect(() => {
-    if (!selectedModality) {
+    if (!selectedModality || !selectedLevel) {
       setDepartments([]);
       return;
     }
@@ -118,19 +131,18 @@ export default function RegistrarDepartments() {
       try {
         setIsLoadingDepartments(true);
         const response = await apiService.get(endPoints.departments);
+        
+        // Filter departments based on selected level and modality
+        const filteredDepartments = response.filter((dept: any) => {
+          // Check if department matches the selected level and modality
+          const matchesModality = dept.programModality?.modalityCode === selectedModality;
+          const matchesLevel = dept.programModality?.programLevel?.code === selectedLevel || 
+                              dept.programLevel?.code === selectedLevel;
+          
+          return matchesModality && matchesLevel;
+        });
 
-        const transformed: Department[] = response.map((dept: any) => ({
-          dptID: dept.dptID,
-          deptName: dept.deptName,
-          totalCrHr: dept.totalCrHr,
-          departmentCode: dept.departmentCode,
-          icon: getDepartmentIcon(dept.deptName),
-          color: getDepartmentColor(dept.deptName),
-          programLevelCode: selectedLevel!,
-          modalityCode: selectedModality!,
-        }));
-
-        setDepartments(transformed);
+        setDepartments(filteredDepartments);
       } catch (err) {
         console.error("Error fetching departments:", err);
         setDepartments([]);
@@ -160,6 +172,29 @@ export default function RegistrarDepartments() {
 
   const handleBackToModalities = () => {
     setSelectedModality(null);
+  };
+
+  const handleDepartmentClick = (dept: Department) => {
+    // Create a serializable object to pass in navigation state
+    const serializableDept = {
+      dptID: dept.dptID,
+      deptName: dept.deptName,
+      totalCrHr: dept.totalCrHr,
+      departmentCode: dept.departmentCode,
+      programLevelCode: selectedLevel,
+      modalityCode: selectedModality,
+      programModality: dept.programModality,
+      programLevel: dept.programLevel
+    };
+
+    // Navigate to department detail page with department ID (dptID)
+    navigate(`/registrar/departments/${dept.dptID}`, {
+      state: {
+        programLevelCode: selectedLevel,
+        modalityCode: selectedModality,
+        departmentData: serializableDept
+      },
+    });
   };
 
   // -----------------------------------------------------------------
@@ -241,11 +276,7 @@ export default function RegistrarDepartments() {
         <>
           <div className="bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 p-6 rounded-2xl">
             <h2 className="text-3xl font-bold text-gray-800 dark:text-white">
-              {
-                programLevels.find((l) => l.code === selectedLevel)
-                  ?.name
-              }{" "}
-              – Select Modality
+              {programLevels.find((l) => l.code === selectedLevel)?.name} – Select Modality
             </h2>
           </div>
 
@@ -284,11 +315,7 @@ export default function RegistrarDepartments() {
         <>
           <div className="bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 p-6 rounded-2xl">
             <h2 className="text-3xl font-bold text-gray-800 dark:text-white">
-              {
-                programModalities.find((m) => m.modalityCode === selectedModality)
-                  ?.modality
-              }{" "}
-              Departments
+              {programModalities.find((m) => m.modalityCode === selectedModality)?.modality} Departments
             </h2>
             <p className="text-gray-600 dark:text-gray-300 mt-2">
               {departments.length} department{departments.length !== 1 ? "s" : ""} available
@@ -310,18 +337,11 @@ export default function RegistrarDepartments() {
               {departments.map((dept) => (
                 <div
                   key={dept.dptID}
-                  onClick={() =>
-                    navigate(`/registr LU/departments/${dept.departmentCode}`, {
-                      state: {
-                        programLevelCode: selectedLevel,
-                        modalityCode: selectedModality,
-                      },
-                    })
-                  }
-                  className={`cursor-pointer rounded-2xl p-8 shadow-lg bg-gradient-to-r ${dept.color} text-white flex flex-col justify-between transform hover:-translate-y-2 hover:shadow-2xl transition-all duration-300`}
+                  onClick={() => handleDepartmentClick(dept)}
+                  className={`cursor-pointer rounded-2xl p-8 shadow-lg bg-gradient-to-r ${getDepartmentColor(dept.deptName)} text-white flex flex-col justify-between transform hover:-translate-y-2 hover:shadow-2xl transition-all duration-300`}
                 >
                   <div className="flex items-center gap-4">
-                    {dept.icon}
+                    {getDepartmentIcon(dept.deptName)}
                     <h3 className="text-2xl font-bold">{dept.deptName}</h3>
                   </div>
 
