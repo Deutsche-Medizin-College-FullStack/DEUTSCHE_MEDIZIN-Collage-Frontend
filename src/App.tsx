@@ -259,9 +259,6 @@ const RegistrarProfile = React.lazy(
 const RegistrationSlip = React.lazy(
   () => import("./pages/registrar/RegistrationSlips")
 );
-const NotificationsPage = React.lazy(
-  () => import("./pages/registrar/NotificationsPage")
-);
 
 function App() {
   return (
@@ -431,7 +428,7 @@ function App() {
                 <Route path="assessments" element={<RegistrarAssessments />} />
                 <Route path="scores" element={<StudentCourseScoreTable />} />
                 <Route path="tables" element={<CustomStudentTable />} />
-                <Route path="notifications" element={<NotificationsPage />} />
+                <Route path="notifications" element={<RegistrarNotifications />} />
               </Route>
             </Route>
 
