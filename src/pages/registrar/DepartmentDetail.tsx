@@ -4,30 +4,53 @@ import apiService from "../../components/api/apiService";
 import endPoints from "../../components/api/endPoints";
 
 interface Course {
-  cid: number;
+  id: number;
   ccode: string;
   ctitle: string;
   theoryHrs: number;
   labHrs: number;
-  category: {
-    catID: number;
-    catName: string;
+  courseCategory: {
+    id: number;
+    name: string;
   };
   department: {
-    dptID: number;
-    deptName: string;
-    departmentCode: string;
+    id: number;
+    name: string;
   };
-  prerequisites: any[];
+  prerequisites: {
+    id: number;
+    name: string;
+    ccode: string;
+  }[];
   classYear: {
     id: number;
-    classYear: string;
+    name: string;
   };
   semester: {
-    academicPeriodCode: string;
-    academicPeriod: string;
+    code: string;
+    name: string;
   };
-  teacher?: string;
+}
+
+interface DepartmentData {
+  dptID: number;
+  deptName: string;
+  totalCrHr: number | null;
+  departmentCode: string;
+  programModality?: {
+    modalityCode: string;
+    modality: string;
+    programLevel: {
+      code: string;
+      name: string;
+      active: boolean;
+    };
+  };
+  programLevel?: {
+    code: string;
+    name: string;
+    active: boolean;
+  } | null;
 }
 
 interface DepartmentInfo {
@@ -48,6 +71,7 @@ interface DepartmentInfo {
       courses: any[];
     }[];
   }[];
+  departmentData?: DepartmentData;
 }
 
 export default function DepartmentDetail() {
@@ -55,32 +79,12 @@ export default function DepartmentDetail() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const { programLevelCode = "", modalityCode = "" } = (location.state as any) || {};
-
-  const getLevelName = (code: string) => {
-    const map: Record<string, string> = {
-      DEG: "Bachelor's Degree",
-      DIP: "Diploma",
-      MSC: "Master's Degree",
-      PHD: "PhD",
-      TVET: "TVET",
-    };
-    return map[code] || code || "Unknown Level";
-  };
-
-  const getModalityName = (code: string) => {
-    if (!code) return "Unknown";
-    if (code.includes("REG")) return "Regular";
-    if (code.includes("EXT")) return "Extension";
-    if (code.includes("DIS")) return "Distance";
-    if (code.includes("SUM")) return "Summer";
-    if (code.includes("EVE")) return "Evening";
-    return code.split("-")[0] || "Unknown";
-  };
-
-  const programLevelName = getLevelName(programLevelCode);
-  const modalityName = getModalityName(modalityCode);
-  const fullProgramDisplay = `${modalityName} – ${programLevelName}`;
+  // Get data passed from navigation or fetch it
+  const { 
+    programLevelCode = "", 
+    modalityCode = "", 
+    departmentData: passedDepartmentData 
+  } = (location.state as any) || {};
 
   const [searchTerm, setSearchTerm] = useState("");
   const [department, setDepartment] = useState<DepartmentInfo | null>(null);
@@ -94,12 +98,11 @@ export default function DepartmentDetail() {
     name: "",
     theoryHrs: "",
     labHrs: "",
-    cCategoryID: "",
+    courseCategoryID: "",
     departmentID: "",
     classYearID: "",
-    semesterID: "",
+    semesterCode: "",
     prerequisiteIds: [] as number[],
-    teacher: "",
   });
 
   const [newCourse, setNewCourse] = useState({
@@ -107,34 +110,108 @@ export default function DepartmentDetail() {
     cCode: "",
     theoryHrs: "",
     labHrs: "",
-    cCategoryID: "",
+    courseCategoryID: "",
     departmentID: "",
     classYearID: "",
-    semesterID: "",
+    semesterCode: "",
     prerequisiteIds: [] as number[],
   });
 
   const [departmentId, setDepartmentId] = useState<number | null>(null);
   const [departmentCoursesForPrerequisites, setDepartmentCoursesForPrerequisites] = useState<Course[]>([]);
+  const [departmentDetails, setDepartmentDetails] = useState<DepartmentData | null>(null);
 
+  // If we have passed department data, use it immediately
   useEffect(() => {
-    const fetchDepartmentId = async () => {
+    if (passedDepartmentData) {
+      setDepartmentDetails(passedDepartmentData);
+      setDepartmentId(passedDepartmentData.dptID);
+    }
+  }, [passedDepartmentData]);
+
+  // If no department data was passed, fetch it by ID
+  useEffect(() => {
+    const fetchDepartmentDetails = async () => {
+      if (!id) return;
+      
       try {
-        const departments = await apiService.get(endPoints.departments);
-        const foundDept = departments.find((dept: any) => dept.departmentCode === id);
-        if (foundDept) {
-          setDepartmentId(foundDept.dptID);
-        }
+        const deptId = parseInt(id);
+        const response = await apiService.get(`/api/departments/${deptId}`);
+        setDepartmentDetails(response);
+        setDepartmentId(response.dptID);
       } catch (error) {
-        console.error("Error fetching department ID:", error);
+        console.error("Error fetching department details:", error);
+        // If fetch fails, use passed data if available
+        if (passedDepartmentData) {
+          setDepartmentDetails(passedDepartmentData);
+          setDepartmentId(passedDepartmentData.dptID);
+        }
       }
     };
 
-    if (id) {
-      fetchDepartmentId();
+    // Only fetch if we don't have passed data
+    if (!passedDepartmentData) {
+      fetchDepartmentDetails();
     }
-  }, [id]);
+  }, [id, passedDepartmentData]);
 
+  // Get level and modality names from department data
+  const getProgramLevelAndModality = () => {
+    // Use passed values as fallback
+    let levelCode = programLevelCode;
+    let modalityCodeValue = modalityCode;
+    
+    if (departmentDetails) {
+      levelCode = departmentDetails.programModality?.programLevel?.code || 
+                  departmentDetails.programLevel?.code || 
+                  programLevelCode;
+      modalityCodeValue = departmentDetails.programModality?.modalityCode || modalityCode;
+    }
+    
+    return {
+      programLevelCode: levelCode,
+      modalityCode: modalityCodeValue,
+      programLevelName: getLevelName(levelCode),
+      modalityName: getModalityName(modalityCodeValue),
+    };
+  };
+
+  const getLevelName = (code: string) => {
+    if (departmentDetails?.programModality?.programLevel?.name) {
+      return departmentDetails.programModality.programLevel.name;
+    }
+    
+    const map: Record<string, string> = {
+      BCH: "Bachelor's Degree",
+      DEG: "Bachelor's Degree",
+      DIP: "Diploma",
+      MSC: "Master's Degree",
+      PHD: "PhD",
+      TVET: "TVET",
+    };
+    return map[code] || code || "Unknown Level";
+  };
+
+  const getModalityName = (code: string) => {
+    if (departmentDetails?.programModality?.modality) {
+      return departmentDetails.programModality.modality;
+    }
+    
+    if (!code) return "Unknown";
+    if (code.includes("REG") || code === "RG") return "Regular";
+    if (code.includes("EXT")) return "Extension";
+    if (code.includes("DIS")) return "Distance";
+    if (code.includes("SUM")) return "Summer";
+    if (code.includes("EVE")) return "Evening";
+    return code.split("-")[0] || "Unknown";
+  };
+
+  const { programLevelCode: finalProgramLevelCode, modalityCode: finalModalityCode, 
+          programLevelName, modalityName } = getProgramLevelAndModality();
+  
+  const fullProgramDisplay = `${modalityName} – ${programLevelName}`;
+
+  // Fetch courses for prerequisites
   useEffect(() => {
     const fetchCoursesForPrerequisites = async () => {
       if (!departmentId) return;
@@ -151,6 +228,7 @@ export default function DepartmentDetail() {
     }
   }, [departmentId]);
 
+  // Fetch department courses
   useEffect(() => {
     const fetchDepartmentCourses = async () => {
       if (!departmentId) return;
@@ -160,27 +238,38 @@ export default function DepartmentDetail() {
         const departmentCourses = await apiService.get(`/courses/department/${departmentId}`);
 
         if (!departmentCourses || departmentCourses.length === 0) {
-          setDepartment(null);
+          setDepartment({
+            id: id || "",
+            name: departmentDetails?.deptName || id || "",
+            description: `${departmentDetails?.deptName || id} Department`,
+            programLevelCode: finalProgramLevelCode,
+            modalityCode: finalModalityCode,
+            programLevelName,
+            modalityName,
+            courses: [],
+            departmentData: departmentDetails || undefined,
+          });
+          setIsLoading(false);
           return;
         }
 
         const groupedCourses = departmentCourses.reduce((acc: any, course: Course) => {
-          const year = course.classYear?.classYear || "Unknown";
-          const semester = course.semester?.academicPeriod || "Unknown Semester";
+          const year = course.classYear?.name || "Unknown";
+          const semester = course.semester?.name || "Unknown Semester";
 
           if (!acc[year]) acc[year] = {};
           if (!acc[year][semester]) acc[year][semester] = [];
 
           acc[year][semester].push({
-            id: course.cid.toString(),
+            id: course.id.toString(),
             name: course.ctitle,
             code: course.ccode,
             creditHours: course.theoryHrs + course.labHrs,
             prerequisites: course.prerequisites?.map((p: any) => p.ccode || p.prerequisiteCode) || [],
-            teacher: course.teacher || "Not Assigned",
+            teacher: "Not Assigned", // API doesn't have teacher field
             theoryHrs: course.theoryHrs,
             labHrs: course.labHrs,
-            category: course.category?.catName || "Unknown",
+            category: course.courseCategory?.name || "Unknown",
             originalCourse: course,
           });
 
@@ -189,10 +278,10 @@ export default function DepartmentDetail() {
 
         const departmentInfo: DepartmentInfo = {
           id: id || "",
-          name: departmentCourses[0]?.department.deptName || id || "",
-          description: `All ${departmentCourses[0]?.department.deptName || id} courses`,
-          programLevelCode,
-          modalityCode,
+          name: departmentDetails?.deptName || departmentCourses[0]?.department.name || id || "",
+          description: `${departmentDetails?.deptName || departmentCourses[0]?.department.name || id} Department`,
+          programLevelCode: finalProgramLevelCode,
+          modalityCode: finalModalityCode,
           programLevelName,
           modalityName,
           courses: departmentCourses,
@@ -205,6 +294,7 @@ export default function DepartmentDetail() {
               courses: courses,
             })),
           })),
+          departmentData: departmentDetails || undefined,
         };
 
         setDepartment(departmentInfo);
@@ -214,7 +304,17 @@ export default function DepartmentDetail() {
         }
       } catch (error) {
         console.error("Error fetching department courses:", error);
-        setDepartment(null);
+        setDepartment({
+          id: id || "",
+          name: departmentDetails?.deptName || id || "",
+          description: `${departmentDetails?.deptName || id} Department`,
+          programLevelCode: finalProgramLevelCode,
+          modalityCode: finalModalityCode,
+          programLevelName,
+          modalityName,
+          courses: [],
+          departmentData: departmentDetails || undefined,
+        });
       } finally {
         setIsLoading(false);
       }
@@ -222,8 +322,11 @@ export default function DepartmentDetail() {
 
     if (departmentId) {
       fetchDepartmentCourses();
+    } else {
+      // If we don't have departmentId yet, set loading to false
+      setIsLoading(false);
     }
-  }, [departmentId, id, programLevelCode, modalityCode]);
+  }, [departmentId, id, departmentDetails, finalProgramLevelCode, finalModalityCode, programLevelName, modalityName]);
 
   const toggleYear = (yearId: string) => {
     const newExpandedYears = new Set(expandedYears);
@@ -261,14 +364,14 @@ export default function DepartmentDetail() {
       cCode,
       theoryHrs,
       labHrs,
-      cCategoryID,
+      courseCategoryID,
       departmentID,
       classYearID,
-      semesterID,
+      semesterCode,
       prerequisiteIds,
     } = newCourse;
 
-    if (!cTitle || !cCode || !theoryHrs || !labHrs || !cCategoryID || !departmentID || !classYearID || !semesterID) {
+    if (!cTitle || !cCode || !theoryHrs || !labHrs || !courseCategoryID || !departmentID || !classYearID || !semesterCode) {
       alert("Please fill in all required fields");
       return;
     }
@@ -279,10 +382,10 @@ export default function DepartmentDetail() {
         cCode,
         theoryHrs: parseInt(theoryHrs),
         labHrs: parseInt(labHrs),
-        cCategoryID: parseInt(cCategoryID),
+        courseCategoryID: parseInt(courseCategoryID),
         departmentID: parseInt(departmentID),
         classYearID: parseInt(classYearID),
-        semesterID: parseInt(semesterID),
+        semesterCode,
         prerequisiteIds,
       });
 
@@ -302,12 +405,11 @@ export default function DepartmentDetail() {
       name: course.name,
       theoryHrs: course.theoryHrs.toString(),
       labHrs: course.labHrs.toString(),
-      cCategoryID: course.originalCourse?.category?.catID?.toString() || "",
-      departmentID: course.originalCourse?.department?.dptID?.toString() || "",
+      courseCategoryID: course.originalCourse?.courseCategory?.id?.toString() || "",
+      departmentID: course.originalCourse?.department?.id?.toString() || "",
       classYearID: course.originalCourse?.classYear?.id?.toString() || "",
-      semesterID: course.originalCourse?.semester?.academicPeriodCode || "",
+      semesterCode: course.originalCourse?.semester?.code || "",
       prerequisiteIds: course.originalCourse?.prerequisites?.map((p: any) => p.id) || [],
-      teacher: course.teacher || "",
     });
   };
 
@@ -323,10 +425,10 @@ export default function DepartmentDetail() {
         cCode: editValues.code,
         theoryHrs: parseInt(editValues.theoryHrs),
         labHrs: parseInt(editValues.labHrs),
-        cCategoryID: parseInt(editValues.cCategoryID),
+        courseCategoryID: parseInt(editValues.courseCategoryID),
         departmentID: parseInt(editValues.departmentID),
         classYearID: parseInt(editValues.classYearID),
-        semesterID: editValues.semesterID,
+        semesterCode: editValues.semesterCode,
         prerequisiteIds: editValues.prerequisiteIds,
       });
 
@@ -357,7 +459,7 @@ export default function DepartmentDetail() {
   const handleCancelEdit = () => {
     setEditingCourse(null);
     setEditValues({
-      code: "", name: "", theoryHrs: "", labHrs: "", cCategoryID: "", departmentID: "", classYearID: "", semesterID: "", prerequisiteIds: [], teacher: ""
+      code: "", name: "", theoryHrs: "", labHrs: "", courseCategoryID: "", departmentID: "", classYearID: "", semesterCode: "", prerequisiteIds: []
     });
   };
 
@@ -392,7 +494,8 @@ export default function DepartmentDetail() {
             <p className="mt-3 text-xl opacity-95">{department.description}</p>
             <div className="flex gap-6 mt-6">
               <p className="text-blue-100 font-medium">Total Courses: {department.courses.length}</p>
-              <p className="text-blue-100 font-medium">Dept Code: {department.id}</p>
+              <p className="text-blue-100 font-medium">Dept Code: {department.departmentData?.departmentCode || department.id}</p>
+              <p className="text-blue-100 font-medium">Dept ID: {department.departmentData?.dptID || id}</p>
               <p className="text-blue-100 font-medium">Level: {programLevelName} | Mode: {modalityName}</p>
             </div>
           </div>
@@ -410,7 +513,7 @@ export default function DepartmentDetail() {
           <span className="font-semibold">Back to Departments</span>
         </button>
       </div>
-
+      
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
         <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
           <div className="flex-1 max-w-lg">
@@ -463,10 +566,10 @@ export default function DepartmentDetail() {
               <input type="text" placeholder="Course Code *" value={newCourse.cCode} onChange={(e) => setNewCourse({ ...newCourse, cCode: e.target.value })} className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" />
               <input type="number" placeholder="Theory Hours *" value={newCourse.theoryHrs} onChange={(e) => setNewCourse({ ...newCourse, theoryHrs: e.target.value })} className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" />
               <input type="number" placeholder="Lab Hours *" value={newCourse.labHrs} onChange={(e) => setNewCourse({ ...newCourse, labHrs: e.target.value })} className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" />
-              <input type="number" placeholder="Category ID *" value={newCourse.cCategoryID} onChange={(e) => setNewCourse({ ...newCourse, cCategoryID: e.target.value })} className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" />
+              <input type="number" placeholder="Category ID *" value={newCourse.courseCategoryID} onChange={(e) => setNewCourse({ ...newCourse, courseCategoryID: e.target.value })} className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" />
               <input type="number" placeholder="Department ID *" value={newCourse.departmentID} onChange={(e) => setNewCourse({ ...newCourse, departmentID: e.target.value })} className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" />
               <input type="number" placeholder="Class Year ID *" value={newCourse.classYearID} onChange={(e) => setNewCourse({ ...newCourse, classYearID: e.target.value })} className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" />
-              <input type="number" placeholder="Semester ID *" value={newCourse.semesterID} onChange={(e) => setNewCourse({ ...newCourse, semesterID: e.target.value })} className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" />
+              <input type="text" placeholder="Semester Code *" value={newCourse.semesterCode} onChange={(e) => setNewCourse({ ...newCourse, semesterCode: e.target.value })} className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" />
               <div className="relative col-span-2">
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Prerequisites (Hold Ctrl/Cmd to select multiple)</label>
                 <select
@@ -476,7 +579,7 @@ export default function DepartmentDetail() {
                   className="w-full border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 min-h-[120px]"
                 >
                   {departmentCoursesForPrerequisites.map((course) => (
-                    <option key={course.cid} value={course.cid}>
+                    <option key={course.id} value={course.id}>
                       {course.ccode} - {course.ctitle}
                     </option>
                   ))}
@@ -574,7 +677,6 @@ export default function DepartmentDetail() {
                                     <th className="p-4 text-center font-bold text-gray-700 dark:text-gray-300">Lab Hrs</th>
                                     <th className="p-4 text-center font-bold text-gray-700 dark:text-gray-300">Total Credits</th>
                                     <th className="p-4 text-left font-bold text-gray-700 dark:text-gray-300">Category</th>
-                                    <th className="p-4 text-left font-bold text-gray-700 dark:text-gray-300">Teacher</th>
                                     <th className="p-4 text-left font-bold text-gray-700 dark:text-gray-300">Prerequisites</th>
                                     <th className="p-4 text-center font-bold text-gray-700 dark:text-gray-300">Actions</th>
                                   </tr>
@@ -592,8 +694,7 @@ export default function DepartmentDetail() {
                                           <td className="p-4"><input type="number" value={editValues.theoryHrs} onChange={(e) => setEditValues({ ...editValues, theoryHrs: e.target.value })} className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" /></td>
                                           <td className="p-4"><input type="number" value={editValues.labHrs} onChange={(e) => setEditValues({ ...editValues, labHrs: e.target.value })} className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" /></td>
                                           <td className="p-4 text-center font-semibold text-gray-700 dark:text-gray-300">{(parseInt(editValues.theoryHrs || '0') + parseInt(editValues.labHrs || '0'))}</td>
-                                          <td className="p-4"><input type="number" value={editValues.cCategoryID} onChange={(e) => setEditValues({ ...editValues, cCategoryID: e.target.value })} className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" placeholder="Category ID" /></td>
-                                          <td className="p-4"><input type="text" value={editValues.teacher} onChange={(e) => setEditValues({ ...editValues, teacher: e.target.value })} className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" placeholder="Teacher name" /></td>
+                                          <td className="p-4"><input type="number" value={editValues.courseCategoryID} onChange={(e) => setEditValues({ ...editValues, courseCategoryID: e.target.value })} className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" placeholder="Category ID" /></td>
                                           <td className="p-4">
                                             <select
                                               multiple
@@ -602,7 +703,7 @@ export default function DepartmentDetail() {
                                               className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 min-h-[80px]"
                                             >
                                               {departmentCoursesForPrerequisites.map((prereqCourse) => (
-                                                <option key={prereqCourse.cid} value={prereqCourse.cid}>
+                                                <option key={prereqCourse.id} value={prereqCourse.id}>
                                                   {prereqCourse.ccode} - {prereqCourse.ctitle}
                                                 </option>
                                               ))}
@@ -610,7 +711,7 @@ export default function DepartmentDetail() {
                                           </td>
                                           <td className="p-4">
                                             <div className="flex gap-2 justify-center">
-                                              <button onClick={() => handleUpdateCourse(course.originalCourse?.cid || course.id)} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2">
+                                              <button onClick={() => handleUpdateCourse(course.originalCourse?.id || course.id)} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2">
                                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                                 </svg>
@@ -636,11 +737,6 @@ export default function DepartmentDetail() {
                                             <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-sm font-semibold">{course.category}</span>
                                           </td>
                                           <td className="p-4">
-                                            <span className={`px-3 py-1 rounded-full text-sm font-semibold ${course.teacher && course.teacher !== "Not Assigned" ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300" : "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300"}`}>
-                                              {course.teacher}
-                                            </span>
-                                          </td>
-                                          <td className="p-4">
                                             {course.prerequisites.length > 0 ? (
                                               <div className="flex flex-wrap gap-1">
                                                 {course.prerequisites.map((prereq: string, index: number) => (
@@ -661,7 +757,7 @@ export default function DepartmentDetail() {
                                                 </svg>
                                                 Edit
                                               </button>
-                                              <button onClick={() => handleDeleteCourse(course.originalCourse?.cid || course.id)} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2">
+                                              <button onClick={() => handleDeleteCourse(course.originalCourse?.id || course.id)} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2">
                                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                 </svg>
