@@ -139,11 +139,10 @@ export default function StudentLayout() {
   };
 
   const navigation = [
-    { name: t("dashboard"), href: "/student/dashboard", icon: LayoutDashboard },
+    { name: "Dashboard", href: "/student/dashboard", icon: LayoutDashboard },
     { name: "Notification", href: "/student/notifications", icon: Bell },
-    { name: t("profile"), href: "/student/profile", icon: User },
-    { name: t("grades"), href: "/student/grades", icon: ClipboardList },
-    { name: t("settings"), href: "/student/settings", icon: Settings },
+    { name: "Profile", href: "/student/profile", icon: User },
+    { name: "Grades", href: "/student/grades", icon: ClipboardList },
   ];
 
   // Get user initials for avatar
