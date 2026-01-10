@@ -38,6 +38,7 @@ const endPoints = {
   deanDashboard: "/deans/dashboard",
   getGeneralManagerDashboard: "/general-managers/dashboard",
   getRegistrarDashboard: "/registrar/dashboard",
+  viceDeanDashboard: "/vice-deans/dashboard",
 
   /* =======================     Teachers & Courses  ======================== */
   teachers: "/teachers",
@@ -68,6 +69,7 @@ const endPoints = {
   studentsActivation: "/students/:id/enable",
   studentsDeactivation: "/students/:id/disable",
   studentsSlip: "/students/slip-production",
+  getAllStudentsCGPA: "/vice-deans/get-all-students-cgpa",
 
   /* =======================     Assessments & Grading  ======================== */
   gradingSystem: "/grading-systems",

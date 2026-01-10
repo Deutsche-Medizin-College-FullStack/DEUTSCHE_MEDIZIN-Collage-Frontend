@@ -181,8 +181,6 @@ const ViceDeanStudents = React.lazy(() => import("./pages/vice-dean/Students"));
 const ViceDean_Profile = React.lazy(
   () => import("./pages/vice-dean/ViceDean_Profile")
 );
-const ViceDeanGrades = React.lazy(() => import("./pages/vice-dean/Grades"));
-const ViceDeanReports = React.lazy(() => import("./pages/vice-dean/Reports"));
 const ViceCreateDepartmentHead = React.lazy(
   () => import("./pages/vice-dean/CreateDepartmentHead")
 );
@@ -492,8 +490,6 @@ function App() {
                   element={<ViceCreateDepartmentHead />}
                 />
                 <Route path="students" element={<ViceDeanStudents />} />
-                <Route path="grades" element={<ViceDeanGrades />} />
-                <Route path="reports" element={<ViceDeanReports />} />
                 <Route path="department" element={<ViceDeanDepartments />} />
                 <Route path="profile" element={<ViceDean_Profile />} />
                 <Route

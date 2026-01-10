@@ -58,8 +58,6 @@ export default function ViceDeanLayout() {
     { name: "Notification", href: "/vice-dean/notifications", icon: Bell },
     { name: "Profile", href: "/vice-dean/profile", icon: User },
     { name: "Students", href: "/vice-dean/students", icon: Users },
-    { name: "Grades", href: "/vice-dean/grades", icon: BookOpen },
-    { name: "Reports", href: "/vice-dean/reports", icon: BarChart3 },
     { name: "Department", href: "/vice-dean/department", icon: Layers },
   ];
 
