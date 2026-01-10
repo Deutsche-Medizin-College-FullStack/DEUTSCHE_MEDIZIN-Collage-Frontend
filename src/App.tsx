@@ -10,9 +10,6 @@ const LandingPage = React.lazy(() => import("./pages/public/LandingPage"));
 const LearnMore = React.lazy(() => import("./pages/public/LearnMore"));
 const LoginPage = React.lazy(() => import("./pages/public/LoginPage"));
 const RegisterPage = React.lazy(() => import("./pages/public/RegisterPage"));
-const ForgotPasswordPage = React.lazy(
-  () => import("./pages/public/ForgotPasswordPage")
-);
 const MultiStepRegistrationForm = React.lazy(
   () => import("./registeration/MultiStepRegistrationForm")
 );
@@ -268,7 +265,6 @@ function App() {
             <Route path="/login" element={<SigningUp />} />
             {/* <Route path="/some" element={<TenColumnEditableTablePage />} /> */}
             <Route path="/register" element={<MultiStepRegistrationForm />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
             {/* Testing/Development Routes - Consider removing in production */}
             <Route path="/some" element={<TenColumnEditableTablePage />} />

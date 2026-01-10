@@ -70,7 +70,7 @@ const endPoints = {
   studentsActivation: "/students/:id/enable",
   studentsDeactivation: "/students/:id/disable",
   studentsSlip: "/students/slip-production",
-  getAllStudentsCGPA: "/vice-deans/get-all-students-cgpa",
+  getAllStudentsCGPA_VD: "/vice-deans/get-all-students-cgpa",
 
   /* =======================     Assessments & Grading  ======================== */
   gradingSystem: "/grading-systems",
