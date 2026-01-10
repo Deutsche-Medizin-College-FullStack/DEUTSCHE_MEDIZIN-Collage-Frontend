@@ -106,7 +106,7 @@ export default function ProgramLevelsManagement() {
 
     setSaving(true);
     try {
-      await apiClient.delete(`/api/program-levels/${code}`);
+      await apiClient.delete(endPoints.programLevels + "/" + code);
       setSuccess(`Program level "${code}" deleted successfully`);
       await fetchProgramLevels();
     } catch (err: any) {
@@ -140,7 +140,6 @@ export default function ProgramLevelsManagement() {
           remark: formData.remark.trim() || undefined,
           active: formData.active,
         };
-        // await apiClient.put(`/api/program-levels/${currentCode}`, payload);
         await apiClient.put(
           endPoints.programLevels + "/" + currentCode,
           payload
@@ -178,14 +177,14 @@ export default function ProgramLevelsManagement() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background py-8 px-4">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4">
         <div className="max-w-6xl mx-auto space-y-6">
-          <Skeleton className="h-10 w-64" />
-          <Card>
+          <Skeleton className="h-10 w-64 bg-gray-200 dark:bg-gray-700" />
+          <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <CardContent className="p-12">
               <div className="space-y-4">
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-64 w-full" />
+                <Skeleton className="h-10 w-full bg-gray-200 dark:bg-gray-700" />
+                <Skeleton className="h-64 w-full bg-gray-200 dark:bg-gray-700" />
               </div>
             </CardContent>
           </Card>
@@ -195,7 +194,7 @@ export default function ProgramLevelsManagement() {
   }
 
   return (
-    <div className="min-h-screen bg-background py-8 px-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4">
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start gap-6">
@@ -203,19 +202,19 @@ export default function ProgramLevelsManagement() {
             <Button
               variant="ghost"
               onClick={() => navigate(-1)}
-              className="text-primary hover:bg-primary/10"
+              className="text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
             >
               <ArrowLeft className="h-5 w-5 mr-2" />
               Back
             </Button>
-            <h1 className="text-3xl font-bold text-foreground">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
               Program Levels
             </h1>
           </div>
 
           {formMode === null && (
             <Button
-              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-700 dark:hover:bg-blue-600"
               onClick={handleCreateNew}
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -226,20 +225,25 @@ export default function ProgramLevelsManagement() {
 
         {/* Messages */}
         {success && (
-          <Alert className="border-green-500/30 bg-green-500/10">
-            <AlertDescription className="text-foreground">
+          <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20">
+            <AlertDescription className="text-green-800 dark:text-green-300">
               {success}
             </AlertDescription>
           </Alert>
         )}
 
         {error && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription className="flex items-center justify-between gap-4 flex-wrap">
+          <Alert className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20">
+            <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+            <AlertTitle className="text-red-800 dark:text-red-300">Error</AlertTitle>
+            <AlertDescription className="flex items-center justify-between gap-4 flex-wrap text-red-700 dark:text-red-300">
               {error}
-              <Button variant="outline" size="sm" onClick={handleRetry}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleRetry}
+                className="border-red-300 text-red-700 hover:bg-red-100 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/30"
+              >
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Retry
               </Button>
@@ -249,9 +253,9 @@ export default function ProgramLevelsManagement() {
 
         {/* Form - Create / Edit */}
         {formMode && (
-          <Card className="border-primary/30 shadow-md">
+          <Card className="border-blue-200 dark:border-blue-800 bg-white dark:bg-gray-800 shadow-md">
             <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-3 text-primary">
+              <CardTitle className="flex items-center gap-3 text-blue-700 dark:text-blue-400">
                 <BookOpen className="h-6 w-6" />
                 {formMode === "create"
                   ? "Create New Program Level"
@@ -261,7 +265,7 @@ export default function ProgramLevelsManagement() {
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="code">Code *</Label>
+                  <Label htmlFor="code" className="text-gray-700 dark:text-gray-300">Code *</Label>
                   <Input
                     id="code"
                     value={formData.code}
@@ -270,11 +274,12 @@ export default function ProgramLevelsManagement() {
                     }
                     placeholder="e.g. DEG, DIP, MAS"
                     disabled={formMode === "edit"}
+                    className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="name">Name *</Label>
+                  <Label htmlFor="name" className="text-gray-700 dark:text-gray-300">Name *</Label>
                   <Input
                     id="name"
                     value={formData.name}
@@ -282,12 +287,13 @@ export default function ProgramLevelsManagement() {
                       setFormData({ ...formData, name: e.target.value })
                     }
                     placeholder="e.g. Bachelor's Degree"
+                    className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="remark">Remark / Description</Label>
+                <Label htmlFor="remark" className="text-gray-700 dark:text-gray-300">Remark / Description</Label>
                 <Textarea
                   id="remark"
                   value={formData.remark}
@@ -296,6 +302,7 @@ export default function ProgramLevelsManagement() {
                   }
                   placeholder="Optional description or notes..."
                   rows={3}
+                  className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                 />
               </div>
 
@@ -307,14 +314,15 @@ export default function ProgramLevelsManagement() {
                     setFormData({ ...formData, active: checked })
                   }
                 />
-                <Label htmlFor="active">Active / Visible</Label>
+                <Label htmlFor="active" className="text-gray-700 dark:text-gray-300">Active / Visible</Label>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t">
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <Button
                   variant="outline"
                   onClick={handleCancel}
                   disabled={saving}
+                  className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
                   <X className="h-4 w-4 mr-2" />
                   Cancel
@@ -322,7 +330,7 @@ export default function ProgramLevelsManagement() {
                 <Button
                   onClick={handleSave}
                   disabled={saving}
-                  className="bg-primary hover:bg-primary/90"
+                  className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-700 dark:hover:bg-blue-600"
                 >
                   <Save className="h-4 w-4 mr-2" />
                   {saving ? "Saving..." : "Save"}
@@ -333,16 +341,16 @@ export default function ProgramLevelsManagement() {
         )}
 
         {/* List / Table */}
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardHeader>
-            <CardTitle className="text-xl flex items-center gap-3">
-              <BookOpen className="h-6 w-6 text-primary" />
+            <CardTitle className="text-xl flex items-center gap-3 text-gray-900 dark:text-white">
+              <BookOpen className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               All Program Levels ({programLevels.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             {programLevels.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
+              <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                 <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p className="font-medium">No program levels found</p>
                 <p className="text-sm mt-2">
@@ -350,34 +358,36 @@ export default function ProgramLevelsManagement() {
                 </p>
               </div>
             ) : (
-              <div className="rounded-md border">
+              <div className="rounded-md border border-gray-200 dark:border-gray-700">
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="bg-gray-50 dark:bg-gray-700">
                     <TableRow>
-                      <TableHead>Code</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Remark</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead className="text-gray-700 dark:text-gray-300">Code</TableHead>
+                      <TableHead className="text-gray-700 dark:text-gray-300">Name</TableHead>
+                      <TableHead className="text-gray-700 dark:text-gray-300">Remark</TableHead>
+                      <TableHead className="text-gray-700 dark:text-gray-300">Status</TableHead>
+                      <TableHead className="text-right text-gray-700 dark:text-gray-300">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {programLevels.map((level) => (
-                      <TableRow key={level.code}>
-                        <TableCell className="font-medium">
+                      <TableRow 
+                        key={level.code}
+                        className="border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                      >
+                        <TableCell className="font-medium text-gray-900 dark:text-white">
                           {level.code}
                         </TableCell>
-                        <TableCell>{level.name}</TableCell>
-                        <TableCell className="text-muted-foreground">
+                        <TableCell className="text-gray-700 dark:text-gray-300">{level.name}</TableCell>
+                        <TableCell className="text-gray-500 dark:text-gray-400">
                           {level.remark || "—"}
                         </TableCell>
                         <TableCell>
                           <Badge
-                            variant={level.active ? "default" : "secondary"}
                             className={
-                              level.active
-                                ? "bg-green-600 hover:bg-green-600"
-                                : ""
+                              level.active 
+                                ? "bg-green-600 hover:bg-green-600 text-white dark:bg-green-700 dark:hover:bg-green-600"
+                                : "bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
                             }
                           >
                             {level.active ? "Active" : "Inactive"}
@@ -388,13 +398,14 @@ export default function ProgramLevelsManagement() {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleEdit(level)}
+                            className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700"
                           >
                             <Edit3 className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20"
                             onClick={() => handleDelete(level.code)}
                             disabled={saving}
                           >
