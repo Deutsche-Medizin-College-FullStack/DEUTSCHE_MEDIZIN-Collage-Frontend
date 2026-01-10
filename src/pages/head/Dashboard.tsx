@@ -103,8 +103,7 @@ export default function Dashboard() {
       {/* Welcome Header */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg p-6 text-white">
         <h1 className="text-2xl font-bold mb-2">
-          {t("dashboard.welcome", { name: "Department Head" }) ||
-            "Welcome to Department Head Dashboard"}
+          Welcome to Department Head Dashboard
         </h1>
         <p className="text-blue-100">
           {departmentInfo.departmentName} • {departmentInfo.modality} •{" "}
@@ -290,36 +289,6 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>
-            Frequently used department management tasks
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button variant="outline" className="h-24 flex flex-col">
-              <AlertTriangle className="h-8 w-8 mb-2" />
-              <span className="text-sm">Review Approvals</span>
-            </Button>
-            <Button variant="outline" className="h-24 flex flex-col">
-              <Users className="h-8 w-8 mb-2" />
-              <span className="text-sm">Manage Students</span>
-            </Button>
-            <Button variant="outline" className="h-24 flex flex-col">
-              <UserCheck className="h-8 w-8 mb-2" />
-              <span className="text-sm">Assign Instructors</span>
-            </Button>
-            <Button variant="outline" className="h-24 flex flex-col">
-              <BookOpen className="h-8 w-8 mb-2" />
-              <span className="text-sm">View Courses</span>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

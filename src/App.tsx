@@ -50,11 +50,9 @@ const HeadStudentDetail = React.lazy(  () => import("./pages/head/StudentDetail"
 const HeadNotifications = React.lazy(() => import("./pages/head/Notifications"));
 const HeadTeachers = React.lazy(() => import("./pages/head/Teachers"));
 const HeadCourses = React.lazy(() => import("./pages/head/Courses"));
-const HeadReports = React.lazy(() => import("./pages/head/Reports"));
 const DepartmentHeadProfile = React.lazy(
   () => import("./pages/head/DepartmentHeadProfile")
 );
-const HeadGrades = React.lazy(() => import("./pages/head/Grades"));
 const CreateTeacher = React.lazy(() => import("./pages/head/CreateTeacher"));
 const HeadAssessments = React.lazy(() => import("./pages/head/Assessments"));
 const HeadAssessmentDetail = React.lazy(
@@ -322,9 +320,7 @@ function App() {
                 <Route path="teachers" element={<HeadTeachers />} />
                 <Route path="create-teacher" element={<CreateTeacher />} />
                 <Route path="teachers/:id" element={<TeacherProfileDetail />} />
-                <Route path="grades" element={<HeadGrades />} />
                 <Route path="courses" element={<HeadCourses />} />
-                <Route path="reports" element={<HeadReports />} />
                 <Route path="assessments" element={<HeadAssessments />} />
                 <Route
                   path="assessments/:assignmentId"
