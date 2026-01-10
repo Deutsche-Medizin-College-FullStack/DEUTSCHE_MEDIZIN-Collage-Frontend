@@ -43,6 +43,7 @@ const endPoints = {
   /* =======================     Teachers & Courses  ======================== */
   teachers: "/teachers",
   departments: "/departments",
+  getDepartmentById: (id: string | number) => `/departments/${id}`,
   departmentTeachers: "/department-heads/teachers",
   myDepartmentCourses: "/department-heads/my-courses",
   academicYears: "/academic-years",
