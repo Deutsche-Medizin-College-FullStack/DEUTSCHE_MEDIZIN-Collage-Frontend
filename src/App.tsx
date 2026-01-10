@@ -24,7 +24,6 @@ const StudentLayout = React.lazy(() => import("./layouts/StudentLayout"));
 const StudentDashboard = React.lazy(() => import("./pages/student/Dashboard"));
 const StudentProfile = React.lazy(() => import("./pages/student/Profile"));
 const StudentGrades = React.lazy(() => import("./pages/student/Grades"));
-const StudentSetting = React.lazy(() => import("./pages/student/Setting"));
 const StudentNotifications = React.lazy(() => import("./pages/student/Notifications"));
 
 // Teacher Pages
@@ -181,8 +180,6 @@ const ViceDeanStudents = React.lazy(() => import("./pages/vice-dean/Students"));
 const ViceDean_Profile = React.lazy(
   () => import("./pages/vice-dean/ViceDean_Profile")
 );
-const ViceDeanGrades = React.lazy(() => import("./pages/vice-dean/Grades"));
-const ViceDeanReports = React.lazy(() => import("./pages/vice-dean/Reports"));
 const ViceCreateDepartmentHead = React.lazy(
   () => import("./pages/vice-dean/CreateDepartmentHead")
 );
@@ -284,7 +281,6 @@ function App() {
                 <Route path="dashboard" element={<StudentDashboard />} />
                 <Route path="profile" element={<StudentProfile />} />
                 <Route path="grades" element={<StudentGrades />} />
-                <Route path="settings" element={<StudentSetting />} />
                 <Route path="notifications" element={<StudentNotifications />} />
               </Route>
             </Route>
@@ -492,8 +488,6 @@ function App() {
                   element={<ViceCreateDepartmentHead />}
                 />
                 <Route path="students" element={<ViceDeanStudents />} />
-                <Route path="grades" element={<ViceDeanGrades />} />
-                <Route path="reports" element={<ViceDeanReports />} />
                 <Route path="department" element={<ViceDeanDepartments />} />
                 <Route path="profile" element={<ViceDean_Profile />} />
                 <Route
