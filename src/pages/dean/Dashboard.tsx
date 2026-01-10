@@ -321,12 +321,6 @@ export default function DeanDashboard() {
             </p>
           </div>
           <div className="flex gap-3">
-            <Link to="/dean/create-department-head">
-              <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white">
-                <UserPlus className="h-4 w-4" />
-                Create Department Head
-              </Button>
-            </Link>
             <Link to="/dean/students">
               <Button variant="outline" className="flex items-center gap-2 border-gray-300 dark:border-gray-600">
                 <Users className="h-4 w-4" />
