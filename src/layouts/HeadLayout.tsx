@@ -63,8 +63,6 @@ export default function HeadLayout() {
     { name: "Profile", href: "/head/profile", icon: User },
     { name: "Students", href: "/head/students", icon: Users },
     { name: "Teachers", href: "/head/teachers", icon: Users },
-    { name: "Grades", href: "/head/grades", icon: BookOpen },
-    { name: "Reports", href: "/head/reports", icon: BarChart3 },
     {
       name: "Assessments",
       href: "/head/assessments",
