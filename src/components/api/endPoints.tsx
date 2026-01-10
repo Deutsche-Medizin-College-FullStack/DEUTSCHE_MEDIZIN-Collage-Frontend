@@ -161,11 +161,13 @@ const endPoints = {
   getAllStudentsCGPA: "/general-managers/get-all-students-cgpa",
   updateGeneralManagerProfile: "/general-managers/update",
 
+
   /* =======================     Deans  ======================== */
   getActiveDeans: "/deans/active",
   getActiveViceDeans: "/vice-deans/active",
   getDeanById: "/deans",
   fields: "/students/fields",
+  getAllStudentsCGPA_DN:"/deans/get-all-students-cgpa",
   /* =======================     Registrar  ======================== */
   getRegistrarHeadApprovedScores: "/registrar/head-approved-scores",
   registrarFinalApproveAll:

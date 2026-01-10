@@ -142,7 +142,6 @@ const FinanceReports = React.lazy(() => import("./pages/finance/Reports"));
 const DeanLayout = React.lazy(() => import("./layouts/DeanLayout"));
 const DeanDashboard = React.lazy(() => import("./pages/dean/Dashboard"));
 const DeanStudents = React.lazy(() => import("./pages/dean/Students"));
-const DeanStudentDetail = React.lazy(  () => import("./pages/dean/StudentDetail"));
 const DeanGrades = React.lazy(() => import("./pages/dean/Grades"));
 const DeanNotifications = React.lazy(() => import("./pages/dean/Notifications"));
 const DepartmentHeadsList = React.lazy(
@@ -452,7 +451,6 @@ function App() {
                 />
                 <Route path="profile" element={<Dean_Profile />} />
                 <Route path="students" element={<DeanStudents />} />
-                <Route path="students/:id" element={<DeanStudentDetail />} />
                 <Route path="department-heads" element={<DepartmentHeadsList />} />
                 <Route
                   path="department-heads/:id"
