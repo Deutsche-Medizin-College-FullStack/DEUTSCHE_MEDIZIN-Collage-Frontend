@@ -162,7 +162,8 @@ const CrudSection = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const itemsPerPage = showAll ? data.length : 5;
-
+  // Inside CrudSection component, after existing states
+  const [isActive, setIsActive] = useState<boolean>(false); // New state for active toggle
   const filteredData = data.filter(
     (item) =>
       item.versionName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -230,6 +231,7 @@ const CrudSection = ({
         );
         setEditingItem(response);
         setFormData(JSON.parse(JSON.stringify(response)));
+        setIsActive(response.active);
       } catch (e) {
         alert("Failed to load grading system for editing.");
         return;
@@ -244,6 +246,8 @@ const CrudSection = ({
         intervals: [JSON.parse(JSON.stringify(emptyInterval))],
         active: false,
       });
+
+      setIsActive(false);
     }
 
     setFormError("");
@@ -351,6 +355,49 @@ const CrudSection = ({
     return true;
   };
 
+  // const handleSubmit = async () => {
+  //   if (!validateForm()) return;
+
+  //   setSaving(true);
+  //   try {
+  //     let updatedData: GradingSystem[] = [...data];
+
+  //     if (editingItem) {
+  //       // Update existing
+  //       if (!window.confirm("Update this grading system?")) return;
+
+  //       const response = await apiService.put(
+  //         `${endPoints.gradingSystem}/${editingItem.id}`,
+  //         formData
+  //       );
+
+  //       updatedData = data.map((d) => (d.id === editingItem.id ? response : d));
+  //       setData(updatedData);
+  //     } else {
+  //       // Create new
+  //       if (!window.confirm("Add this new grading system?")) return;
+
+  //       const response = await apiService.post(
+  //         endPoints.gradingSystem,
+  //         formData
+  //       );
+
+  //       updatedData = [...data, response];
+  //       setData(updatedData);
+  //     }
+
+  //     handleCloseModal();
+  //     refetch(); // Refresh from server
+  //   } catch (e: any) {
+  //     console.error("Save error:", e);
+  //     setFormError(
+  //       e.response?.data?.message ||
+  //         `Failed to ${editingItem ? "update" : "create"} grading system.`
+  //     );
+  //   } finally {
+  //     setSaving(false);
+  //   }
+  // };
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
@@ -359,7 +406,7 @@ const CrudSection = ({
       let updatedData: GradingSystem[] = [...data];
 
       if (editingItem) {
-        // Update existing
+        // Update main data
         if (!window.confirm("Update this grading system?")) return;
 
         const response = await apiService.put(
@@ -367,10 +414,20 @@ const CrudSection = ({
           formData
         );
 
-        updatedData = data.map((d) => (d.id === editingItem.id ? response : d));
+        // Update active status separately
+        if (isActive !== editingItem.active) {
+          await apiService.put(
+            `${endPoints.gradingSystem}/${editingItem.id}/active-status`,
+            { isActive }
+          );
+        }
+
+        updatedData = data.map((d) =>
+          d.id === editingItem.id ? { ...response, active: isActive } : d
+        );
         setData(updatedData);
       } else {
-        // Create new
+        // Create new (new ones are inactive by default unless you change logic)
         if (!window.confirm("Add this new grading system?")) return;
 
         const response = await apiService.post(
@@ -378,12 +435,20 @@ const CrudSection = ({
           formData
         );
 
-        updatedData = [...data, response];
+        // If user wants it active immediately, toggle it after creation
+        if (isActive) {
+          await apiService.post(
+            `${endPoints.gradingSystem}/${response.id}/active-status`,
+            { isActive: true }
+          );
+        }
+
+        updatedData = [...data, { ...response, active: isActive }];
         setData(updatedData);
       }
 
       handleCloseModal();
-      refetch(); // Refresh from server
+      refetch(); // Refresh full list from server
     } catch (e: any) {
       console.error("Save error:", e);
       setFormError(
@@ -394,7 +459,6 @@ const CrudSection = ({
       setSaving(false);
     }
   };
-
   const handleDelete = async (id: number) => {
     if (!window.confirm("Delete this grading system permanently?")) return;
 
@@ -632,9 +696,31 @@ const CrudSection = ({
               className="w-full p-3 mb-6 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 outline-none"
               rows={3}
             />
+            {editingItem && ( // Only show in edit mode
+              <div className="mb-6">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <div className="relative inline-block w-12 h-6">
+                    <input
+                      type="checkbox"
+                      checked={isActive}
+                      onChange={(e) => setIsActive(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-12 h-6 bg-gray-300 rounded-full peer peer-checked:bg-green-600 transition-colors"></div>
+                    <div className="absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-6"></div>
+                  </div>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Active Status: {isActive ? "Active" : "Inactive"}
+                  </span>
+                </label>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Toggle to activate or deactivate this grading system.
+                </p>
+              </div>
+            )}
 
             <h4 className="font-semibold mb-2">Intervals</h4>
-            <div className="space-y-3 mb-4">
+            {/* <div className="space-y-3 mb-4">
               {formData.intervals.map((interval, idx) => (
                 <div
                   key={idx}
@@ -693,6 +779,110 @@ const CrudSection = ({
                   >
                     Remove
                   </button>
+                </div>
+              ))}
+            </div> */}
+            <div className="space-y-4 mb-6">
+              {formData.intervals.map((interval, idx) => (
+                <div
+                  key={idx}
+                  className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-3 items-end bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700"
+                >
+                  {/* Description */}
+                  <div className="flex flex-col">
+                    <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                      Description
+                    </label>
+                    <input
+                      type="text"
+                      value={interval.description}
+                      onChange={(e) =>
+                        handleIntervalChange(idx, "description", e.target.value)
+                      }
+                      placeholder="e.g. Excellent / Very Good / Outstanding"
+                      className="p-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                  </div>
+
+                  {/* Min */}
+                  <div className="flex flex-col">
+                    <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                      Min Score
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={interval.min}
+                      onChange={(e) =>
+                        handleIntervalChange(idx, "min", e.target.value)
+                      }
+                      placeholder="Minimum score (e.g. 80)"
+                      className="p-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                  </div>
+
+                  {/* Max */}
+                  <div className="flex flex-col">
+                    <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                      Max Score
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={interval.max}
+                      onChange={(e) =>
+                        handleIntervalChange(idx, "max", e.target.value)
+                      }
+                      placeholder="Maximum score (e.g. 100)"
+                      className="p-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                  </div>
+
+                  {/* Given Value (average/mark) */}
+                  <div className="flex flex-col">
+                    <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                      Given Value
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={interval.givenValue}
+                      onChange={(e) =>
+                        handleIntervalChange(idx, "givenValue", e.target.value)
+                      }
+                      placeholder="Average/mark for this range (e.g. 90)"
+                      className="p-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                  </div>
+
+                  {/* Grade Letter */}
+                  <div className="flex flex-col">
+                    <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                      Grade Letter
+                    </label>
+                    <input
+                      type="text"
+                      value={interval.gradeLetter}
+                      onChange={(e) =>
+                        handleIntervalChange(idx, "gradeLetter", e.target.value)
+                      }
+                      placeholder="e.g. A+ / A / B+"
+                      className="p-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-mono focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                  </div>
+
+                  {/* Remove Button */}
+                  <div className="flex items-end">
+                    <button
+                      type="button"
+                      onClick={() => removeIntervalRow(idx)}
+                      className="px-4 py-2.5 text-sm rounded-lg bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-800/60 transition"
+                    >
+                      Remove
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
