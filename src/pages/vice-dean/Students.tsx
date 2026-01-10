@@ -39,7 +39,7 @@ export default function ViceDeanStudents() {
     try {
       setLoading(true);
       setError(null);
-      const data = await apiService.get(endPoints.getAllStudentsCGPA);
+      const data = await apiService.get(endPoints.getAllStudentsCGPA_VD);
       setStudents(data);
     } catch (err) {
       console.error("Error fetching students:", err);
