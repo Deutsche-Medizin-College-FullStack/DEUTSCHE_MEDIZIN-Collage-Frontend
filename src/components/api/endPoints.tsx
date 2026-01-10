@@ -70,7 +70,7 @@ const endPoints = {
   studentsActivation: "/students/:id/enable",
   studentsDeactivation: "/students/:id/disable",
   studentsSlip: "/students/slip-production",
-  getAllStudentsCGPA: "/vice-deans/get-all-students-cgpa",
+  getAllStudentsCGPA_VD: "/vice-deans/get-all-students-cgpa",
 
   /* =======================     Assessments & Grading  ======================== */
   gradingSystem: "/grading-systems",
@@ -161,11 +161,13 @@ const endPoints = {
   getAllStudentsCGPA: "/general-managers/get-all-students-cgpa",
   updateGeneralManagerProfile: "/general-managers/update",
 
+
   /* =======================     Deans  ======================== */
   getActiveDeans: "/deans/active",
   getActiveViceDeans: "/vice-deans/active",
   getDeanById: "/deans",
   fields: "/students/fields",
+  getAllStudentsCGPA_DN:"/deans/get-all-students-cgpa",
   /* =======================     Registrar  ======================== */
   getRegistrarHeadApprovedScores: "/registrar/head-approved-scores",
   registrarFinalApproveAll:

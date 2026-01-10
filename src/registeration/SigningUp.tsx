@@ -212,16 +212,6 @@ export default function SignInPage() {
                 )}
               </Button>
 
-              {/* Forgot password link */}
-              <div className="text-right">
-                <Link
-                  to="/forgot-password"
-                  className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-                >
-                  Forgot password?
-                </Link>
-              </div>
-              
               {/* Register link */}
               <div className="text-center pt-4 border-t dark:border-gray-700">
                 <div className="text-sm text-gray-600 dark:text-gray-400">
