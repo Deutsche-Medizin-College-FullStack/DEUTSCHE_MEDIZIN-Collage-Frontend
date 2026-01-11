@@ -198,15 +198,21 @@ export default function DeanStudents() {
   const getStatusColor = (status: string) => {
     if (!status) return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
     
-    switch (status.toLowerCase()) {
-      case 'active':
-        return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800';
-      case 'inactive':
-        return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800';
-      case 'graduated':
-        return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
+    const statusLower = status.toLowerCase();
+    
+    // Handle various status formats from API
+    if (statusLower.includes('active')) {
+      return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800';
+    } else if (statusLower.includes('dismissed') || statusLower.includes('withdraw') || statusLower.includes('drop')) {
+      return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800';
+    } else if (statusLower.includes('probation') || statusLower.includes('incomplete')) {
+      return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800';
+    } else if (statusLower.includes('transfer') || statusLower.includes('cancelled')) {
+      return 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800';
+    } else if (statusLower.includes('completed') || statusLower.includes('graduated')) {
+      return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800';
+    } else {
+      return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
     }
   };
 
@@ -215,6 +221,12 @@ export default function DeanStudents() {
     if (cgpa >= 3.0) return 'text-blue-600 dark:text-blue-400';
     if (cgpa >= 2.0) return 'text-yellow-600 dark:text-yellow-400';
     return 'text-red-600 dark:text-red-400';
+  };
+
+  // Format status for display (replace underscores with spaces)
+  const formatStatus = (status: string) => {
+    if (!status) return 'Unknown';
+    return status.replace(/_/g, ' ');
   };
 
   if (loading) {
@@ -361,7 +373,7 @@ export default function DeanStudents() {
                 onChange={(e) => setSelectedBcys(e.target.value)}
                 disabled={loadingLookups}
               >
-                <option value="All">All Programs</option>
+                <option value="All">All Batch/Class/Year/Semester</option>
                 {loadingLookups ? (
                   <option disabled>Loading options...</option>
                 ) : (
@@ -396,11 +408,18 @@ export default function DeanStudents() {
                 className="w-full border rounded-md px-3 py-2 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
+                disabled={loadingLookups}
               >
                 <option value="All">All Statuses</option>
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
-                <option value="Graduated">Graduated</option>
+                {loadingLookups ? (
+                  <option disabled>Loading statuses...</option>
+                ) : (
+                  lookups?.studentStatuses?.map((status) => (
+                    <option key={status.id} value={status.name}>
+                      {status.name.replace(/_/g, ' ')}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
           </div>
@@ -420,7 +439,7 @@ export default function DeanStudents() {
                   <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">ID Number</th>
                   <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Full Name</th>
                   <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Department</th>
-                  <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Program</th>
+                  <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Batch/Class/Year/Semester</th>
                   <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">CGPA</th>
                   <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Status</th>
                 </tr>
@@ -453,7 +472,7 @@ export default function DeanStudents() {
                           variant="outline" 
                           className={`${getStatusColor(student.studentStatus)}`}
                         >
-                          {student.studentStatus || 'Unknown'}
+                          {formatStatus(student.studentStatus)}
                         </Badge>
                       </td>
                     </tr>
@@ -475,7 +494,7 @@ export default function DeanStudents() {
                   <Filter className="h-3 w-3" />
                   {selectedBcys !== "All" && <span>Program: {selectedBcys}</span>}
                   {selectedDepartment !== "All" && <span>Dept: {selectedDepartment}</span>}
-                  {selectedStatus !== "All" && <span>Status: {selectedStatus}</span>}
+                  {selectedStatus !== "All" && <span>Status: {formatStatus(selectedStatus)}</span>}
                 </div>
               )}
               <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" />
