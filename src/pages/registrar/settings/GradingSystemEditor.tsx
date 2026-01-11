@@ -413,7 +413,7 @@ const CrudSection = ({
           `${endPoints.gradingSystem}/${editingItem.id}`,
           formData
         );
-//
+
         // Update active status separately 
         if (isActive !== editingItem.active) {
           await apiService.put(
