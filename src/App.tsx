@@ -142,7 +142,6 @@ const FinanceReports = React.lazy(() => import("./pages/finance/Reports"));
 const DeanLayout = React.lazy(() => import("./layouts/DeanLayout"));
 const DeanDashboard = React.lazy(() => import("./pages/dean/Dashboard"));
 const DeanStudents = React.lazy(() => import("./pages/dean/Students"));
-const DeanGrades = React.lazy(() => import("./pages/dean/Grades"));
 const DeanNotifications = React.lazy(() => import("./pages/dean/Notifications"));
 const DepartmentHeadsList = React.lazy(
   () => import("./pages/dean/DepartmentHeadsList")
@@ -150,11 +149,9 @@ const DepartmentHeadsList = React.lazy(
 const DepartmentHeadDetail = React.lazy(
   () => import("./pages/dean/DepartmentHeadDetail")
 );
-const DeanReports = React.lazy(() => import("./pages/dean/Reports"));
 const CreateDepartmentHead = React.lazy(
   () => import("./pages/dean/CreateDepartmentHead")
 );
-const DeanDepartments = React.lazy(() => import("./pages/dean/DeanDeparment"));
 const DeanDepartmentDetail = React.lazy(
   () => import("./pages/dean/DeanDepartmentsDetails")
 );
@@ -456,14 +453,6 @@ function App() {
                   path="department-heads/:id"
                   element={<DepartmentHeadDetail />}
                 />
-                <Route path="grades" element={<DeanGrades />} />
-                <Route path="department" element={<DeanDepartments />} />
-                <Route path="reports" element={<DeanReports />} />
-                <Route
-                  path="departments/:id"
-                  element={<DeanDepartmentDetail />}
-                />
-
                 <Route path="vice-deans" element={<ViceDeansList />} />
                 <Route path="vice-deans/:id" element={<ViceDeanDetail />} />
                 <Route path="create-vice-dean" element={<CreateViceDean />} />
