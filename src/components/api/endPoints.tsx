@@ -13,6 +13,7 @@ const endPoints = {
   applicantAccept: "/applicants/:id/accept",
   applicantsRegister:
     "https://deutschemedizin-collage-backend-production.up.railway.app/api/applicants/register",
+  registerDepartmentHead: "/auth/register/department-head",
 
   /* =======================     Profiles  ======================== */
   profile: "/students/profile",
