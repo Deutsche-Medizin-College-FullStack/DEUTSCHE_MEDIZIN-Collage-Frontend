@@ -226,109 +226,156 @@ export default function CreateDepartmentHead() {
     return true;
   };
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  
-  if (!validateForm()) return;
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      
+      if (!validateForm()) return;
 
-  setIsLoading(true);
-  
-  try {
-    // Prepare the data for API
-    const jsonPayload = {
-      username: formData.username.trim(),
-      password: formData.password,
-      passwordConfirm: formData.passwordConfirm,
-      firstNameENG: formData.firstNameENG.trim(),
-      firstNameAMH: formData.firstNameAMH.trim(),
-      fatherNameENG: formData.fatherNameENG.trim(),
-      fatherNameAMH: formData.fatherNameAMH.trim(),
-      grandfatherNameENG: formData.grandfatherNameENG?.trim() || "",
-      grandfatherNameAMH: formData.grandfatherNameAMH?.trim() || "",
-      gender: formData.gender,
-      phoneNumber: formData.phoneNumber.trim(),
-      email: formData.email.trim(),
-      hiredDateGC: formData.hiredDateGC,
-      hiredDateEC: formData.hiredDateEC || calculateEthiopianDate(formData.hiredDateGC),
-      departmentId: Number(formData.departmentId),
-      residenceRegionCode: formData.residenceRegionCode,
-      residenceZoneCode: formData.residenceZoneCode,
-      residenceWoredaCode: formData.residenceWoredaCode,
-      remark: formData.remark?.trim() || "",
-    };
+      setIsLoading(true);
+      
+      try {
+        // Prepare the data for API
+        const jsonPayload = {
+          username: formData.username.trim(),
+          password: formData.password,
+          passwordConfirm: formData.passwordConfirm,
+          firstNameENG: formData.firstNameENG.trim(),
+          firstNameAMH: formData.firstNameAMH.trim(),
+          fatherNameENG: formData.fatherNameENG.trim(),
+          fatherNameAMH: formData.fatherNameAMH.trim(),
+          grandfatherNameENG: formData.grandfatherNameENG?.trim() || "",
+          grandfatherNameAMH: formData.grandfatherNameAMH?.trim() || "",
+          gender: formData.gender,
+          phoneNumber: formData.phoneNumber.trim(),
+          email: formData.email.trim(),
+          hiredDateGC: formData.hiredDateGC,
+          hiredDateEC: formData.hiredDateEC || calculateEthiopianDate(formData.hiredDateGC),
+          departmentId: Number(formData.departmentId),
+          residenceRegionCode: formData.residenceRegionCode,
+          residenceZoneCode: formData.residenceZoneCode,
+          residenceWoredaCode: formData.residenceWoredaCode,
+          remark: formData.remark?.trim() || "",
+        };
 
-    console.log("JSON Payload:", JSON.stringify(jsonPayload, null, 2));
+        console.log("JSON Payload:", JSON.stringify(jsonPayload, null, 2));
 
-    // Create FormData and append as Blob like the teacher creation
-    const multipart = new FormData();
-    multipart.append(
-      "data",
-      new Blob([JSON.stringify(jsonPayload)], { type: "application/json" })
-    );
+        // Get JWT token from localStorage/sessionStorage
+        const userData = sessionStorage.getItem("Userdata");
+        let token = "";
+        if (userData) {
+          try {
+            const parsedData = JSON.parse(userData);
+            token = parsedData.token || parsedData.jwt || "";
+          } catch (err) {
+            console.error("Failed to parse user data:", err);
+          }
+        }
 
-    // Append photo if available
-    const photoFile = photoInputRef.current?.files?.[0];
-    const docFile = documentInputRef.current?.files?.[0];
-    if (photoFile) multipart.append("photograph", photoFile);
-    if (docFile) multipart.append("document", docFile);
+        console.log("JWT Token available:", !!token);
 
-    console.log("Sending to endpoint:", endPoints.registerDepartmentHead);
-    console.log("FormData entries:");
-    for (let pair of multipart.entries()) {
-      console.log(pair[0], pair[1]);
-    }
+        // Check if files are attached
+        const photoFile = photoInputRef.current?.files?.[0];
+        const docFile = documentInputRef.current?.files?.[0];
+        
+        if (photoFile || docFile) {
+          // If files are attached, use multipart/form-data
+          const multipart = new FormData();
+          multipart.append(
+            "data",
+            new Blob([JSON.stringify(jsonPayload)], { type: "application/json" })
+          );
 
-    // Send the FormData with multipart
-    const response = await apiClient.post(
-      endPoints.registerDepartmentHead,
-      multipart,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+          // Append photo if available
+          if (photoFile) multipart.append("photograph", photoFile);
+          if (docFile) multipart.append("document", docFile);
+
+          console.log("Sending with files (multipart/form-data)");
+
+          // Send the FormData with multipart - include Authorization header
+          const response = await apiClient.post(
+            endPoints.registerDepartmentHead,
+            multipart,
+            {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+                ...(token && { 'Authorization': `Bearer ${token}` })
+              },
+            }
+          );
+
+          console.log("Response received:", response);
+
+          toast({
+            title: "Success",
+            description: response.data?.message || "Department Head created successfully",
+          });
+        } else {
+          // If no files, send as application/json with data wrapper
+          const payload = {
+            data: jsonPayload
+          };
+
+          console.log("Sending without files (application/json):", JSON.stringify(payload, null, 2));
+
+          // Send as JSON directly - include Authorization header
+          const response = await apiClient.post(
+            endPoints.registerDepartmentHead,
+            payload,
+            {
+              headers: {
+                'Content-Type': 'application/json',
+                ...(token && { 'Authorization': `Bearer ${token}` })
+              },
+            }
+          );
+
+          console.log("Response received:", response);
+
+          toast({
+            title: "Success",
+            description: response.data?.message || "Department Head created successfully",
+          });
+        }
+
+        // Navigate to department heads list
+        setTimeout(() => {
+          navigate("/dean/department-heads");
+        }, 1500);
+
+      } catch (error: any) {
+        console.error("Full registration error:", error);
+        console.error("Error response:", error.response);
+        
+        let errorMessage = "Failed to create department head";
+        
+        if (error.response?.status === 401) {
+          errorMessage = "Authentication failed. Your session may have expired. Please log in again.";
+          // Redirect to login or refresh token
+          setTimeout(() => {
+            navigate("/login");
+          }, 2000);
+        } else if (error.response?.data?.error) {
+          errorMessage = error.response.data.error;
+        } else if (error.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.response?.data) {
+          // Try to stringify the error data for better debugging
+          errorMessage = typeof error.response.data === 'object' 
+            ? JSON.stringify(error.response.data)
+            : error.response.data;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
       }
-    );
-
-    console.log("Response received:", response);
-
-    toast({
-      title: "Success",
-      description: response.data?.message || "Department Head created successfully",
-    });
-
-    // Navigate to department heads list
-    setTimeout(() => {
-      navigate("/dean/department-heads");
-    }, 1500);
-
-  } catch (error: any) {
-    console.error("Full registration error:", error);
-    console.error("Error response:", error.response);
-    
-    let errorMessage = "Failed to create department head";
-    
-    if (error.response?.data?.error) {
-      errorMessage = error.response.data.error;
-    } else if (error.response?.data?.message) {
-      errorMessage = error.response.data.message;
-    } else if (error.response?.data) {
-      // Try to stringify the error data for better debugging
-      errorMessage = typeof error.response.data === 'object' 
-        ? JSON.stringify(error.response.data)
-        : error.response.data;
-    } else if (error.message) {
-      errorMessage = error.message;
-    }
-    
-    toast({
-      title: "Error",
-      description: errorMessage,
-      variant: "destructive",
-    });
-  } finally {
-    setIsLoading(false);
-  }
-};
+    };
 
   const resetForm = () => {
     setFormData({
