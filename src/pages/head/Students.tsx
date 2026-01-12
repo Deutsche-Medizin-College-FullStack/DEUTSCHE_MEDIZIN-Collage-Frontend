@@ -313,7 +313,7 @@ export default function HeadStudents() {
                 onChange={(e) => setSelectedBcys(e.target.value)}
                 disabled={loadingLookups}
               >
-                <option value="All">All Programs</option>
+                <option value="All">All Batch-Classyear-Semester</option>
                 {loadingLookups ? (
                   <option disabled>Loading options...</option>
                 ) : (
@@ -343,7 +343,7 @@ export default function HeadStudents() {
                   <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Student ID</th>
                   <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Full Name</th>
                   <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Gender</th>
-                  <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Current Program</th>
+                  <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Current Batch/ClassYear/Semester</th>
                   <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Phone</th>
                   <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Status</th>
                   <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Actions</th>
