@@ -353,101 +353,77 @@ export default function LandingPage() {
           </section>
 
           {/* Hero Section */}
-          <section id="home" className="my-8 container mx-auto px-4 py-10">
-            <div
-              className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center gap-16 overflow-hidden"
-              ref={heroRef}
-            >
-              {/* Image: Slide from left */}
-              <motion.div
-                className="w-full px-10 py-10 sm:w-2/5"
-                initial={{ opacity: 0, x: -75, scale: 0.8 }}
-                animate={
-                  heroInView
-                    ? { opacity: 1, x: 0, scale: 1 }
-                    : { opacity: 0, x: -75, scale: 0.8 }
-                }
-                transition={{ duration: 0.6, ease: "easeOut" }}
-              >
-                <img
-                  src="/assets/companylogo.jpg"
-                  alt="College Logo"
-                  className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-full flex items-center justify-center flex-shrink-0"
-                />
-              </motion.div>
+<section id="home" className="my-8 container mx-auto px-4 py-10">
+  <div
+    className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center gap-16"
+    ref={heroRef}
+  >
+    {/* Image - Simple fade in */}
+    <motion.div
+      className="w-full px-10 py-10 sm:w-2/5"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      <img
+        src="/assets/companylogo.jpg"
+        alt="College Logo"
+        className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-full flex items-center justify-center flex-shrink-0"
+      />
+    </motion.div>
 
-              {/* Text: Slide from right */}
-              <div
-                className="w-full sm:w-3/5 text-center sm:text-left max-w-4xl overflow-hidden"
-                initial={{ opacity: 0, x: 75 }}
-                animate={
-                  heroInView ? { opacity: 1, x: 0 } : { opacity: 0, x: 75 }
-                }
-                transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
-              >
-                <motion.h1
-                  className="text-5xl font-bold text-gray-900 dark:text-white mb-6"
-                  initial={{ opacity: 0, y: -50 }}
-                  animate={
-                    heroInView ? { opacity: 1, y: 0 } : { opacity: 0, y: -50 }
-                  }
-                  transition={{ duration: 1, delay: 0.6, ease: "easeOut" }}
-                >
-                  <div className="text-blue-600">Excellence In</div>
-                  <div className="text-blue-600">
-                    <TrueFocus
-                      sentence="Medical Education"
-                      manualMode={false}
-                      blurAmount={5}
-                      borderColor="red"
-                      animationDuration={2}
-                      pauseBetweenAnimations={1}
-                    />
-                  </div>
-                </motion.h1>
+    {/* Text Content */}
+    <div className="w-full sm:w-3/5 text-center sm:text-left max-w-4xl">
+      <h1 className="text-5xl font-bold text-gray-900 dark:text-white mb-6">
+        <div className="text-blue-600">Excellence In</div>
+        <div className="text-blue-600">
+          <TrueFocus
+            sentence="Medical Education"
+            manualMode={false}
+            blurAmount={5}
+            borderColor="red"
+            animationDuration={2}
+            pauseBetweenAnimations={1}
+          />
+        </div>
+      </h1>
 
-                <motion.p
-                  className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl"
-                  initial={{ opacity: 0, y: 50 }}
-                  animate={
-                    heroInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }
-                  }
-                  transition={{ duration: 1, delay: 0.9, ease: "easeOut" }}
-                >
-                  Join our vibrant University College community! Begin your
-                  academic journey by completing the Life History Form for
-                  undergraduate admission...
-                </motion.p>
+      <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl">
+        Join our vibrant University College community! Begin your
+        academic journey by completing the Life History Form for
+        undergraduate admission...
+      </p>
 
-                <div className="flex flex-col sm:flex-row gap-4 justify-center sm:justify-start">
-                  <Link to="/register">
-                    <Button size="lg" className="text-lg px-8 py-3">
-                      Apply now <ArrowRight className="ml-2 h-5 w-5" />
-                    </Button>
-                  </Link>
-                  <Link to="/learn-more">
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="text-lg px-8 py-3 bg-transparent"
-                    >
-                      Learn More
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </section>
+      <div className="flex flex-col sm:flex-row gap-4 justify-center sm:justify-start">
+        <Link to="/register">
+          <Button size="lg" className="text-lg px-8 py-3">
+            Apply now <ArrowRight className="ml-2 h-5 w-5" />
+          </Button>
+        </Link>
+        <Link to="/learn-more">
+          <Button
+            variant="outline"
+            size="lg"
+            className="text-lg px-8 py-3 bg-transparent"
+          >
+            Learn More
+          </Button>
+        </Link>
+      </div>
+    </div>
+  </div>
+</section>
        
           <section className="mx-4 sm:mx-20 my-16 md:my-24">
             <div
               ref={infoRef}
               className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center"
             >
+              {/* Left column - Simple fade only */}
               <motion.div
-                initial={{ opacity: 0, x: -50 }}
-                animate={infoView ? { opacity: 1, x: 0 } : { opacity: 0, x: -50 }}
-                transition={{ duration: 0.7, ease: "easeOut" }}
+                initial={{ opacity: 0 }}
+                animate={infoView ? { opacity: 1 } : { opacity: 0 }}
+                transition={{ duration: 0.5 }}
                 className="space-y-6"
               >
                 <div>
@@ -468,18 +444,14 @@ export default function LandingPage() {
                 </div>
               </motion.div>
 
+              {/* Right column - Simple fade with slight delay */}
               <motion.div
-                initial={{ opacity: 0, x: 50 }}
-                animate={infoView ? { opacity: 1, x: 0 } : { opacity: 0, x: 50 }}
-                transition={{ duration: 0.7, ease: "easeOut", delay: 0.2 }}
+                initial={{ opacity: 0 }}
+                animate={infoView ? { opacity: 1 } : { opacity: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
                 className="space-y-10 lg:space-y-12"
               >
-                <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={infoView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-                  transition={{ duration: 0.6, ease: "easeOut", delay: 0.3 }}
-                  className="bg-gradient-to-br from-blue-50 to-white dark:from-gray-800 dark:to-gray-900 p-8 rounded-2xl shadow-lg"
-                >
+                <div className="bg-gradient-to-br from-blue-50 to-white dark:from-gray-800 dark:to-gray-900 p-8 rounded-2xl shadow-lg">
                   <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full mb-6">
                     <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">2017</span>
                   </div>
@@ -489,14 +461,9 @@ export default function LandingPage() {
                   <p className="text-gray-700 dark:text-gray-300 font-mono text-lg">
                     The year DEUTSCHE was established, beginning our journey of academic excellence.
                   </p>
-                </motion.div>
+                </div>
 
-                <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={infoView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-                  transition={{ duration: 0.6, ease: "easeOut", delay: 0.5 }}
-                  className="bg-gradient-to-br from-blue-50 to-white dark:from-gray-800 dark:to-gray-900 p-8 rounded-2xl shadow-lg"
-                >
+                <div className="bg-gradient-to-br from-blue-50 to-white dark:from-gray-800 dark:to-gray-900 p-8 rounded-2xl shadow-lg">
                   <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full mb-6">
                     <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">500+</span>
                   </div>
@@ -506,7 +473,7 @@ export default function LandingPage() {
                   <p className="text-gray-700 dark:text-gray-300 font-mono text-lg">
                     Hundreds of students currently engaged in transformative learning experiences.
                   </p>
-                </motion.div>
+                </div>
               </motion.div>
             </div>
           </section>
