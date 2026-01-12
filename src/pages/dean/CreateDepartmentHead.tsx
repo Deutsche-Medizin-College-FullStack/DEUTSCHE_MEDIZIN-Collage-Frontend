@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, ArrowLeft, Loader2 } from "lucide-react";
+import { UserPlus, ArrowLeft, Loader2, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import apiClient from "@/components/api/apiClient";
 import endPoints from "@/components/api/endPoints";
@@ -76,7 +76,12 @@ export default function CreateDepartmentHead() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingDepartments, setIsFetchingDepartments] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [documentName, setDocumentName] = useState<string>("");
   const { toast } = useToast();
+
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const documentInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch departments on component mount
   useEffect(() => {
@@ -115,6 +120,49 @@ export default function CreateDepartmentHead() {
       const username = `${firstName}.${fatherName}${randomNum}`.replace(/\s/g, '');
       handleInputChange("username", username);
     }
+  };
+
+  // File handlers
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith("image/")) {
+        toast({
+          title: "Invalid File",
+          description: "Please select a valid image file",
+          variant: "destructive",
+        });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => setPhotoPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.type !== "application/pdf") {
+        toast({
+          title: "Invalid File",
+          description: "Please select a PDF file only",
+          variant: "destructive",
+        });
+        return;
+      }
+      setDocumentName(file.name);
+    }
+  };
+
+  const removePhoto = () => {
+    setPhotoPreview(null);
+    if (photoInputRef.current) photoInputRef.current.value = "";
+  };
+
+  const removeDocument = () => {
+    setDocumentName("");
+    if (documentInputRef.current) documentInputRef.current.value = "";
   };
 
   const validateForm = () => {
@@ -178,59 +226,109 @@ export default function CreateDepartmentHead() {
     return true;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateForm()) return;
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  if (!validateForm()) return;
 
-    setIsLoading(true);
-    
-    try {
-      // Prepare the data for API
-      const requestData = {
-        ...formData,
-        // Ensure departmentId is a number
-        departmentId: Number(formData.departmentId),
-        // Set default Ethiopian date if not provided
-        hiredDateEC: formData.hiredDateEC || "2015-12-24", // Default Ethiopian date
-      };
+  setIsLoading(true);
+  
+  try {
+    // Prepare the data for API
+    const jsonPayload = {
+      username: formData.username.trim(),
+      password: formData.password,
+      passwordConfirm: formData.passwordConfirm,
+      firstNameENG: formData.firstNameENG.trim(),
+      firstNameAMH: formData.firstNameAMH.trim(),
+      fatherNameENG: formData.fatherNameENG.trim(),
+      fatherNameAMH: formData.fatherNameAMH.trim(),
+      grandfatherNameENG: formData.grandfatherNameENG?.trim() || "",
+      grandfatherNameAMH: formData.grandfatherNameAMH?.trim() || "",
+      gender: formData.gender,
+      phoneNumber: formData.phoneNumber.trim(),
+      email: formData.email.trim(),
+      hiredDateGC: formData.hiredDateGC,
+      hiredDateEC: formData.hiredDateEC || calculateEthiopianDate(formData.hiredDateGC),
+      departmentId: Number(formData.departmentId),
+      residenceRegionCode: formData.residenceRegionCode,
+      residenceZoneCode: formData.residenceZoneCode,
+      residenceWoredaCode: formData.residenceWoredaCode,
+      remark: formData.remark?.trim() || "",
+    };
 
-      // Create FormData for file upload capability
-      const formDataToSend = new FormData();
-      formDataToSend.append("data", JSON.stringify(requestData));
+    console.log("JSON Payload:", JSON.stringify(jsonPayload, null, 2));
 
-      // Make API call
-      const response = await apiClient.post(
-        endPoints.registerDepartmentHead,
-        formDataToSend,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
+    // Create FormData and append as Blob like the teacher creation
+    const multipart = new FormData();
+    multipart.append(
+      "data",
+      new Blob([JSON.stringify(jsonPayload)], { type: "application/json" })
+    );
 
-      toast({
-        title: "Success",
-        description: response.data.message || "Department Head created successfully",
-      });
+    // Append photo if available
+    const photoFile = photoInputRef.current?.files?.[0];
+    const docFile = documentInputRef.current?.files?.[0];
+    if (photoFile) multipart.append("photograph", photoFile);
+    if (docFile) multipart.append("document", docFile);
 
-      // Navigate to department heads list
-      setTimeout(() => {
-        navigate("/dean/department-heads");
-      }, 1500);
-
-    } catch (error: any) {
-      console.error("Registration error:", error);
-      toast({
-        title: "Error",
-        description: error.response?.data?.error || "Failed to create department head",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+    console.log("Sending to endpoint:", endPoints.registerDepartmentHead);
+    console.log("FormData entries:");
+    for (let pair of multipart.entries()) {
+      console.log(pair[0], pair[1]);
     }
-  };
+
+    // Send the FormData with multipart
+    const response = await apiClient.post(
+      endPoints.registerDepartmentHead,
+      multipart,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+
+    console.log("Response received:", response);
+
+    toast({
+      title: "Success",
+      description: response.data?.message || "Department Head created successfully",
+    });
+
+    // Navigate to department heads list
+    setTimeout(() => {
+      navigate("/dean/department-heads");
+    }, 1500);
+
+  } catch (error: any) {
+    console.error("Full registration error:", error);
+    console.error("Error response:", error.response);
+    
+    let errorMessage = "Failed to create department head";
+    
+    if (error.response?.data?.error) {
+      errorMessage = error.response.data.error;
+    } else if (error.response?.data?.message) {
+      errorMessage = error.response.data.message;
+    } else if (error.response?.data) {
+      // Try to stringify the error data for better debugging
+      errorMessage = typeof error.response.data === 'object' 
+        ? JSON.stringify(error.response.data)
+        : error.response.data;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    toast({
+      title: "Error",
+      description: errorMessage,
+      variant: "destructive",
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const resetForm = () => {
     setFormData({
@@ -254,6 +352,10 @@ export default function CreateDepartmentHead() {
       residenceWoredaCode: "1000",
       remark: "",
     });
+    setPhotoPreview(null);
+    setDocumentName("");
+    if (photoInputRef.current) photoInputRef.current.value = "";
+    if (documentInputRef.current) documentInputRef.current.value = "";
   };
 
   // Calculate Ethiopian date (simplified)
@@ -559,6 +661,62 @@ export default function CreateDepartmentHead() {
                       onChange={(e) => handleInputChange("remark", e.target.value)}
                       placeholder="Additional notes"
                     />
+                  </div>
+                </div>
+              </div>
+
+              {/* Attachments Section */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white border-b pb-2">
+                  Attachments (Optional)
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label>Photograph</Label>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      ref={photoInputRef}
+                      onChange={handlePhotoChange}
+                    />
+                    {photoPreview && (
+                      <div className="relative mt-4">
+                        <img
+                          src={photoPreview}
+                          alt="Preview"
+                          className="w-32 h-32 object-cover rounded"
+                        />
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="absolute top-0 right-0"
+                          onClick={removePhoto}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Supporting Document (PDF)</Label>
+                    <Input
+                      type="file"
+                      accept="application/pdf"
+                      ref={documentInputRef}
+                      onChange={handleDocumentChange}
+                    />
+                    {documentName && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-sm">{documentName}</span>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={removeDocument}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

@@ -18,9 +18,9 @@ const noAuthEndpoints = [
 ];
 
 const apiClient = axios.create({
-  //  baseURL: "https://concise-skunk-preferably.ngrok-free.app/api",
+   baseURL: "https://concise-skunk-preferably.ngrok-free.app/api",
 
-  baseURL:"https://deutschemedizin-collage-backend-production.up.railway.app/api",
+  // baseURL:"https://deutschemedizin-collage-backend-production.up.railway.app/api",
   headers: {
     "ngrok-skip-browser-warning": "true",
     "User-Agent":
