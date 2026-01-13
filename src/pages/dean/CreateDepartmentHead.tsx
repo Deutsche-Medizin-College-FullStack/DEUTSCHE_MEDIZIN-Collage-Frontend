@@ -94,7 +94,6 @@ export default function CreateDepartmentHead() {
       const response = await apiClient.get<Department[]>(endPoints.departments);
       setDepartments(response.data);
     } catch (error: any) {
-      console.error("Failed to fetch departments:", error);
       toast({
         title: "Error",
         description: error.response?.data?.error || "Failed to load departments",
@@ -257,22 +256,6 @@ export default function CreateDepartmentHead() {
           remark: formData.remark?.trim() || "",
         };
 
-        console.log("JSON Payload:", JSON.stringify(jsonPayload, null, 2));
-
-        // Get JWT token from localStorage/sessionStorage
-        const userData = sessionStorage.getItem("Userdata");
-        let token = "";
-        if (userData) {
-          try {
-            const parsedData = JSON.parse(userData);
-            token = parsedData.token || parsedData.jwt || "";
-          } catch (err) {
-            console.error("Failed to parse user data:", err);
-          }
-        }
-
-        console.log("JWT Token available:", !!token);
-
         // Check if files are attached
         const photoFile = photoInputRef.current?.files?.[0];
         const docFile = documentInputRef.current?.files?.[0];
@@ -289,7 +272,6 @@ export default function CreateDepartmentHead() {
           if (photoFile) multipart.append("photograph", photoFile);
           if (docFile) multipart.append("document", docFile);
 
-          console.log("Sending with files (multipart/form-data)");
 
           // Send the FormData with multipart - include Authorization header
           const response = await apiClient.post(
@@ -303,7 +285,6 @@ export default function CreateDepartmentHead() {
             }
           );
 
-          console.log("Response received:", response);
 
           toast({
             title: "Success",
@@ -315,7 +296,6 @@ export default function CreateDepartmentHead() {
             data: jsonPayload
           };
 
-          console.log("Sending without files (application/json):", JSON.stringify(payload, null, 2));
 
           // Send as JSON directly - include Authorization header
           const response = await apiClient.post(
@@ -329,7 +309,6 @@ export default function CreateDepartmentHead() {
             }
           );
 
-          console.log("Response received:", response);
 
           toast({
             title: "Success",
@@ -343,8 +322,6 @@ export default function CreateDepartmentHead() {
         }, 1500);
 
       } catch (error: any) {
-        console.error("Full registration error:", error);
-        console.error("Error response:", error.response);
         
         let errorMessage = "Failed to create department head";
         
