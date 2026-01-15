@@ -94,7 +94,6 @@ export default function CreateDepartmentHead() {
       const response = await apiClient.get<Department[]>(endPoints.departments);
       setDepartments(response.data);
     } catch (error: any) {
-      console.error("Failed to fetch departments:", error);
       toast({
         title: "Error",
         description: error.response?.data?.error || "Failed to load departments",
@@ -226,109 +225,169 @@ export default function CreateDepartmentHead() {
     return true;
   };
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  
-  if (!validateForm()) return;
-
-  setIsLoading(true);
-  
-  try {
-    // Prepare the data for API
-    const jsonPayload = {
-      username: formData.username.trim(),
-      password: formData.password,
-      passwordConfirm: formData.passwordConfirm,
-      firstNameENG: formData.firstNameENG.trim(),
-      firstNameAMH: formData.firstNameAMH.trim(),
-      fatherNameENG: formData.fatherNameENG.trim(),
-      fatherNameAMH: formData.fatherNameAMH.trim(),
-      grandfatherNameENG: formData.grandfatherNameENG?.trim() || "",
-      grandfatherNameAMH: formData.grandfatherNameAMH?.trim() || "",
-      gender: formData.gender,
-      phoneNumber: formData.phoneNumber.trim(),
-      email: formData.email.trim(),
-      hiredDateGC: formData.hiredDateGC,
-      hiredDateEC: formData.hiredDateEC || calculateEthiopianDate(formData.hiredDateGC),
-      departmentId: Number(formData.departmentId),
-      residenceRegionCode: formData.residenceRegionCode,
-      residenceZoneCode: formData.residenceZoneCode,
-      residenceWoredaCode: formData.residenceWoredaCode,
-      remark: formData.remark?.trim() || "",
-    };
-
-    console.log("JSON Payload:", JSON.stringify(jsonPayload, null, 2));
-
-    // Create FormData and append as Blob like the teacher creation
-    const multipart = new FormData();
-    multipart.append(
-      "data",
-      new Blob([JSON.stringify(jsonPayload)], { type: "application/json" })
-    );
-
-    // Append photo if available
-    const photoFile = photoInputRef.current?.files?.[0];
-    const docFile = documentInputRef.current?.files?.[0];
-    if (photoFile) multipart.append("photograph", photoFile);
-    if (docFile) multipart.append("document", docFile);
-
-    console.log("Sending to endpoint:", endPoints.registerDepartmentHead);
-    console.log("FormData entries:");
-    for (let pair of multipart.entries()) {
-      console.log(pair[0], pair[1]);
-    }
-
-    // Send the FormData with multipart
-    const response = await apiClient.post(
-      endPoints.registerDepartmentHead,
-      multipart,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+  // Function to get default image as File (silent - no user notification)
+  const getDefaultImageFile = async (): Promise<File> => {
+    try {
+      // Try to fetch the default image
+      const response = await fetch("/assets/User_Icon.png");
+      if (!response.ok) {
+        throw new Error("Failed to fetch default image");
       }
-    );
-
-    console.log("Response received:", response);
-
-    toast({
-      title: "Success",
-      description: response.data?.message || "Department Head created successfully",
-    });
-
-    // Navigate to department heads list
-    setTimeout(() => {
-      navigate("/dean/department-heads");
-    }, 1500);
-
-  } catch (error: any) {
-    console.error("Full registration error:", error);
-    console.error("Error response:", error.response);
-    
-    let errorMessage = "Failed to create department head";
-    
-    if (error.response?.data?.error) {
-      errorMessage = error.response.data.error;
-    } else if (error.response?.data?.message) {
-      errorMessage = error.response.data.message;
-    } else if (error.response?.data) {
-      // Try to stringify the error data for better debugging
-      errorMessage = typeof error.response.data === 'object' 
-        ? JSON.stringify(error.response.data)
-        : error.response.data;
-    } else if (error.message) {
-      errorMessage = error.message;
+      const blob = await response.blob();
+      
+      return new File(
+        [blob], 
+        "user_profile.png", 
+        { type: blob.type || "image/png" }
+      );
+    } catch (error) {
+      console.error("Failed to load default image:", error);
+      // Create a simple placeholder image silently
+      const canvas = document.createElement('canvas');
+      canvas.width = 100;
+      canvas.height = 100;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = '#f3f4f6';
+        ctx.fillRect(0, 0, 100, 100);
+        ctx.fillStyle = '#d1d5db';
+        ctx.beginPath();
+        ctx.arc(50, 35, 20, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillRect(30, 60, 40, 30);
+      }
+      
+      return new Promise((resolve) => {
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const file = new File([blob], "profile.png", {
+              type: "image/png",
+            });
+            resolve(file);
+          } else {
+            // Last resort: empty file
+            resolve(new File([], "profile.png", { type: "image/png" }));
+          }
+        }, 'image/png');
+      });
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    toast({
-      title: "Error",
-      description: errorMessage,
-      variant: "destructive",
-    });
-  } finally {
-    setIsLoading(false);
-  }
-};
+    if (!validateForm()) return;
+
+    setIsLoading(true);
+    
+    try {
+      // Prepare the data for API
+      const jsonPayload = {
+        username: formData.username.trim(),
+        password: formData.password,
+        passwordConfirm: formData.passwordConfirm,
+        firstNameENG: formData.firstNameENG.trim(),
+        firstNameAMH: formData.firstNameAMH.trim(),
+        fatherNameENG: formData.fatherNameENG.trim(),
+        fatherNameAMH: formData.fatherNameAMH.trim(),
+        grandfatherNameENG: formData.grandfatherNameENG?.trim() || "",
+        grandfatherNameAMH: formData.grandfatherNameAMH?.trim() || "",
+        gender: formData.gender,
+        phoneNumber: formData.phoneNumber.trim(),
+        email: formData.email.trim(),
+        hiredDateGC: formData.hiredDateGC,
+        hiredDateEC: formData.hiredDateEC || calculateEthiopianDate(formData.hiredDateGC),
+        departmentId: Number(formData.departmentId),
+        residenceRegionCode: formData.residenceRegionCode,
+        residenceZoneCode: formData.residenceZoneCode,
+        residenceWoredaCode: formData.residenceWoredaCode,
+        remark: formData.remark?.trim() || "",
+      };
+
+      // Always use multipart/form-data
+      const multipart = new FormData();
+      
+      // Append JSON data - note: the API expects "data" field with JSON string
+      multipart.append(
+        "data",
+        new Blob([JSON.stringify(jsonPayload)], { type: "application/json" })
+      );
+
+      // Check if user uploaded a photo
+      const photoFile = photoInputRef.current?.files?.[0];
+      
+      if (photoFile) {
+        // Use user-uploaded photo
+        multipart.append("photo", photoFile);
+      } else {
+        // Silently use default image - no notification to user
+        try {
+          const defaultImageFile = await getDefaultImageFile();
+          multipart.append("photo", defaultImageFile);
+          // No toast notification - silent operation
+        } catch (error) {
+          console.error("Failed to add default image:", error);
+          // Continue silently even if default image fails
+        }
+      }
+
+      // Append document if available
+      const docFile = documentInputRef.current?.files?.[0];
+      if (docFile) {
+        multipart.append("documents", docFile);
+      }
+
+      // Send the FormData with multipart
+      const response = await apiClient.post(
+        endPoints.registerDepartmentHead,
+        multipart,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+
+      toast({
+        title: "Success",
+        description: response.data?.message || "Department Head created successfully",
+      });
+
+      // Navigate to department heads list
+      setTimeout(() => {
+        navigate("/dean/department-heads");
+      }, 1500);
+
+    } catch (error: any) {
+      
+      let errorMessage = "Failed to create department head";
+      
+      if (error.response?.status === 401) {
+        errorMessage = "Authentication failed. Your session may have expired. Please log in again.";
+        setTimeout(() => {
+          navigate("/login");
+        }, 2000);
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data) {
+        errorMessage = typeof error.response.data === 'object' 
+          ? JSON.stringify(error.response.data)
+          : error.response.data;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const resetForm = () => {
     setFormData({
@@ -370,6 +429,15 @@ const handleSubmit = async (e: React.FormEvent) => {
     } catch {
       return "";
     }
+  };
+
+  // Show preview image
+  const getImagePreview = () => {
+    if (photoPreview) {
+      return photoPreview;
+    }
+    // Show default image preview when no user image is selected
+    return "/assets/User_Icon.png";
   };
 
   return (
@@ -668,55 +736,94 @@ const handleSubmit = async (e: React.FormEvent) => {
               {/* Attachments Section */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white border-b pb-2">
-                  Attachments (Optional)
+                  Attachments
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label>Photograph</Label>
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      ref={photoInputRef}
-                      onChange={handlePhotoChange}
-                    />
-                    {photoPreview && (
-                      <div className="relative mt-4">
+                    <div className="flex items-center justify-between">
+                      <Label>Photograph</Label>
+                      <span className="text-xs text-gray-500">
+                        Optional
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-4">
+                      <div className="relative">
                         <img
-                          src={photoPreview}
-                          alt="Preview"
-                          className="w-32 h-32 object-cover rounded"
+                          src={getImagePreview()}
+                          alt="Profile preview"
+                          className="w-32 h-32 object-cover rounded-lg border-2 border-gray-200"
                         />
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          className="absolute top-0 right-0"
-                          onClick={removePhoto}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
+                        {photoPreview && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="absolute -top-2 -right-2 h-6 w-6 p-0 rounded-full"
+                            onClick={removePhoto}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        )}
                       </div>
-                    )}
+                      <div className="space-y-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => photoInputRef.current?.click()}
+                          className="w-full"
+                        >
+                          {photoPreview ? "Change Photo" : "Upload Photo"}
+                        </Button>
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          ref={photoInputRef}
+                          onChange={handlePhotoChange}
+                          className="hidden"
+                        />
+                        <p className="text-xs text-gray-500">
+                          Upload profile photo (optional)
+                        </p>
+                      </div>
+                    </div>
                   </div>
+                  
                   <div className="space-y-2">
-                    <Label>Supporting Document (PDF)</Label>
-                    <Input
-                      type="file"
-                      accept="application/pdf"
-                      ref={documentInputRef}
-                      onChange={handleDocumentChange}
-                    />
-                    {documentName && (
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-sm">{documentName}</span>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={removeDocument}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
+                    <div className="flex items-center justify-between">
+                      <Label>Supporting Document</Label>
+                      <span className="text-xs text-gray-500">Optional, PDF only</span>
+                    </div>
+                    <div className="space-y-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => documentInputRef.current?.click()}
+                        className="w-full"
+                      >
+                        {documentName ? "Change Document" : "Upload Document"}
+                      </Button>
+                      <Input
+                        type="file"
+                        accept="application/pdf"
+                        ref={documentInputRef}
+                        onChange={handleDocumentChange}
+                        className="hidden"
+                      />
+                      {documentName && (
+                        <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                          <span className="text-sm truncate">{documentName}</span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={removeDocument}
+                            className="h-6 w-6 p-0"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
