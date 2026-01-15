@@ -438,10 +438,10 @@ export default function DeanStudents() {
                 <tr className="text-left">
                   <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">ID Number</th>
                   <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Full Name</th>
-                  <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Department</th>
-                  <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Batch/Class/Year/Semester</th>
+                  <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Department Enrolled</th>
+                  <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Current Batch/Class/Year/Semester</th>
                   <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">CGPA</th>
-                  <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Status</th>
+                  <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Student Status</th>
                 </tr>
               </thead>
               <tbody>
