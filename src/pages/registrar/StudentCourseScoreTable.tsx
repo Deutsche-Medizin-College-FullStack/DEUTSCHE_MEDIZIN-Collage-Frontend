@@ -14,29 +14,38 @@ export default function StudentCourseScoreTable() {
   const [editingRecord, setEditingRecord] = useState(null);
   const [editScoreModalVisible, setEditScoreModalVisible] = useState(false);
   const [editScoreValue, setEditScoreValue] = useState("");
-
+  const [courseList, setCourseList] = useState([]);
   const [batchValues, setBatchValues] = useState({
     score: "",
     courseSource: "",
     isReleased: null,
   });
-
+  const [studentList, setStudentList] = useState([]);
+  const [studentListLoading, setStudentListLoading] = useState(false);
+  const [coursesLoading, setCoursesLoading] = useState(true);
+  // const [filters, setFilters] = useState({
+  //   department: "",
+  //   status: "",
+  //   batchClassYearSemester: "",
+  //   search: "",
+  // });
   const [filters, setFilters] = useState({
-    department: "",
-    status: "",
-    batchClassYearSemester: "",
-    search: "",
+    courseId: "", // ← new
+    bcysId: "", // renamed from batchClassYearSemester
+    studentId: null, // better name than "search"
+    isReleased: null, // null = all, true, false
   });
 
   const [filterOptions, setFilterOptions] = useState({
-    departments: [],
-    studentStatuses: [],
-    batches: [],
-    semesters: [],
-    academicYears: [],
-    courseSources: [],
+    // departments: [],
+    // studentStatuses: [],
+    // batches: [],
+    // semesters: [],
+    // academicYears: [],
+    // courseSources: [],
+    //courses: [], // ← new or rename if you already have course list
     batchClassYearSemesters: [],
-    classYears: [],
+    // classYears: [],
   });
 
   const [pagination, setPagination] = useState({
@@ -56,35 +65,52 @@ export default function StudentCourseScoreTable() {
   }, [
     pagination.current,
     pagination.pageSize,
-    filters.department,
-    filters.status,
-    filters.search,
+    filters.courseId,
+    filters.bcysId,
+    filters.studentId,
+    filters.isReleased,
   ]);
 
-  useEffect(() => {
-    if (filters.batchClassYearSemester && allData.length > 0) {
-      const filtered = allData.filter(
-        (item) => item.batchClassYearSemester.id === filters.batchClassYearSemester
-      );
-      setData(filtered);
-    } else if (!filters.batchClassYearSemester && allData.length > 0) {
-      setData(allData);
-    }
-  }, [filters.batchClassYearSemester, allData]);
+  // useEffect(() => {
+  //   if (filters.batchClassYearSemester && allData.length > 0) {
+  //     const filtered = allData.filter(
+  //       (item) =>
+  //         item.batchClassYearSemester.id === filters.batchClassYearSemester
+  //     );
+  //     setData(filtered);
+  //   } else if (!filters.batchClassYearSemester && allData.length > 0) {
+  //     setData(allData);
+  //   }
+  // }, [filters.batchClassYearSemester, allData]);
 
+  // const fetchFilterOptions = async () => {
+  //   try {
+  //     const response = await apiClient.get(endPoints.lookupsDropdown);
+  //     if (response.data) {
+  //       setFilterOptions({
+  //         departments: response.data.departments || [],
+  //         studentStatuses: response.data.studentStatuses || [],
+  //         batches: response.data.batches || [],
+  //         semesters: response.data.semesters || [],
+  //         academicYears: response.data.academicYears || [],
+  //         courseSources: response.data.courseSources || [],
+  //         batchClassYearSemesters: response.data.batchClassYearSemesters || [],
+  //         classYears: response.data.classYears || [],
+  //       });
+  //     }
+  //   } catch (error) {
+  //     message.error("Failed to load filter options");
+  //   }
+  // };
   const fetchFilterOptions = async () => {
     try {
       const response = await apiClient.get(endPoints.lookupsDropdown);
       if (response.data) {
         setFilterOptions({
-          departments: response.data.departments || [],
-          studentStatuses: response.data.studentStatuses || [],
-          batches: response.data.batches || [],
-          semesters: response.data.semesters || [],
-          academicYears: response.data.academicYears || [],
-          courseSources: response.data.courseSources || [],
+          // courses: response.data.classYear || [],
           batchClassYearSemesters: response.data.batchClassYearSemesters || [],
-          classYears: response.data.classYears || [],
+          //  courseSources: response.data.courseSources || [], // keep for batch update
+          // remove departments, studentStatuses, etc.
         });
       }
     } catch (error) {
@@ -92,51 +118,134 @@ export default function StudentCourseScoreTable() {
     }
   };
 
+  // const fetchStudentCourseScores = async () => {
+  //   setLoading(true);
+  //   try {
+  //     const params = {
+  //       page: pagination.current - 1,
+  //       size: pagination.pageSize,
+  //       ...(filters.search && { search: filters.search }),
+  //       ...(filters.department && { departmentId: filters.department }),
+  //       ...(filters.status && { statusId: filters.status }),
+  //     };
+
+  //     const response = await apiClient.get(endPoints.getAllScores, { params });
+
+  //     if (response.data) {
+  //       const formattedData = response.data.content.map((item) => ({
+  //         key: item.id?.toString(),
+  //         id: item.id,
+  //         studentId: {
+  //           id: item.studentId?.toString(),
+  //           student: { name: item.studentName },
+  //         },
+  //         course: item.course || { id: null, displayName: "N/A" },
+  //         batchClassYearSemester: item.bcys || {
+  //           id: item.bcys?.id?.toString(),
+  //           displayName: item.bcys?.displayName || "N/A",
+  //         },
+  //         courseSource: item.courseSource || { id: null, displayName: "N/A" },
+  //         score: item.score,
+  //         isReleased: item.isReleased,
+  //         rawData: item,
+  //       }));
+
+  //       setData(formattedData);
+  //       setAllData(formattedData);
+
+  //       setPagination((prev) => ({
+  //         ...prev,
+  //         total: response.data.totalElements,
+  //         current: response.data.page + 1,
+  //         pageSize: response.data.size,
+  //       }));
+  //     }
+  //   } catch (error) {
+  //     message.error("Failed to load student course scores");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+  const fetchStudnet = async () => {
+    try {
+      setStudentListLoading(true);
+
+      const data = await apiClient.get(endPoints.studentUserNames);
+      setStudentList(data.data);
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setStudentListLoading(false);
+    }
+  };
+  const fetchCourseList = async () => {
+    try {
+      setCoursesLoading(true);
+      const data = await apiClient.get("/courses/list");
+      setCourseList(data.data);
+      console.log(data);
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setCoursesLoading(false);
+    }
+  };
+  useEffect(() => {
+    fetchCourseList();
+  }, []);
+  useEffect(() => {
+    fetchStudnet();
+  }, []);
+
   const fetchStudentCourseScores = async () => {
     setLoading(true);
     try {
       const params = {
         page: pagination.current - 1,
         size: pagination.pageSize,
-        ...(filters.search && { search: filters.search }),
-        ...(filters.department && { departmentId: filters.department }),
-        ...(filters.status && { statusId: filters.status }),
+        sortBy: "score", // or make dynamic later
+        sortDir: "desc",
+
+        ...(filters.courseId && { courseId: filters.courseId }),
+        ...(filters.bcysId && { bcysId: filters.bcysId }),
+        ...(filters.studentId && { studentId: Number(filters.studentId) }),
+        ...(filters.isReleased !== null && { isReleased: filters.isReleased }),
       };
 
       const response = await apiClient.get(endPoints.getAllScores, { params });
+      console.log(params, "no no no");
 
-      if (response.data) {
+      if (response.data?.content) {
         const formattedData = response.data.content.map((item) => ({
           key: item.id?.toString(),
           id: item.id,
           studentId: {
             id: item.studentId?.toString(),
-            student: { name: item.studentName },
+            // student: { name: item.studentName },  ← most likely NOT returned
           },
           course: item.course || { id: null, displayName: "N/A" },
-          batchClassYearSemester:
-            item.bcys || {
-              id: item.bcys?.id?.toString(),
-              displayName: item.bcys?.displayName || "N/A",
-            },
+          batchClassYearSemester: item.bcys || {
+            id: item.bcys?.id?.toString(),
+            displayName: item.bcys?.displayName || "N/A",
+          },
           courseSource: item.courseSource || { id: null, displayName: "N/A" },
           score: item.score,
           isReleased: item.isReleased,
-          rawData: item,
         }));
 
         setData(formattedData);
-        setAllData(formattedData);
+        // You can remove setAllData() — no longer needed (backend filters)
 
         setPagination((prev) => ({
           ...prev,
           total: response.data.totalElements,
           current: response.data.page + 1,
-          pageSize: response.data.size,
+          pageSize: response.data.size || prev.pageSize,
         }));
       }
     } catch (error) {
       message.error("Failed to load student course scores");
+      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -176,9 +285,12 @@ export default function StudentCourseScoreTable() {
         if (!row) return null;
 
         const updateData = {};
-        if (batchValues.score !== "") updateData.score = parseFloat(batchValues.score);
-        if (batchValues.isReleased !== null) updateData.isReleased = batchValues.isReleased;
-        if (batchValues.courseSource) updateData.courseSourceId = batchValues.courseSource;
+        if (batchValues.score !== "")
+          updateData.score = parseFloat(batchValues.score);
+        if (batchValues.isReleased !== null)
+          updateData.isReleased = batchValues.isReleased;
+        if (batchValues.courseSource)
+          updateData.courseSourceId = batchValues.courseSource;
 
         return { id: row.id, ...updateData };
       })
@@ -221,12 +333,23 @@ export default function StudentCourseScoreTable() {
   };
 
   const handleToggleRelease = async (record) => {
-        const updates = [{ id: record.id, isReleased: !record.isReleased }];
-        await applyUpdateViaBulk(updates);
+    const updates = [{ id: record.id, isReleased: !record.isReleased }];
+    await applyUpdateViaBulk(updates);
   };
 
   const clearFilters = () => {
-    setFilters({ department: "", status: "", batchClassYearSemester: "", search: "" });
+    // setFilters({
+    //   department: "",
+    //   status: "",
+    //   batchClassYearSemester: "",
+    //   search: "",
+    // });
+    setFilters({
+      courseId: "",
+      bcysId: "",
+      studentId: null,
+      isReleased: null,
+    });
     setSearchText("");
     setPagination((prev) => ({ ...prev, current: 1 }));
     fetchStudentCourseScores();
@@ -246,22 +369,34 @@ export default function StudentCourseScoreTable() {
     setPagination((prev) => ({ ...prev, pageSize, current: 1 }));
   };
 
-  const from = pagination.total === 0 ? 0 : (pagination.current - 1) * pagination.pageSize + 1;
-  const to = Math.min(pagination.current * pagination.pageSize, pagination.total);
+  const from =
+    pagination.total === 0
+      ? 0
+      : (pagination.current - 1) * pagination.pageSize + 1;
+  const to = Math.min(
+    pagination.current * pagination.pageSize,
+    pagination.total
+  );
   const totalPages = Math.ceil(pagination.total / pagination.pageSize);
 
   return (
     <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg max-w-full mx-auto">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Student Course Scores</h1>
-        <p className="text-gray-600 dark:text-gray-300">Manage student scores and release status</p>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+          Student Course Scores
+        </h1>
+        <p className="text-gray-600 dark:text-gray-300">
+          Manage student scores and release status
+        </p>
       </div>
 
       {/* Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+      {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Department</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Department
+          </label>
           <Select
             value={filters.department || undefined}
             onChange={(v) => handleFilterChange("department", v)}
@@ -272,13 +407,17 @@ export default function StudentCourseScoreTable() {
             dropdownClassName="dark:bg-gray-800"
           >
             {filterOptions.departments.map((d) => (
-              <Select.Option key={d.id} value={d.id}>{d.name}</Select.Option>
+              <Select.Option key={d.id} value={d.id}>
+                {d.name}
+              </Select.Option>
             ))}
           </Select>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Status
+          </label>
           <Select
             value={filters.status || undefined}
             onChange={(v) => handleFilterChange("status", v)}
@@ -288,13 +427,17 @@ export default function StudentCourseScoreTable() {
             dropdownClassName="dark:bg-gray-800"
           >
             {filterOptions.studentStatuses.map((s) => (
-              <Select.Option key={s.id} value={s.id}>{s.name}</Select.Option>
+              <Select.Option key={s.id} value={s.id}>
+                {s.name}
+              </Select.Option>
             ))}
           </Select>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Batch/Year/Semester</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Batch/Year/Semester
+          </label>
           <Select
             value={filters.batchClassYearSemester || undefined}
             onChange={(v) => handleFilterChange("batchClassYearSemester", v)}
@@ -304,13 +447,17 @@ export default function StudentCourseScoreTable() {
             dropdownClassName="dark:bg-gray-800"
           >
             {filterOptions.batchClassYearSemesters.map((b) => (
-              <Select.Option key={b.id} value={b.id}>{b.name}</Select.Option>
+              <Select.Option key={b.id} value={b.id}>
+                {b.name}
+              </Select.Option>
             ))}
           </Select>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Search</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Search
+          </label>
           <div className="relative">
             <input
               type="text"
@@ -320,9 +467,136 @@ export default function StudentCourseScoreTable() {
               className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-200"
             />
             {searchText && (
-              <button onClick={() => handleSearch("")} className="absolute right-3 top-3 text-gray-500">✕</button>
+              <button
+                onClick={() => handleSearch("")}
+                className="absolute right-3 top-3 text-gray-500"
+              >
+                ✕
+              </button>
             )}
           </div>
+        </div>
+      </div> */}
+      {/* Filters */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+        {/* Course */}
+        {/* Course Filter */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Course
+          </label>
+          <Select
+            loading={coursesLoading}
+            value={filters.courseId || undefined}
+            onChange={(v) => handleFilterChange("courseId", v)}
+            placeholder="All Courses"
+            allowClear
+            showSearch
+            className="w-full"
+            // optional: filterOption to improve search
+            filterOption={(input, option) =>
+              (option?.children ?? "")
+                .toLowerCase()
+                .includes(input.toLowerCase())
+            }
+          >
+            {courseList.map((c) => (
+              <Select.Option key={c.id} value={c.id}>
+                {c.title ||
+                  c.cTitle ||
+                  c.name ||
+                  c.displayName ||
+                  `Course ${c.id}`}
+              </Select.Option>
+            ))}
+          </Select>
+        </div>
+
+        {/* Batch / Year / Semester */}
+        <div>
+          <label className="block text-sm font-medium ...">
+            Batch/Year/Semester
+          </label>
+          <Select
+            value={filters.bcysId || undefined}
+            onChange={(v) => handleFilterChange("bcysId", v)}
+            placeholder="All"
+            allowClear
+            className="w-full"
+          >
+            {filterOptions.batchClassYearSemesters.map((b) => (
+              <Select.Option key={b.id} value={b.id}>
+                {b.displayName || b.name}
+              </Select.Option>
+            ))}
+          </Select>
+        </div>
+
+        {/* Release Status - simple yes/no/all */}
+        <div>
+          <label className="block text-sm font-medium ...">Released</label>
+          <Select
+            value={filters.isReleased === null ? undefined : filters.isReleased}
+            onChange={(v) =>
+              handleFilterChange("isReleased", v === undefined ? null : v)
+            }
+            placeholder="All"
+            allowClear
+            className="w-full"
+          >
+            <Select.Option value={true}>Yes</Select.Option>
+            <Select.Option value={false}>No</Select.Option>
+          </Select>
+        </div>
+
+        {/* Student ID search - now more precise */}
+        {/* <div>
+          <label className="block text-sm font-medium ...">Student ID</label>
+          <div className="relative">
+            <input
+              type="text"
+              value={filters.studentId}
+              onChange={(e) =>
+                handleFilterChange("studentId", e.target.value.trim())
+              }
+              placeholder="Enter student ID"
+              className="w-full px-4 py-2 ..."
+            />
+            {filters.studentId && (
+              <button
+                onClick={() => handleFilterChange("studentId", "")}
+                className="absolute right-3 top-3 text-gray-500"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </div> */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Student User Name
+          </label>
+          <Select
+            loading={studentListLoading}
+            value={filters.studentId ?? undefined}
+            onChange={(v) => handleFilterChange("studentId", v)}
+            placeholder="All Students"
+            allowClear
+            showSearch
+            className="w-full"
+            // optional: filterOption to improve search
+            filterOption={(input, option) =>
+              (option?.children ?? "")
+                .toLowerCase()
+                .includes(input.toLowerCase())
+            }
+          >
+            {studentList.map((c) => (
+              <Select.Option key={c.userId} value={Number(c.userId)}>
+                {c.username || c.userName || c.name}
+              </Select.Option>
+            ))}
+          </Select>
         </div>
       </div>
 
@@ -351,17 +625,27 @@ export default function StudentCourseScoreTable() {
             />
             <Select
               value={batchValues.courseSource || undefined}
-              onChange={(v) => setBatchValues({ ...batchValues, courseSource: v })}
+              onChange={(v) =>
+                setBatchValues({ ...batchValues, courseSource: v })
+              }
               placeholder="Course Source"
               allowClear
               className="w-48"
             >
               {filterOptions.courseSources.map((s) => (
-                <Select.Option key={s.id} value={s.id}>{s.name}</Select.Option>
+                <Select.Option key={s.id} value={s.id}>
+                  {s.name}
+                </Select.Option>
               ))}
             </Select>
             <Select
-              value={batchValues.isReleased !== null ? (batchValues.isReleased ? "yes" : "no") : undefined}
+              value={
+                batchValues.isReleased !== null
+                  ? batchValues.isReleased
+                    ? "yes"
+                    : "no"
+                  : undefined
+              }
               onChange={(v) =>
                 setBatchValues({
                   ...batchValues,
@@ -375,10 +659,16 @@ export default function StudentCourseScoreTable() {
               <Select.Option value="yes">Release</Select.Option>
               <Select.Option value="no">Don't Release</Select.Option>
             </Select>
-            <button onClick={applyBatchUpdate} className="px-5 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            <button
+              onClick={applyBatchUpdate}
+              className="px-5 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
               Apply ({selectedRowKeys.length})
             </button>
-            <button onClick={clearBatchUpdate} className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-400 dark:hover:bg-gray-500">
+            <button
+              onClick={clearBatchUpdate}
+              className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-400 dark:hover:bg-gray-500"
+            >
               Cancel
             </button>
           </div>
@@ -393,19 +683,37 @@ export default function StudentCourseScoreTable() {
               <th className="px-6 py-3 text-left">
                 <input
                   type="checkbox"
-                  checked={selectedRowKeys.length === data.length && data.length > 0}
+                  checked={
+                    selectedRowKeys.length === data.length && data.length > 0
+                  }
                   onChange={handleSelectAll}
                   className="rounded"
                 />
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Student ID</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Student Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Course</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Batch/Year/Sem</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Course Source</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Score</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Released</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Actions</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                Student ID
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                Student Name
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                Course
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                Batch/Year/Sem
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                Course Source
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                Score
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                Released
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -417,22 +725,54 @@ export default function StudentCourseScoreTable() {
               </tr>
             ) : data.length === 0 ? (
               <tr>
-                <td colSpan={9} className="text-center py-10 text-gray-500 dark:text-gray-400">No records found</td>
+                <td
+                  colSpan={9}
+                  className="text-center py-10 text-gray-500 dark:text-gray-400"
+                >
+                  No records found
+                </td>
               </tr>
             ) : (
               data.map((item) => (
-                <tr key={item.key} className={selectedRowKeys.includes(item.key) ? "bg-blue-50 dark:bg-blue-900/30" : ""}>
+                <tr
+                  key={item.key}
+                  className={
+                    selectedRowKeys.includes(item.key)
+                      ? "bg-blue-50 dark:bg-blue-900/30"
+                      : ""
+                  }
+                >
                   <td className="px-6 py-4">
-                    <input type="checkbox" checked={selectedRowKeys.includes(item.key)} onChange={() => handleRowSelection(item.key)} />
+                    <input
+                      type="checkbox"
+                      checked={selectedRowKeys.includes(item.key)}
+                      onChange={() => handleRowSelection(item.key)}
+                    />
                   </td>
                   <td className="px-6 py-4 text-sm">{item.studentId.id}</td>
-                  <td className="px-6 py-4 text-sm">{item.studentId.student?.name || "N/A"}</td>
-                  <td className="px-6 py-4 text-sm">{item.course.displayName}</td>
-                  <td className="px-6 py-4 text-sm">{item.batchClassYearSemester.displayName}</td>
-                  <td className="px-6 py-4 text-sm">{item.courseSource.displayName}</td>
-                  <td className="px-6 py-4 text-sm font-medium">{item.score?.toFixed(2) || "N/A"}</td>
+                  <td className="px-6 py-4 text-sm">
+                    {item.studentId.student?.name || "N/A"}
+                  </td>
+                  <td className="px-6 py-4 text-sm">
+                    {item.course.displayName}
+                  </td>
+                  <td className="px-6 py-4 text-sm">
+                    {item.batchClassYearSemester.displayName}
+                  </td>
+                  <td className="px-6 py-4 text-sm">
+                    {item.courseSource.displayName}
+                  </td>
+                  <td className="px-6 py-4 text-sm font-medium">
+                    {item.score?.toFixed(2) || "N/A"}
+                  </td>
                   <td className="px-6 py-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${item.isReleased ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300" : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"}`}>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        item.isReleased
+                          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                          : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                      }`}
+                    >
                       {item.isReleased ? "Yes" : "No"}
                     </span>
                   </td>
@@ -447,12 +787,18 @@ export default function StudentCourseScoreTable() {
                       </button>
                       <button
                         onClick={() => handleToggleRelease(item)}
-                        className={item.isReleased
-                          ? "text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-200"
-                          : "text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200"}
+                        className={
+                          item.isReleased
+                            ? "text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-200"
+                            : "text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200"
+                        }
                         title={item.isReleased ? "Unrelease" : "Release"}
                       >
-                        {item.isReleased ? <EyeOff size={16} /> : <Eye size={16} />}
+                        {item.isReleased ? (
+                          <EyeOff size={16} />
+                        ) : (
+                          <Eye size={16} />
+                        )}
                       </button>
                     </div>
                   </td>
@@ -465,11 +811,14 @@ export default function StudentCourseScoreTable() {
         {/* Pagination */}
         <div className="bg-gray-50 dark:bg-gray-900 px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="text-sm text-gray-700 dark:text-gray-300">
-            Showing <strong>{from}</strong> to <strong>{to}</strong> of <strong>{pagination.total}</strong> results
+            Showing <strong>{from}</strong> to <strong>{to}</strong> of{" "}
+            <strong>{pagination.total}</strong> results
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-700 dark:text-gray-300">Rows per page:</span>
+              <span className="text-sm text-gray-700 dark:text-gray-300">
+                Rows per page:
+              </span>
               <select
                 value={pagination.pageSize}
                 onChange={handlePageSizeChange}
@@ -493,7 +842,8 @@ export default function StudentCourseScoreTable() {
                 let pageNum;
                 if (totalPages <= 5) pageNum = i + 1;
                 else if (pagination.current <= 3) pageNum = i + 1;
-                else if (pagination.current >= totalPages - 2) pageNum = totalPages - 4 + i;
+                else if (pagination.current >= totalPages - 2)
+                  pageNum = totalPages - 4 + i;
                 else pageNum = pagination.current - 2 + i;
 
                 return (
@@ -537,8 +887,14 @@ export default function StudentCourseScoreTable() {
       >
         {editingRecord && (
           <div className="space-y-4 text-gray-900 dark:text-gray-100">
-            <p><strong>Student:</strong> {editingRecord.studentId.student?.name || editingRecord.studentId.id}</p>
-            <p><strong>Course:</strong> {editingRecord.course.displayName}</p>
+            <p>
+              <strong>Student:</strong>{" "}
+              {editingRecord.studentId.student?.name ||
+                editingRecord.studentId.id}
+            </p>
+            <p>
+              <strong>Course:</strong> {editingRecord.course.displayName}
+            </p>
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-200">
                 New Score (0-100)

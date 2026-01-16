@@ -263,7 +263,6 @@ function App() {
             <Route path="/register" element={<MultiStepRegistrationForm />} />
 
             {/* Testing/Development Routes - Consider removing in production */}
-            <Route path="/some" element={<TenColumnEditableTablePage />} />
             <Route path="/location-test" element={<LocationEditor />} />
 
             {/* Protected Routes */}
