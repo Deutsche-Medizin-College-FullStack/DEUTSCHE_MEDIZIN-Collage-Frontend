@@ -61,6 +61,7 @@ const endPoints = {
   /* =======================     Students  ======================== */
   students: "/students",
   allStudents: "/registrar/all-students",
+  studentUserNames: "/students/list/usernames",
   studentById: "/students",
   studentStatus: "/student-statuses",
   studentGradeReports: "/student/grade-reports",

@@ -277,7 +277,6 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
             {/* Testing/Development Routes - Consider removing in production */}
-            <Route path="/some" element={<TenColumnEditableTablePage />} />
             <Route path="/location-test" element={<LocationEditor />} />
 
             {/* Protected Routes */}
