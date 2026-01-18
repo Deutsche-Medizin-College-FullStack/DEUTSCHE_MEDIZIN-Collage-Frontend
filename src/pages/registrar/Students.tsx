@@ -250,7 +250,7 @@ export default function RegistrarStudents() {
       ),
     },
     { 
-      title: "BCY", 
+      title: "Current BCYS", 
       dataIndex: "batch", 
       width: 100 
     },
@@ -391,7 +391,7 @@ export default function RegistrarStudents() {
             }
             value={filters.batch}
           >
-            <option value="">All BCY</option>
+            <option value="">All BCYS</option>
             {options.batchClassYearSemesters.map((b) => (
               <option key={b.id} value={b.name}>
                 {b.name}

@@ -506,6 +506,8 @@ interface FilterOptions {
   studentStatuses: NameEntity[];
   programLevels: NameEntity[];
   impairments?: NameEntity[];
+  schoolBackgrounds?: NameEntity[]; // ← added
+
   // ... other fields you might want later
 }
 
@@ -528,13 +530,17 @@ export default function CustomizableStudentTable() {
   const [genderFilter, setGenderFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [departmentFilter, setDepartmentFilter] = useState<string>("all");
-  const [programModalityFilter, setProgramModalityFilter] =
-    useState<string>("all");
+  const [programModalityFilter, setProgramModalityFilter] = useState<string>("all");
   const [academicYearFilter, setAcademicYearFilter] = useState<string>("all");
-  const [batchClassYearSemesterFilter, setBatchClassYearSemesterFilter] =
-    useState<string>("all");
+  const [batchClassYearSemesterFilter, setBatchClassYearSemesterFilter] = useState<string>("all");
   const [impairmentFilter, setImpairmentFilter] = useState<string>("all");
   const [programLevelFilter, setProgramLevelFilter] = useState<string>("all");
+
+  // Add these after your existing filter states
+  const [schoolBackgroundFilter, setSchoolBackgroundFilter] = useState<string>("all");
+  const [isTransferFilter, setIsTransferFilter] = useState<string>("all");
+  const [documentStatusFilter, setDocumentStatusFilter] = useState<string>("all");
+  const [exitExamFilter, setExitExamFilter] = useState<string>("all");
 
   // Fetch metadata, filters & data
   useEffect(() => {
@@ -610,6 +616,11 @@ export default function CustomizableStudentTable() {
     setBatchClassYearSemesterFilter("all");
     setImpairmentFilter("all");
     setProgramLevelFilter("all");
+
+    setSchoolBackgroundFilter("all");
+    setIsTransferFilter("all");
+    setDocumentStatusFilter("all");
+    setExitExamFilter("all");
   };
   // Add this helper function near the top of your component (after states)
   const getEntityId = (value: any): string => {
@@ -646,7 +657,58 @@ export default function CustomizableStudentTable() {
       // Gender
       if (genderFilter !== "all" && student.gender !== genderFilter)
         return false;
+//=================================================================================================================
+      // School Background filter
+if (
+  schoolBackgroundFilter !== "all" &&
+  getEntityId(student.schoolBackground) !== schoolBackgroundFilter
+) {
+  return false;
+}
 
+// IsTransfer filter
+if (isTransferFilter !== "all") {
+  const transferValue = student.isTransfer;
+  let displayValue = "Non-Transfer"; // default for null/false
+  
+  if (transferValue === true) {
+    displayValue = "Transfer";
+  } else if (transferValue === false || transferValue == null) {
+    displayValue = "Non-Transfer";
+  }
+  
+  if (displayValue !== isTransferFilter) {
+    return false;
+  }
+}
+
+// Document Status filter
+if (
+  documentStatusFilter !== "all" &&
+  student.documentStatus !== documentStatusFilter
+) {
+  return false;
+}
+
+
+// Exit Exam filter
+if (exitExamFilter !== "all") {
+  const examValue = student.isStudentPassExitExam;
+  let displayValue = "Not Taken Yet"; // default for null
+  
+  if (examValue === true) {
+    displayValue = "Passed";
+  } else if (examValue === false) {
+    displayValue = "Not Passed";
+  } else if (examValue == null) {
+    displayValue = "Not Taken Yet";
+  }
+  
+  if (displayValue !== exitExamFilter) {
+    return false;
+  }
+}
+//=================================================================================================================
       // Status
       // if (
       //   statusFilter !== "all" &&
@@ -747,11 +809,19 @@ export default function CustomizableStudentTable() {
       }
 
       // Batch / Year / Semester
+      // if (
+      //   batchClassYearSemesterFilter !== "all" &&
+      //   (student.batchClassYearSemester as any)?.id !==
+      //     batchClassYearSemesterFilter &&
+      //   student.batchClassYearSemester !== batchClassYearSemesterFilter
+      // ) {
+      //   return false;
+      // }
+
+      // Batch / Year / Semester
       if (
         batchClassYearSemesterFilter !== "all" &&
-        (student.batchClassYearSemester as any)?.id !==
-          batchClassYearSemesterFilter &&
-        student.batchClassYearSemester !== batchClassYearSemesterFilter
+        getEntityId(student.batchClassYearSemester) !== batchClassYearSemesterFilter
       ) {
         return false;
       }
@@ -770,8 +840,53 @@ export default function CustomizableStudentTable() {
     programLevelFilter,
     batchClassYearSemesterFilter,
     visibleColumns,
+    //====================================
+    schoolBackgroundFilter,
+    isTransferFilter,
+    documentStatusFilter,
+    exitExamFilter,
   ]);
 
+  //===============================================================================
+  // Get distinct values for the new filters
+const distinctDocumentStatuses = useMemo(() => {
+  const statuses = new Set<string>();
+  students.forEach(student => {
+    if (student.documentStatus) {
+      statuses.add(student.documentStatus);
+    }
+  });
+  return Array.from(statuses).sort();
+}, [students]);
+
+const distinctTransferStatuses = useMemo(() => {
+  const transfers = new Set<string>();
+  students.forEach(student => {
+    const value = student.isTransfer;
+    if (value === true || value === false) {
+      transfers.add(value ? "Transfer" : "Non-Transfer");
+    } else if (value == null) {
+      transfers.add("Non-Transfer"); // null means false
+    }
+  });
+  return Array.from(transfers).sort();
+}, [students]);
+
+const distinctExitExamStatuses = useMemo(() => {
+  const exams = new Set<string>();
+  students.forEach(student => {
+    const value = student.isStudentPassExitExam;
+    if (value === true) {
+      exams.add("Passed");
+    } else if (value === false) {
+      exams.add("Not Passed");
+    } else if (value == null) {
+      exams.add("Not Taken Yet");
+    }
+  });
+  return Array.from(exams).sort();
+}, [students]);
+  //===============================================================================
   const getDisplayValue = (student: Student, field: string): string => {
     const value = student[field];
     if (value == null) return "—";
@@ -1069,6 +1184,94 @@ export default function CustomizableStudentTable() {
                 </Select>
               </div>
 
+              {/*=================================================================================== */}
+              {/* School Background */}
+<div>
+  <Label className="mb-1.5 text-sm">School Background</Label>
+  <Select
+    value={schoolBackgroundFilter}
+    onValueChange={setSchoolBackgroundFilter}
+  >
+    <SelectTrigger>
+      <SelectValue placeholder="All Backgrounds" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="all">All Backgrounds</SelectItem>
+      {filterOptions?.schoolBackgrounds?.map((bg) => (
+        <SelectItem key={bg.id} value={String(bg.id)}>
+          {bg.name}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+</div>
+
+{/* Is Transfer */}
+<div>
+  <Label className="mb-1.5 text-sm">Transfer Status</Label>
+  <Select
+    value={isTransferFilter}
+    onValueChange={setIsTransferFilter}
+  >
+    <SelectTrigger>
+      <SelectValue placeholder="All Transfer Status" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="all">All Transfer Status</SelectItem>
+      {distinctTransferStatuses.map((status) => (
+        <SelectItem key={status} value={status}>
+          {status}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+</div>
+
+{/* Document Status */}
+<div>
+  <Label className="mb-1.5 text-sm">Document Status</Label>
+  <Select
+    value={documentStatusFilter}
+    onValueChange={setDocumentStatusFilter}
+  >
+    <SelectTrigger>
+      <SelectValue placeholder="All Document Status" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="all">All Document Status</SelectItem>
+      {distinctDocumentStatuses.map((status) => (
+        <SelectItem key={status} value={status}>
+          {status}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+</div>
+
+{/* Exit Exam Status */}
+<div>
+  <Label className="mb-1.5 text-sm">Exit Exam Status</Label>
+  <Select
+    value={exitExamFilter}
+    onValueChange={setExitExamFilter}
+  >
+    <SelectTrigger>
+      <SelectValue placeholder="All Exit Exam Status" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="all">All Exit Exam Status</SelectItem>
+      {distinctExitExamStatuses.map((status) => (
+        <SelectItem key={status} value={status}>
+          {status}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+</div>
+              {/*=================================================================================== */}
+
+              
+
               {/* Program Level */}
               {/* <div>
                 <Label className="mb-1.5 text-sm">Program Level</Label>
@@ -1093,20 +1296,27 @@ export default function CustomizableStudentTable() {
           </div>
 
           {/* Table */}
-          <div className="overflow-x-auto rounded-md border">
+<div className="overflow-x-auto overflow-y-auto rounded-md border max-h-[100vh] [&_[data-slot=table-container]]:overflow-visible">
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/60">
-                  {visibleColumns.map((col) => (
-                    <TableHead
-                      key={col}
-                      className="whitespace-nowrap capitalize"
-                    >
-                      {col.replace(/([A-Z])/g, " $1")}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
+      <TableRow className="bg-muted/60 backdrop-blur-md supports-[backdrop-filter]:bg-muted/40 sticky top-0 z-20">
+        {visibleColumns.map((col) => (
+          <TableHead
+            key={col}
+            className="whitespace-nowrap capitalize backdrop-blur-md supports-[backdrop-filter]:bg-muted/40 border-b"
+            style={{ 
+              position: 'sticky', 
+              top: 0,
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              backgroundColor: 'rgba(var(--muted), 0.6)'
+            }}
+          >
+            {col.replace(/([A-Z])/g, " $1")}
+          </TableHead>
+        ))}
+      </TableRow>
+    </TableHeader>
               <TableBody>
                 {filteredStudents.length === 0 ? (
                   <TableRow>
