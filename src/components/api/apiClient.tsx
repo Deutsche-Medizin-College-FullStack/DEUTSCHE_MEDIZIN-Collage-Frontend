@@ -1,26 +1,31 @@
 import axios from "axios";
 
 const noAuthEndpoints = [
-  "/just random",
-  // "/enums/genders",
-  // "/enums/marital-statuses",
-  // "/impairments",
-  // "/woreda",
-  // "/zone",
-  // "/region",
-  // "/school-backgrounds",
-  // "/departments",
-  // "/class-years",
-  // "/semesters",
-  //"/program-levels",
-  // "/filters/options",
-  // '/program-modality',
+  // GET endpoints that don't require auth
+  { url: "/auth/login", method: "POST" },
+  
+  // GET endpoints that don't require auth
+  { url: "/enums/genders", method: "GET" },
+  { url: "/enums/marital-statuses", method: "GET" },
+  { url: "/impairments", method: "GET" },
+  { url: "/woreda", method: "GET" },
+  { url: "/zone", method: "GET" },
+  { url: "/region", method: "GET" },
+  { url: "/school-backgrounds", method: "GET" },
+  { url: "/departments", method: "GET" },
+  { url: "/class-years", method: "GET" },
+  { url: "/semesters", method: "GET" },
+  { url: "/program-levels", method: "GET" },
+  { url: "/filters/options", method: "GET" },
+  { url: "/program-modality", method: "GET" },
 ];
 
 const apiClient = axios.create({
+
+  baseURL: "http://localhost:8080/api",
   //  baseURL: "https://concise-skunk-preferably.ngrok-free.app/api",
 
-  baseURL:"https://deutschemedizin-collage-backend-production.up.railway.app/api",
+  // baseURL:"https://deutschemedizin-collage-backend-production.up.railway.app/api",
   headers: {
     "ngrok-skip-browser-warning": "true",
     "User-Agent":
@@ -30,11 +35,22 @@ const apiClient = axios.create({
   },
 });
 
-apiClient.interceptors.request.use((config) => {
-  // Check if the current endpoint is in the no-auth list
-  const requiresAuth = !noAuthEndpoints.some((endpoint) => {
-    // Check if the config URL ends with the no-auth endpoint
-    return config.url?.endsWith(endpoint);
+//==================================================================================================
+// apiClient.interceptors.request.use((config) => {
+//   // Check if the current endpoint is in the no-auth list
+//   const requiresAuth = !noAuthEndpoints.some((endpoint) => {
+//     // Check if the config URL ends with the no-auth endpoint
+//     return config.url?.endsWith(endpoint);
+//   });
+
+//==================================================================================================
+
+  apiClient.interceptors.request.use((config) => {
+    // Check if current request matches any no-auth endpoint pattern
+    const requiresAuth = !noAuthEndpoints.some((endpoint) => {
+      const urlMatches = config.url?.endsWith(endpoint.url);
+      const methodMatches = config.method?.toLowerCase() === endpoint.method.toLowerCase();
+      return urlMatches && methodMatches;
   });
 
   console.log(`Request to ${config.url}, requires auth: ${requiresAuth}`);
