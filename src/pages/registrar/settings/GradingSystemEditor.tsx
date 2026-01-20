@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   FaEdit,
   FaTrash,
@@ -59,6 +59,70 @@ const GradingSystemEditor = () => {
     fetchGradingSystems();
   }, []);
 
+    //==============================================================================================
+  // Instructions
+  const InstructionsReminder = () => (
+  <div className="mb-10 p-8 rounded-3xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 border-2 border-blue-200 dark:border-blue-800/50 shadow-lg">
+    <h3 className="text-2xl font-bold text-blue-700 dark:text-blue-300 mb-4 flex items-center gap-3">
+      <span className="text-3xl">📊</span> Grading System Instructions for Registrars
+    </h3>
+    <div className="space-y-4 text-gray-700 dark:text-gray-300">
+      <div className="flex items-start gap-3">
+        <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full p-2 mt-1">
+          1
+        </span>
+        <div>
+          <span className="font-semibold text-gray-900 dark:text-white">Purpose:</span>
+          <p>Manage grading systems and mark intervals. Students receive grades based on the <strong>active</strong> grading system for their department.</p>
+        </div>
+      </div>
+      <div className="flex items-start gap-3">
+        <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full p-2 mt-1">
+          2
+        </span>
+        <div>
+          <span className="font-semibold text-gray-900 dark:text-white">Department-Specific vs Global:</span>
+          <p>
+            • <strong>Department-Specific:</strong> Only applies to that department
+            <br />
+            • <strong>Global (No Department):</strong> Applies to all departments without a specific system
+          </p>
+        </div>
+      </div>
+      <div className="flex items-start gap-3">
+        <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full p-2 mt-1">
+          3
+        </span>
+        <div>
+          <span className="font-semibold text-gray-900 dark:text-white">Mark Intervals Setup:</span>
+          <p>
+            • Must cover full range from <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">0</code> to <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">100</code>
+            <br />
+            • No overlapping intervals allowed
+            <br />
+            • Each interval requires: Description, Min/Max, Given Value, Grade Letter
+          </p>
+        </div>
+      </div>
+      <div className="flex items-start gap-3">
+        <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full p-2 mt-1">
+          4
+        </span>
+        <div>
+          <span className="font-semibold text-gray-900 dark:text-white">Active Status:</span>
+          <p>Only <strong>one</strong> grading system can be active per department. Activating a system automatically deactivates others in the same department.</p>
+        </div>
+      </div>
+      <div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500 rounded-r-lg">
+        <p className="font-medium text-yellow-800 dark:text-yellow-200">
+          ⚠️ <strong>Important:</strong> Deleting a grading system will <strong>permanently delete</strong> all associated mark intervals and may affect student records.
+        </p>
+      </div>
+    </div>
+  </div>
+);
+//==================================================================================================
+
   return (
     <div className="min-h-screen p-6 transition-colors duration-300 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       <header className="mb-10">
@@ -76,6 +140,8 @@ const GradingSystemEditor = () => {
           </button>
         </div>
       </header>
+
+      <InstructionsReminder />
 
       {loading && (
         <div className="flex flex-col items-center justify-center py-20">
@@ -355,49 +421,7 @@ const CrudSection = ({
     return true;
   };
 
-  // const handleSubmit = async () => {
-  //   if (!validateForm()) return;
-
-  //   setSaving(true);
-  //   try {
-  //     let updatedData: GradingSystem[] = [...data];
-
-  //     if (editingItem) {
-  //       // Update existing
-  //       if (!window.confirm("Update this grading system?")) return;
-
-  //       const response = await apiService.put(
-  //         `${endPoints.gradingSystem}/${editingItem.id}`,
-  //         formData
-  //       );
-
-  //       updatedData = data.map((d) => (d.id === editingItem.id ? response : d));
-  //       setData(updatedData);
-  //     } else {
-  //       // Create new
-  //       if (!window.confirm("Add this new grading system?")) return;
-
-  //       const response = await apiService.post(
-  //         endPoints.gradingSystem,
-  //         formData
-  //       );
-
-  //       updatedData = [...data, response];
-  //       setData(updatedData);
-  //     }
-
-  //     handleCloseModal();
-  //     refetch(); // Refresh from server
-  //   } catch (e: any) {
-  //     console.error("Save error:", e);
-  //     setFormError(
-  //       e.response?.data?.message ||
-  //         `Failed to ${editingItem ? "update" : "create"} grading system.`
-  //     );
-  //   } finally {
-  //     setSaving(false);
-  //   }
-  // };
+  // Submit handler
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
@@ -470,6 +494,94 @@ const CrudSection = ({
     }
   };
 
+  //=============================================================================
+const HoverableIntervalDisplay = ({ intervals, versionName }: { intervals: Interval[], versionName: string }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const badgeRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseEnter = (e: React.MouseEvent) => {
+    if (badgeRef.current) {
+      const rect = badgeRef.current.getBoundingClientRect();
+      setPosition({
+        x: rect.left + rect.width / 2,
+        y: rect.top
+      });
+      setIsHovered(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+  };
+
+  return (
+    <>
+      {/* Brief summary badge */}
+      <div 
+        ref={badgeRef}
+        className="relative inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm font-medium cursor-help hover:bg-blue-100 dark:hover:bg-blue-800/40 transition-colors"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        <span className="font-semibold">{intervals.length} intervals</span>
+        <span className="text-xs opacity-75">
+          ({intervals[0]?.gradeLetter || '?'}...{intervals[intervals.length - 1]?.gradeLetter || '?'})
+        </span>
+      </div>
+
+      {/* Fixed position tooltip - simplified */}
+      {isHovered && (
+        <div 
+          className="fixed z-[9999] pointer-events-none"
+          style={{
+            left: `${position.x}px`,
+            top: `${position.y}px`,
+            transform: 'translate(-50%, calc(-100% - 10px))'
+          }}
+        >
+          <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-3 pointer-events-auto min-w-[200px]">
+            <div className="font-bold text-sm mb-2 text-gray-800 dark:text-white">
+              {versionName}
+            </div>
+            
+            <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+              {intervals.map((int, idx) => (
+                <div 
+                  key={int.id ?? `${int.description}-${int.min}`}
+                  className="flex justify-between items-center text-sm"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold w-6 text-center text-md">
+                      {int.gradeLetter}
+                    </span>
+                    <span className="text-gray-600 dark:text-gray-400 text-sm">
+                      [{int.min} - {int.max}]
+                    </span>
+                  </div>
+                  <div className="font-semibold text-blue-600 dark:text-blue-400 text-sm">
+                     {int.givenValue}
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
+              <div className="flex justify-between">
+                <span>Total: {intervals.length}</span>
+                <span>Range: {intervals[0]?.min || 0}-{intervals[intervals.length - 1]?.max || 100}</span>
+              </div>
+            </div>
+          </div>
+          
+          {/* Arrow */}
+          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-b-[6px] border-l-transparent border-r-transparent border-b-white dark:border-b-gray-800"></div>
+        </div>
+      )}
+    </>
+  );
+};
+// ==========================================================================================
   // Rest of the JSX remains exactly the same as your original component
   // (Header Controls, Search, Table/Grid Views, Pagination, Modal)
   return (
@@ -538,7 +650,7 @@ const CrudSection = ({
                   </td>
                   <td className="px-6 py-4">{item.departmentId ?? "Global"}</td>
                   <td className="px-6 py-4">{item.remark}</td>
-                  <td className="px-6 py-4">
+                  {/* <td className="px-6 py-4">
                     <ul className="text-sm space-y-1">
                       {item.intervals.map((int) => (
                         <li key={int.id ?? `${int.description}-${int.min}`}>
@@ -547,6 +659,9 @@ const CrudSection = ({
                         </li>
                       ))}
                     </ul>
+                  </td> */}
+                  <td className="px-6 py-4">
+                    <HoverableIntervalDisplay intervals={item.intervals} versionName={item.versionName} />
                   </td>
                   <td className="px-6 py-4">
                     {item.active ? (
@@ -720,68 +835,7 @@ const CrudSection = ({
             )}
 
             <h4 className="font-semibold mb-2">Intervals</h4>
-            {/* <div className="space-y-3 mb-4">
-              {formData.intervals.map((interval, idx) => (
-                <div
-                  key={idx}
-                  className="grid grid-cols-1 md:grid-cols-6 gap-2 items-center"
-                >
-                  <input
-                    type="text"
-                    value={interval.description}
-                    onChange={(e) =>
-                      handleIntervalChange(idx, "description", e.target.value)
-                    }
-                    placeholder="Description"
-                    className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-xs"
-                  />
-                  <input
-                    type="number"
-                    value={interval.min}
-                    onChange={(e) =>
-                      handleIntervalChange(idx, "min", e.target.value)
-                    }
-                    placeholder="minimum score"
-                    className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-xs"
-                  />
-                  <input
-                    type="number"
-                    value={interval.max}
-                    onChange={(e) =>
-                      handleIntervalChange(idx, "max", e.target.value)
-                    }
-                    placeholder="Max"
-                    className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-xs"
-                  />
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={interval.givenValue}
-                    onChange={(e) =>
-                      handleIntervalChange(idx, "givenValue", e.target.value)
-                    }
-                    placeholder="Given"
-                    className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-xs"
-                  />
-                  <input
-                    type="text"
-                    value={interval.gradeLetter}
-                    onChange={(e) =>
-                      handleIntervalChange(idx, "gradeLetter", e.target.value)
-                    }
-                    placeholder="Letter"
-                    className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-xs font-mono"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeIntervalRow(idx)}
-                    className="px-3 py-2 text-xs rounded-lg bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 hover:bg-red-200"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
-            </div> */}
+            
             <div className="space-y-4 mb-6">
               {formData.intervals.map((interval, idx) => (
                 <div

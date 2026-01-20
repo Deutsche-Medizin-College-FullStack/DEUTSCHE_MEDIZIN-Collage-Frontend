@@ -346,6 +346,78 @@ const ClassYearsEditor = () => {
     fetchClassYears();
   }, []);
 
+  //=======================================================================================
+  // Instructions Component
+  const InstructionsReminder = () => (
+  <div className="mb-10 p-8 rounded-3xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 border-2 border-blue-200 dark:border-blue-800/50 shadow-lg">
+    <h3 className="text-2xl font-bold text-blue-700 dark:text-blue-300 mb-4 flex items-center gap-3">
+      <span className="text-3xl">🎓</span> Class Year Management Instructions for Registrars
+    </h3>
+    <div className="space-y-4 text-gray-700 dark:text-gray-300">
+      <div className="flex items-start gap-3">
+        <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full p-2 mt-1">
+          1
+        </span>
+        <div>
+          <span className="font-semibold text-gray-900 dark:text-white">Purpose:</span>
+          <p>Manage class years (academic levels) to organize students by their study year.</p>
+        </div>
+      </div>
+      <div className="flex items-start gap-3">
+        <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full p-2 mt-1">
+          2
+        </span>
+        <div>
+          <span className="font-semibold text-gray-900 dark:text-white">Naming Convention:</span>
+          <p>
+            • <strong>Numbered years:</strong> Use <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">1</code>, <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">2</code>, <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">3</code>, etc.
+            <br />
+            • <strong>Special programs:</strong> Use names like <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">PC1</code> (Preparatory Class 1), <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">C1</code> (Certificate 1)
+            <br />
+            • <strong>Examples:</strong> "Grade 9", "Year 1", "Level 4"
+          </p>
+        </div>
+      </div>
+      <div className="flex items-start gap-3">
+        <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full p-2 mt-1">
+          3
+        </span>
+        <div>
+          <span className="font-semibold text-gray-900 dark:text-white">Usage:</span>
+          <p>
+            • Class years combine with batches and semesters to create <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">Batch-ClassYear-Semester</code> combinations
+            <br />
+            • Each student is assigned to a specific class year within their batch
+            <br />
+            • Class years determine course progression and prerequisites
+          </p>
+        </div>
+      </div>
+      <div className="flex items-start gap-3">
+        <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full p-2 mt-1">
+          4
+        </span>
+        <div>
+          <span className="font-semibold text-gray-900 dark:text-white">Deletion Rules:</span>
+          <p>
+            • <strong>Cannot delete</strong> a class year if any students are assigned to it
+            <br />
+            • Before deletion: Move all students to another class year first
+            <br />
+            • Deletion removes all <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">Batch-ClassYear-Semester</code> combinations containing this class year
+          </p>
+        </div>
+      </div>
+      <div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500 rounded-r-lg">
+        <p className="font-medium text-yellow-800 dark:text-yellow-200">
+          ⚠️ <strong>Critical:</strong> Deleting a class year will affect all academic structures linked to it. Ensure no active students are assigned before deletion.
+        </p>
+      </div>
+    </div>
+  </div>
+);
+  //=======================================================================================
+
   if (loading)
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -368,6 +440,7 @@ const ClassYearsEditor = () => {
           </h1>
         </div>
       </header>
+      <InstructionsReminder />
       <main>
         <CrudSection
           title="Class Years"
@@ -494,26 +567,39 @@ const CrudSection = ({ title, data, setData }) => {
   };
 
   const handleDelete = async (id) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to delete this class year? This action cannot be undone.`
-      )
-    )
-      return;
+  const className = data.find(c => c.id === id)?.name || "this class year";
+  
+  const confirmationMessage = `WARNING:
+  
+Deleting class year "${className}" will:
+1. Remove ALL Batch-ClassYear-Semester combinations containing this class year
+2. Delete ALL academic records linked to this class year
+3. Affect ALL students currently assigned to this class year
 
-    try {
-      // Delete - DELETE /api/class-years/{id}
-      await apiService.delete(`${endPoints.classYears}/${id}`);
-      setData(data.filter((d) => d.id !== id));
-    } catch (err) {
-      // Handle exact error responses: 404, 409
-      console.error("Failed to delete class year:", err);
-      const errorMessage =
-        err?.response?.data?.error ||
-        "Failed to delete class year. Please try again.";
+Requirements for deletion:
+• NO students can be assigned to this class year
+• All students must be moved to another class year first
+
+Are you absolutely sure you want to delete "${className}"?`;
+
+  if (!window.confirm(confirmationMessage)) return;
+
+  try {
+    await apiService.delete(`${endPoints.classYears}/${id}`);
+    setData(data.filter((d) => d.id !== id));
+  } catch (err) {
+    const errorMessage = err?.response?.data?.error || "Failed to delete class year.";
+    
+    // Check if error is due to existing students
+    if (errorMessage.toLowerCase().includes("student") || 
+        errorMessage.toLowerCase().includes("assigned") ||
+        errorMessage.toLowerCase().includes("dependency")) {
+      alert(`Cannot delete class year: ${errorMessage}\n\nPlease move all students to another class year first.`);
+    } else {
       alert(errorMessage);
     }
-  };
+  }
+};
 
   return (
     <div className="p-6 rounded-2xl shadow-xl transition-all duration-300 bg-white dark:bg-gray-800 animate-fade-in">

@@ -524,7 +524,7 @@ export default function RegistrarDashboard() {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-yellow-600 dark:text-yellow-400 flex items-center gap-2">
                   <AlertCircle className="h-5 w-5" />
-                  Low Score Alerts
+                  Low Score Alerts (Students Below 50%)
                 </h2>
                 <Badge variant="outline" className="border-yellow-300 text-yellow-600 dark:border-yellow-700 dark:text-yellow-400">
                   {dashboardData.lowScoreAlerts.length} students

@@ -221,7 +221,7 @@ export default function StudentCourseScoreTable() {
           id: item.id,
           studentId: {
             id: item.studentId?.toString(),
-            // student: { name: item.studentName },  ← most likely NOT returned
+            student: { name: item.studentName },  // ← most likely NOT returned
           },
           course: item.course || { id: null, displayName: "N/A" },
           batchClassYearSemester: item.bcys || {

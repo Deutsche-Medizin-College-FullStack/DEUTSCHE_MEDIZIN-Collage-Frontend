@@ -200,6 +200,59 @@ const AcademicYearEditor = () => {
     }
   };
 
+  //====================================================================================================
+  const InstructionsReminder = () => (
+  <div className="mb-10 p-8 rounded-3xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 border-2 border-blue-200 dark:border-blue-800/50 shadow-lg">
+    <h3 className="text-2xl font-bold text-blue-700 dark:text-blue-300 mb-4 flex items-center gap-3">
+      <span className="text-3xl">📋</span> Important Instructions for Registrars
+    </h3>
+    <div className="space-y-4 text-gray-700 dark:text-gray-300">
+      <div className="flex items-start gap-3">
+        <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full p-2 mt-1">
+          1
+        </span>
+        <div>
+          <span className="font-semibold text-gray-900 dark:text-white">Purpose:</span>
+          <p>This page is for managing the school's academic years. Only authorized personnel (registrars) should have access.</p>
+        </div>
+      </div>
+      <div className="flex items-start gap-3">
+        <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full p-2 mt-1">
+          2
+        </span>
+        <div>
+          <span className="font-semibold text-gray-900 dark:text-white">Academic Year Code Format:</span>
+          <p>
+            When adding a new academic year, use the format: <code className="bg-yellow-100 dark:bg-yellow-900/50 px-3 py-1 rounded-md font-mono font-bold">201718</code>
+            <span className="block text-sm text-gray-600 dark:text-gray-400 mt-1">
+              • This represents 2017-2018 academic year
+              • First 4 digits: Start year (2017)
+              • Last 2 digits: End year (18)
+            </span>
+          </p>
+        </div>
+      </div>
+      <div className="flex items-start gap-3">
+        <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full p-2 mt-1">
+          3
+        </span>
+        <div>
+          <span className="font-semibold text-gray-900 dark:text-white">Editing Notes:</span>
+          <p>Academic Year Code cannot be changed after creation. To modify a code, delete and recreate the entry.</p>
+        </div>
+      </div>
+      <div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500 rounded-r-lg">
+        <p className="font-medium text-yellow-800 dark:text-yellow-200">
+          ⚠️ <strong>Reminder:</strong> Deleting an academic year cannot be undone and may affect existing student records.
+        </p>
+      </div>
+    </div>
+  </div>
+);
+//=================================================================================================================================
+
+
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -236,6 +289,9 @@ const AcademicYearEditor = () => {
           Manage academic years ({academicYears.length} total)
         </p>
       </header>
+
+      {/* Instructions Component */}
+      <InstructionsReminder />
 
       <main>
         <div className="p-8 rounded-3xl shadow-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
@@ -423,7 +479,7 @@ const AcademicYearEditor = () => {
         {/* Modal */}
         {showModal && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-6">
-            <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden">
+            <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
               <div className="p-8 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-500 to-teal-500 text-white">
                 <h3 className="text-3xl font-black">
                   {editingItem ? "Edit" : "Add"} Academic Year
@@ -445,7 +501,7 @@ const AcademicYearEditor = () => {
                       name="yearCode"
                       value={formData.yearCode}
                       onChange={handleChange}
-                      placeholder="e.g., 202425"
+                      placeholder="e.g., 202425 (Format: StartYear + EndYear e.g., 2024-2025 → 202425)"
                       className="w-full p-4 border border-gray-200 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 bg-gray-50 dark:bg-gray-700 text-lg font-semibold"
                       disabled={!!editingItem}
                     />

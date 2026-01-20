@@ -548,6 +548,90 @@ const SemestersEditor = () => {
     fetchSemesters();
   }, []);
 
+  const InstructionsReminder = () => (
+  <div className="mb-10 p-8 rounded-3xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 border-2 border-blue-200 dark:border-blue-800/50 shadow-lg">
+    <h3 className="text-2xl font-bold text-blue-700 dark:text-blue-300 mb-4 flex items-center gap-3">
+      <span className="text-3xl">📅</span> Semester Management Instructions for Registrars
+    </h3>
+    <div className="space-y-4 text-gray-700 dark:text-gray-300">
+      <div className="flex items-start gap-3">
+        <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full p-2 mt-1">
+          1
+        </span>
+        <div>
+          <span className="font-semibold text-gray-900 dark:text-white">Purpose:</span>
+          <p>Manage academic semesters to organize the school year into terms/periods.</p>
+        </div>
+      </div>
+      <div className="flex items-start gap-3">
+        <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full p-2 mt-1">
+          2
+        </span>
+        <div>
+          <span className="font-semibold text-gray-900 dark:text-white">Semester Code (MOE Standard):</span>
+          <p>
+            • <strong>Recommended codes:</strong> <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">S1</code>, <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">S2</code>, <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">T1</code>, <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">T2</code>, <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">T3</code>
+            <br />
+            • Follow Ministry of Education (MOE) guidelines where applicable
+            <br />
+            • Each code must be unique across all semesters
+          </p>
+        </div>
+      </div>
+      <div className="flex items-start gap-3">
+        <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full p-2 mt-1">
+          3
+        </span>
+        <div>
+          <span className="font-semibold text-gray-900 dark:text-white">Semester Name (Flexible):</span>
+          <p>
+            • Use descriptive names like: <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">First Semester</code>, <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">1st Semester</code>, <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">Semester I</code>
+            <br />
+            • Can match your school's academic calendar
+            <br />
+            • Names are for display purposes only
+          </p>
+        </div>
+      </div>
+      <div className="flex items-start gap-3">
+        <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full p-2 mt-1">
+          4
+        </span>
+        <div>
+          <span className="font-semibold text-gray-900 dark:text-white">Special Semester "NO":</span>
+          <p>
+            • <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">NO</code> is reserved for students who are no longer enrolled
+            <br />
+            • <strong>Do NOT delete</strong> the "NO" semester
+            <br />
+            • Moving a student to "NO" semester means they are inactive or Completed or Withdrawn or left the institution
+          </p>
+        </div>
+      </div>
+      <div className="flex items-start gap-3">
+        <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full p-2 mt-1">
+          5
+        </span>
+        <div>
+          <span className="font-semibold text-gray-900 dark:text-white">Deletion Rules:</span>
+          <p>
+            • <strong>Cannot delete</strong> a semester if any students are assigned to it
+            <br />
+            • Before deletion: Move all students to another semester first
+            <br />
+            • Deletion removes all <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">Batch-ClassYear-Semester</code> combinations containing this semester
+          </p>
+        </div>
+      </div>
+      <div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500 rounded-r-lg">
+        <p className="font-medium text-yellow-800 dark:text-yellow-200">
+          ⚠️ <strong>Critical:</strong> Deleting a semester affects all academic records. Ensure no active students are assigned before deletion.
+        </p>
+      </div>
+    </div>
+  </div>
+);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center text-xl">
@@ -571,6 +655,9 @@ const SemestersEditor = () => {
           DHFM Semesters Editor
         </h1>
       </header>
+
+      {/* Add Instructions Here */}
+      <InstructionsReminder />
 
       <main>
         <CrudSection
@@ -673,16 +760,47 @@ const CrudSection = ({
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Delete this semester permanently?")) return;
+const handleDelete = async (id: string) => {
+  // Prevent deletion of "NO" semester
+  const semester = data.find(s => s.id === id);
+  if (semester?.code === "NO") {
+    alert("The 'NO' semester cannot be deleted. This is reserved for inactive students.");
+    return;
+  }
 
-    try {
-      await apiService.delete(`${endPoints.semesters}/${id}`);
-      setData(data.filter((d) => d.id !== id));
-    } catch (err: any) {
-      alert(err?.response?.data?.error || "Failed to delete semester.");
+  const semesterName = semester?.name || "this semester";
+  
+  const confirmationMessage = `WARNING:
+  
+Deleting semester "${semesterName}" will:
+1. Remove ALL Batch-ClassYear-Semester combinations containing this semester
+2. Delete ALL academic records linked to this semester
+3. Affect ALL students currently assigned to this semester
+
+Requirements for deletion:
+• NO students can be assigned to this semester
+• All students must be moved to another semester first
+
+Are you absolutely sure you want to delete "${semesterName}"?`;
+
+  if (!window.confirm(confirmationMessage)) return;
+
+  try {
+    await apiService.delete(`${endPoints.semesters}/${id}`);
+    setData(data.filter((d) => d.id !== id));
+  } catch (err: any) {
+    const errorMessage = err?.response?.data?.error || "Failed to delete semester.";
+    
+    // Check if error is due to existing students
+    if (errorMessage.toLowerCase().includes("student") || 
+        errorMessage.toLowerCase().includes("assigned") ||
+        errorMessage.toLowerCase().includes("dependency")) {
+      alert(`Cannot delete semester: ${errorMessage}\n\nPlease move all students to another semester first.`);
+    } else {
+      alert(errorMessage);
     }
-  };
+  }
+};
 
   return (
     <div className="p-6 rounded-xl bg-white dark:bg-gray-800 shadow-lg">
