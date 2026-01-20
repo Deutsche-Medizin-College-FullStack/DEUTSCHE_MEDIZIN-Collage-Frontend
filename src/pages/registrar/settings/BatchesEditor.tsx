@@ -38,6 +38,76 @@ const BatchesEditor = () => {
     fetchBatches();
   }, []);
 
+  //============================================================================================
+  // Instructions Component
+  const InstructionsReminder = () => (
+  <div className="mb-10 p-8 rounded-3xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 border-2 border-blue-200 dark:border-blue-800/50 shadow-lg">
+    <h3 className="text-2xl font-bold text-blue-700 dark:text-blue-300 mb-4 flex items-center gap-3">
+      <span className="text-3xl">👥</span> Batch Management Instructions for Registrars
+    </h3>
+    <div className="space-y-4 text-gray-700 dark:text-gray-300">
+      <div className="flex items-start gap-3">
+        <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full p-2 mt-1">
+          1
+        </span>
+        <div>
+          <span className="font-semibold text-gray-900 dark:text-white">Purpose:</span>
+          <p>This page is for managing student batches. Use batches to organize students by intake year/group.</p>
+        </div>
+      </div>
+      <div className="flex items-start gap-3">
+        <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full p-2 mt-1">
+          2
+        </span>
+        <div>
+          <span className="font-semibold text-gray-900 dark:text-white">Batch Creation:</span>
+          <p>
+            • Adding a new batch automatically creates all <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">batch-classyear-semester</code> combinations
+            <br />
+            • Use names like <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">1</code>, <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">2</code>, etc.
+          </p>
+        </div>
+      </div>
+      <div className="flex items-start gap-3">
+        <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full p-2 mt-1">
+          3
+        </span>
+        <div>
+          <span className="font-semibold text-gray-900 dark:text-white">Batch 0 (Special):</span>
+          <p>
+            • <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">Batch 0</code> is reserved for students who have left the school
+            <br />
+            • Do NOT delete Batch 0
+            <br />
+            • Moving a student to Batch 0 means they are no longer active
+          </p>
+        </div>
+      </div>
+      <div className="flex items-start gap-3">
+        <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full p-2 mt-1">
+          4
+        </span>
+        <div>
+          <span className="font-semibold text-gray-900 dark:text-white">Deletion Rules:</span>
+          <p>
+            • <strong>Cannot delete</strong> a batch if it has any students assigned
+            <br />
+            • Before deletion: Move all students to another batch or delete them
+            <br />
+            • Deletion removes all <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">batch-classyear-semester</code> combinations
+          </p>
+        </div>
+      </div>
+      <div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500 rounded-r-lg">
+        <p className="font-medium text-yellow-800 dark:text-yellow-200">
+          ⚠️ <strong>Critical:</strong> Deleting a batch will permanently remove all academic records associated with it. This action cannot be undone.
+        </p>
+      </div>
+    </div>
+  </div>
+);
+  //============================================================================================
+
   if (loading)
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -60,6 +130,10 @@ const BatchesEditor = () => {
           </h1>
         </div>
       </header>
+
+      {/* Add Instructions Here */}
+      <InstructionsReminder />
+
       <main>
         <CrudSection title="Batches" data={batches} setData={setBatches} />
       </main>
@@ -175,26 +249,43 @@ const CrudSection = ({ title, data, setData }) => {
   };
 
   const handleDelete = async (id) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to delete this batch? This action cannot be undone.`
-      )
-    )
-      return;
+  // // Special warning for batch 0
+  // if (id === 0) {
+  //   alert("Batch 0 cannot be deleted. This is reserved for inactive students.");
+  //   return;
+  // }
 
-    try {
-      // Delete batch - DELETE /api/batches/{id}
-      await apiService.delete(`${endPoints.batches}/${id}`);
-      setData(data.filter((d) => d.id !== id));
-    } catch (err) {
-      // Handle exact error responses from your API
-      console.error("Failed to delete batch:", err);
-      const errorMessage =
-        err?.response?.data?.error ||
-        "Failed to delete batch. Please try again.";
+  const batchName = data.find(b => b.id === id)?.name || "this batch";
+  
+  const confirmationMessage = `WARNING:
+  
+1. Deleting batch "${batchName}" will:
+   • Remove ALL batch-classyear-semester combinations
+   • Delete ALL academic records linked to this batch
+
+2. Requirements for deletion:
+   • NO students can be assigned to this batch
+   • All students must be moved to another batch first
+
+Are you absolutely sure you want to delete "${batchName}"?`;
+
+  if (!window.confirm(confirmationMessage)) return;
+
+  try {
+    await apiService.delete(`${endPoints.batches}/${id}`);
+    setData(data.filter((d) => d.id !== id));
+  } catch (err) {
+    const errorMessage = err?.response?.data?.error || "Failed to delete batch.";
+    
+    // Check if error is due to existing students
+    if (errorMessage.toLowerCase().includes("student") || 
+        errorMessage.toLowerCase().includes("assigned")) {
+      alert(`Cannot delete batch: ${errorMessage}\n\nPlease move all students to another batch first.`);
+    } else {
       alert(errorMessage);
     }
-  };
+  }
+};
 
   // Rest of CrudSection JSX remains exactly the same...
   return (
