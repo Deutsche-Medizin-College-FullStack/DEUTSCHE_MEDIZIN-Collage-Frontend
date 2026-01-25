@@ -53,11 +53,12 @@ interface Student {
 }
 
 interface Course {
-  cid: number;           
+  id: number;           
   ccode: string;          
   ctitle: string;       
   theoryHrs: number;   
   labHrs: number;         
+  creditHours?: number; 
 }
 
 interface RegistrationCourse {
@@ -362,12 +363,12 @@ const fetchCourses = async () => {
         const totalHours = (course.theoryHrs || 0) + (course.labHrs || 0);
         
         return {
-          cid: course.cid || 0,
+          id: course.id || 0, // Changed from cid to id
           ccode: course.ccode || "N/A",
           ctitle: course.ctitle || "Unknown Course",
           theoryHrs: course.theoryHrs || 0,
           labHrs: course.labHrs || 0,
-          creditHours: totalHours // Add calculated credit hours
+          creditHours: totalHours
         };
       });
       
@@ -387,7 +388,6 @@ const fetchCourses = async () => {
     setCourses([]);
   }
 };
-
   const handleSearch = (query: string) => {
     setSearchQuery(query);
     applyFiltersAndSearch(query, filters);
@@ -520,18 +520,18 @@ const handleAddMultipleCourses = () => {
   
   selectedCourseIds.forEach(courseIdStr => {
     const courseId = parseInt(courseIdStr);
-    const course = courses.find(c => c && c.cid === courseId); // Changed from id to cid
+    const course = courses.find(c => c && c.id === courseId); // Changed from cid to id
     
-    if (course && !registrationCourses.some(rc => rc.courseId === course.cid)) {
+    if (course && !registrationCourses.some(rc => rc.courseId === course.id)) {
       const totalHours = (course.theoryHrs || 0) + (course.labHrs || 0);
       
       const newCourse: RegistrationCourse = {
         id: Date.now() + Math.random(),
-        courseId: course.cid, // Changed from id to cid
-        courseCode: course.ccode || "N/A", // Changed from courseCode to ccode
-        courseTitle: course.ctitle || "Unknown Course", // Changed from courseTitle to ctitle
-        lectureHours: course.theoryHrs || 0, // Changed from lectureHours to theoryHrs
-        labHours: course.labHrs || 0, // Changed from labHours to labHrs
+        courseId: course.id, // Changed from cid to id
+        courseCode: course.ccode || "N/A",
+        courseTitle: course.ctitle || "Unknown Course",
+        lectureHours: course.theoryHrs || 0,
+        labHours: course.labHrs || 0,
         totalHours: totalHours
       };
       newCourses.push(newCourse);
@@ -546,7 +546,6 @@ const handleAddMultipleCourses = () => {
     toast.error("Selected courses are already added or not found");
   }
 };
-
 
 
   const handleRemoveCourse = (id: number) => {
@@ -1597,14 +1596,14 @@ const handleGenerateSlips = async () => {
                 </Button>
 
                 {isCourseDropdownOpen && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                  <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg max-h-60 overflow-y-auto">
                     {coursesLoading ? (
                       <div className="text-center py-4">
                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
                         <p className="mt-2 text-sm text-gray-500">Loading courses...</p>
                       </div>
                     ) : courses.length === 0 ? (
-                      <div className="text-center py-4 text-gray-500">
+                      <div className="text-center py-4 text-gray-500 dark:text-gray-400">
                         <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
                         <p>No courses available</p>
                         <p className="text-xs">Click here to retry loading courses</p>
@@ -1613,35 +1612,43 @@ const handleGenerateSlips = async () => {
                       <div className="space-y-1 p-2">
                         {courses.map((course) => {
                           // Use the correct property names from the API
-                          const courseId = course?.cid ?? 0; // Changed from id to cid
-                          const courseCode = course?.ccode || "N/A"; // Changed from courseCode to ccode
-                          const courseTitle = course?.ctitle || "Unknown Course"; // Changed from courseTitle to ctitle
-                          const lectureHours = course?.theoryHrs ?? 0; // Changed from lectureHours to theoryHrs
-                          const labHours = course?.labHrs ?? 0; // Changed from labHours to labHrs
-                          const creditHours = course?.creditHours ?? (lectureHours + labHours); // Calculate if not present
+                          const courseId = course?.id || 0; // Check if it's 'id' instead of 'cid'
+                          const courseCode = course?.ccode || "N/A";
+                          const courseTitle = course?.ctitle || "Unknown Course";
+                          const lectureHours = course?.theoryHrs || 0;
+                          const labHours = course?.labHrs || 0;
+                          const creditHours = lectureHours + labHours;
+
+                          // Log for debugging
+                          console.log("Course ID:", courseId, "Type:", typeof courseId);
 
                           return (
                             <div
                               key={courseId}
-                              className={`flex items-center p-2 rounded cursor-pointer hover:bg-gray-100 ${
-                                selectedCourseIds.includes(courseId.toString()) ? 'bg-blue-50' : ''
+                              className={`flex items-center p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                                selectedCourseIds.includes(courseId.toString())
+                                  ? 'bg-blue-50 dark:bg-blue-900/30'
+                                  : ''
                               }`}
-                              onClick={() => handleCourseSelectionChange(courseId.toString())}
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent dropdown from closing
+                                handleCourseSelectionChange(courseId.toString());
+                              }}
                             >
                               <div className={`w-5 h-5 flex items-center justify-center rounded border mr-3 ${
                                 selectedCourseIds.includes(courseId.toString())
-                                  ? 'bg-blue-500 border-blue-500'
-                                  : 'border-gray-300'
+                                  ? 'bg-blue-500 border-blue-500 dark:bg-blue-600 dark:border-blue-600'
+                                  : 'border-gray-300 dark:border-gray-600'
                               }`}>
                                 {selectedCourseIds.includes(courseId.toString()) && (
                                   <Check className="h-3 w-3 text-white" />
                                 )}
                               </div>
                               <div className="flex-1">
-                                <div className="font-medium text-sm">
+                                <div className="font-medium text-sm text-gray-900 dark:text-gray-100">
                                   {courseCode} - {courseTitle}
                                 </div>
-                                <div className="text-xs text-gray-500">
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
                                   Lecture: {lectureHours}h | Lab: {labHours}h | Total: {creditHours} CH
                                 </div>
                               </div>
