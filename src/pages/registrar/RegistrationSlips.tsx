@@ -225,6 +225,10 @@ export default function RegistrationSlips() {
   const [generatingSlips, setGeneratingSlips] = useState(false);
   const [slipsGenerated, setSlipsGenerated] = useState(false);
 
+  // Add new state for course search
+  const [courseSearch, setCourseSearch] = useState("");
+  const [filteredCourses, setFilteredCourses] = useState<Course[]>([]);
+
   // Function to select only a single student
   const handleSelectSingleStudent = (student: Student) => {
     setSelectedStudents([student]);
@@ -240,6 +244,25 @@ export default function RegistrationSlips() {
     fetchBcysList();
     fetchCourses();
   }, []);
+
+  // Filter courses based on search
+  useEffect(() => {
+    if (courses.length > 0) {
+      if (!courseSearch.trim()) {
+        setFilteredCourses(courses);
+      } else {
+        const searchTerm = courseSearch.toLowerCase().trim();
+        const filtered = courses.filter(course => 
+          (course.ccode && course.ccode.toLowerCase().includes(searchTerm)) ||
+          (course.ctitle && course.ctitle.toLowerCase().includes(searchTerm)) ||
+          (course.ccode && course.ctitle && `${course.ccode} ${course.ctitle}`.toLowerCase().includes(searchTerm))
+        );
+        setFilteredCourses(filtered);
+      }
+    } else {
+      setFilteredCourses([]);
+    }
+  }, [courses, courseSearch]);
 
   // Click outside to close dropdown
   useEffect(() => {
@@ -373,10 +396,12 @@ const fetchCourses = async () => {
       });
       
       setCourses(transformedCourses);
+      setFilteredCourses(transformedCourses); // Initialize filtered courses
       console.log("Transformed courses:", transformedCourses.slice(0, 3)); // Log first 3 for debugging
     } else {
       console.error("Invalid courses response:", response);
       setCourses([]);
+      setFilteredCourses([]);
       toast.error("Failed to load courses: Invalid response format");
     }
 
@@ -386,6 +411,7 @@ const fetchCourses = async () => {
     setCoursesLoading(false);
     toast.error("Failed to load courses");
     setCourses([]);
+    setFilteredCourses([]);
   }
 };
   const handleSearch = (query: string) => {
@@ -509,6 +535,28 @@ const fetchCourses = async () => {
     });
   };
 
+  // Select all visible courses in dropdown
+  const handleSelectAllVisibleCourses = () => {
+    if (filteredCourses.length === 0) return;
+    
+    const visibleCourseIds = filteredCourses.map(course => course.id.toString());
+    const allSelected = visibleCourseIds.every(id => selectedCourseIds.includes(id));
+    
+    if (allSelected) {
+      // Deselect all visible courses
+      setSelectedCourseIds(prev => prev.filter(id => !visibleCourseIds.includes(id)));
+    } else {
+      // Select all visible courses
+      const newSelection = [...selectedCourseIds];
+      visibleCourseIds.forEach(id => {
+        if (!newSelection.includes(id)) {
+          newSelection.push(id);
+        }
+      });
+      setSelectedCourseIds(newSelection);
+    }
+  };
+
   // Add multiple courses at once
 const handleAddMultipleCourses = () => {
   if (selectedCourseIds.length === 0) {
@@ -579,6 +627,16 @@ const handleAddMultipleCourses = () => {
   const handleClearSelectedCourses = () => {
     setRegistrationCourses([]);
     setSelectedCourseIds([]);
+  };
+
+  // Handle course search
+  const handleCourseSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCourseSearch(e.target.value);
+  };
+
+  // Clear course search
+  const clearCourseSearch = () => {
+    setCourseSearch("");
   };
 
   // New function to handle slip preview
@@ -1583,6 +1641,10 @@ const handleGenerateSlips = async () => {
                       fetchCourses();
                     } else {
                       setIsCourseDropdownOpen(!isCourseDropdownOpen);
+                      // Clear search when opening dropdown
+                      if (!isCourseDropdownOpen) {
+                        setCourseSearch("");
+                      }
                     }
                   }}
                 >
@@ -1596,7 +1658,7 @@ const handleGenerateSlips = async () => {
                 </Button>
 
                 {isCourseDropdownOpen && (
-                  <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                  <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg max-h-96 overflow-y-auto">
                     {coursesLoading ? (
                       <div className="text-center py-4">
                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
@@ -1610,51 +1672,116 @@ const handleGenerateSlips = async () => {
                       </div>
                     ) : (
                       <div className="space-y-1 p-2">
-                        {courses.map((course) => {
-                          // Use the correct property names from the API
-                          const courseId = course?.id || 0; // Check if it's 'id' instead of 'cid'
-                          const courseCode = course?.ccode || "N/A";
-                          const courseTitle = course?.ctitle || "Unknown Course";
-                          const lectureHours = course?.theoryHrs || 0;
-                          const labHours = course?.labHrs || 0;
-                          const creditHours = lectureHours + labHours;
-
-                          // Log for debugging
-                          console.log("Course ID:", courseId, "Type:", typeof courseId);
-
-                          return (
-                            <div
-                              key={courseId}
-                              className={`flex items-center p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                                selectedCourseIds.includes(courseId.toString())
-                                  ? 'bg-blue-50 dark:bg-blue-900/30'
-                                  : ''
-                              }`}
-                              onClick={(e) => {
-                                e.stopPropagation(); // Prevent dropdown from closing
-                                handleCourseSelectionChange(courseId.toString());
-                              }}
+                        {/* Course Search Bar */}
+                        <div className="relative mb-2">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 dark:text-gray-500" />
+                          <Input
+                            placeholder="Search courses by code or title..."
+                            value={courseSearch}
+                            onChange={handleCourseSearch}
+                            className="pl-10 pr-8 bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                            autoFocus
+                          />
+                          {courseSearch && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={clearCourseSearch}
+                              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
                             >
-                              <div className={`w-5 h-5 flex items-center justify-center rounded border mr-3 ${
-                                selectedCourseIds.includes(courseId.toString())
-                                  ? 'bg-blue-500 border-blue-500 dark:bg-blue-600 dark:border-blue-600'
-                                  : 'border-gray-300 dark:border-gray-600'
-                              }`}>
-                                {selectedCourseIds.includes(courseId.toString()) && (
-                                  <Check className="h-3 w-3 text-white" />
-                                )}
-                              </div>
-                              <div className="flex-1">
-                                <div className="font-medium text-sm text-gray-900 dark:text-gray-100">
-                                  {courseCode} - {courseTitle}
-                                </div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400">
-                                  Lecture: {lectureHours}h | Lab: {labHours}h | Total: {creditHours} CH
-                                </div>
-                              </div>
+                              <X className="h-3 w-3 text-gray-400" />
+                            </Button>
+                          )}
+                        </div>
+
+                        {/* Select All Visible Courses Button */}
+                        {filteredCourses.length > 0 && (
+                          <div className="flex items-center justify-between mb-2 px-2 py-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleSelectAllVisibleCourses}
+                              className="h-7 text-xs"
+                            >
+                              {filteredCourses.every(course => selectedCourseIds.includes(course.id.toString())) ? (
+                                <>
+                                  <CheckSquare className="h-3 w-3 mr-1" />
+                                  Deselect All Visible
+                                </>
+                              ) : (
+                                <>
+                                  <Square className="h-3 w-3 mr-1" />
+                                  Select All Visible
+                                </>
+                              )}
+                            </Button>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {filteredCourses.length} course{filteredCourses.length !== 1 ? 's' : ''} found
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Course List */}
+                        <div className="space-y-1 max-h-64 overflow-y-auto">
+                          {filteredCourses.length === 0 ? (
+                            <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+                              <p>No courses found for "{courseSearch}"</p>
+                              <p className="text-xs mt-1">Try a different search term</p>
                             </div>
-                          );
-                        })}
+                          ) : (
+                            filteredCourses.map((course) => {
+                              // Use the correct property names from the API
+                              const courseId = course?.id || 0;
+                              const courseCode = course?.ccode || "N/A";
+                              const courseTitle = course?.ctitle || "Unknown Course";
+                              const lectureHours = course?.theoryHrs || 0;
+                              const labHours = course?.labHrs || 0;
+                              const creditHours = lectureHours + labHours;
+
+                              return (
+                                <div
+                                  key={courseId}
+                                  className={`flex items-center p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                                    selectedCourseIds.includes(courseId.toString())
+                                      ? 'bg-blue-50 dark:bg-blue-900/30'
+                                      : ''
+                                  }`}
+                                  onClick={(e) => {
+                                    e.stopPropagation(); // Prevent dropdown from closing
+                                    handleCourseSelectionChange(courseId.toString());
+                                  }}
+                                >
+                                  <div className={`w-5 h-5 flex items-center justify-center rounded border mr-3 ${
+                                    selectedCourseIds.includes(courseId.toString())
+                                      ? 'bg-blue-500 border-blue-500 dark:bg-blue-600 dark:border-blue-600'
+                                      : 'border-gray-300 dark:border-gray-600'
+                                  }`}>
+                                    {selectedCourseIds.includes(courseId.toString()) && (
+                                      <Check className="h-3 w-3 text-white" />
+                                    )}
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="font-medium text-sm text-gray-900 dark:text-gray-100">
+                                      <span className="font-semibold text-blue-600 dark:text-blue-400">{courseCode}</span> - {courseTitle}
+                                    </div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                                      Lecture: {lectureHours}h | Lab: {labHours}h | Total: {creditHours} CH
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+
+                        {/* Show search results summary */}
+                        {courseSearch && filteredCourses.length > 0 && (
+                          <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                            <div className="text-xs text-gray-500 dark:text-gray-400 px-2">
+                              Showing {filteredCourses.length} of {courses.length} courses
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
