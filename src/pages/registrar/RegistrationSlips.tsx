@@ -242,8 +242,18 @@ export default function RegistrationSlips() {
     fetchStudents();
     fetchFilterData();
     fetchBcysList();
-    fetchCourses();
   }, []);
+
+  useEffect(() => {
+  if (selectedStudents.length > 0) {
+    const studentIds = selectedStudents.map(s => s.studentId);
+    fetchCourses(studentIds);
+  } else {
+    // Clear courses when no students are selected
+    setCourses([]);
+    setFilteredCourses([]);
+  }
+}, [selectedStudents]);
 
   // Filter courses based on search
   useEffect(() => {
@@ -369,11 +379,21 @@ export default function RegistrationSlips() {
     }   
   };
 
-const fetchCourses = async () => {
+const fetchCourses = async (studentIds?: number[]) => {
   try {
     setCoursesLoading(true);
-    console.log("Fetching courses from:", endPoints.allCourses);
-    const response = await apiService.get(endPoints.allCourses);
+    console.log("Fetching courses from:", endPoints.slipCourses);
+    
+    let response;
+    if (studentIds && studentIds.length > 0) {
+      // If student IDs are provided, fetch courses for specific students
+      console.log("Fetching courses for student IDs:", studentIds);
+      response = await apiService.post(endPoints.slipCourses, { studentIds });
+    } else {
+      // Fallback to original behavior if no student IDs
+      response = await apiService.get(endPoints.slipCourses);
+    }
+    
     console.log("Courses API response structure:", response);
 
     // Check if response is valid
@@ -383,21 +403,21 @@ const fetchCourses = async () => {
       // Transform the API response to match our Course interface
       const transformedCourses = response.map((course: any) => {
         // Calculate total credit hours (usually theory + lab)
-        const totalHours = (course.theoryHrs || 0) + (course.labHrs || 0);
+        const totalHours = (course.lectureHours || course.theoryHrs || 0) + (course.labHours || course.labHrs || 0);
         
         return {
-          id: course.id || 0, // Changed from cid to id
-          ccode: course.ccode || "N/A",
-          ctitle: course.ctitle || "Unknown Course",
-          theoryHrs: course.theoryHrs || 0,
-          labHrs: course.labHrs || 0,
+          id: course.courseId || course.id || 0,
+          ccode: course.code || course.ccode || "N/A",
+          ctitle: course.title || course.ctitle || "Unknown Course",
+          theoryHrs: course.lectureHours || course.theoryHrs || 0,
+          labHrs: course.labHours || course.labHrs || 0,
           creditHours: totalHours
         };
       });
       
       setCourses(transformedCourses);
-      setFilteredCourses(transformedCourses); // Initialize filtered courses
-      console.log("Transformed courses:", transformedCourses.slice(0, 3)); // Log first 3 for debugging
+      setFilteredCourses(transformedCourses);
+      console.log("Transformed courses:", transformedCourses.slice(0, 3));
     } else {
       console.error("Invalid courses response:", response);
       setCourses([]);
@@ -1636,9 +1656,15 @@ const handleGenerateSlips = async () => {
                   variant="outline"
                   className="w-full justify-between"
                   onClick={() => {
+                    if (selectedStudents.length === 0) {
+                      toast.error("Please select at least one student first");
+                      return;
+                    }
+                    
                     if (courses.length === 0 && !coursesLoading) {
                       console.log("No courses loaded, retrying fetch...");
-                      fetchCourses();
+                      const studentIds = selectedStudents.map(s => s.studentId);
+                      fetchCourses(studentIds);
                     } else {
                       setIsCourseDropdownOpen(!isCourseDropdownOpen);
                       // Clear search when opening dropdown
@@ -1651,7 +1677,7 @@ const handleGenerateSlips = async () => {
                   <span>
                     {selectedCourseIds.length > 0
                       ? `${selectedCourseIds.length} course${selectedCourseIds.length > 1 ? 's' : ''} selected`
-                      : 'Select Courses'
+                      : selectedStudents.length > 0 ? 'Select Courses' : 'Select Students First'
                     }
                   </span>
                   <ChevronDown className={`h-4 w-4 transition-transform ${isCourseDropdownOpen ? 'rotate-180' : ''}`} />
@@ -1666,10 +1692,18 @@ const handleGenerateSlips = async () => {
                       </div>
                     ) : courses.length === 0 ? (
                       <div className="text-center py-4 text-gray-500 dark:text-gray-400">
-                        <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                        <p>No courses available</p>
-                        <p className="text-xs">Click here to retry loading courses</p>
-                      </div>
+    <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
+    <p>
+      {selectedStudents.length === 0 
+        ? "Please select students first" 
+        : "No courses available for selected students"}
+    </p>
+    <p className="text-xs">
+      {selectedStudents.length === 0 
+        ? "Select students from the left panel" 
+        : "Courses will appear after student selection"}
+    </p>
+  </div>
                     ) : (
                       <div className="space-y-1 p-2">
                         {/* Course Search Bar */}

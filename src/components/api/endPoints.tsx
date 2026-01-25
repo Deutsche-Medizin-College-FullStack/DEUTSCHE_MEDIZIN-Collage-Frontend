@@ -116,6 +116,7 @@ const endPoints = {
   /* =======================     Programs & Courses  ======================== */
   courses: "/courses/single",
   allCourses: "/courses",
+  slipCourses: "/student-slips/available-courses",
   courseById: "/courses/:id",
   courseCategory: "/course-categories",
   programLevels: "/program-levels",
@@ -123,7 +124,7 @@ const endPoints = {
   programModalities: "/program-modality",
   programModalityByCode: "/program-modality/:id",
   generateGradeReport: "/grade-report/generate",
-  
+
 
   /* =======================     Batches & Classes  ======================== */
   batches: "/batches",
