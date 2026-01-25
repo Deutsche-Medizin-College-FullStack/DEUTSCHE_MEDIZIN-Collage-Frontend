@@ -123,6 +123,7 @@ const endPoints = {
   programModalities: "/program-modality",
   programModalityByCode: "/program-modality/:id",
   generateGradeReport: "/grade-report/generate",
+  
 
   /* =======================     Batches & Classes  ======================== */
   batches: "/batches",
