@@ -93,6 +93,7 @@ export default function DepartmentDetail() {
   const [expandedYears, setExpandedYears] = useState<Set<string>>(new Set());
   const [expandedSemesters, setExpandedSemesters] = useState<Set<string>>(new Set());
   const [editingCourse, setEditingCourse] = useState<any>(null);
+  const [isUpdating, setIsUpdating] = useState<string | null>(null);
   const [editValues, setEditValues] = useState({
     code: "",
     name: "",
@@ -416,6 +417,9 @@ export default function DepartmentDetail() {
   };
 
   const handleEditCourse = (course: any) => {
+    const prerequisiteIds = course.originalCourse?.prerequisites?.map((p: any) => p.id) || [];
+    console.log("Editing course prerequisites:", prerequisiteIds); // Debug log
+    
     setEditingCourse({ id: course.id, originalCourse: course.originalCourse });
     setEditValues({
       code: course.code,
@@ -426,7 +430,7 @@ export default function DepartmentDetail() {
       departmentID: course.originalCourse?.department?.id?.toString() || "",
       classYearID: course.originalCourse?.classYear?.id?.toString() || "",
       semesterCode: course.originalCourse?.semester?.code || "",
-      prerequisiteIds: course.originalCourse?.prerequisites?.map((p: any) => p.id) || [],
+      prerequisiteIds: prerequisiteIds,
     });
   };
 
@@ -437,6 +441,8 @@ export default function DepartmentDetail() {
     }
 
     try {
+      setIsUpdating(courseId);
+      
       const response = await apiService.put(`/courses/${courseId}`, {
         cTitle: editValues.name,
         cCode: editValues.code,
@@ -449,26 +455,71 @@ export default function DepartmentDetail() {
         prerequisiteIds: editValues.prerequisiteIds,
       });
 
-      // Check for success message - adjust based on your API response
-      if (response && (response.message === "Course updated successfully" || response.id)) {
-        alert("Course updated successfully!");
-        setEditingCourse(null);
-        // Refresh the course list to show updated data
-        await fetchDepartmentCourses();
-        // Refresh prerequisites list
-        const courses = await apiService.get(`/courses/department/${departmentId}`);
-        setDepartmentCoursesForPrerequisites(courses);
-      } else {
-        // If no clear success message but response exists, assume success
-        alert("Course updated successfully!");
-        setEditingCourse(null);
-        await fetchDepartmentCourses();
-        const courses = await apiService.get(`/courses/department/${departmentId}`);
-        setDepartmentCoursesForPrerequisites(courses);
-      }
+      // Immediately update the UI state
+      setDepartment(prevDepartment => {
+        if (!prevDepartment) return prevDepartment;
+        
+        return {
+          ...prevDepartment,
+          courses: prevDepartment.courses.map(course => 
+            course.id.toString() === courseId 
+              ? {
+                  ...course,
+                  ccode: editValues.code,
+                  ctitle: editValues.name,
+                  theoryHrs: parseInt(editValues.theoryHrs),
+                  labHrs: parseInt(editValues.labHrs),
+                  prerequisites: editValues.prerequisiteIds.map(id => {
+                    const prereqCourse = departmentCoursesForPrerequisites.find(c => c.id === id);
+                    return prereqCourse 
+                      ? { id, name: prereqCourse.ctitle, ccode: prereqCourse.ccode }
+                      : { id, name: "", ccode: "" };
+                  })
+                }
+              : course
+          ),
+          years: prevDepartment.years?.map(year => ({
+            ...year,
+            semesters: year.semesters.map(semester => ({
+              ...semester,
+              courses: semester.courses.map(course => 
+                course.id === courseId
+                  ? {
+                      ...course,
+                      code: editValues.code,
+                      name: editValues.name,
+                      theoryHrs: parseInt(editValues.theoryHrs),
+                      labHrs: parseInt(editValues.labHrs),
+                      creditHours: parseInt(editValues.theoryHrs) + parseInt(editValues.labHrs),
+                      prerequisites: editValues.prerequisiteIds.map(id => {
+                        const prereqCourse = departmentCoursesForPrerequisites.find(c => c.id === id);
+                        return prereqCourse ? prereqCourse.ccode : `ID: ${id}`;
+                      })
+                    }
+                  : course
+              )
+            }))
+          }))
+        };
+      });
+
+      alert("Course updated successfully!");
+      setEditingCourse(null);
+      
+      // Refresh data in background
+      await Promise.all([
+        fetchDepartmentCourses(),
+        apiService.get(`/courses/department/${departmentId}`).then(setDepartmentCoursesForPrerequisites)
+      ]);
+      
     } catch (error: any) {
       console.error("Update error:", error);
       alert(error.response?.data?.error || error.message || "Failed to update course");
+      
+      // Revert to original data if update fails
+      await fetchDepartmentCourses();
+    } finally {
+      setIsUpdating(null);
     }
   };
 
@@ -494,6 +545,18 @@ export default function DepartmentDetail() {
     setEditingCourse(null);
     setEditValues({
       code: "", name: "", theoryHrs: "", labHrs: "", courseCategoryID: "", departmentID: "", classYearID: "", semesterCode: "", prerequisiteIds: []
+    });
+  };
+
+  // Custom handler for prerequisite selection
+  const handlePrerequisiteChange = (selectedOptions: HTMLSelectElement) => {
+    const selectedIds = Array.from(selectedOptions.selectedOptions, option => 
+      parseInt(option.value)
+    ).filter(val => !isNaN(val));
+    
+    setEditValues({
+      ...editValues,
+      prerequisiteIds: selectedIds
     });
   };
 
@@ -733,23 +796,46 @@ export default function DepartmentDetail() {
                                             <select
                                               multiple
                                               value={editValues.prerequisiteIds.map(String)}
-                                              onChange={(e) => setEditValues({ ...editValues, prerequisiteIds: Array.from(e.target.selectedOptions, option => parseInt(option.value)).filter(val => !isNaN(val)) })}
+                                              onChange={(e) => handlePrerequisiteChange(e.target)}
                                               className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 min-h-[80px]"
                                             >
                                               {departmentCoursesForPrerequisites.map((prereqCourse) => (
-                                                <option key={prereqCourse.id} value={prereqCourse.id}>
+                                                <option 
+                                                  key={prereqCourse.id} 
+                                                  value={prereqCourse.id}
+                                                  className={editValues.prerequisiteIds.includes(prereqCourse.id) ? "bg-blue-100 dark:bg-blue-900" : ""}
+                                                >
                                                   {prereqCourse.ccode} - {prereqCourse.ctitle}
                                                 </option>
                                               ))}
                                             </select>
+                                            <div className="text-xs text-gray-500 mt-1">
+                                              Hold Ctrl (Cmd on Mac) to select multiple. Currently selected: {editValues.prerequisiteIds.length}
+                                            </div>
                                           </td>
                                           <td className="p-4">
                                             <div className="flex gap-2 justify-center">
-                                              <button onClick={() => handleUpdateCourse(course.originalCourse?.id || course.id)} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2">
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                </svg>
-                                                Save
+                                              <button 
+                                                onClick={() => handleUpdateCourse(course.originalCourse?.id || course.id)} 
+                                                disabled={isUpdating === course.id}
+                                                className={`${isUpdating === course.id ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'} text-white px-4 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2 min-w-[100px] justify-center`}
+                                              >
+                                                {isUpdating === course.id ? (
+                                                  <>
+                                                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    </svg>
+                                                    Saving...
+                                                  </>
+                                                ) : (
+                                                  <>
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                    Save
+                                                  </>
+                                                )}
                                               </button>
                                               <button onClick={handleCancelEdit} className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2">
                                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -765,10 +851,10 @@ export default function DepartmentDetail() {
                                           <td className="p-4 font-mono font-bold text-blue-700 dark:text-blue-300">{course.code}</td>
                                           <td className="p-4 font-semibold text-gray-800 dark:text-gray-200">{course.name}</td>
                                           <td className="p-4 text-center font-bold text-gray-700 dark:text-gray-300">{course.theoryHrs}</td>
-                                          <td className="p-4 text-center font-bold text-gray-700 dark:text-gray-300">{course.labHrs}</td>
+                                          <td className="px-[2.5rem] text-center font-bold text-gray-700 dark:text-gray-300">{course.labHrs}</td>
                                           <td className="p-4 text-center font-bold text-green-600 dark:text-green-400 text-lg">{course.creditHours}</td>
                                           <td className="p-4">
-                                            <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-sm font-semibold">{course.category}</span>
+                                            <span className="px-1 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-sm font-semibold">{course.category}</span>
                                           </td>
                                           <td className="p-4">
                                             {course.prerequisites.length > 0 ? (
