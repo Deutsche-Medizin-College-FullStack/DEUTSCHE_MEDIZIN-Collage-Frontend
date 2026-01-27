@@ -171,7 +171,7 @@ const endPoints = {
   fields: "/students/fields",
   getAllStudentsCGPA_DN:"/deans/get-all-students-cgpa",
   /* =======================     Registrar  ======================== */
-  getRegistrarHeadApprovedScores: "/registrar/head-approved-scores",
+  getRegistrarDeanApprovedScores: "/registrar/dean-approved-scores",
   registrarFinalApproveAll:
     "/registrar/assignments/:teacherCourseAssignmentId/final-approve-all",
 

@@ -57,7 +57,7 @@ const RegistrarAssessmentDetail = () => {
       setLoading(true);
       setError(null);
       const response = await apiClient.get(
-        endPoints.getRegistrarHeadApprovedScores
+        endPoints.getRegistrarDeanApprovedScores
       );
       
       // Find the specific course assessment
