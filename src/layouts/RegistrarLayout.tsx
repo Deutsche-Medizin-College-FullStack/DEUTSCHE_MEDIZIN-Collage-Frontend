@@ -152,7 +152,7 @@ export default function RegistrarLayout() {
     try {
       setLoadingPendingCount(true);
       const response = await apiClient.get(
-        endPoints.getRegistrarHeadApprovedScores
+        endPoints.getRegistrarDeanApprovedScores
       );
 
       let pendingCount = 0;
