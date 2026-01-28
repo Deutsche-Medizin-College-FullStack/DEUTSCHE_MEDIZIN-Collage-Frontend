@@ -337,9 +337,9 @@ export default function RegistrarDashboard() {
                     Add New Student
                   </Button>
                 </Link>
-                <Link to="/registrar/applications">
+                <Link to="/registrar/scores">
                   <Button className="w-full h-12 bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600">
-                    Review Applications
+                    Review Score
                   </Button>
                 </Link>
                 <Link to="/registrar/students">

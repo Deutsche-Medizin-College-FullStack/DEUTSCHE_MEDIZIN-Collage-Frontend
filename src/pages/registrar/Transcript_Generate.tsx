@@ -832,8 +832,7 @@ export default function Transcript_Generate() {
           }
           doc.setFontSize(11);
           doc.text(
-            `${copy.academicYear || "Current"} - ${
-              copy.semester.name
+            `${copy.academicYear || "Current"} - ${copy.semester.name
             } (GPA: ${copy.semesterGPA.toFixed(2)})`,
             10,
             y
@@ -867,8 +866,8 @@ export default function Transcript_Generate() {
   // === TYPE SELECTION SCREEN ===
   if (!searchType) {
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 sm:p-10 w-full max-w-md">
+      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center p-4 transition-colors">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 sm:p-10 w-full max-w-md border border-gray-100 dark:border-gray-700">
           <h1 className="text-3xl sm:text-4xl font-bold text-center mb-8 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500 dark:from-blue-400 dark:to-cyan-400">
             Student Records
           </h1>
@@ -899,7 +898,7 @@ export default function Transcript_Generate() {
                     setSelectedBatch("");
                     setSelectedDepartment("all");
                   }}
-                  className="flex items-center justify-center gap-2.5 px-5 py-3 rounded-lg border-2 font-medium text-sm transition-all bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
+                  className="flex items-center justify-center gap-2.5 px-5 py-3 rounded-lg border-2 font-medium text-sm transition-all bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 hover:scale-105 active:scale-95"
                 >
                   <Icon className="w-5 h-5" />
                   {item.label}
@@ -1090,12 +1089,12 @@ export default function Transcript_Generate() {
   //   </div>
   // );
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 transition-colors">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <button
             onClick={handleBackToChoice}
-            className="flex items-center gap-2 text-blue-600 hover:underline"
+            className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline font-medium"
           >
             <ArrowLeft /> Back
           </button>
@@ -1106,7 +1105,7 @@ export default function Transcript_Generate() {
                 ? realReports.length === 0
                 : transcriptBatch.length === 0
             }
-            className="flex items-center gap-2 px-5 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+            className="flex items-center gap-2 px-5 py-3 bg-green-600 dark:bg-green-500 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 transition-colors"
           >
             <Download /> Export PDF (
             {searchType === "report"
@@ -1118,7 +1117,7 @@ export default function Transcript_Generate() {
 
         {searchType === "report" ? (
           <>
-            <h2 className="text-2xl font-bold mb-4">
+            <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">
               Select Students for Grade Report
             </h2>
 
@@ -1128,11 +1127,11 @@ export default function Transcript_Generate() {
                 placeholder="Search students..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-1 px-4 py-2 rounded-lg border"
+                className="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 outline-none"
               />
               <button
                 onClick={toggleAllVisible}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+                className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
               >
                 {filteredStudents.every((s) =>
                   selectedStudents.includes(s.studentId)
@@ -1146,14 +1145,14 @@ export default function Transcript_Generate() {
               {/* Semester & Class Year Selection */}
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="flex-1">
-                  <label className="block text-sm font-medium mb-2">
+                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                     Semester
                   </label>
                   <select
                     value={selectedSemesterId}
                     onChange={(e) => setSelectedSemesterId(e.target.value)}
                     disabled={loadingDropdowns}
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 disabled:opacity-50"
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 disabled:opacity-50 focus:ring-2 focus:ring-blue-500 outline-none"
                   >
                     <option value="">
                       {loadingDropdowns
@@ -1172,14 +1171,14 @@ export default function Transcript_Generate() {
                 </div>
 
                 <div className="flex-1">
-                  <label className="block text-sm font-medium mb-2">
+                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                     Class Year
                   </label>
                   <select
                     value={selectedClassYearId}
                     onChange={(e) => setSelectedClassYearId(e.target.value)}
                     disabled={loadingDropdowns}
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 disabled:opacity-50"
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 disabled:opacity-50 focus:ring-2 focus:ring-blue-500 outline-none"
                   >
                     <option value="">
                       {loadingDropdowns
@@ -1197,7 +1196,7 @@ export default function Transcript_Generate() {
 
               {/* Selected count + Generate button */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-                <div className="text-xl font-semibold">
+                <div className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                   Selected: {selectedCount} student
                   {selectedCount !== 1 ? "s" : ""}
                 </div>
@@ -1291,14 +1290,13 @@ export default function Transcript_Generate() {
                     loadingReports ||
                     loadingDropdowns
                   }
-                  className={`px-8 py-4 rounded-xl font-bold text-white shadow-lg transition ${
-                    selectedStudents.length === 0 ||
+                  className={`px-8 py-4 rounded-xl font-bold text-white shadow-lg transition ${selectedStudents.length === 0 ||
                     !selectedSemesterId ||
                     !selectedClassYearId ||
                     loadingDropdowns
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-blue-600 hover:bg-blue-700"
-                  }`}
+                    ? "bg-gray-400 dark:bg-gray-600 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+                    }`}
                 >
                   {loadingReports ? (
                     <>
@@ -1327,10 +1325,10 @@ export default function Transcript_Generate() {
             ) : Error ? (
               <div className="text-red-600 text-center py-10">{Error}</div>
             ) : (
-              <div className="bg-white rounded-lg shadow overflow-hidden max-h-96 overflow-y-auto">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden max-h-96 overflow-y-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-100 sticky top-0">
-                    <tr>
+                  <thead className="bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 sticky top-0">
+                    <tr className="text-gray-700 dark:text-gray-200">
                       <th className="p-3 text-left">Select</th>
                       <th className="p-3 text-left">ID / Username</th>
                       <th className="p-3 text-left">Name</th>
@@ -1338,21 +1336,21 @@ export default function Transcript_Generate() {
                       <th className="p-3 text-left">Batch</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                     {filteredStudents.map((student) => (
                       <tr
                         key={student.studentId}
-                        className="border-t hover:bg-gray-50 cursor-pointer"
+                        className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer text-gray-700 dark:text-gray-300 transition-colors"
                         onClick={() => toggleStudent(student.studentId)}
                       >
                         <td className="p-3">
                           {selectedStudents.includes(student.studentId) ? (
-                            <CheckSquare className="text-blue-600" />
+                            <CheckSquare className="text-blue-600 dark:text-blue-400" />
                           ) : (
-                            <Square />
+                            <Square className="text-gray-400 dark:text-gray-500" />
                           )}
                         </td>
-                        <td className="p-3">{student.username}</td>
+                        <td className="p-3 font-mono">{student.username}</td>
                         <td className="p-3">{student.fullNameENG}</td>
                         <td className="p-3">{student.departmentName}</td>
                         <td className="p-3">{student.bcysDisplayName}</td>
@@ -1363,13 +1361,13 @@ export default function Transcript_Generate() {
               </div>
             )}
 
-            <div className="mt-6 text-xl font-semibold">
+            <div className="mt-6 text-xl font-semibold text-gray-900 dark:text-gray-100">
               Selected: {selectedCount} student{selectedCount !== 1 ? "s" : ""}
             </div>
 
             {loadingReports && (
               <div className="mt-8 text-center">
-                <Loader2 className="w-10 h-10 animate-spin mx-auto" />
+                <Loader2 className="w-10 h-10 animate-spin mx-auto text-blue-600 dark:text-blue-400" />
               </div>
             )}
 
@@ -1380,7 +1378,7 @@ export default function Transcript_Generate() {
               {realReports.length === 0 &&
                 !loadingReports &&
                 selectedCount > 0 && (
-                  <p className="text-center text-gray-500">
+                  <p className="text-center text-gray-500 dark:text-gray-400">
                     No reports generated yet.
                   </p>
                 )}
@@ -1394,7 +1392,7 @@ export default function Transcript_Generate() {
           //   ))}
           // </div>
           <>
-            <h2 className="text-2xl font-bold mb-4">
+            <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">
               Select Students for Transcript
             </h2>
 
@@ -1404,11 +1402,11 @@ export default function Transcript_Generate() {
                 placeholder="Search students..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-1 px-4 py-2 rounded-lg border"
+                className="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 outline-none"
               />
               <button
                 onClick={toggleAllVisible}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+                className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
               >
                 {filteredStudents.every((s) =>
                   selectedStudents.includes(s.studentId)
@@ -1428,10 +1426,10 @@ export default function Transcript_Generate() {
             ) : Error ? (
               <div className="text-red-600 text-center py-10">{Error}</div>
             ) : (
-              <div className="bg-white rounded-lg shadow overflow-hidden max-h-96 overflow-y-auto">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden max-h-96 overflow-y-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-100 sticky top-0">
-                    <tr>
+                  <thead className="bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 sticky top-0">
+                    <tr className="text-gray-700 dark:text-gray-200">
                       <th className="p-3 text-left">Select</th>
                       <th className="p-3 text-left">ID / Username</th>
                       <th className="p-3 text-left">Name</th>
@@ -1439,21 +1437,21 @@ export default function Transcript_Generate() {
                       <th className="p-3 text-left">Batch</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                     {filteredStudents.map((student) => (
                       <tr
                         key={student.studentId}
-                        className="border-t hover:bg-gray-50 cursor-pointer"
+                        className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer text-gray-700 dark:text-gray-300 transition-colors"
                         onClick={() => toggleStudent(student.studentId)}
                       >
                         <td className="p-3">
                           {selectedStudents.includes(student.studentId) ? (
-                            <CheckSquare className="text-blue-600" />
+                            <CheckSquare className="text-blue-600 dark:text-blue-400" />
                           ) : (
-                            <Square />
+                            <Square className="text-gray-400 dark:text-gray-500" />
                           )}
                         </td>
-                        <td className="p-3">{student.username}</td>
+                        <td className="p-3 font-mono">{student.username}</td>
                         <td className="p-3">{student.fullNameENG}</td>
                         <td className="p-3">{student.departmentName}</td>
                         <td className="p-3">{student.bcysDisplayName}</td>
@@ -1465,7 +1463,7 @@ export default function Transcript_Generate() {
             )}
 
             <div className="mt-6 flex items-center justify-between">
-              <div className="text-xl font-semibold">
+              <div className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                 Selected: {selectedCount} student
                 {selectedCount !== 1 ? "s" : ""}
               </div>
@@ -1506,11 +1504,10 @@ export default function Transcript_Generate() {
                   }
                 }}
                 disabled={selectedStudents.length === 0 || loadingTranscripts}
-                className={`px-8 py-4 rounded-xl font-bold text-white shadow-lg transition ${
-                  selectedStudents.length === 0 || loadingTranscripts
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-purple-600 hover:bg-purple-700"
-                }`}
+                className={`px-8 py-4 rounded-xl font-bold text-white shadow-lg transition ${selectedStudents.length === 0 || loadingTranscripts
+                  ? "bg-gray-400 dark:bg-gray-600 cursor-not-allowed"
+                  : "bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600"
+                  }`}
               >
                 {loadingTranscripts ? (
                   <>
@@ -1531,8 +1528,8 @@ export default function Transcript_Generate() {
 
             {loadingTranscripts && (
               <div className="mt-8 text-center">
-                <Loader2 className="w-10 h-10 animate-spin mx-auto" />
-                <p className="mt-4">Loading real transcripts...</p>
+                <Loader2 className="w-10 h-10 animate-spin mx-auto text-purple-600 dark:text-purple-400" />
+                <p className="mt-4 text-gray-600 dark:text-gray-400">Loading real transcripts...</p>
               </div>
             )}
 
@@ -1542,7 +1539,7 @@ export default function Transcript_Generate() {
                   <DynamicTranscriptView key={i} report={report} />
                 ))
               ) : selectedCount > 0 && !loadingTranscripts ? (
-                <p className="text-center text-gray-500 py-10">
+                <p className="text-center text-gray-500 dark:text-gray-400 py-10">
                   No transcripts generated yet.
                 </p>
               ) : null}
@@ -1557,63 +1554,60 @@ export default function Transcript_Generate() {
 // === PRESENTATION COMPONENTS ===
 function RealReportView({ report }: { report: RealGradeReport }) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border overflow-hidden">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-700 to-blue-900 text-white p-6 text-center">
-        <h1 className="text-3xl font-bold">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 transition-colors overflow-hidden">
+      <div className="bg-gradient-to-r from-blue-700 to-blue-900 dark:from-blue-800 dark:to-blue-950 text-white p-6 text-center">
+        <h1 className="text-2xl sm:text-3xl font-bold">
           DEUTSCHE HÖHERE MEDIZINISCHE HOCHSCHULE
         </h1>
-        <p className="text-lg">Student Academic Grade Report</p>
+        <p className="text-lg opacity-90">Student Academic Grade Report</p>
         {report.dateIssuedGC && (
-          <p className="text-sm opacity-90 mt-2">
+          <p className="text-sm opacity-80 mt-2">
             Issued: {report.dateIssuedGC}
           </p>
         )}
       </div>
 
-      {/* Student Basic Info Grid */}
-      <div className="p-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm bg-gray-50 dark:bg-gray-900/50">
+      <div className="p-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm bg-gray-50 dark:bg-gray-900/50 text-gray-700 dark:text-gray-300">
         <div>
-          <strong>ID:</strong> {report.idNumber}
+          <strong className="text-gray-900 dark:text-white">ID:</strong> {report.idNumber}
         </div>
         <div>
-          <strong>Name:</strong> {report.fullName}
+          <strong className="text-gray-900 dark:text-white">Name:</strong> {report.fullName}
         </div>
         <div>
-          <strong>Gender:</strong> {report.gender}
+          <strong className="text-gray-900 dark:text-white">Gender:</strong> {report.gender}
         </div>
         <div>
-          <strong>Date of Birth:</strong> {report.birthDateGC}
+          <strong className="text-gray-900 dark:text-white">Date of Birth:</strong> {report.birthDateGC}
         </div>
         <div>
-          <strong>Department:</strong> {report.department.name}
+          <strong className="text-gray-900 dark:text-white">Department:</strong> {report.department.name}
         </div>
         <div>
-          <strong>Program:</strong> {report.programModality.name}
+          <strong className="text-gray-900 dark:text-white">Program:</strong> {report.programModality.name}
         </div>
         <div>
-          <strong>Enrolled:</strong> {report.dateEnrolledGC}
+          <strong className="text-gray-900 dark:text-white">Enrolled:</strong> {report.dateEnrolledGC}
         </div>
         <div className="md:col-span-4">
-          <strong>Program Level:</strong> {report.programLevel?.name || "N/A"}
+          <strong className="text-gray-900 dark:text-white">Program Level:</strong> {report.programLevel?.name || "N/A"}
         </div>
       </div>
 
-      {/* Semester Copies */}
       {report.studentCopies.map((copy, idx) => (
-        <div key={idx} className="border-t pt-6 px-6">
+        <div key={idx} className="border-t border-gray-200 dark:border-gray-700 pt-6 px-6">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="font-bold text-lg">
+            <h3 className="font-bold text-lg text-gray-900 dark:text-white">
               {copy.academicYear || "Current Year"} - {copy.semester.name}
             </h3>
             <div className="text-right">
-              <span className="text-sm text-gray-600">Class Year:</span>{" "}
-              <strong>{copy.classyear.name}</strong>
+              <span className="text-sm text-gray-600 dark:text-gray-400">Class Year:</span>{" "}
+              <strong className="text-gray-900 dark:text-white">{copy.classyear.name}</strong>
               <br />
-              <span className="text-sm text-gray-600">Status:</span>{" "}
+              <span className="text-sm text-gray-600 dark:text-gray-400">Status:</span>{" "}
               <strong
                 className={
-                  copy.status === "PASSED" ? "text-green-600" : "text-red-600"
+                  copy.status === "PASSED" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
                 }
               >
                 {copy.status}
@@ -1622,34 +1616,36 @@ function RealReportView({ report }: { report: RealGradeReport }) {
           </div>
 
           <div className="mb-4 text-right">
-            <span className="text-lg font-semibold">
+            <span className="text-lg font-semibold text-gray-900 dark:text-white">
               Semester GPA: {copy.semesterGPA.toFixed(2)} | Cumulative GPA:{" "}
               {copy.semesterCGPA.toFixed(2)}
             </span>
           </div>
 
-          <table className="w-full text-sm border">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="p-2">Code</th>
-                <th className="p-2">Title</th>
-                <th className="p-2">CrH</th>
-                <th className="p-2">Grade</th>
-                <th className="p-2">Point</th>
-              </tr>
-            </thead>
-            <tbody>
-              {copy.courses.map((c, i) => (
-                <tr key={i}>
-                  <td className="p-2">{c.courseCode}</td>
-                  <td className="p-2">{c.courseTitle}</td>
-                  <td className="p-2 text-center">{c.totalCrHrs}</td>
-                  <td className="p-2 text-center font-bold">{c.letterGrade}</td>
-                  <td className="p-2 text-center">{c.gradePoint.toFixed(1)}</td>
+          <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 mb-6">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
+                <tr>
+                  <th className="p-3 text-left">Code</th>
+                  <th className="p-3 text-left">Title</th>
+                  <th className="p-3 text-center">CrH</th>
+                  <th className="p-3 text-center">Grade</th>
+                  <th className="p-3 text-center">Point</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                {copy.courses.map((c, i) => (
+                  <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <td className="p-3 font-mono">{c.courseCode}</td>
+                    <td className="p-3">{c.courseTitle}</td>
+                    <td className="p-3 text-center">{c.totalCrHrs}</td>
+                    <td className="p-3 text-center font-bold text-blue-600 dark:text-blue-400">{c.letterGrade}</td>
+                    <td className="p-3 text-center">{c.gradePoint.toFixed(1)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       ))}
     </div>
@@ -1660,7 +1656,7 @@ function MyReport({ reportData }) {
   console.log(reportData, "testing testinig");
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden my-6">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden my-6 transition-colors">
       {/* HEADER */}
       <div className="bg-gradient-to-r from-blue-700 to-blue-900 dark:from-blue-800 dark:to-blue-950 text-white p-6 text-center">
         <h1 className="text-2xl sm:text-3xl font-bold">
@@ -1674,126 +1670,130 @@ function MyReport({ reportData }) {
       <div className="m-4 sm:m-8 rounded-lg overflow-hidden"></div>
 
       {/* STUDENT INFO TABLE */}
-      <table className="w-full text-sm">
-        <tbody>
-          <tr className="border-b border-yellow-300 dark:border-yellow-700">
-            <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800">
-              ID Number
-            </td>
-            <td className="px-4 py-3">{reportData.idNumber}</td>
-
-            <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800">
-              Date of Birth (GC)
-            </td>
-            <td className="px-4 py-3">{reportData.dateOfBirthGC}</td>
-          </tr>
-
-          <tr className="border-b border-yellow-300 dark:border-yellow-700">
-            <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800">
-              Gender
-            </td>
-            <td className="px-4 py-3">{reportData.gender}</td>
-
-            <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800">
-              Date Enrolled (GC)
-            </td>
-            <td className="px-4 py-3">{reportData.dateEnrolledGC}</td>
-          </tr>
-
-          <tr className="border-b border-yellow-300 dark:border-yellow-700">
-            <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800">
-              Full Name
-            </td>
-            <td className="px-4 py-3">{reportData.fullName}</td>
-
-            <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800">
-              Program Modality
-            </td>
-            <td className="px-4 py-3">{reportData?.programModality?.name}</td>
-          </tr>
-
-          <tr className="border-b border-yellow-300 dark:border-yellow-700">
-            <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800">
-              Program Level
-            </td>
-            <td className="px-4 py-3">
-              {reportData?.programLevel?.name || "-"}
-            </td>
-
-            <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800">
-              Department
-            </td>
-            <td className="px-4 py-3">{reportData?.department?.name}</td>
-          </tr>
-
-          <tr className="border-b border-yellow-300 dark:border-yellow-700">
-            <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800">
-              Class Year
-            </td>
-            <td className="px-4 py-3">{reportData?.classyear?.name}</td>
-
-            <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800">
-              Semester
-            </td>
-            <td className="px-4 py-3">{reportData?.semester?.name}</td>
-          </tr>
-
-          <tr className="border-b border-yellow-300 dark:border-yellow-700">
-            <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800">
-              Academic Year
-            </td>
-            <td className="px-4 py-3">{reportData.academicYear || "-"}</td>
-
-            <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800">
-              Status
-            </td>
-            <td className="px-4 py-3">{reportData.status}</td>
-          </tr>
-
-          <tr className="border-b border-yellow-300 dark:border-yellow-700">
-            <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800">
-              Semester GPA
-            </td>
-            <td className="px-4 py-3">{reportData.semesterGPA}</td>
-
-            <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800">
-              Cumulative GPA
-            </td>
-            <td className="px-4 py-3">{reportData.semesterCGPA}</td>
-          </tr>
-        </tbody>
-      </table>
-
-      {/* COURSES TABLE */}
-      <div className="p-6">
-        <h2 className="text-xl font-bold mb-4">Courses</h2>
-
-        <table className="w-full text-sm border border-gray-300 dark:border-gray-700">
-          <thead className="bg-gray-200 dark:bg-gray-700">
-            <tr>
-              <th className="px-4 py-2">Course Code</th>
-              <th className="px-4 py-2">Course Title</th>
-              <th className="px-4 py-2">Cr Hrs</th>
-              <th className="px-4 py-2">Grade</th>
-              <th className="px-4 py-2">Grade Point</th>
-            </tr>
-          </thead>
-
+      <div className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+        <table className="w-full text-sm border-collapse">
           <tbody>
-            {reportData.courses.map((course, i) => (
-              <tr
-                key={i}
-                className="border-t border-gray-300 dark:border-gray-700"
-              >
-                <td className="px-4 py-2">{course.courseCode}</td>
-                <td className="px-4 py-2">{course.courseTitle}</td>
-                <td className="px-4 py-2">{course.totalCrHrs}</td>
-                <td className="px-4 py-2">{course.letterGrade}</td>
-                <td className="px-4 py-2">{course.gradePoint}</td>
-              </tr>
-            ))}
+            <tr className="border-b border-yellow-300 dark:border-yellow-700">
+              <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
+                ID Number
+              </td>
+              <td className="px-4 py-3 border-r border-yellow-300 dark:border-yellow-700/50">{reportData.idNumber}</td>
+
+              <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
+                Date of Birth (GC)
+              </td>
+              <td className="px-4 py-3">{reportData.dateOfBirthGC}</td>
+            </tr>
+
+            <tr className="border-b border-yellow-300 dark:border-yellow-700">
+              <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
+                Gender
+              </td>
+              <td className="px-4 py-3 border-r border-yellow-300 dark:border-yellow-700/50">{reportData.gender}</td>
+
+              <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
+                Date Enrolled (GC)
+              </td>
+              <td className="px-4 py-3">{reportData.dateEnrolledGC}</td>
+            </tr>
+
+            <tr className="border-b border-yellow-300 dark:border-yellow-700">
+              <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
+                Full Name
+              </td>
+              <td className="px-4 py-3 border-r border-yellow-300 dark:border-yellow-700/50">{reportData.fullName}</td>
+
+              <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
+                Program Modality
+              </td>
+              <td className="px-4 py-3">{reportData?.programModality?.name}</td>
+            </tr>
+
+            <tr className="border-b border-yellow-300 dark:border-yellow-700">
+              <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
+                Program Level
+              </td>
+              <td className="px-4 py-3 border-r border-yellow-300 dark:border-yellow-700/50">
+                {reportData?.programLevel?.name || "-"}
+              </td>
+
+              <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
+                Department
+              </td>
+              <td className="px-4 py-3">{reportData?.department?.name}</td>
+            </tr>
+
+            <tr className="border-b border-yellow-300 dark:border-yellow-700">
+              <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
+                Class Year
+              </td>
+              <td className="px-4 py-3 border-r border-yellow-300 dark:border-yellow-700/50">{reportData?.classyear?.name}</td>
+
+              <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
+                Semester
+              </td>
+              <td className="px-4 py-3">{reportData?.semester?.name}</td>
+            </tr>
+
+            <tr className="border-b border-yellow-300 dark:border-yellow-700">
+              <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
+                Academic Year
+              </td>
+              <td className="px-4 py-3 border-r border-yellow-300 dark:border-yellow-700/50">{reportData.academicYear || "-"}</td>
+
+              <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
+                Status
+              </td>
+              <td className="px-4 py-3">{reportData.status}</td>
+            </tr>
+
+            <tr className="border-b border-yellow-300 dark:border-yellow-700">
+              <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
+                Semester GPA
+              </td>
+              <td className="px-4 py-3 border-r border-yellow-300 dark:border-yellow-700/50">{reportData.semesterGPA}</td>
+
+              <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
+                Cumulative GPA
+              </td>
+              <td className="px-4 py-3">{reportData.semesterCGPA}</td>
+            </tr>
           </tbody>
         </table>
+      </div>
+
+      {/* COURSES TABLE */}
+      <div className="p-6 bg-white dark:bg-gray-800">
+        <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Courses</h2>
+
+        <div className="overflow-hidden rounded-lg border border-gray-300 dark:border-gray-700">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
+              <tr>
+                <th className="px-4 py-3 text-left">Course Code</th>
+                <th className="px-4 py-3 text-left">Course Title</th>
+                <th className="px-4 py-3 text-center">Cr Hrs</th>
+                <th className="px-4 py-3 text-center">Grade</th>
+                <th className="px-4 py-3 text-center">Grade Point</th>
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-gray-300 dark:divide-gray-700 text-gray-700 dark:text-gray-300">
+              {reportData.courses.map((course, i) => (
+                <tr
+                  key={i}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                >
+                  <td className="px-4 py-3 font-mono">{course.courseCode}</td>
+                  <td className="px-4 py-3">{course.courseTitle}</td>
+                  <td className="px-4 py-3 text-center">{course.totalCrHrs}</td>
+                  <td className="px-4 py-3 text-center font-bold text-blue-600 dark:text-blue-400">{course.letterGrade}</td>
+                  <td className="px-4 py-3 text-center">{course.gradePoint}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -1805,7 +1805,7 @@ function ReportCardView({ reportData }: { reportData: ReportRecord }) {
   const semesterGPA = Number((totalGP / totalCredits).toFixed(2));
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden transition-colors">
       <div className="bg-gradient-to-r from-blue-700 to-blue-900 dark:from-blue-800 dark:to-blue-950 text-white p-6 text-center">
         <h1 className="text-2xl sm:text-3xl font-bold">
           DEUTSCHE HÖHERE MEDIZINISCHE HOCHSCHULE
@@ -1815,45 +1815,45 @@ function ReportCardView({ reportData }: { reportData: ReportRecord }) {
         </p>
       </div>
 
-      <div className="bg-yellow-50 dark:bg-yellow-900/30 border-2 border-yellow-400 dark:border-yellow-600 m-4 sm:m-8 rounded-lg overflow-hidden">
-        <table className="w-full text-sm">
-          <tbody>
-            <tr className="border-b border-yellow-300 dark:border-yellow-700">
-              <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800">
+      <div className="bg-yellow-50 dark:bg-yellow-900/10 border-2 border-yellow-400 dark:border-yellow-600/50 m-4 sm:m-8 rounded-lg overflow-hidden backdrop-blur-sm">
+        <table className="w-full text-sm border-collapse">
+          <tbody className="text-gray-700 dark:text-gray-300">
+            <tr className="border-b border-yellow-300 dark:border-yellow-700/50">
+              <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
                 ID Number
               </td>
-              <td className="px-4 py-3">{reportData.id}</td>
-              <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800">
+              <td className="px-4 py-3 border-r border-yellow-300 dark:border-yellow-700/50">{reportData.id}</td>
+              <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
                 Date of Birth
               </td>
               <td className="px-4 py-3">{reportData.dateOfBirth}</td>
             </tr>
-            <tr className="border-b border-yellow-300 dark:border-yellow-700">
-              <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800">
+            <tr className="border-b border-yellow-300 dark:border-yellow-700/50">
+              <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
                 Name
               </td>
-              <td className="px-4 py-3">{reportData.name}</td>
-              <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800">
+              <td className="px-4 py-3 border-r border-yellow-300 dark:border-yellow-700/50">{reportData.name}</td>
+              <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
                 Program
               </td>
               <td className="px-4 py-3">{reportData.program}</td>
             </tr>
-            <tr className="border-b border-yellow-300 dark:border-yellow-700">
-              <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800">
+            <tr className="border-b border-yellow-300 dark:border-yellow-700/50">
+              <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
                 Batch
               </td>
-              <td className="px-4 py-3">{reportData.batch}</td>
-              <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800">
+              <td className="px-4 py-3 border-r border-yellow-300 dark:border-yellow-700/50">{reportData.batch}</td>
+              <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
                 Department
               </td>
               <td className="px-4 py-3">{reportData.department}</td>
             </tr>
             <tr>
-              <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800">
+              <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
                 Academic Year
               </td>
-              <td className="px-4 py-3">{reportData.academicYear}</td>
-              <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800">
+              <td className="px-4 py-3 border-r border-yellow-300 dark:border-yellow-700/50">{reportData.academicYear}</td>
+              <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
                 Semester
               </td>
               <td className="px-4 py-3">{reportData.semester}</td>
@@ -1879,7 +1879,7 @@ function ReportCardView({ reportData }: { reportData: ReportRecord }) {
                 <th className="px-4 py-3 text-center">GP×CH</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700 text-gray-700 dark:text-gray-300">
               {reportData.courses.map((c, i) => (
                 <tr
                   key={i}
@@ -1899,7 +1899,7 @@ function ReportCardView({ reportData }: { reportData: ReportRecord }) {
               ))}
             </tbody>
             <tfoot>
-              <tr className="bg-gray-100 dark:bg-gray-700 font-bold">
+              <tr className="bg-gray-100 dark:bg-gray-700 font-bold text-gray-900 dark:text-white">
                 <td colSpan={2} className="px-4 py-4 text-right">
                   Total
                 </td>
@@ -1909,7 +1909,7 @@ function ReportCardView({ reportData }: { reportData: ReportRecord }) {
                 <td className="px-4 py-4 text-center">{totalGP.toFixed(2)}</td>
               </tr>
               <tr className="bg-blue-50 dark:bg-blue-900/40">
-                <td colSpan={4} className="px-4 py-4 text-right text-lg">
+                <td colSpan={4} className="px-4 py-4 text-right text-lg text-gray-900 dark:text-gray-100">
                   Semester GPA
                 </td>
                 <td
@@ -1924,7 +1924,7 @@ function ReportCardView({ reportData }: { reportData: ReportRecord }) {
         </div>
 
         <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
-          <div className="bg-green-50 dark:bg-green-900/30 border-2 border-green-400 dark:border-green-600 rounded-lg p-6">
+          <div className="bg-green-50 dark:bg-green-900/20 border-2 border-green-400 dark:border-green-600/50 rounded-lg p-6">
             <p className="text-lg text-gray-700 dark:text-gray-300">
               Cumulative GPA
             </p>
@@ -1932,7 +1932,7 @@ function ReportCardView({ reportData }: { reportData: ReportRecord }) {
               {reportData.cgpa}
             </p>
           </div>
-          <div className="bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-400 dark:border-blue-600 rounded-lg p-6">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-400 dark:border-blue-600/50 rounded-lg p-6">
             <p className="text-lg text-gray-700 dark:text-gray-300">
               Credits Earned
             </p>
@@ -1940,7 +1940,7 @@ function ReportCardView({ reportData }: { reportData: ReportRecord }) {
               {reportData.earnedCredits}
             </p>
           </div>
-          <div className="bg-purple-50 dark:bg-purple-900/30 border-2 border-purple-400 dark:border-purple-600 rounded-lg p-6">
+          <div className="bg-purple-50 dark:bg-purple-900/20 border-2 border-purple-400 dark:border-purple-600/50 rounded-lg p-6">
             <p className="text-lg text-gray-700 dark:text-gray-300">Status</p>
             <p className="text-2xl font-bold text-purple-700 dark:text-purple-400">
               Good Standing
@@ -1953,50 +1953,50 @@ function ReportCardView({ reportData }: { reportData: ReportRecord }) {
 }
 function DynamicTranscriptView({ report }: { report: RealGradeReport }) {
   return (
-    <div className="bg-white dark:bg-gray-800 shadow-2xl border-4 border-black dark:border-gray-600 font-mono text-xs sm:text-sm overflow-x-auto">
+    <div className="bg-white dark:bg-gray-800 shadow-2xl border-4 border-black dark:border-gray-600 font-mono text-xs sm:text-sm overflow-x-auto transition-colors">
       <div className="text-center py-4 bg-cyan-100 dark:bg-cyan-900 border-b-4 border-black dark:border-gray-600">
-        <h1 className="text-xl sm:text-2xl font-bold">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
           DEUTSCHE HOCHSCHULE FÜR MEDIZIN
         </h1>
-        <h2 className="text-lg sm:text-xl font-bold">
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
           STUDENT ACADEMIC TRANSCRIPT
         </h2>
-        <p className="font-bold">OFFICE OF REGISTRAR</p>
+        <p className="font-bold text-gray-800 dark:text-gray-300">OFFICE OF REGISTRAR</p>
         {report.dateIssuedGC && (
-          <p className="text-sm mt-2 opacity-90">
+          <p className="text-sm mt-2 opacity-90 text-gray-700 dark:text-gray-400">
             Issued on: {report.dateIssuedGC}
           </p>
         )}
       </div>
 
-      <div className="p-4">
+      <div className="p-4 bg-white dark:bg-gray-800">
         <table className="w-full border-collapse mb-6">
           <tbody>
-            <tr className="bg-cyan-100 dark:bg-cyan-900 border-2 border-black dark:border-gray-600">
-              <td className="px-3 py-2 font-bold">ID Number</td>
-              <td className="px-3 py-2">{report.idNumber}</td>
-              <td className="px-3 py-2 font-bold">Full Name</td>
-              <td colSpan={5} className="px-3 py-2">
+            <tr className="bg-cyan-100 dark:bg-cyan-900/50 border-2 border-black dark:border-gray-600">
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">ID Number</td>
+              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">{report.idNumber}</td>
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">Full Name</td>
+              <td colSpan={5} className="px-3 py-2 text-gray-800 dark:text-gray-300">
                 {report.fullName}
               </td>
             </tr>
-            <tr className="bg-cyan-100 dark:bg-cyan-900 border-2 border-black dark:border-gray-600">
-              <td className="px-3 py-2 font-bold">Sex</td>
-              <td className="px-3 py-2">{report.gender}</td>
-              <td className="px-3 py-2 font-bold">Date of Birth</td>
-              <td className="px-3 py-2">{report.birthDateGC}</td>
-              <td className="px-3 py-2 font-bold">Program</td>
-              <td className="px-3 py-2">{report.programModality.name}</td>
-              <td className="px-3 py-2 font-bold">Faculty</td>
-              <td className="px-3 py-2">Faculty of Health Sciences</td>
+            <tr className="bg-cyan-100 dark:bg-cyan-900/50 border-2 border-black dark:border-gray-600">
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">Sex</td>
+              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">{report.gender}</td>
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">Date of Birth</td>
+              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">{report.birthDateGC}</td>
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">Program</td>
+              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">{report.programModality.name}</td>
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">Faculty</td>
+              <td className="px-3 py-2 text-gray-800 dark:text-gray-300">Faculty of Health Sciences</td>
             </tr>
-            <tr className="bg-cyan-100 dark:bg-cyan-900 border-2 border-black dark:border-gray-600">
-              <td className="px-3 py-2 font-bold">Batch</td>
-              <td className="px-3 py-2">—</td>
-              <td className="px-3 py-2 font-bold">Department</td>
-              <td className="px-3 py-2">{report.department.name}</td>
-              <td className="px-3 py-2 font-bold">Date of Admission</td>
-              <td colSpan={3} className="px-3 py-2">
+            <tr className="bg-cyan-100 dark:bg-cyan-900/50 border-2 border-black dark:border-gray-600">
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">Batch</td>
+              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">—</td>
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">Department</td>
+              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">{report.department.name}</td>
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">Date of Admission</td>
+              <td colSpan={3} className="px-3 py-2 text-gray-800 dark:text-gray-300">
                 {report.dateEnrolledGC}
               </td>
             </tr>
@@ -2017,51 +2017,41 @@ function DynamicTranscriptView({ report }: { report: RealGradeReport }) {
             return (
               <div
                 key={i}
-                className="border-4 border-black dark:border-gray-600"
+                className="border-4 border-black dark:border-gray-600 overflow-hidden"
               >
                 <div className="bg-orange-500 dark:bg-orange-600 text-white font-bold px-3 py-2 text-center text-xs sm:text-sm">
                   Academic Year: {copy.academicYear || "N/A"} G.C •{" "}
                   {copy.semester.name} • Class Year {copy.classyear.name}
                 </div>
-                <table className="w-full border border-gray-600 dark:border-gray-500">
-                  <thead className="bg-gray-300 dark:bg-gray-700">
+                <table className="w-full border-collapse bg-white dark:bg-gray-800">
+                  <thead className="bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-gray-100">
                     <tr>
-                      <th className="border border-gray-600 dark:border-gray-500 px-2 py-1">
-                        Course Code
-                      </th>
-                      <th className="border border-gray-600 dark:border-gray-500 px-2 py-1">
-                        Course Title
-                      </th>
-                      <th className="border border-gray-600 dark:border-gray-500 px-2 py-1">
-                        CH
-                      </th>
-                      <th className="border border-gray-600 dark:border-gray-500 px-2 py-1">
-                        Grade
-                      </th>
-                      <th className="border border-gray-600 dark:border-gray-500 px-2 py-1">
-                        Point
-                      </th>
+                      <th className="border border-black dark:border-gray-600 px-2 py-1">Code</th>
+                      <th className="border border-black dark:border-gray-600 px-2 py-1">Title</th>
+                      <th className="border border-black dark:border-gray-600 px-2 py-1">CH</th>
+                      <th className="border border-black dark:border-gray-600 px-2 py-1">Grade</th>
+                      <th className="border border-black dark:border-gray-600 px-2 py-1">Point</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="text-gray-800 dark:text-gray-300">
                     {copy.courses.map((c, j) => (
                       <tr
                         key={j}
-                        className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                        className="hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
                       >
-                        <td className="border border-gray-400 dark:border-gray-600 px-2 py-1">
+                        <td className="border border-black dark:border-gray-600 px-2 py-1 font-mono">
                           {c.courseCode}
                         </td>
-                        <td className="border border-gray-400 dark:border-gray-600 px-2 py-1">
+                        <td className="border border-black dark:border-gray-600 px-2 py-1">
                           {c.courseTitle}
                         </td>
-                        <td className="border border-gray-400 dark:border-gray-600 px-2 py-1 text-center">
+                        <td className="border border-black dark:border-gray-600 px-2 py-1 text-center">
                           {c.totalCrHrs}
                         </td>
-                        <td className="border border-gray-400 dark:border-gray-600 px-2 py-1 text-center font-bold text-blue-700 dark:text-blue-400">
+                        <td className="border border-black dark:border-gray-600 px-2 py-1 text-center font-bold text-blue-700 dark:text-blue-400">
                           {c.letterGrade}
                         </td>
-                        <td className="border border-gray-400 dark:border-gray-600 px-2 py-1 text-center">
+                        <td className="border border-black dark:border-gray-600 px-2 py-1 text-center font-mono">
                           {c.gradePoint.toFixed(1)}
                         </td>
                       </tr>
@@ -2079,12 +2069,12 @@ function DynamicTranscriptView({ report }: { report: RealGradeReport }) {
 
         <div className="grid grid-cols-2 gap-8 sm:gap-16 p-8 sm:p-12 border-t-4 border-black dark:border-gray-600 mt-8">
           <div className="text-center">
-            <div className="h-28 sm:h-32 border-4 border-dashed rounded-xl mb-4 bg-gray-100 dark:bg-gray-700"></div>
-            <p className="font-bold text-base sm:text-lg">REGISTRAR OFFICE</p>
+            <div className="h-28 sm:h-32 border-4 border-dashed border-gray-300 dark:border-gray-600 rounded-xl mb-4 bg-gray-50 dark:bg-gray-900/40"></div>
+            <p className="font-bold text-base sm:text-lg text-gray-900 dark:text-white">REGISTRAR OFFICE</p>
           </div>
           <div className="text-center">
-            <div className="h-28 sm:h-32 border-4 border-dashed rounded-xl mb-4 bg-gray-100 dark:bg-gray-700"></div>
-            <p className="font-bold text-base sm:text-lg">DEAN OFFICE</p>
+            <div className="h-28 sm:h-32 border-4 border-dashed border-gray-300 dark:border-gray-600 rounded-xl mb-4 bg-gray-50 dark:bg-gray-900/40"></div>
+            <p className="font-bold text-base sm:text-lg text-gray-900 dark:text-white">DEAN OFFICE</p>
           </div>
         </div>
       </div>
@@ -2093,45 +2083,45 @@ function DynamicTranscriptView({ report }: { report: RealGradeReport }) {
 }
 function TranscriptView({ transcript }: { transcript: TranscriptRecord }) {
   return (
-    <div className="bg-white dark:bg-gray-800 shadow-2xl border-4 border-black dark:border-gray-600 font-mono text-xs sm:text-sm overflow-x-auto">
+    <div className="bg-white dark:bg-gray-800 shadow-2xl border-4 border-black dark:border-gray-600 font-mono text-xs sm:text-sm overflow-x-auto transition-colors">
       <div className="text-center py-4 bg-cyan-100 dark:bg-cyan-900 border-b-4 border-black dark:border-gray-600">
-        <h1 className="text-xl sm:text-2xl font-bold">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
           DEUTSCHE HOCHSCHULE FÜR MEDIZIN
         </h1>
-        <h2 className="text-lg sm:text-xl font-bold">
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
           STUDENT ACADEMIC TRANSCRIPT
         </h2>
-        <p className="font-bold">OFFICE OF REGISTRAR</p>
+        <p className="font-bold text-gray-800 dark:text-gray-300">OFFICE OF REGISTRAR</p>
       </div>
 
-      <div className="p-4">
+      <div className="p-4 bg-white dark:bg-gray-800">
         <table className="w-full border-collapse mb-6">
           <tbody>
-            <tr className="bg-cyan-100 dark:bg-cyan-900 border-2 border-black dark:border-gray-600">
-              <td className="px-3 py-2 font-bold">ID Number</td>
-              <td className="px-3 py-2">{transcript.student.id}</td>
-              <td className="px-3 py-2 font-bold">Full Name</td>
-              <td colSpan={5} className="px-3 py-2">
+            <tr className="bg-cyan-100 dark:bg-cyan-900/50 border-2 border-black dark:border-gray-600">
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">ID Number</td>
+              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">{transcript.student.id}</td>
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">Full Name</td>
+              <td colSpan={5} className="px-3 py-2 text-gray-800 dark:text-gray-300">
                 {transcript.student.name}
               </td>
             </tr>
-            <tr className="bg-cyan-100 dark:bg-cyan-900 border-2 border-black dark:border-gray-600">
-              <td className="px-3 py-2 font-bold">Sex</td>
-              <td className="px-3 py-2">{transcript.student.gender}</td>
-              <td className="px-3 py-2 font-bold">Date of Birth</td>
-              <td className="px-3 py-2">{transcript.student.dob}</td>
-              <td className="px-3 py-2 font-bold">Program</td>
-              <td className="px-3 py-2">{transcript.student.program}</td>
-              <td className="px-3 py-2 font-bold">Faculty</td>
-              <td className="px-3 py-2">{transcript.student.faculty}</td>
+            <tr className="bg-cyan-100 dark:bg-cyan-900/50 border-2 border-black dark:border-gray-600">
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">Sex</td>
+              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">{transcript.student.gender}</td>
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">Date of Birth</td>
+              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">{transcript.student.dob}</td>
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">Program</td>
+              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">{transcript.student.program}</td>
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">Faculty</td>
+              <td className="px-3 py-2 text-gray-800 dark:text-gray-300">{transcript.student.faculty}</td>
             </tr>
-            <tr className="bg-cyan-100 dark:bg-cyan-900 border-2 border-black dark:border-gray-600">
-              <td className="px-3 py-2 font-bold">Batch</td>
-              <td className="px-3 py-2">{transcript.student.batch}</td>
-              <td className="px-3 py-2 font-bold">Department</td>
-              <td className="px-3 py-2">{transcript.student.department}</td>
-              <td className="px-3 py-2 font-bold">Date of Admission</td>
-              <td colSpan={3} className="px-3 py-2">
+            <tr className="bg-cyan-100 dark:bg-cyan-900/50 border-2 border-black dark:border-gray-600">
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">Batch</td>
+              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">{transcript.student.batch}</td>
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">Department</td>
+              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">{transcript.student.department}</td>
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">Date of Admission</td>
+              <td colSpan={3} className="px-3 py-2 text-gray-800 dark:text-gray-300">
                 {transcript.student.admissionDate}
               </td>
             </tr>
@@ -2140,49 +2130,39 @@ function TranscriptView({ transcript }: { transcript: TranscriptRecord }) {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {transcript.semesters.map((sem, i) => (
-            <div key={i} className="border-4 border-black dark:border-gray-600">
+            <div key={i} className="border-4 border-black dark:border-gray-600 overflow-hidden">
               <div className="bg-orange-500 dark:bg-orange-600 text-white font-bold px-3 py-2 text-center text-xs sm:text-sm">
                 Academic Year: {sem.year} G.C • {sem.semester} • Class Year I
               </div>
-              <table className="w-full border border-gray-600 dark:border-gray-500">
-                <thead className="bg-gray-300 dark:bg-gray-700">
+              <table className="w-full border-collapse bg-white dark:bg-gray-800">
+                <thead className="bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-gray-100">
                   <tr>
-                    <th className="border border-gray-600 dark:border-gray-500 px-2 py-1">
-                      Course Code
-                    </th>
-                    <th className="border border-gray-600 dark:border-gray-500 px-2 py-1">
-                      Course Title
-                    </th>
-                    <th className="border border-gray-600 dark:border-gray-500 px-2 py-1">
-                      CH
-                    </th>
-                    <th className="border border-gray-600 dark:border-gray-500 px-2 py-1">
-                      Grade
-                    </th>
-                    <th className="border border-gray-600 dark:border-gray-500 px-2 py-1">
-                      Point
-                    </th>
+                    <th className="border border-black dark:border-gray-600 px-2 py-1">Course Code</th>
+                    <th className="border border-black dark:border-gray-600 px-2 py-1">Course Title</th>
+                    <th className="border border-black dark:border-gray-600 px-2 py-1">CH</th>
+                    <th className="border border-black dark:border-gray-600 px-2 py-1">Grade</th>
+                    <th className="border border-black dark:border-gray-600 px-2 py-1">Point</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="text-gray-800 dark:text-gray-300">
                   {sem.courses.map((c, j) => (
                     <tr
                       key={j}
-                      className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                      className="hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
                     >
-                      <td className="border border-gray-400 dark:border-gray-600 px-2 py-1">
+                      <td className="border border-black dark:border-gray-600 px-2 py-1 font-mono">
                         {c.code}
                       </td>
-                      <td className="border border-gray-400 dark:border-gray-600 px-2 py-1">
+                      <td className="border border-black dark:border-gray-600 px-2 py-1">
                         {c.title}
                       </td>
-                      <td className="border border-gray-400 dark:border-gray-600 px-2 py-1 text-center">
+                      <td className="border border-black dark:border-gray-600 px-2 py-1 text-center">
                         {c.ch}
                       </td>
-                      <td className="border border-gray-400 dark:border-gray-600 px-2 py-1 text-center font-bold text-blue-700 dark:text-blue-400">
+                      <td className="border border-black dark:border-gray-600 px-2 py-1 text-center font-bold text-blue-700 dark:text-blue-400">
                         {c.grade}
                       </td>
-                      <td className="border border-gray-400 dark:border-gray-600 px-2 py-1 text-center">
+                      <td className="border border-black dark:border-gray-600 px-2 py-1 text-center font-mono">
                         {c.point}
                       </td>
                     </tr>
@@ -2199,12 +2179,12 @@ function TranscriptView({ transcript }: { transcript: TranscriptRecord }) {
 
         <div className="grid grid-cols-2 gap-8 sm:gap-16 p-8 sm:p-12 border-t-4 border-black dark:border-gray-600 mt-8">
           <div className="text-center">
-            <div className="h-28 sm:h-32 border-4 border-dashed rounded-xl mb-4 bg-gray-100 dark:bg-gray-700"></div>
-            <p className="font-bold text-base sm:text-lg">REGISTRAR OFFICE</p>
+            <div className="h-28 sm:h-32 border-4 border-dashed border-gray-300 dark:border-gray-600 rounded-xl mb-4 bg-gray-50 dark:bg-gray-900/40"></div>
+            <p className="font-bold text-base sm:text-lg text-gray-900 dark:text-white">REGISTRAR OFFICE</p>
           </div>
           <div className="text-center">
-            <div className="h-28 sm:h-32 border-4 border-dashed rounded-xl mb-4 bg-gray-100 dark:bg-gray-700"></div>
-            <p className="font-bold text-base sm:text-lg">DEAN OFFICE</p>
+            <div className="h-28 sm:h-32 border-4 border-dashed border-gray-300 dark:border-gray-600 rounded-xl mb-4 bg-gray-50 dark:bg-gray-900/40"></div>
+            <p className="font-bold text-base sm:text-lg text-gray-900 dark:text-white">DEAN OFFICE</p>
           </div>
         </div>
       </div>
