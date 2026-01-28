@@ -243,6 +243,12 @@ const [showAdministrativeFilters, setShowAdministrativeFilters] = useState(true)
     setCreditHoursRange({ min: null, max: null });
     setDateOfBirthRange({ start: null, end: null });
     setDateEnrolledRange({ start: null, end: null });
+
+    // Also expand all filter groups
+    setShowPersonalFilters(true);
+    setShowAcademicFilters(true);
+    setShowPerformanceFilters(true);
+    setShowAdministrativeFilters(true);
   };
   // Add this helper function near the top of your component (after states)
   const getEntityId = (value: any): string => {
