@@ -1471,9 +1471,9 @@ const AddStudent = () => {
           apiService.get(endPoints.impairments),
 
           apiService.get(endPoints.studentStatus),
-          // apiService.get(endPoints.semesters),
+          // apiService.get(endPoints.semesters), 
           apiService.get(endPoints.schoolBackgrounds),
-          apiService.get(endPoints.programModality),
+          apiService.get(endPoints.programModalities),
           apiService.get(endPoints.regions),
           apiService.get(endPoints.batchClassSemsterYear),
           // apiService.get(endPoints.classYears),
@@ -1704,13 +1704,6 @@ const AddStudent = () => {
           },
         }
       );
-      //       const response = await apiService.post(
-      //   endPoints.applicantsRegister,
-      //   formDataObj,
-      //   {
-      //     // headers: { requiresAuth: false }
-      //   }
-      // );
       toast({
         title: "Success",
         description: "Student registered successfully.",
