@@ -183,6 +183,10 @@ const endPoints = {
   updateViceDean: "/vice-deans",
   getViceDeanPhoto: "/vice-deans/get-photo",
   getViceDeanDocument: "/vice-deans/get-document",
+
+  /* =======================     Dean Assessment Endpoints ======================== */
+getDeanHeadApprovedScores: "/deans/head-approved-scores",  
+deanBulkApproveAll: "/deans/assignments/:teacherCourseAssignmentId/approve-all",  
 };
 
 export default endPoints;
