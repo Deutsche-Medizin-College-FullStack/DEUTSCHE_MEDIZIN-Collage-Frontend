@@ -143,6 +143,8 @@ const DeanLayout = React.lazy(() => import("./layouts/DeanLayout"));
 const DeanDashboard = React.lazy(() => import("./pages/dean/Dashboard"));
 const DeanStudents = React.lazy(() => import("./pages/dean/Students"));
 const DeanNotifications = React.lazy(() => import("./pages/dean/Notifications"));
+const DeanAssessment = React.lazy(() => import("./pages/dean/DeanAssessment"));
+const DeanAssessmentDetail = React.lazy(() => import("./pages/dean/DeanAssessmentDetail"));
 const DepartmentHeadsList = React.lazy(
   () => import("./pages/dean/DepartmentHeadsList")
 );
@@ -444,6 +446,11 @@ function App() {
                 <Route
                   path="program-modality"
                   element={<ProgramModalitiesManagement />}
+                />
+                 <Route path="assessments" element={<DeanAssessment />} />
+                <Route
+                  path="assessments/:assignmentId"
+                  element={<DeanAssessmentDetail />}
                 />
                 <Route path="profile" element={<Dean_Profile />} />
                 <Route path="students" element={<DeanStudents />} />
