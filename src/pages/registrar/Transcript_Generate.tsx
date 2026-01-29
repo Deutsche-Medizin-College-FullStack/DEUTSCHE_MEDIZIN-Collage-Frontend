@@ -538,32 +538,6 @@ export default function Transcript_Generate() {
     fetchStudents();
   }, []);
 
-  ///////////// NEEDED AN ATTENTION
-
-  // useEffect(() => {
-  //   if (searchType !== "report" || selectedStudents.length === 0) {
-  //     setRealReports([]);
-  //     return;
-  //   }
-  //   const fetchReports = async () => {
-  //     setLoadingReports(true);
-  //     setError(null);
-  //     try {
-  //       const response = await apiService.post(endPoints.generateGradeReport, {
-  //         studentIds: selectedStudents,
-  //       });
-  //       setRealReports(response.gradeReports || []);
-  //     } catch (err) {
-  //       setError(
-  //         "Failed to generate reports: " + (err.message || "Server error")
-  //       );
-  //       setRealReports([]);
-  //     } finally {
-  //       setLoadingReports(false);
-  //     }
-  //   };
-  //   fetchReports();
-  // }, []);
   const toggleStudent = (id: number) => {
     setSelectedStudents((prev) =>
       prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
@@ -669,137 +643,6 @@ export default function Transcript_Generate() {
         t.student.program.toLowerCase().includes(term)
     );
   }, [searchTerm, selectedBatch, selectedDepartment, transcriptBatch]);
-
-  // const handleBackToChoice = () => {
-  //   setSearchType(null);
-  //   setSearchTerm("");
-  //   setSelectedBatch("");
-  //   setSelectedDepartment("all");
-  // };
-
-  // const exportToPDF = () => {
-  //   if (!searchType || !selectedBatch) return;
-
-  //   const isReport = searchType === "report";
-  //   const doc = new jsPDF("p", "mm", "a4");
-
-  //   const list = isReport ? filteredReports : filteredTranscripts;
-
-  //   if (list.length === 0) return;
-
-  //   list.forEach((item, index) => {
-  //     if (index > 0) {
-  //       doc.addPage();
-  //     }
-
-  //     if (isReport) {
-  //       const r = item as ReportRecord;
-
-  //       doc.setFontSize(14);
-  //       doc.text("DEUTSCHE HÖHERE MEDIZINISCHE HOCHSCHULE", 10, 15);
-  //       doc.setFontSize(11);
-  //       doc.text(`Report Card - ${r.academicYear} ${r.semester}`, 10, 22);
-
-  //       doc.setFontSize(10);
-  //       doc.text(`ID: ${r.id}`, 10, 30);
-  //       doc.text(`Name: ${r.name}`, 10, 36);
-  //       doc.text(`Program: ${r.program}`, 10, 42);
-  //       doc.text(`Batch: ${r.batch}`, 10, 48);
-  //       doc.text(`Department: ${r.department}`, 10, 54);
-  //       doc.text(`CGPA: ${r.cgpa}`, 120, 30);
-  //       doc.text(`Credits: ${r.earnedCredits}`, 120, 36);
-
-  //       const body = r.courses.map((c) => [
-  //         c.code,
-  //         c.title,
-  //         c.credit,
-  //         c.grade,
-  //         c.point.toFixed(2),
-  //         c.gp.toFixed(2),
-  //       ]);
-
-  //       autoTable(doc, {
-  //         startY: 60,
-  //         head: [["Code", "Title", "Credit", "Grade", "Point", "GP×CH"]],
-  //         body,
-  //         theme: "grid",
-  //         styles: { fontSize: 9 },
-  //       });
-
-  //       doc.text(
-  //         `Generated for batch ${selectedBatch}${
-  //           selectedDepartment !== "all" ? ` - ${selectedDepartment}` : ""
-  //         }`,
-  //         10,
-  //         290
-  //       );
-  //     } else {
-  //       const t = item as TranscriptRecord;
-
-  //       doc.setFontSize(14);
-  //       doc.text("DEUTSCHE HOCHSCHULE FÜR MEDIZIN", 10, 15);
-  //       doc.setFontSize(11);
-  //       doc.text("STUDENT ACADEMIC TRANSCRIPT", 10, 22);
-
-  //       doc.setFontSize(10);
-  //       doc.text(`ID: ${t.student.id}`, 10, 30);
-  //       doc.text(`Name: ${t.student.name}`, 10, 36);
-  //       doc.text(`Program: ${t.student.program}`, 10, 42);
-  //       doc.text(`Batch: ${t.student.batch}`, 10, 48);
-  //       doc.text(`Department: ${t.student.department}`, 10, 54);
-  //       doc.text(`Faculty: ${t.student.faculty}`, 10, 60);
-  //       doc.text(`Admission: ${t.student.admissionDate}`, 10, 66);
-
-  //       let currentY = 74;
-
-  //       t.semesters.forEach((s, sIndex) => {
-  //         if (sIndex > 0 && currentY > 220) {
-  //           doc.addPage();
-  //           currentY = 20;
-  //         }
-
-  //         doc.setFontSize(11);
-  //         doc.text(`${s.year} - ${s.semester} (GPA: ${s.gpa})`, 10, currentY);
-  //         currentY += 6;
-
-  //         const body = s.courses.map((c) => [
-  //           c.code,
-  //           c.title,
-  //           c.ch,
-  //           c.grade,
-  //           c.point,
-  //         ]);
-
-  //         autoTable(doc, {
-  //           startY: currentY,
-  //           head: [["Code", "Title", "CH", "Grade", "Point"]],
-  //           body,
-  //           theme: "grid",
-  //           styles: { fontSize: 9 },
-  //           margin: { left: 10, right: 10 },
-  //         });
-
-  //         // @ts-ignore: autoTable types
-  //         currentY = (doc as any).lastAutoTable.finalY + 10;
-  //       });
-
-  //       doc.text(
-  //         `Generated for batch ${selectedBatch}${
-  //           selectedDepartment !== "all" ? ` - ${selectedDepartment}` : ""
-  //         }`,
-  //         10,
-  //         290
-  //       );
-  //     }
-  //   });
-
-  //   const fileName =
-  //     searchType === "report"
-  //       ? "ReportCards-Filtered.pdf"
-  //       : "Transcripts-Filtered.pdf";
-
-  //   doc.save(fileName);
-  // };
   const exportToPDF = () => {
     if (!searchType || (searchType === "report" && realReports.length === 0))
       return;
@@ -812,8 +655,10 @@ export default function Transcript_Generate() {
 
       if (searchType === "report") {
         const r = item as RealGradeReport;
+
         doc.setFontSize(14);
         doc.text("DEUTSCHE HÖHERE MEDIZINISCHE HOCHSCHULE", 10, 15);
+
         doc.setFontSize(11);
         doc.text("Student Academic Grade Report", 10, 22);
 
@@ -825,14 +670,18 @@ export default function Transcript_Generate() {
         doc.text(`Program: ${r.programModality.name}`, 10, 48);
 
         let y = 60;
+
         r.studentCopies.forEach((copy) => {
-          if (y > 240) {
+          if (y > 220) {
+            // ← lowered threshold a bit to leave space for signatures
             doc.addPage();
             y = 20;
           }
+
           doc.setFontSize(11);
           doc.text(
-            `${copy.academicYear || "Current"} - ${copy.semester.name
+            `${copy.academicYear || "Current"} - ${
+              copy.semester.name
             } (GPA: ${copy.semesterGPA.toFixed(2)})`,
             10,
             y
@@ -854,9 +703,48 @@ export default function Transcript_Generate() {
             theme: "grid",
             styles: { fontSize: 9 },
           });
-          y = (doc as any).lastAutoTable.finalY + 10;
+
+          y = (doc as any).lastAutoTable.finalY + 15; // ← extra space after table
         });
+
+        // ────────────────────────────────────────────────
+        //     SIGNATURE AREA — added here at the bottom
+        // ────────────────────────────────────────────────
+
+        // Make sure we have enough space — if not, go to next page
+        if (y > 240) {
+          doc.addPage();
+          y = 30;
+        }
+
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "normal");
+
+        // Left signature (Registrar)
+        doc.text("_________________________________________", 20, y + 10);
+        doc.text("Registrar / Office of the Registrar", 20, y + 18);
+        // doc.text("Date: ____________________", 20, y + 26);
+
+        // Right signature (Head/Dean)
+        // doc.text("_________________________________________", 110, y + 10);
+        // doc.text("Head of Department / Dean", 110, y + 18);
+        // doc.text("Date: ____________________", 110, y + 26);
+
+        // Optional: Official stamp placeholder (circle)
+        // doc.setLineWidth(0.5);
+        // doc.setDrawColor(100); // gray
+        // doc.setLineDash([2, 2]); // dashed line
+        // doc.circle(170, y + 35, 18, "D"); // dashed circle
+        // doc.setLineDash([]); // reset to solid
+        // doc.setFontSize(9);
+        // doc.text("Official Stamp", 158, y + 37, { align: "center" });
+
+        // Optional footer note
+        // doc.setFontSize(8);
+        // doc.setTextColor(100);
+        // doc.text("This document is official when signed and stamped.", 10, 290);
       }
+
       // Transcript PDF logic remains same (you can update later)
     });
 
@@ -916,178 +804,6 @@ export default function Transcript_Generate() {
   const activeList = isReport ? filteredReports : filteredTranscripts;
   const count = selectedBatch ? activeList.length : 0;
 
-  // return (
-  //   <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8 transition-colors">
-  //     <div className="max-w-7xl mx-auto">
-  //       <div className="flex flex-col gap-4 mb-6">
-  //         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-  //           <button
-  //             onClick={handleBackToChoice}
-  //             className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-lg hover:underline"
-  //           >
-  //             <ArrowLeft className="w-5 h-5" /> Back to Type
-  //           </button>
-
-  //           <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center w-full sm:w-auto">
-  //             <div className="relative flex-1 min-w-[220px]">
-  //               <input
-  //                 type="text"
-  //                 placeholder={`Search by ID, name or program (${
-  //                   isReport ? "Report" : "Transcript"
-  //                 })`}
-  //                 value={searchTerm}
-  //                 onChange={(e) => setSearchTerm(e.target.value)}
-  //                 className="w-full pl-11 pr-4 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm sm:text-base focus:border-blue-600 dark:focus:border-blue-500 outline-none transition"
-  //                 disabled={!selectedBatch}
-  //               />
-  //               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 dark:text-gray-400" />
-  //             </div>
-
-  //             <button
-  //               onClick={exportToPDF}
-  //               disabled={!selectedBatch || activeList.length === 0}
-  //               className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl shadow text-sm sm:text-base font-semibold transition ${
-  //                 !selectedBatch || activeList.length === 0
-  //                   ? "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
-  //                   : "bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white"
-  //               }`}
-  //             >
-  //               <Download className="w-5 h-5" /> Export Filtered (PDF)
-  //             </button>
-  //           </div>
-  //         </div>
-
-  //         <div className="flex flex-col sm:flex-row gap-3">
-  //           <select
-  //             value={selectedBatch}
-  //             onChange={(e) => setSelectedBatch(e.target.value)}
-  //             className="w-full sm:w-56 px-3 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm sm:text-base text-gray-800 dark:text-gray-100 focus:border-blue-600 dark:focus:border-blue-500 outline-none"
-  //           >
-  //             <option value="">Select batch to view records</option>
-  //             <option value="all">All Batches</option>
-  //             {batch.map((b) => (
-  //               <option key={b.id} value={b.id}>
-  //                 {b.batchName}
-  //               </option>
-  //             ))}
-  //           </select>
-  //           <select
-  //             value={selectedDepartment}
-  //             onChange={(e) => setSelectedDepartment(e.target.value)}
-  //             className="w-full sm:w-56 px-3 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm sm:text-base text-gray-800 dark:text-gray-100 focus:border-blue-600 dark:focus:border-blue-500 outline-none"
-  //           >
-  //             <option value="">Select deparment to view records</option>
-  //             <option value="all">All Department</option>
-  //             {deparment.map((b) => (
-  //               <option key={b.dptID} value={b.dptID}>
-  //                 {b.deptName}
-  //               </option>
-  //             ))}
-  //           </select>
-  //           <select
-  //             value={manyGradingSystem}
-  //             onChange={(e) => setManyGradingSystem(e.target.value)}
-  //             className="w-full sm:w-56 px-3 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm sm:text-base text-gray-800 dark:text-gray-100 focus:border-blue-600 dark:focus:border-blue-500 outline-none"
-  //             // disabled={!selectedBatch}
-  //           >
-  //             <option value="">Select Grading System</option>
-
-  //             {gradingSystems.map((d) => (
-  //               <option key={d.versionName} value={d.versionName}>
-  //                 {d.versionName}
-  //               </option>
-  //             ))}
-  //           </select>
-  //         </div>
-  //       </div>
-
-  //       {!selectedBatch && (
-  //         <div className="mt-12 text-center text-gray-600 dark:text-gray-300">
-  //           <p className="text-lg">
-  //             Please select a batch above to view student records.
-  //           </p>
-  //         </div>
-  //       )}
-
-  //       {selectedBatch && (
-  //         <>
-  //           <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">
-  //             {isReport ? "Report Cards" : "Transcripts"} ({count} students)
-  //           </h2>
-
-  //           {isReport ? (
-  //             <div className="space-y-8">
-  //               {loadingReports ? (
-  //                 <div className="flex flex-col items-center justify-center py-20">
-  //                   <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600"></div>
-  //                   <p className="mt-6 text-lg font-medium text-gray-700 dark:text-gray-300">
-  //                     Loading student reports...
-  //                   </p>
-  //                 </div>
-  //               ) : Error ? (
-  //                 <div className="text-center py-20">
-  //                   <div className="text-red-600 dark:text-red-400 mb-4">
-  //                     <svg
-  //                       className="w-16 h-16 mx-auto"
-  //                       fill="currentColor"
-  //                       viewBox="0 0 20 20"
-  //                     >
-  //                       <path
-  //                         fillRule="evenodd"
-  //                         d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-  //                         clipRule="evenodd"
-  //                       />
-  //                     </svg>
-  //                   </div>
-  //                   <p className="text-xl font-medium text-gray-800 dark:text-gray-200 mb-2">
-  //                     Failed to load student reports
-  //                   </p>
-  //                   <p className="text-gray-600 dark:text-gray-400 mb-6">
-  //                     {Error}
-  //                   </p>
-  //                   <button
-  //                     onClick={() => window.location.reload()} // or call your fetch function again
-  //                     className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition"
-  //                   >
-  //                     Try Again
-  //                   </button>
-  //                 </div>
-  //               ) : studentReport.length > 0 ? (
-  //                 studentReport.map((r, i) => (
-  //                   <MyReport key={i} reportData={r} />
-  //                 ))
-  //               ) : (
-  //                 <p className="text-center text-gray-600 dark:text-gray-300 mt-8">
-  //                   No real student reports found. (Demo report cards are shown
-  //                   below if any)
-  //                 </p>
-  //               )}
-
-  //               {/* Keep your fake/demo report cards visible always */}
-  //               {filteredReports.length === 0 && !loadingReports && (
-  //                 <p className="text-center text-gray-600 dark:text-gray-300 mt-8">
-  //                   No demo students found for current filters.
-  //                 </p>
-  //               )}
-  //             </div>
-  //           ) : (
-  //             // Transcripts remain unchanged
-  //             <div className="space-y-8">
-  //               {filteredTranscripts.map((t) => (
-  //                 <TranscriptView key={t.student.id} transcript={t} />
-  //               ))}
-  //               {filteredTranscripts.length === 0 && (
-  //                 <p className="text-center text-gray-600 dark:text-gray-300 mt-8">
-  //                   No students found for current batch/department/search.
-  //                 </p>
-  //               )}
-  //             </div>
-  //           )}
-  //         </>
-  //       )}
-  //     </div>
-  //   </div>
-  // );
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 transition-colors">
       <div className="max-w-7xl mx-auto">
@@ -1290,13 +1006,14 @@ export default function Transcript_Generate() {
                     loadingReports ||
                     loadingDropdowns
                   }
-                  className={`px-8 py-4 rounded-xl font-bold text-white shadow-lg transition ${selectedStudents.length === 0 ||
+                  className={`px-8 py-4 rounded-xl font-bold text-white shadow-lg transition ${
+                    selectedStudents.length === 0 ||
                     !selectedSemesterId ||
                     !selectedClassYearId ||
                     loadingDropdowns
-                    ? "bg-gray-400 dark:bg-gray-600 cursor-not-allowed"
-                    : "bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-                    }`}
+                      ? "bg-gray-400 dark:bg-gray-600 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+                  }`}
                 >
                   {loadingReports ? (
                     <>
@@ -1504,10 +1221,11 @@ export default function Transcript_Generate() {
                   }
                 }}
                 disabled={selectedStudents.length === 0 || loadingTranscripts}
-                className={`px-8 py-4 rounded-xl font-bold text-white shadow-lg transition ${selectedStudents.length === 0 || loadingTranscripts
-                  ? "bg-gray-400 dark:bg-gray-600 cursor-not-allowed"
-                  : "bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600"
-                  }`}
+                className={`px-8 py-4 rounded-xl font-bold text-white shadow-lg transition ${
+                  selectedStudents.length === 0 || loadingTranscripts
+                    ? "bg-gray-400 dark:bg-gray-600 cursor-not-allowed"
+                    : "bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600"
+                }`}
               >
                 {loadingTranscripts ? (
                   <>
@@ -1529,7 +1247,9 @@ export default function Transcript_Generate() {
             {loadingTranscripts && (
               <div className="mt-8 text-center">
                 <Loader2 className="w-10 h-10 animate-spin mx-auto text-purple-600 dark:text-purple-400" />
-                <p className="mt-4 text-gray-600 dark:text-gray-400">Loading real transcripts...</p>
+                <p className="mt-4 text-gray-600 dark:text-gray-400">
+                  Loading real transcripts...
+                </p>
               </div>
             )}
 
@@ -1552,9 +1272,11 @@ export default function Transcript_Generate() {
 }
 
 // === PRESENTATION COMPONENTS ===
+
 function RealReportView({ report }: { report: RealGradeReport }) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 transition-colors overflow-hidden">
+      {/* Header */}
       <div className="bg-gradient-to-r from-blue-700 to-blue-900 dark:from-blue-800 dark:to-blue-950 text-white p-6 text-center">
         <h1 className="text-2xl sm:text-3xl font-bold">
           DEUTSCHE HÖHERE MEDIZINISCHE HOCHSCHULE
@@ -1567,47 +1289,72 @@ function RealReportView({ report }: { report: RealGradeReport }) {
         )}
       </div>
 
+      {/* Student Basic Info */}
       <div className="p-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm bg-gray-50 dark:bg-gray-900/50 text-gray-700 dark:text-gray-300">
         <div>
-          <strong className="text-gray-900 dark:text-white">ID:</strong> {report.idNumber}
+          <strong className="text-gray-900 dark:text-white">ID:</strong>{" "}
+          {report.idNumber}
         </div>
         <div>
-          <strong className="text-gray-900 dark:text-white">Name:</strong> {report.fullName}
+          <strong className="text-gray-900 dark:text-white">Name:</strong>{" "}
+          {report.fullName}
         </div>
         <div>
-          <strong className="text-gray-900 dark:text-white">Gender:</strong> {report.gender}
+          <strong className="text-gray-900 dark:text-white">Gender:</strong>{" "}
+          {report.gender}
         </div>
         <div>
-          <strong className="text-gray-900 dark:text-white">Date of Birth:</strong> {report.birthDateGC}
+          <strong className="text-gray-900 dark:text-white">
+            Date of Birth:
+          </strong>{" "}
+          {report.birthDateGC}
         </div>
         <div>
-          <strong className="text-gray-900 dark:text-white">Department:</strong> {report.department.name}
+          <strong className="text-gray-900 dark:text-white">Department:</strong>{" "}
+          {report.department.name}
         </div>
         <div>
-          <strong className="text-gray-900 dark:text-white">Program:</strong> {report.programModality.name}
+          <strong className="text-gray-900 dark:text-white">Program:</strong>{" "}
+          {report.programModality.name}
         </div>
         <div>
-          <strong className="text-gray-900 dark:text-white">Enrolled:</strong> {report.dateEnrolledGC}
+          <strong className="text-gray-900 dark:text-white">Enrolled:</strong>{" "}
+          {report.dateEnrolledGC}
         </div>
         <div className="md:col-span-4">
-          <strong className="text-gray-900 dark:text-white">Program Level:</strong> {report.programLevel?.name || "N/A"}
+          <strong className="text-gray-900 dark:text-white">
+            Program Level:
+          </strong>{" "}
+          {report.programLevel?.name || "N/A"}
         </div>
       </div>
 
+      {/* Semester sections */}
       {report.studentCopies.map((copy, idx) => (
-        <div key={idx} className="border-t border-gray-200 dark:border-gray-700 pt-6 px-6">
+        <div
+          key={idx}
+          className="border-t border-gray-200 dark:border-gray-700 pt-6 px-6"
+        >
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-bold text-lg text-gray-900 dark:text-white">
               {copy.academicYear || "Current Year"} - {copy.semester.name}
             </h3>
             <div className="text-right">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Class Year:</span>{" "}
-              <strong className="text-gray-900 dark:text-white">{copy.classyear.name}</strong>
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                Class Year:
+              </span>{" "}
+              <strong className="text-gray-900 dark:text-white">
+                {copy.classyear.name}
+              </strong>
               <br />
-              <span className="text-sm text-gray-600 dark:text-gray-400">Status:</span>{" "}
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                Status:
+              </span>{" "}
               <strong
                 className={
-                  copy.status === "PASSED" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                  copy.status === "PASSED"
+                    ? "text-green-600 dark:text-green-400"
+                    : "text-red-600 dark:text-red-400"
                 }
               >
                 {copy.status}
@@ -1635,12 +1382,19 @@ function RealReportView({ report }: { report: RealGradeReport }) {
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">
                 {copy.courses.map((c, i) => (
-                  <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                  <tr
+                    key={i}
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                  >
                     <td className="p-3 font-mono">{c.courseCode}</td>
                     <td className="p-3">{c.courseTitle}</td>
                     <td className="p-3 text-center">{c.totalCrHrs}</td>
-                    <td className="p-3 text-center font-bold text-blue-600 dark:text-blue-400">{c.letterGrade}</td>
-                    <td className="p-3 text-center">{c.gradePoint.toFixed(1)}</td>
+                    <td className="p-3 text-center font-bold text-blue-600 dark:text-blue-400">
+                      {c.letterGrade}
+                    </td>
+                    <td className="p-3 text-center">
+                      {c.gradePoint.toFixed(1)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -1648,6 +1402,34 @@ function RealReportView({ report }: { report: RealGradeReport }) {
           </div>
         </div>
       ))}
+
+      {/* ────────────────────────────────────────────────
+          SIGNATURE AREA - added here
+      ──────────────────────────────────────────────── */}
+      <div className="px-6 py-10 border-t border-gray-300 dark:border-gray-600 mt-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 text-center">
+          {/* Registrar signature */}
+          <div>
+            <div className="border-t-2 border-black dark:border-gray-300 w-64 mx-auto mt-16 mb-2"></div>
+            <p className="font-medium text-gray-900 dark:text-white">
+              Registrar / Office of the Registrar
+            </p>
+          </div>
+
+          {/* Department Head / Dean signature */}
+          {/* <div>
+            <div className="border-t-2 border-black dark:border-gray-300 w-64 mx-auto mt-16 mb-2"></div>
+            <p className="font-medium text-gray-900 dark:text-white">
+              Head of Department / Dean
+            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Date: ____________________
+            </p>
+          </div> */}
+        </div>
+
+        {/* Optional: Official stamp area */}
+      </div>
     </div>
   );
 }
@@ -1677,7 +1459,9 @@ function MyReport({ reportData }) {
               <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
                 ID Number
               </td>
-              <td className="px-4 py-3 border-r border-yellow-300 dark:border-yellow-700/50">{reportData.idNumber}</td>
+              <td className="px-4 py-3 border-r border-yellow-300 dark:border-yellow-700/50">
+                {reportData.idNumber}
+              </td>
 
               <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
                 Date of Birth (GC)
@@ -1689,7 +1473,9 @@ function MyReport({ reportData }) {
               <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
                 Gender
               </td>
-              <td className="px-4 py-3 border-r border-yellow-300 dark:border-yellow-700/50">{reportData.gender}</td>
+              <td className="px-4 py-3 border-r border-yellow-300 dark:border-yellow-700/50">
+                {reportData.gender}
+              </td>
 
               <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
                 Date Enrolled (GC)
@@ -1701,7 +1487,9 @@ function MyReport({ reportData }) {
               <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
                 Full Name
               </td>
-              <td className="px-4 py-3 border-r border-yellow-300 dark:border-yellow-700/50">{reportData.fullName}</td>
+              <td className="px-4 py-3 border-r border-yellow-300 dark:border-yellow-700/50">
+                {reportData.fullName}
+              </td>
 
               <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
                 Program Modality
@@ -1727,7 +1515,9 @@ function MyReport({ reportData }) {
               <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
                 Class Year
               </td>
-              <td className="px-4 py-3 border-r border-yellow-300 dark:border-yellow-700/50">{reportData?.classyear?.name}</td>
+              <td className="px-4 py-3 border-r border-yellow-300 dark:border-yellow-700/50">
+                {reportData?.classyear?.name}
+              </td>
 
               <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
                 Semester
@@ -1739,7 +1529,9 @@ function MyReport({ reportData }) {
               <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
                 Academic Year
               </td>
-              <td className="px-4 py-3 border-r border-yellow-300 dark:border-yellow-700/50">{reportData.academicYear || "-"}</td>
+              <td className="px-4 py-3 border-r border-yellow-300 dark:border-yellow-700/50">
+                {reportData.academicYear || "-"}
+              </td>
 
               <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
                 Status
@@ -1751,7 +1543,9 @@ function MyReport({ reportData }) {
               <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
                 Semester GPA
               </td>
-              <td className="px-4 py-3 border-r border-yellow-300 dark:border-yellow-700/50">{reportData.semesterGPA}</td>
+              <td className="px-4 py-3 border-r border-yellow-300 dark:border-yellow-700/50">
+                {reportData.semesterGPA}
+              </td>
 
               <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
                 Cumulative GPA
@@ -1764,7 +1558,9 @@ function MyReport({ reportData }) {
 
       {/* COURSES TABLE */}
       <div className="p-6 bg-white dark:bg-gray-800">
-        <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Courses</h2>
+        <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
+          Courses
+        </h2>
 
         <div className="overflow-hidden rounded-lg border border-gray-300 dark:border-gray-700">
           <table className="w-full text-sm">
@@ -1787,7 +1583,9 @@ function MyReport({ reportData }) {
                   <td className="px-4 py-3 font-mono">{course.courseCode}</td>
                   <td className="px-4 py-3">{course.courseTitle}</td>
                   <td className="px-4 py-3 text-center">{course.totalCrHrs}</td>
-                  <td className="px-4 py-3 text-center font-bold text-blue-600 dark:text-blue-400">{course.letterGrade}</td>
+                  <td className="px-4 py-3 text-center font-bold text-blue-600 dark:text-blue-400">
+                    {course.letterGrade}
+                  </td>
                   <td className="px-4 py-3 text-center">{course.gradePoint}</td>
                 </tr>
               ))}
@@ -1822,7 +1620,9 @@ function ReportCardView({ reportData }: { reportData: ReportRecord }) {
               <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
                 ID Number
               </td>
-              <td className="px-4 py-3 border-r border-yellow-300 dark:border-yellow-700/50">{reportData.id}</td>
+              <td className="px-4 py-3 border-r border-yellow-300 dark:border-yellow-700/50">
+                {reportData.id}
+              </td>
               <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
                 Date of Birth
               </td>
@@ -1832,7 +1632,9 @@ function ReportCardView({ reportData }: { reportData: ReportRecord }) {
               <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
                 Name
               </td>
-              <td className="px-4 py-3 border-r border-yellow-300 dark:border-yellow-700/50">{reportData.name}</td>
+              <td className="px-4 py-3 border-r border-yellow-300 dark:border-yellow-700/50">
+                {reportData.name}
+              </td>
               <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
                 Program
               </td>
@@ -1842,7 +1644,9 @@ function ReportCardView({ reportData }: { reportData: ReportRecord }) {
               <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
                 Batch
               </td>
-              <td className="px-4 py-3 border-r border-yellow-300 dark:border-yellow-700/50">{reportData.batch}</td>
+              <td className="px-4 py-3 border-r border-yellow-300 dark:border-yellow-700/50">
+                {reportData.batch}
+              </td>
               <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
                 Department
               </td>
@@ -1852,7 +1656,9 @@ function ReportCardView({ reportData }: { reportData: ReportRecord }) {
               <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
                 Academic Year
               </td>
-              <td className="px-4 py-3 border-r border-yellow-300 dark:border-yellow-700/50">{reportData.academicYear}</td>
+              <td className="px-4 py-3 border-r border-yellow-300 dark:border-yellow-700/50">
+                {reportData.academicYear}
+              </td>
               <td className="px-4 py-3 font-bold bg-yellow-200 dark:bg-yellow-800/40 text-gray-900 dark:text-white border-r border-yellow-300 dark:border-yellow-700/50">
                 Semester
               </td>
@@ -1909,7 +1715,10 @@ function ReportCardView({ reportData }: { reportData: ReportRecord }) {
                 <td className="px-4 py-4 text-center">{totalGP.toFixed(2)}</td>
               </tr>
               <tr className="bg-blue-50 dark:bg-blue-900/40">
-                <td colSpan={4} className="px-4 py-4 text-right text-lg text-gray-900 dark:text-gray-100">
+                <td
+                  colSpan={4}
+                  className="px-4 py-4 text-right text-lg text-gray-900 dark:text-gray-100"
+                >
                   Semester GPA
                 </td>
                 <td
@@ -1961,7 +1770,9 @@ function DynamicTranscriptView({ report }: { report: RealGradeReport }) {
         <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
           STUDENT ACADEMIC TRANSCRIPT
         </h2>
-        <p className="font-bold text-gray-800 dark:text-gray-300">OFFICE OF REGISTRAR</p>
+        <p className="font-bold text-gray-800 dark:text-gray-300">
+          OFFICE OF REGISTRAR
+        </p>
         {report.dateIssuedGC && (
           <p className="text-sm mt-2 opacity-90 text-gray-700 dark:text-gray-400">
             Issued on: {report.dateIssuedGC}
@@ -1973,30 +1784,68 @@ function DynamicTranscriptView({ report }: { report: RealGradeReport }) {
         <table className="w-full border-collapse mb-6">
           <tbody>
             <tr className="bg-cyan-100 dark:bg-cyan-900/50 border-2 border-black dark:border-gray-600">
-              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">ID Number</td>
-              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">{report.idNumber}</td>
-              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">Full Name</td>
-              <td colSpan={5} className="px-3 py-2 text-gray-800 dark:text-gray-300">
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">
+                ID Number
+              </td>
+              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">
+                {report.idNumber}
+              </td>
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">
+                Full Name
+              </td>
+              <td
+                colSpan={5}
+                className="px-3 py-2 text-gray-800 dark:text-gray-300"
+              >
                 {report.fullName}
               </td>
             </tr>
             <tr className="bg-cyan-100 dark:bg-cyan-900/50 border-2 border-black dark:border-gray-600">
-              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">Sex</td>
-              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">{report.gender}</td>
-              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">Date of Birth</td>
-              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">{report.birthDateGC}</td>
-              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">Program</td>
-              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">{report.programModality.name}</td>
-              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">Faculty</td>
-              <td className="px-3 py-2 text-gray-800 dark:text-gray-300">Faculty of Health Sciences</td>
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">
+                Sex
+              </td>
+              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">
+                {report.gender}
+              </td>
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">
+                Date of Birth
+              </td>
+              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">
+                {report.birthDateGC}
+              </td>
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">
+                Program
+              </td>
+              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">
+                {report.programModality.name}
+              </td>
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">
+                Faculty
+              </td>
+              <td className="px-3 py-2 text-gray-800 dark:text-gray-300">
+                Faculty of Health Sciences
+              </td>
             </tr>
             <tr className="bg-cyan-100 dark:bg-cyan-900/50 border-2 border-black dark:border-gray-600">
-              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">Batch</td>
-              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">—</td>
-              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">Department</td>
-              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">{report.department.name}</td>
-              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">Date of Admission</td>
-              <td colSpan={3} className="px-3 py-2 text-gray-800 dark:text-gray-300">
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">
+                Batch
+              </td>
+              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">
+                —
+              </td>
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">
+                Department
+              </td>
+              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">
+                {report.department.name}
+              </td>
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">
+                Date of Admission
+              </td>
+              <td
+                colSpan={3}
+                className="px-3 py-2 text-gray-800 dark:text-gray-300"
+              >
                 {report.dateEnrolledGC}
               </td>
             </tr>
@@ -2026,11 +1875,21 @@ function DynamicTranscriptView({ report }: { report: RealGradeReport }) {
                 <table className="w-full border-collapse bg-white dark:bg-gray-800">
                   <thead className="bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-gray-100">
                     <tr>
-                      <th className="border border-black dark:border-gray-600 px-2 py-1">Code</th>
-                      <th className="border border-black dark:border-gray-600 px-2 py-1">Title</th>
-                      <th className="border border-black dark:border-gray-600 px-2 py-1">CH</th>
-                      <th className="border border-black dark:border-gray-600 px-2 py-1">Grade</th>
-                      <th className="border border-black dark:border-gray-600 px-2 py-1">Point</th>
+                      <th className="border border-black dark:border-gray-600 px-2 py-1">
+                        Code
+                      </th>
+                      <th className="border border-black dark:border-gray-600 px-2 py-1">
+                        Title
+                      </th>
+                      <th className="border border-black dark:border-gray-600 px-2 py-1">
+                        CH
+                      </th>
+                      <th className="border border-black dark:border-gray-600 px-2 py-1">
+                        Grade
+                      </th>
+                      <th className="border border-black dark:border-gray-600 px-2 py-1">
+                        Point
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="text-gray-800 dark:text-gray-300">
@@ -2070,11 +1929,15 @@ function DynamicTranscriptView({ report }: { report: RealGradeReport }) {
         <div className="grid grid-cols-2 gap-8 sm:gap-16 p-8 sm:p-12 border-t-4 border-black dark:border-gray-600 mt-8">
           <div className="text-center">
             <div className="h-28 sm:h-32 border-4 border-dashed border-gray-300 dark:border-gray-600 rounded-xl mb-4 bg-gray-50 dark:bg-gray-900/40"></div>
-            <p className="font-bold text-base sm:text-lg text-gray-900 dark:text-white">REGISTRAR OFFICE</p>
+            <p className="font-bold text-base sm:text-lg text-gray-900 dark:text-white">
+              REGISTRAR OFFICE
+            </p>
           </div>
           <div className="text-center">
             <div className="h-28 sm:h-32 border-4 border-dashed border-gray-300 dark:border-gray-600 rounded-xl mb-4 bg-gray-50 dark:bg-gray-900/40"></div>
-            <p className="font-bold text-base sm:text-lg text-gray-900 dark:text-white">DEAN OFFICE</p>
+            <p className="font-bold text-base sm:text-lg text-gray-900 dark:text-white">
+              DEAN OFFICE
+            </p>
           </div>
         </div>
       </div>
@@ -2091,37 +1954,77 @@ function TranscriptView({ transcript }: { transcript: TranscriptRecord }) {
         <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
           STUDENT ACADEMIC TRANSCRIPT
         </h2>
-        <p className="font-bold text-gray-800 dark:text-gray-300">OFFICE OF REGISTRAR</p>
+        <p className="font-bold text-gray-800 dark:text-gray-300">
+          OFFICE OF REGISTRAR
+        </p>
       </div>
 
       <div className="p-4 bg-white dark:bg-gray-800">
         <table className="w-full border-collapse mb-6">
           <tbody>
             <tr className="bg-cyan-100 dark:bg-cyan-900/50 border-2 border-black dark:border-gray-600">
-              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">ID Number</td>
-              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">{transcript.student.id}</td>
-              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">Full Name</td>
-              <td colSpan={5} className="px-3 py-2 text-gray-800 dark:text-gray-300">
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">
+                ID Number
+              </td>
+              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">
+                {transcript.student.id}
+              </td>
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">
+                Full Name
+              </td>
+              <td
+                colSpan={5}
+                className="px-3 py-2 text-gray-800 dark:text-gray-300"
+              >
                 {transcript.student.name}
               </td>
             </tr>
             <tr className="bg-cyan-100 dark:bg-cyan-900/50 border-2 border-black dark:border-gray-600">
-              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">Sex</td>
-              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">{transcript.student.gender}</td>
-              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">Date of Birth</td>
-              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">{transcript.student.dob}</td>
-              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">Program</td>
-              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">{transcript.student.program}</td>
-              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">Faculty</td>
-              <td className="px-3 py-2 text-gray-800 dark:text-gray-300">{transcript.student.faculty}</td>
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">
+                Sex
+              </td>
+              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">
+                {transcript.student.gender}
+              </td>
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">
+                Date of Birth
+              </td>
+              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">
+                {transcript.student.dob}
+              </td>
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">
+                Program
+              </td>
+              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">
+                {transcript.student.program}
+              </td>
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">
+                Faculty
+              </td>
+              <td className="px-3 py-2 text-gray-800 dark:text-gray-300">
+                {transcript.student.faculty}
+              </td>
             </tr>
             <tr className="bg-cyan-100 dark:bg-cyan-900/50 border-2 border-black dark:border-gray-600">
-              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">Batch</td>
-              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">{transcript.student.batch}</td>
-              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">Department</td>
-              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">{transcript.student.department}</td>
-              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">Date of Admission</td>
-              <td colSpan={3} className="px-3 py-2 text-gray-800 dark:text-gray-300">
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">
+                Batch
+              </td>
+              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">
+                {transcript.student.batch}
+              </td>
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">
+                Department
+              </td>
+              <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">
+                {transcript.student.department}
+              </td>
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">
+                Date of Admission
+              </td>
+              <td
+                colSpan={3}
+                className="px-3 py-2 text-gray-800 dark:text-gray-300"
+              >
                 {transcript.student.admissionDate}
               </td>
             </tr>
@@ -2130,18 +2033,31 @@ function TranscriptView({ transcript }: { transcript: TranscriptRecord }) {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {transcript.semesters.map((sem, i) => (
-            <div key={i} className="border-4 border-black dark:border-gray-600 overflow-hidden">
+            <div
+              key={i}
+              className="border-4 border-black dark:border-gray-600 overflow-hidden"
+            >
               <div className="bg-orange-500 dark:bg-orange-600 text-white font-bold px-3 py-2 text-center text-xs sm:text-sm">
                 Academic Year: {sem.year} G.C • {sem.semester} • Class Year I
               </div>
               <table className="w-full border-collapse bg-white dark:bg-gray-800">
                 <thead className="bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-gray-100">
                   <tr>
-                    <th className="border border-black dark:border-gray-600 px-2 py-1">Course Code</th>
-                    <th className="border border-black dark:border-gray-600 px-2 py-1">Course Title</th>
-                    <th className="border border-black dark:border-gray-600 px-2 py-1">CH</th>
-                    <th className="border border-black dark:border-gray-600 px-2 py-1">Grade</th>
-                    <th className="border border-black dark:border-gray-600 px-2 py-1">Point</th>
+                    <th className="border border-black dark:border-gray-600 px-2 py-1">
+                      Course Code
+                    </th>
+                    <th className="border border-black dark:border-gray-600 px-2 py-1">
+                      Course Title
+                    </th>
+                    <th className="border border-black dark:border-gray-600 px-2 py-1">
+                      CH
+                    </th>
+                    <th className="border border-black dark:border-gray-600 px-2 py-1">
+                      Grade
+                    </th>
+                    <th className="border border-black dark:border-gray-600 px-2 py-1">
+                      Point
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="text-gray-800 dark:text-gray-300">
@@ -2180,11 +2096,15 @@ function TranscriptView({ transcript }: { transcript: TranscriptRecord }) {
         <div className="grid grid-cols-2 gap-8 sm:gap-16 p-8 sm:p-12 border-t-4 border-black dark:border-gray-600 mt-8">
           <div className="text-center">
             <div className="h-28 sm:h-32 border-4 border-dashed border-gray-300 dark:border-gray-600 rounded-xl mb-4 bg-gray-50 dark:bg-gray-900/40"></div>
-            <p className="font-bold text-base sm:text-lg text-gray-900 dark:text-white">REGISTRAR OFFICE</p>
+            <p className="font-bold text-base sm:text-lg text-gray-900 dark:text-white">
+              REGISTRAR OFFICE
+            </p>
           </div>
           <div className="text-center">
             <div className="h-28 sm:h-32 border-4 border-dashed border-gray-300 dark:border-gray-600 rounded-xl mb-4 bg-gray-50 dark:bg-gray-900/40"></div>
-            <p className="font-bold text-base sm:text-lg text-gray-900 dark:text-white">DEAN OFFICE</p>
+            <p className="font-bold text-base sm:text-lg text-gray-900 dark:text-white">
+              DEAN OFFICE
+            </p>
           </div>
         </div>
       </div>
