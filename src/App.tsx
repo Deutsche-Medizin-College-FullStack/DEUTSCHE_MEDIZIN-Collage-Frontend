@@ -21,13 +21,17 @@ const StudentLayout = React.lazy(() => import("./layouts/StudentLayout"));
 const StudentDashboard = React.lazy(() => import("./pages/student/Dashboard"));
 const StudentProfile = React.lazy(() => import("./pages/student/Profile"));
 const StudentGrades = React.lazy(() => import("./pages/student/Grades"));
-const StudentNotifications = React.lazy(() => import("./pages/student/Notifications"));
+const StudentNotifications = React.lazy(
+  () => import("./pages/student/Notifications")
+);
 
 // Teacher Pages
 const TeacherLayout = React.lazy(() => import("./layouts/TeacherLayout"));
 const TeacherDashboard = React.lazy(() => import("./pages/teacher/Dashboard"));
 const TeacherCourses = React.lazy(() => import("./pages/teacher/Courses"));
-const TeacherNotifications = React.lazy(() => import("./pages/teacher/Notifications"));
+const TeacherNotifications = React.lazy(
+  () => import("./pages/teacher/Notifications")
+);
 const TeacherStudents = React.lazy(
   () => import("./pages/teacher/TeacherStudents")
 );
@@ -42,8 +46,12 @@ const TeacherProfile = React.lazy(
 const HeadLayout = React.lazy(() => import("./layouts/HeadLayout"));
 const HeadDashboard = React.lazy(() => import("./pages/head/Dashboard"));
 const HeadStudents = React.lazy(() => import("./pages/head/Students"));
-const HeadStudentDetail = React.lazy(  () => import("./pages/head/StudentDetail"));
-const HeadNotifications = React.lazy(() => import("./pages/head/Notifications"));
+const HeadStudentDetail = React.lazy(
+  () => import("./pages/head/StudentDetail")
+);
+const HeadNotifications = React.lazy(
+  () => import("./pages/head/Notifications")
+);
 const HeadTeachers = React.lazy(() => import("./pages/head/Teachers"));
 const HeadCourses = React.lazy(() => import("./pages/head/Courses"));
 const DepartmentHeadProfile = React.lazy(
@@ -62,10 +70,15 @@ const TeacherProfileDetail = React.lazy(
 const StudentCourseScoreTab = React.lazy(
   () => import("./pages/registrar/Courses")
 );
-const RegistrarNotifications = React.lazy(() => import("./pages/registrar/Notifications"));
+const RegistrarNotifications = React.lazy(
+  () => import("./pages/registrar/Notifications")
+);
 const RegistrarLayout = React.lazy(() => import("./layouts/RegistrarLayout"));
 const SchoolBackgroundsEditor = React.lazy(
   () => import("./pages/registrar/settings/SchoolBackgroundsEditor")
+);
+const SingleBatchClassYearSemester = React.lazy(
+  () => import("./pages/registrar/settings/SingleBatchClassYearSemester")
 );
 const RegistrarDashboard = React.lazy(
   () => import("./pages/registrar/Dashboard")
@@ -87,6 +100,9 @@ const RegistrarCourses = React.lazy(() => import("./pages/registrar/Courses"));
 //trouble
 const RegistrarAssessments = React.lazy(
   () => import("./pages/registrar/Assessments")
+);
+const BatchClassYearSemesterEditor = React.lazy(
+  () => import("./pages/registrar/settings/BatchClassYearSemesterEditor")
 );
 const SingleBatchPage = React.lazy(
   () => import("./pages/registrar/settings/SingleBatchPage ")
@@ -170,8 +186,12 @@ const CreateViceDean = React.lazy(() => import("./pages/dean/CreateViceDean"));
 
 // Vice-Dean Pages
 const ViceDeanLayout = React.lazy(() => import("./layouts/ViceDeanLayout"));
-const ViceDeanDashboard = React.lazy(  () => import("./pages/vice-dean/Dashboard"));
-const ViceDeanNotifications = React.lazy(() => import("./pages/vice-dean/Notifications"));
+const ViceDeanDashboard = React.lazy(
+  () => import("./pages/vice-dean/Dashboard")
+);
+const ViceDeanNotifications = React.lazy(
+  () => import("./pages/vice-dean/Notifications")
+);
 const ViceDeanStudents = React.lazy(() => import("./pages/vice-dean/Students"));
 const ViceDean_Profile = React.lazy(
   () => import("./pages/vice-dean/ViceDean_Profile")
@@ -275,7 +295,10 @@ function App() {
                 <Route path="dashboard" element={<StudentDashboard />} />
                 <Route path="profile" element={<StudentProfile />} />
                 <Route path="grades" element={<StudentGrades />} />
-                <Route path="notifications" element={<StudentNotifications />} />
+                <Route
+                  path="notifications"
+                  element={<StudentNotifications />}
+                />
               </Route>
             </Route>
 
@@ -286,7 +309,10 @@ function App() {
                 <Route index element={<Navigate to="dashboard" replace />} />
                 <Route path="dashboard" element={<TeacherDashboard />} />
                 <Route path="courses" element={<TeacherCourses />} />
-                <Route path="notifications" element={<TeacherNotifications />} />
+                <Route
+                  path="notifications"
+                  element={<TeacherNotifications />}
+                />
                 <Route
                   path="students/:assignmentId"
                   element={<TeacherStudents />}
@@ -326,7 +352,10 @@ function App() {
               <Route path="/registrar" element={<RegistrarLayout />}>
                 <Route index element={<Navigate to="dashboard" replace />} />
                 <Route path="departments" element={<RegistrarDepartments />} />
-                <Route path="notifications" element={<RegistrarNotifications />} />
+                <Route
+                  path="notifications"
+                  element={<RegistrarNotifications />}
+                />
                 <Route path="departments/:id" element={<DepartmentDetail />} />
                 <Route path="applications/:id" element={<ApplicantDetail />} />
                 <Route path="students/:id" element={<StudentDetail />} />
@@ -349,6 +378,14 @@ function App() {
                 <Route
                   path="settings/batches/:id"
                   element={<SingleBatchPage />}
+                />
+                <Route
+                  path="settings/bcys"
+                  element={<BatchClassYearSemesterEditor />}
+                />
+                <Route
+                  path="settings/bcsy/:id"
+                  element={<SingleBatchClassYearSemester />}
                 />
                 <Route path="settings/batches" element={<BatchesEditor />} />
                 <Route
@@ -414,7 +451,10 @@ function App() {
                 <Route path="assessments" element={<RegistrarAssessments />} />
                 <Route path="scores" element={<StudentCourseScoreTable />} />
                 <Route path="tables" element={<CustomStudentTable />} />
-                <Route path="notifications" element={<RegistrarNotifications />} />
+                <Route
+                  path="notifications"
+                  element={<RegistrarNotifications />}
+                />
               </Route>
             </Route>
 
@@ -454,7 +494,10 @@ function App() {
                 />
                 <Route path="profile" element={<Dean_Profile />} />
                 <Route path="students" element={<DeanStudents />} />
-                <Route path="department-heads" element={<DepartmentHeadsList />} />
+                <Route
+                  path="department-heads"
+                  element={<DepartmentHeadsList />}
+                />
                 <Route
                   path="department-heads/:id"
                   element={<DepartmentHeadDetail />}
@@ -470,7 +513,10 @@ function App() {
               <Route path="/vice-dean" element={<ViceDeanLayout />}>
                 <Route index element={<Navigate to="dashboard" replace />} />
                 <Route path="dashboard" element={<ViceDeanDashboard />} />
-                <Route path="notifications" element={<ViceDeanNotifications />} />
+                <Route
+                  path="notifications"
+                  element={<ViceDeanNotifications />}
+                />
                 <Route
                   path="create-department-head"
                   element={<ViceCreateDepartmentHead />}

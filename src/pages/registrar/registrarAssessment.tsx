@@ -43,7 +43,7 @@ const RegistrarAssessment = () => {
       setLoading(true);
       setError(null);
       const response = await apiClient.get(
-        endPoints.getRegistrarHeadApprovedScores
+        endPoints.getRegistrarDeanApprovedScores
       );
       setCourseAssessments(response.data || []);
     } catch (err: any) {

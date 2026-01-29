@@ -9,7 +9,7 @@ const initialData = [];
 export default function StudentCourseScoreTable() {
   const [data, setData] = useState(initialData);
   const [allData, setAllData] = useState(initialData);
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
   const [editScoreModalVisible, setEditScoreModalVisible] = useState(false);
@@ -42,7 +42,7 @@ export default function StudentCourseScoreTable() {
     // batches: [],
     // semesters: [],
     // academicYears: [],
-    // courseSources: [],
+    courseSources: [],
     //courses: [], // ← new or rename if you already have course list
     batchClassYearSemesters: [],
     // classYears: [],
@@ -71,45 +71,15 @@ export default function StudentCourseScoreTable() {
     filters.isReleased,
   ]);
 
-  // useEffect(() => {
-  //   if (filters.batchClassYearSemester && allData.length > 0) {
-  //     const filtered = allData.filter(
-  //       (item) =>
-  //         item.batchClassYearSemester.id === filters.batchClassYearSemester
-  //     );
-  //     setData(filtered);
-  //   } else if (!filters.batchClassYearSemester && allData.length > 0) {
-  //     setData(allData);
-  //   }
-  // }, [filters.batchClassYearSemester, allData]);
-
-  // const fetchFilterOptions = async () => {
-  //   try {
-  //     const response = await apiClient.get(endPoints.lookupsDropdown);
-  //     if (response.data) {
-  //       setFilterOptions({
-  //         departments: response.data.departments || [],
-  //         studentStatuses: response.data.studentStatuses || [],
-  //         batches: response.data.batches || [],
-  //         semesters: response.data.semesters || [],
-  //         academicYears: response.data.academicYears || [],
-  //         courseSources: response.data.courseSources || [],
-  //         batchClassYearSemesters: response.data.batchClassYearSemesters || [],
-  //         classYears: response.data.classYears || [],
-  //       });
-  //     }
-  //   } catch (error) {
-  //     message.error("Failed to load filter options");
-  //   }
-  // };
   const fetchFilterOptions = async () => {
     try {
       const response = await apiClient.get(endPoints.lookupsDropdown);
+      console.log(response);
       if (response.data) {
         setFilterOptions({
           // courses: response.data.classYear || [],
           batchClassYearSemesters: response.data.batchClassYearSemesters || [],
-          //  courseSources: response.data.courseSources || [], // keep for batch update
+          courseSources: response.data.courseSources || [], // keep for batch update
           // remove departments, studentStatuses, etc.
         });
       }
@@ -118,54 +88,6 @@ export default function StudentCourseScoreTable() {
     }
   };
 
-  // const fetchStudentCourseScores = async () => {
-  //   setLoading(true);
-  //   try {
-  //     const params = {
-  //       page: pagination.current - 1,
-  //       size: pagination.pageSize,
-  //       ...(filters.search && { search: filters.search }),
-  //       ...(filters.department && { departmentId: filters.department }),
-  //       ...(filters.status && { statusId: filters.status }),
-  //     };
-
-  //     const response = await apiClient.get(endPoints.getAllScores, { params });
-
-  //     if (response.data) {
-  //       const formattedData = response.data.content.map((item) => ({
-  //         key: item.id?.toString(),
-  //         id: item.id,
-  //         studentId: {
-  //           id: item.studentId?.toString(),
-  //           student: { name: item.studentName },
-  //         },
-  //         course: item.course || { id: null, displayName: "N/A" },
-  //         batchClassYearSemester: item.bcys || {
-  //           id: item.bcys?.id?.toString(),
-  //           displayName: item.bcys?.displayName || "N/A",
-  //         },
-  //         courseSource: item.courseSource || { id: null, displayName: "N/A" },
-  //         score: item.score,
-  //         isReleased: item.isReleased,
-  //         rawData: item,
-  //       }));
-
-  //       setData(formattedData);
-  //       setAllData(formattedData);
-
-  //       setPagination((prev) => ({
-  //         ...prev,
-  //         total: response.data.totalElements,
-  //         current: response.data.page + 1,
-  //         pageSize: response.data.size,
-  //       }));
-  //     }
-  //   } catch (error) {
-  //     message.error("Failed to load student course scores");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
   const fetchStudnet = async () => {
     try {
       setStudentListLoading(true);
@@ -183,7 +105,6 @@ export default function StudentCourseScoreTable() {
       setCoursesLoading(true);
       const data = await apiClient.get("/courses/list");
       setCourseList(data.data);
-      console.log(data);
     } catch (err) {
       console.log(err);
     } finally {
@@ -213,15 +134,15 @@ export default function StudentCourseScoreTable() {
       };
 
       const response = await apiClient.get(endPoints.getAllScores, { params });
-      console.log(params, "no no no");
+      console.log(response, "no no no");
 
       if (response.data?.content) {
         const formattedData = response.data.content.map((item) => ({
-          key: item.id?.toString(),
+          key: item.id.toString(), // in the map inside fetchStudentCourseScores
           id: item.id,
           studentId: {
             id: item.studentId?.toString(),
-            student: { name: item.studentName },  // ← most likely NOT returned
+            student: { name: item.studentName }, // ← most likely NOT returned
           },
           course: item.course || { id: null, displayName: "N/A" },
           batchClassYearSemester: item.bcys || {
@@ -236,12 +157,33 @@ export default function StudentCourseScoreTable() {
         setData(formattedData);
         // You can remove setAllData() — no longer needed (backend filters)
 
-        setPagination((prev) => ({
-          ...prev,
-          total: response.data.totalElements,
-          current: response.data.page + 1,
-          pageSize: response.data.size || prev.pageSize,
-        }));
+        // setPagination((prev) => ({
+        //   ...prev,
+        //   total: response.data.totalElements,
+        //   current: response.data.page + 1,
+        //   pageSize: response.data.size || prev.pageSize,
+        // }));
+        setPagination((prev) => {
+          const newTotal = response.data.totalElements ?? prev.total;
+          const newCurrent =
+            response.data.page != null ? response.data.page + 1 : prev.current;
+          const newSize = response.data.size ?? prev.pageSize;
+
+          if (
+            newTotal === prev.total &&
+            newCurrent === prev.current &&
+            newSize === prev.pageSize
+          ) {
+            return prev; // ← prevents re-render loop
+          }
+
+          return {
+            ...prev,
+            total: newTotal,
+            current: newCurrent,
+            pageSize: newSize,
+          };
+        });
       }
     } catch (error) {
       message.error("Failed to load student course scores");
@@ -279,26 +221,52 @@ export default function StudentCourseScoreTable() {
   };
 
   const applyBatchUpdate = async () => {
+    if (selectedRowKeys.length === 0) return;
+
     const updates = selectedRowKeys
       .map((key) => {
         const row = data.find((item) => item.key === key);
         if (!row) return null;
 
-        const updateData = {};
-        if (batchValues.score !== "")
-          updateData.score = parseFloat(batchValues.score);
-        if (batchValues.isReleased !== null)
-          updateData.isReleased = batchValues.isReleased;
-        if (batchValues.courseSource)
-          updateData.courseSourceId = batchValues.courseSource;
+        const update = { id: row.id };
 
-        return { id: row.id, ...updateData };
+        let hasChange = false;
+
+        if (batchValues.score !== "" && !isNaN(Number(batchValues.score))) {
+          update.score = parseFloat(batchValues.score);
+          hasChange = true;
+        }
+
+        if (batchValues.isReleased !== null) {
+          update.isReleased = batchValues.isReleased;
+          hasChange = true;
+        }
+
+        if (batchValues.courseSource) {
+          // empty string or undefined → skip
+          update.courseSourceId = batchValues.courseSource;
+          hasChange = true;
+        }
+
+        return hasChange ? update : null;
       })
       .filter(Boolean);
 
-    await applyUpdateViaBulk(updates);
-    setSelectedRowKeys([]);
-    setBatchValues({ score: "", courseSource: "", isReleased: null });
+    if (updates.length === 0) {
+      message.info("No fields were changed to apply.");
+      return;
+    }
+
+    try {
+      await apiClient.put(endPoints.bulkUpdateScores, { updates });
+      message.success(`Updated ${updates.length} record(s) successfully`);
+      setSelectedRowKeys([]);
+      setBatchValues({ score: "", courseSource: "", isReleased: null });
+      fetchStudentCourseScores();
+    } catch (err) {
+      console.error(err);
+      message.error(err.response?.data?.message || "Bulk update failed");
+    }
   };
 
   const handleSearch = (value) => {
@@ -320,23 +288,47 @@ export default function StudentCourseScoreTable() {
 
   const handleEditScoreSubmit = async () => {
     if (!editingRecord) return;
+
     const scoreValue = parseFloat(editScoreValue);
     if (isNaN(scoreValue) || scoreValue < 0 || scoreValue > 100) {
-      message.error("Please enter a valid score between 0 and 100");
+      message.error("Score must be between 0 and 100");
       return;
     }
 
-    const updates = [{ id: editingRecord.id, score: scoreValue }];
-    await applyUpdateViaBulk(updates);
-    setEditScoreModalVisible(false);
-    setEditingRecord(null);
+    const update = {
+      id: editingRecord.id,
+      score: scoreValue,
+    };
+
+    try {
+      await apiClient.put(endPoints.bulkUpdateScores, { updates: [update] });
+      message.success("Score updated");
+      setEditScoreModalVisible(false);
+      setEditingRecord(null);
+      fetchStudentCourseScores();
+    } catch (err) {
+      message.error("Failed to update score");
+      console.error(err);
+    }
   };
 
   const handleToggleRelease = async (record) => {
-    const updates = [{ id: record.id, isReleased: !record.isReleased }];
-    await applyUpdateViaBulk(updates);
-  };
+    const newReleased = !record.isReleased;
 
+    const update = {
+      id: record.id,
+      isReleased: newReleased,
+    };
+
+    try {
+      await apiClient.put(endPoints.bulkUpdateScores, { updates: [update] });
+      message.success(`Score ${newReleased ? "released" : "unreleased"}`);
+      fetchStudentCourseScores();
+    } catch (err) {
+      message.error("Failed to update release status");
+      console.error(err);
+    }
+  };
   const clearFilters = () => {
     // setFilters({
     //   department: "",
@@ -392,91 +384,7 @@ export default function StudentCourseScoreTable() {
       </div>
 
       {/* Filters */}
-      {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Department
-          </label>
-          <Select
-            value={filters.department || undefined}
-            onChange={(v) => handleFilterChange("department", v)}
-            placeholder="All Departments"
-            allowClear
-            showSearch
-            className="w-full"
-            dropdownClassName="dark:bg-gray-800"
-          >
-            {filterOptions.departments.map((d) => (
-              <Select.Option key={d.id} value={d.id}>
-                {d.name}
-              </Select.Option>
-            ))}
-          </Select>
-        </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Status
-          </label>
-          <Select
-            value={filters.status || undefined}
-            onChange={(v) => handleFilterChange("status", v)}
-            placeholder="All Status"
-            allowClear
-            className="w-full"
-            dropdownClassName="dark:bg-gray-800"
-          >
-            {filterOptions.studentStatuses.map((s) => (
-              <Select.Option key={s.id} value={s.id}>
-                {s.name}
-              </Select.Option>
-            ))}
-          </Select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Batch/Year/Semester
-          </label>
-          <Select
-            value={filters.batchClassYearSemester || undefined}
-            onChange={(v) => handleFilterChange("batchClassYearSemester", v)}
-            placeholder="All"
-            allowClear
-            className="w-full"
-            dropdownClassName="dark:bg-gray-800"
-          >
-            {filterOptions.batchClassYearSemesters.map((b) => (
-              <Select.Option key={b.id} value={b.id}>
-                {b.name}
-              </Select.Option>
-            ))}
-          </Select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Search
-          </label>
-          <div className="relative">
-            <input
-              type="text"
-              value={searchText}
-              onChange={(e) => handleSearch(e.target.value)}
-              placeholder="Student ID or Name"
-              className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-200"
-            />
-            {searchText && (
-              <button
-                onClick={() => handleSearch("")}
-                className="absolute right-3 top-3 text-gray-500"
-              >
-                ✕
-              </button>
-            )}
-          </div>
-        </div>
-      </div> */}
       {/* Filters */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
         {/* Course */}
@@ -644,7 +552,7 @@ export default function StudentCourseScoreTable() {
                   ? batchValues.isReleased
                     ? "yes"
                     : "no"
-                  : undefined
+                  : "no_change"
               }
               onChange={(v) =>
                 setBatchValues({
@@ -652,10 +560,11 @@ export default function StudentCourseScoreTable() {
                   isReleased: v === "yes" ? true : v === "no" ? false : null,
                 })
               }
-              placeholder="Release?"
+              placeholder="Change release status?"
               allowClear
               className="w-40"
             >
+              <Select.Option value="no_change">No change</Select.Option>
               <Select.Option value="yes">Release</Select.Option>
               <Select.Option value="no">Don't Release</Select.Option>
             </Select>
@@ -684,10 +593,14 @@ export default function StudentCourseScoreTable() {
                 <input
                   type="checkbox"
                   checked={
-                    selectedRowKeys.length === data.length && data.length > 0
+                    data.length > 0 && selectedRowKeys.length === data.length
+                  }
+                  indeterminate={
+                    selectedRowKeys.length > 0 &&
+                    selectedRowKeys.length < data.length
                   }
                   onChange={handleSelectAll}
-                  className="rounded"
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
                 />
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
@@ -737,9 +650,7 @@ export default function StudentCourseScoreTable() {
                 <tr
                   key={item.key}
                   className={
-                    selectedRowKeys.includes(item.key)
-                      ? "bg-blue-50 dark:bg-blue-900/30"
-                      : ""
+                    selectedRowKeys.includes(item.key) ? "bg-blue-50 ..." : ""
                   }
                 >
                   <td className="px-6 py-4">
@@ -747,6 +658,7 @@ export default function StudentCourseScoreTable() {
                       type="checkbox"
                       checked={selectedRowKeys.includes(item.key)}
                       onChange={() => handleRowSelection(item.key)}
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
                     />
                   </td>
                   <td className="px-6 py-4 text-sm">{item.studentId.id}</td>

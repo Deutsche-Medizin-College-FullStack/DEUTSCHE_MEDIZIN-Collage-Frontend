@@ -152,7 +152,7 @@ export default function RegistrarLayout() {
     try {
       setLoadingPendingCount(true);
       const response = await apiClient.get(
-        endPoints.getRegistrarHeadApprovedScores
+        endPoints.getRegistrarDeanApprovedScores
       );
 
       let pendingCount = 0;
@@ -612,6 +612,19 @@ export default function RegistrarLayout() {
                     }
                   >
                     Batches
+                  </Link>
+                  <Link
+                    to="/registrar/settings/bcys"
+                    className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                      location.pathname.includes("/registrar/settings/bcys")
+                        ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
+                        : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
+                    }`}
+                    onClick={() =>
+                      window.innerWidth <= 1024 && setSidebarOpen(false)
+                    }
+                  >
+                    Batch Class Year
                   </Link>
                   <Link
                     to="/registrar/settings/enrollment"

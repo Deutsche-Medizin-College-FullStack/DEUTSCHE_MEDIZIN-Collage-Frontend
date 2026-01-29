@@ -65,9 +65,12 @@ interface DepartmentInfo {
   years?: {
     id: string;
     name: string;
+
+    totalCredits: number;
     semesters: {
       id: string;
       name: string;
+      totalCredits: number;
       courses: any[];
     }[];
   }[];
@@ -80,10 +83,10 @@ export default function DepartmentDetail() {
   const navigate = useNavigate();
 
   // Get data passed from navigation or fetch it
-  const { 
-    programLevelCode = "", 
-    modalityCode = "", 
-    departmentData: passedDepartmentData 
+  const {
+    programLevelCode = "",
+    modalityCode = "",
+    departmentData: passedDepartmentData,
   } = (location.state as any) || {};
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -91,7 +94,10 @@ export default function DepartmentDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [expandedYears, setExpandedYears] = useState<Set<string>>(new Set());
-  const [expandedSemesters, setExpandedSemesters] = useState<Set<string>>(new Set());
+  const [expandedSemesters, setExpandedSemesters] = useState<Set<string>>(
+    new Set()
+  );
+  const [grandTotalCredits, setGrandTotalCredits] = useState<number>(0);
   const [editingCourse, setEditingCourse] = useState<any>(null);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
   const [editValues, setEditValues] = useState({
@@ -119,8 +125,12 @@ export default function DepartmentDetail() {
   });
 
   const [departmentId, setDepartmentId] = useState<number | null>(null);
-  const [departmentCoursesForPrerequisites, setDepartmentCoursesForPrerequisites] = useState<Course[]>([]);
-  const [departmentDetails, setDepartmentDetails] = useState<DepartmentData | null>(null);
+  const [
+    departmentCoursesForPrerequisites,
+    setDepartmentCoursesForPrerequisites,
+  ] = useState<Course[]>([]);
+  const [departmentDetails, setDepartmentDetails] =
+    useState<DepartmentData | null>(null);
 
   // If we have passed department data, use it immediately
   useEffect(() => {
@@ -129,12 +139,21 @@ export default function DepartmentDetail() {
       setDepartmentId(passedDepartmentData.dptID);
     }
   }, [passedDepartmentData]);
+  useEffect(() => {
+    if (department?.years) {
+      const total = department.years.reduce(
+        (sum, y) => sum + (y.totalCredits || 0),
+        0
+      );
+      setGrandTotalCredits(total);
+    }
+  }, [department?.years]);
 
   // If no department data was passed, fetch it by ID
   useEffect(() => {
     const fetchDepartmentDetails = async () => {
       if (!id) return;
-      
+
       try {
         const deptId = parseInt(id);
         const response = await apiService.get(`/api/departments/${deptId}`);
@@ -161,14 +180,16 @@ export default function DepartmentDetail() {
     // Use passed values as fallback
     let levelCode = programLevelCode;
     let modalityCodeValue = modalityCode;
-    
+
     if (departmentDetails) {
-      levelCode = departmentDetails.programModality?.programLevel?.code || 
-                  departmentDetails.programLevel?.code || 
-                  programLevelCode;
-      modalityCodeValue = departmentDetails.programModality?.modalityCode || modalityCode;
+      levelCode =
+        departmentDetails.programModality?.programLevel?.code ||
+        departmentDetails.programLevel?.code ||
+        programLevelCode;
+      modalityCodeValue =
+        departmentDetails.programModality?.modalityCode || modalityCode;
     }
-    
+
     return {
       programLevelCode: levelCode,
       modalityCode: modalityCodeValue,
@@ -181,7 +202,7 @@ export default function DepartmentDetail() {
     if (departmentDetails?.programModality?.programLevel?.name) {
       return departmentDetails.programModality.programLevel.name;
     }
-    
+
     const map: Record<string, string> = {
       BCH: "Bachelor's Degree",
       DEG: "Bachelor's Degree",
@@ -197,7 +218,7 @@ export default function DepartmentDetail() {
     if (departmentDetails?.programModality?.modality) {
       return departmentDetails.programModality.modality;
     }
-    
+
     if (!code) return "Unknown";
     if (code.includes("REG") || code === "RG") return "Regular";
     if (code.includes("EXT")) return "Extension";
@@ -207,9 +228,13 @@ export default function DepartmentDetail() {
     return code.split("-")[0] || "Unknown";
   };
 
-  const { programLevelCode: finalProgramLevelCode, modalityCode: finalModalityCode, 
-          programLevelName, modalityName } = getProgramLevelAndModality();
-  
+  const {
+    programLevelCode: finalProgramLevelCode,
+    modalityCode: finalModalityCode,
+    programLevelName,
+    modalityName,
+  } = getProgramLevelAndModality();
+
   const fullProgramDisplay = `${modalityName} – ${programLevelName}`;
 
   // Fetch courses for prerequisites
@@ -217,7 +242,9 @@ export default function DepartmentDetail() {
     const fetchCoursesForPrerequisites = async () => {
       if (!departmentId) return;
       try {
-        const courses = await apiService.get(`/courses/department/${departmentId}`);
+        const courses = await apiService.get(
+          `/courses/department/${departmentId}`
+        );
         setDepartmentCoursesForPrerequisites(courses);
       } catch (error) {
         console.error("Error fetching courses for prerequisites:", error);
@@ -235,7 +262,9 @@ export default function DepartmentDetail() {
 
     try {
       setIsLoading(true);
-      const departmentCourses = await apiService.get(`/courses/department/${departmentId}`);
+      const departmentCourses = await apiService.get(
+        `/courses/department/${departmentId}`
+      );
 
       if (!departmentCourses || departmentCourses.length === 0) {
         setDepartment({
@@ -253,52 +282,99 @@ export default function DepartmentDetail() {
         return;
       }
 
-      const groupedCourses = departmentCourses.reduce((acc: any, course: Course) => {
-        const year = course.classYear?.name || "Unknown";
-        const semester = course.semester?.name || "Unknown Semester";
+      const groupedCourses = departmentCourses.reduce(
+        (acc: any, course: Course) => {
+          const year = course.classYear?.name || "Unknown";
+          const semester = course.semester?.name || "Unknown Semester";
+          const credit = course.theoryHrs + course.labHrs;
 
-        if (!acc[year]) acc[year] = {};
-        if (!acc[year][semester]) acc[year][semester] = [];
+          if (!acc[year]) {
+            acc[year] = {
+              semesters: {},
+              totalCredits: 0,
+            };
+          }
 
-        acc[year][semester].push({
-          id: course.id.toString(),
-          name: course.ctitle,
-          code: course.ccode,
-          creditHours: course.theoryHrs + course.labHrs,
-          prerequisites: course.prerequisites?.map((p: any) => p.ccode || p.prerequisiteCode) || [],
-          teacher: "Not Assigned", // API doesn't have teacher field
-          theoryHrs: course.theoryHrs,
-          labHrs: course.labHrs,
-          category: course.courseCategory?.name || "Unknown",
-          originalCourse: course,
-        });
+          if (!acc[year].semesters[semester]) {
+            acc[year].semesters[semester] = {
+              courses: [],
+              totalCredits: 0,
+            };
+          }
 
-        return acc;
-      }, {});
+          acc[year].totalCredits += credit;
+          acc[year].semesters[semester].courses.push({
+            id: course.id.toString(),
+            name: course.ctitle,
+            code: course.ccode,
+            creditHours: credit,
+            prerequisites:
+              course.prerequisites?.map(
+                (p: any) => p.ccode || p.prerequisiteCode
+              ) || [],
+            teacher: "Not Assigned",
+            theoryHrs: course.theoryHrs,
+            labHrs: course.labHrs,
+            category: course.courseCategory?.name || "Unknown",
+            originalCourse: course,
+          });
+
+          acc[year].semesters[semester].totalCredits += credit;
+
+          return acc;
+        },
+        {}
+      );
+
+      // Now transform into the years array with totals
+      const yearsArray = Object.entries(groupedCourses).map(
+        ([year, data]: [string, any]) => ({
+          id: `year${year}`,
+          name: `${year} Year`,
+          totalCredits: data.totalCredits,
+          semesters: Object.entries(data.semesters).map(
+            ([semName, semData]: [string, any], index) => ({
+              id: `sem${index + 1}`,
+              name: semName,
+              totalCredits: semData.totalCredits,
+              courses: semData.courses,
+            })
+          ),
+        })
+      );
 
       const departmentInfo: DepartmentInfo = {
         id: id || "",
-        name: departmentDetails?.deptName || departmentCourses[0]?.department.name || id || "",
-        description: `${departmentDetails?.deptName || departmentCourses[0]?.department.name || id} Department`,
+        name:
+          departmentDetails?.deptName ||
+          departmentCourses[0]?.department.name ||
+          id ||
+          "",
+        description: `${
+          departmentDetails?.deptName ||
+          departmentCourses[0]?.department.name ||
+          id
+        } Department`,
         programLevelCode: finalProgramLevelCode,
         modalityCode: finalModalityCode,
         programLevelName,
         modalityName,
         courses: departmentCourses,
-        years: Object.entries(groupedCourses).map(([year, semesters]: [string, any]) => ({
-          id: `year${year}`,
-          name: `${year} Year`,
-          semesters: Object.entries(semesters).map(([semester, courses]: [string, any], index) => ({
-            id: `sem${index + 1}`,
-            name: semester,
-            courses: courses,
-          })),
-        })),
+        years: yearsArray,
         departmentData: departmentDetails || undefined,
       };
 
       setDepartment(departmentInfo);
+      const grandTotalCredits = departmentInfo.years
+        ? departmentInfo.years.reduce(
+            (sum, year) => sum + (year.totalCredits || 0),
+            0
+          )
+        : 0;
 
+      // Then either:
+      // Option A: store it in state
+      setGrandTotalCredits(grandTotalCredits);
       if (departmentInfo.years && departmentInfo.years.length > 0) {
         setExpandedYears(new Set([departmentInfo.years[0].id]));
       }
@@ -327,14 +403,24 @@ export default function DepartmentDetail() {
       // If we don't have departmentId yet, set loading to false
       setIsLoading(false);
     }
-  }, [departmentId, id, departmentDetails, finalProgramLevelCode, finalModalityCode, programLevelName, modalityName]);
+  }, [
+    departmentId,
+    id,
+    departmentDetails,
+    finalProgramLevelCode,
+    finalModalityCode,
+    programLevelName,
+    modalityName,
+  ]);
 
   const toggleYear = (yearId: string) => {
     const newExpandedYears = new Set(expandedYears);
     if (newExpandedYears.has(yearId)) {
       newExpandedYears.delete(yearId);
       const newExpandedSemesters = new Set(expandedSemesters);
-      department?.years?.find(y => y.id === yearId)?.semesters.forEach(s => newExpandedSemesters.delete(s.id));
+      department?.years
+        ?.find((y) => y.id === yearId)
+        ?.semesters.forEach((s) => newExpandedSemesters.delete(s.id));
       setExpandedSemesters(newExpandedSemesters);
     } else {
       newExpandedYears.add(yearId);
@@ -353,9 +439,10 @@ export default function DepartmentDetail() {
   };
 
   const getFilteredCourses = (courses: any[]) => {
-    return courses.filter(course =>
-      course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      course.code.toLowerCase().includes(searchTerm.toLowerCase())
+    return courses.filter(
+      (course) =>
+        course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        course.code.toLowerCase().includes(searchTerm.toLowerCase())
     );
   };
 
@@ -372,7 +459,16 @@ export default function DepartmentDetail() {
       prerequisiteIds,
     } = newCourse;
 
-    if (!cTitle || !cCode || !theoryHrs || !labHrs || !courseCategoryID || !departmentID || !classYearID || !semesterCode) {
+    if (
+      !cTitle ||
+      !cCode ||
+      !theoryHrs ||
+      !labHrs ||
+      !courseCategoryID ||
+      !departmentID ||
+      !classYearID ||
+      !semesterCode
+    ) {
       alert("Please fill in all required fields");
       return;
     }
@@ -395,7 +491,9 @@ export default function DepartmentDetail() {
         // Refresh the course list
         await fetchDepartmentCourses();
         // Refresh prerequisites list
-        const courses = await apiService.get(`/courses/department/${departmentId}`);
+        const courses = await apiService.get(
+          `/courses/department/${departmentId}`
+        );
         setDepartmentCoursesForPrerequisites(courses);
         // Reset form
         setNewCourse({
@@ -417,16 +515,18 @@ export default function DepartmentDetail() {
   };
 
   const handleEditCourse = (course: any) => {
-    const prerequisiteIds = course.originalCourse?.prerequisites?.map((p: any) => p.id) || [];
+    const prerequisiteIds =
+      course.originalCourse?.prerequisites?.map((p: any) => p.id) || [];
     console.log("Editing course prerequisites:", prerequisiteIds); // Debug log
-    
+
     setEditingCourse({ id: course.id, originalCourse: course.originalCourse });
     setEditValues({
       code: course.code,
       name: course.name,
       theoryHrs: course.theoryHrs.toString(),
       labHrs: course.labHrs.toString(),
-      courseCategoryID: course.originalCourse?.courseCategory?.id?.toString() || "",
+      courseCategoryID:
+        course.originalCourse?.courseCategory?.id?.toString() || "",
       departmentID: course.originalCourse?.department?.id?.toString() || "",
       classYearID: course.originalCourse?.classYear?.id?.toString() || "",
       semesterCode: course.originalCourse?.semester?.code || "",
@@ -435,14 +535,19 @@ export default function DepartmentDetail() {
   };
 
   const handleUpdateCourse = async (courseId: string) => {
-    if (!editValues.code || !editValues.name || !editValues.theoryHrs || !editValues.labHrs) {
+    if (
+      !editValues.code ||
+      !editValues.name ||
+      !editValues.theoryHrs ||
+      !editValues.labHrs
+    ) {
       alert("Please fill in all required fields");
       return;
     }
 
     try {
       setIsUpdating(courseId);
-      
+
       const response = await apiService.put(`/courses/${courseId}`, {
         cTitle: editValues.name,
         cCode: editValues.code,
@@ -456,33 +561,39 @@ export default function DepartmentDetail() {
       });
 
       // Immediately update the UI state
-      setDepartment(prevDepartment => {
+      setDepartment((prevDepartment) => {
         if (!prevDepartment) return prevDepartment;
-        
+
         return {
           ...prevDepartment,
-          courses: prevDepartment.courses.map(course => 
-            course.id.toString() === courseId 
+          courses: prevDepartment.courses.map((course) =>
+            course.id.toString() === courseId
               ? {
                   ...course,
                   ccode: editValues.code,
                   ctitle: editValues.name,
                   theoryHrs: parseInt(editValues.theoryHrs),
                   labHrs: parseInt(editValues.labHrs),
-                  prerequisites: editValues.prerequisiteIds.map(id => {
-                    const prereqCourse = departmentCoursesForPrerequisites.find(c => c.id === id);
-                    return prereqCourse 
-                      ? { id, name: prereqCourse.ctitle, ccode: prereqCourse.ccode }
+                  prerequisites: editValues.prerequisiteIds.map((id) => {
+                    const prereqCourse = departmentCoursesForPrerequisites.find(
+                      (c) => c.id === id
+                    );
+                    return prereqCourse
+                      ? {
+                          id,
+                          name: prereqCourse.ctitle,
+                          ccode: prereqCourse.ccode,
+                        }
                       : { id, name: "", ccode: "" };
-                  })
+                  }),
                 }
               : course
           ),
-          years: prevDepartment.years?.map(year => ({
+          years: prevDepartment.years?.map((year) => ({
             ...year,
-            semesters: year.semesters.map(semester => ({
+            semesters: year.semesters.map((semester) => ({
               ...semester,
-              courses: semester.courses.map(course => 
+              courses: semester.courses.map((course) =>
                 course.id === courseId
                   ? {
                       ...course,
@@ -490,32 +601,42 @@ export default function DepartmentDetail() {
                       name: editValues.name,
                       theoryHrs: parseInt(editValues.theoryHrs),
                       labHrs: parseInt(editValues.labHrs),
-                      creditHours: parseInt(editValues.theoryHrs) + parseInt(editValues.labHrs),
-                      prerequisites: editValues.prerequisiteIds.map(id => {
-                        const prereqCourse = departmentCoursesForPrerequisites.find(c => c.id === id);
+                      creditHours:
+                        parseInt(editValues.theoryHrs) +
+                        parseInt(editValues.labHrs),
+                      prerequisites: editValues.prerequisiteIds.map((id) => {
+                        const prereqCourse =
+                          departmentCoursesForPrerequisites.find(
+                            (c) => c.id === id
+                          );
                         return prereqCourse ? prereqCourse.ccode : `ID: ${id}`;
-                      })
+                      }),
                     }
                   : course
-              )
-            }))
-          }))
+              ),
+            })),
+          })),
         };
       });
 
       alert("Course updated successfully!");
       setEditingCourse(null);
-      
+
       // Refresh data in background
       await Promise.all([
         fetchDepartmentCourses(),
-        apiService.get(`/courses/department/${departmentId}`).then(setDepartmentCoursesForPrerequisites)
+        apiService
+          .get(`/courses/department/${departmentId}`)
+          .then(setDepartmentCoursesForPrerequisites),
       ]);
-      
     } catch (error: any) {
       console.error("Update error:", error);
-      alert(error.response?.data?.error || error.message || "Failed to update course");
-      
+      alert(
+        error.response?.data?.error ||
+          error.message ||
+          "Failed to update course"
+      );
+
       // Revert to original data if update fails
       await fetchDepartmentCourses();
     } finally {
@@ -533,7 +654,9 @@ export default function DepartmentDetail() {
         // Refresh the course list
         await fetchDepartmentCourses();
         // Refresh prerequisites list
-        const courses = await apiService.get(`/courses/department/${departmentId}`);
+        const courses = await apiService.get(
+          `/courses/department/${departmentId}`
+        );
         setDepartmentCoursesForPrerequisites(courses);
       }
     } catch (error: any) {
@@ -544,19 +667,27 @@ export default function DepartmentDetail() {
   const handleCancelEdit = () => {
     setEditingCourse(null);
     setEditValues({
-      code: "", name: "", theoryHrs: "", labHrs: "", courseCategoryID: "", departmentID: "", classYearID: "", semesterCode: "", prerequisiteIds: []
+      code: "",
+      name: "",
+      theoryHrs: "",
+      labHrs: "",
+      courseCategoryID: "",
+      departmentID: "",
+      classYearID: "",
+      semesterCode: "",
+      prerequisiteIds: [],
     });
   };
 
   // Custom handler for prerequisite selection
   const handlePrerequisiteChange = (selectedOptions: HTMLSelectElement) => {
-    const selectedIds = Array.from(selectedOptions.selectedOptions, option => 
+    const selectedIds = Array.from(selectedOptions.selectedOptions, (option) =>
       parseInt(option.value)
-    ).filter(val => !isNaN(val));
-    
+    ).filter((val) => !isNaN(val));
+
     setEditValues({
       ...editValues,
-      prerequisiteIds: selectedIds
+      prerequisiteIds: selectedIds,
     });
   };
 
@@ -571,8 +702,12 @@ export default function DepartmentDetail() {
   if (!department) {
     return (
       <div className="p-10 text-center">
-        <h1 className="text-3xl font-bold text-red-600">Department Not Found</h1>
-        <p className="text-gray-600 mt-2">The requested department does not exist or has no courses.</p>
+        <h1 className="text-3xl font-bold text-red-600">
+          Department Not Found
+        </h1>
+        <p className="text-gray-600 mt-2">
+          The requested department does not exist or has no courses.
+        </p>
       </div>
     );
   }
@@ -583,17 +718,35 @@ export default function DepartmentDetail() {
         <div className="flex justify-between items-start">
           <div>
             <div className="flex items-center gap-4 mb-3">
-              <h1 className="text-5xl font-bold drop-shadow-lg">{department.name}</h1>
+              <h1 className="text-5xl font-bold drop-shadow-lg">
+                {department.name}
+              </h1>
               <span className="px-6 py-2 bg-white/20 rounded-full text-lg font-bold backdrop-blur-sm">
                 {fullProgramDisplay}
               </span>
             </div>
             <p className="mt-3 text-xl opacity-95">{department.description}</p>
             <div className="flex gap-6 mt-6">
-              <p className="text-blue-100 font-medium">Total Courses: {department.courses.length}</p>
-              <p className="text-blue-100 font-medium">Dept Code: {department.departmentData?.departmentCode || department.id}</p>
-              <p className="text-blue-100 font-medium">Dept ID: {department.departmentData?.dptID || id}</p>
-              <p className="text-blue-100 font-medium">Level: {programLevelName} | Mode: {modalityName}</p>
+              <p className="text-blue-100 font-medium">
+                Total Courses: {department.courses.length}
+              </p>
+              <p className="text-blue-100 font-medium">
+                Total Credit Hours:{" "}
+                <span className="font-bold text-white">
+                  {grandTotalCredits}
+                </span>{" "}
+                Cr.Hr
+              </p>
+              <p className="text-blue-100 font-medium">
+                Dept Code:{" "}
+                {department.departmentData?.departmentCode || department.id}
+              </p>
+              <p className="text-blue-100 font-medium">
+                Dept ID: {department.departmentData?.dptID || id}
+              </p>
+              <p className="text-blue-100 font-medium">
+                Level: {programLevelName} | Mode: {modalityName}
+              </p>
             </div>
           </div>
         </div>
@@ -604,19 +757,39 @@ export default function DepartmentDetail() {
           onClick={() => navigate(-1)}
           className="flex items-center gap-3 px-6 py-3 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-all duration-300 rounded-2xl hover:bg-blue-50 dark:hover:bg-blue-900/30 border border-blue-200 dark:border-blue-800 hover:shadow-lg"
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M10 19l-7-7m0 0l7-7m-7 7h18"
+            />
           </svg>
           <span className="font-semibold">Back to Departments</span>
         </button>
       </div>
-      
+
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
         <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
           <div className="flex-1 max-w-lg">
             <div className="relative">
-              <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              <svg
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
               </svg>
               <input
                 type="text"
@@ -634,15 +807,35 @@ export default function DepartmentDetail() {
           >
             {isFormOpen ? (
               <span className="flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
                 Cancel
               </span>
             ) : (
               <span className="flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
                 </svg>
                 Create New Course
               </span>
@@ -653,26 +846,113 @@ export default function DepartmentDetail() {
         {isFormOpen && (
           <div className="mt-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-8 rounded-2xl shadow-inner border border-gray-200 dark:border-gray-700">
             <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6 flex items-center gap-3">
-              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              <svg
+                className="w-6 h-6 text-blue-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                />
               </svg>
               Add New Course
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <input type="text" placeholder="Course Title *" value={newCourse.cTitle} onChange={(e) => setNewCourse({ ...newCourse, cTitle: e.target.value })} className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" />
-              <input type="text" placeholder="Course Code *" value={newCourse.cCode} onChange={(e) => setNewCourse({ ...newCourse, cCode: e.target.value })} className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" />
-              <input type="number" placeholder="Theory Hours *" value={newCourse.theoryHrs} onChange={(e) => setNewCourse({ ...newCourse, theoryHrs: e.target.value })} className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" />
-              <input type="number" placeholder="Lab Hours *" value={newCourse.labHrs} onChange={(e) => setNewCourse({ ...newCourse, labHrs: e.target.value })} className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" />
-              <input type="number" placeholder="Category ID *" value={newCourse.courseCategoryID} onChange={(e) => setNewCourse({ ...newCourse, courseCategoryID: e.target.value })} className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" />
-              <input type="number" placeholder="Department ID *" value={newCourse.departmentID} onChange={(e) => setNewCourse({ ...newCourse, departmentID: e.target.value })} className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" />
-              <input type="number" placeholder="Class Year ID *" value={newCourse.classYearID} onChange={(e) => setNewCourse({ ...newCourse, classYearID: e.target.value })} className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" />
-              <input type="text" placeholder="Semester Code *" value={newCourse.semesterCode} onChange={(e) => setNewCourse({ ...newCourse, semesterCode: e.target.value })} className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" />
+              <input
+                type="text"
+                placeholder="Course Title *"
+                value={newCourse.cTitle}
+                onChange={(e) =>
+                  setNewCourse({ ...newCourse, cTitle: e.target.value })
+                }
+                className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+              />
+              <input
+                type="text"
+                placeholder="Course Code *"
+                value={newCourse.cCode}
+                onChange={(e) =>
+                  setNewCourse({ ...newCourse, cCode: e.target.value })
+                }
+                className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+              />
+              <input
+                type="number"
+                placeholder="Theory Hours *"
+                value={newCourse.theoryHrs}
+                onChange={(e) =>
+                  setNewCourse({ ...newCourse, theoryHrs: e.target.value })
+                }
+                className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+              />
+              <input
+                type="number"
+                placeholder="Lab Hours *"
+                value={newCourse.labHrs}
+                onChange={(e) =>
+                  setNewCourse({ ...newCourse, labHrs: e.target.value })
+                }
+                className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+              />
+              <input
+                type="number"
+                placeholder="Category ID *"
+                value={newCourse.courseCategoryID}
+                onChange={(e) =>
+                  setNewCourse({
+                    ...newCourse,
+                    courseCategoryID: e.target.value,
+                  })
+                }
+                className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+              />
+              <input
+                type="number"
+                placeholder="Department ID *"
+                value={newCourse.departmentID}
+                onChange={(e) =>
+                  setNewCourse({ ...newCourse, departmentID: e.target.value })
+                }
+                className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+              />
+              <input
+                type="number"
+                placeholder="Class Year ID *"
+                value={newCourse.classYearID}
+                onChange={(e) =>
+                  setNewCourse({ ...newCourse, classYearID: e.target.value })
+                }
+                className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+              />
+              <input
+                type="text"
+                placeholder="Semester Code *"
+                value={newCourse.semesterCode}
+                onChange={(e) =>
+                  setNewCourse({ ...newCourse, semesterCode: e.target.value })
+                }
+                className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+              />
               <div className="relative col-span-2">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Prerequisites (Hold Ctrl/Cmd to select multiple)</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                  Prerequisites (Hold Ctrl/Cmd to select multiple)
+                </label>
                 <select
                   multiple
                   value={newCourse.prerequisiteIds.map(String)}
-                  onChange={(e) => setNewCourse({ ...newCourse, prerequisiteIds: Array.from(e.target.selectedOptions, option => parseInt(option.value)).filter(val => !isNaN(val)) })}
+                  onChange={(e) =>
+                    setNewCourse({
+                      ...newCourse,
+                      prerequisiteIds: Array.from(
+                        e.target.selectedOptions,
+                        (option) => parseInt(option.value)
+                      ).filter((val) => !isNaN(val)),
+                    })
+                  }
                   className="w-full border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 min-h-[120px]"
                 >
                   {departmentCoursesForPrerequisites.map((course) => (
@@ -688,8 +968,18 @@ export default function DepartmentDetail() {
               className="mt-6 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-8 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
             >
               <span className="flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 Add Course
               </span>
@@ -700,32 +990,76 @@ export default function DepartmentDetail() {
 
       {department.years && department.years.length > 0 ? (
         <div className="space-y-6">
-          <h2 className="text-4xl font-bold text-gray-800 dark:text-gray-100 text-center">Academic Structure</h2>
+          <h2 className="text-4xl font-bold text-gray-800 dark:text-gray-100 text-center">
+            Academic Structure
+          </h2>
           {department.years.map((year) => (
-            <div key={year.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden transition-all duration-300 hover:shadow-xl">
+            <div
+              key={year.id}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden transition-all duration-300 hover:shadow-xl"
+            >
               <button
                 onClick={() => toggleYear(year.id)}
                 className="w-full p-8 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 flex justify-between items-center group"
               >
                 <div className="flex items-center gap-6">
-                  <div className={`p-3 rounded-2xl bg-blue-100 dark:bg-blue-900/30 transition-transform duration-300 group-hover:scale-110 ${expandedYears.has(year.id) ? 'rotate-90' : ''}`}>
-                    <svg className={`w-8 h-8 text-blue-600 dark:text-blue-400 transform transition-transform duration-300 ${expandedYears.has(year.id) ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  <div
+                    className={`p-3 rounded-2xl bg-blue-100 dark:bg-blue-900/30 transition-transform duration-300 group-hover:scale-110 ${
+                      expandedYears.has(year.id) ? "rotate-90" : ""
+                    }`}
+                  >
+                    <svg
+                      className={`w-8 h-8 text-blue-600 dark:text-blue-400 transform transition-transform duration-300 ${
+                        expandedYears.has(year.id) ? "rotate-90" : ""
+                      }`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
                     </svg>
                   </div>
                   <div className="text-left">
-                    <h3 className="text-3xl font-bold text-gray-800 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{year.name}</h3>
-                    <p className="text-gray-600 dark:text-gray-400 mt-2">Expand to view semesters and courses</p>
+                    <h3 className="text-3xl font-bold text-gray-800 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                      {year.name}
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400 mt-2">
+                      Expand to view semesters and courses
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-6">
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{year.semesters.reduce((total, sem) => total + sem.courses.length, 0)}</div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">Total Courses</div>
+                  <div>
+                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                      {year.totalCredits}
+                    </div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      Credit Hours
+                    </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">{year.semesters.length}</div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">Semesters</div>
+                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                      {year.semesters.reduce(
+                        (total, sem) => total + sem.courses.length,
+                        0
+                      )}
+                    </div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      Total Courses
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                      {year.semesters.length}
+                    </div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      Semesters
+                    </div>
                   </div>
                 </div>
               </button>
@@ -733,22 +1067,50 @@ export default function DepartmentDetail() {
               {expandedYears.has(year.id) && (
                 <div className="border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
                   {year.semesters.map((semester) => (
-                    <div key={semester.id} className="border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+                    <div
+                      key={semester.id}
+                      className="border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                    >
                       <button
                         onClick={() => toggleSemester(semester.id)}
                         className="w-full p-6 pl-16 text-left hover:bg-white dark:hover:bg-gray-800 transition-all duration-300 flex justify-between items-center group"
                       >
                         <div className="flex items-center gap-5">
                           <div className="p-2 rounded-xl bg-green-100 dark:bg-green-900/30 transition-transform duration-300 group-hover:scale-110">
-                            <svg className={`w-5 h-5 text-green-600 dark:text-green-400 transform transition-transform duration-300 ${expandedSemesters.has(semester.id) ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            <svg
+                              className={`w-5 h-5 text-green-600 dark:text-green-400 transform transition-transform duration-300 ${
+                                expandedSemesters.has(semester.id)
+                                  ? "rotate-90"
+                                  : ""
+                              }`}
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 5l7 7-7 7"
+                              />
                             </svg>
                           </div>
-                          <h4 className="text-xl font-semibold text-gray-700 dark:text-gray-300 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">{semester.name}</h4>
+                          <h4 className="text-xl font-semibold text-gray-700 dark:text-gray-300 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
+                            {semester.name}
+                          </h4>
                         </div>
                         <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <div className="text-xl font-bold text-green-600 dark:text-green-400">
+                              {semester.totalCredits} Cr.Hr
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              Semester Load
+                            </div>
+                          </div>
                           <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-sm font-semibold">
-                            {semester.courses.length} course{semester.courses.length !== 1 ? 's' : ''}
+                            {semester.courses.length} course
+                            {semester.courses.length !== 1 ? "s" : ""}
                           </span>
                         </div>
                       </button>
@@ -757,10 +1119,16 @@ export default function DepartmentDetail() {
                         <div className="bg-white dark:bg-gray-800 p-6">
                           {getFilteredCourses(semester.courses).length === 0 ? (
                             <div className="text-center py-12">
-                              <div className="text-gray-400 dark:text-gray-500 text-6xl mb-4">No courses found</div>
-                              <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-400 mb-2">No courses found</h3>
+                              <div className="text-gray-400 dark:text-gray-500 text-6xl mb-4">
+                                No courses found
+                              </div>
+                              <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                                No courses found
+                              </h3>
                               <p className="text-gray-500 dark:text-gray-500">
-                                {searchTerm ? 'No courses match your search criteria.' : 'No courses available for this semester.'}
+                                {searchTerm
+                                  ? "No courses match your search criteria."
+                                  : "No courses available for this semester."}
                               </p>
                             </div>
                           ) : (
@@ -768,127 +1136,350 @@ export default function DepartmentDetail() {
                               <table className="w-full">
                                 <thead>
                                   <tr className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 border-b-2 border-gray-200 dark:border-gray-700">
-                                    <th className="p-4 text-left font-bold text-gray-700 dark:text-gray-300">Course Code</th>
-                                    <th className="p-4 text-left font-bold text-gray-700 dark:text-gray-300">Course Name</th>
-                                    <th className="p-4 text-center font-bold text-gray-700 dark:text-gray-300">Theory Hrs</th>
-                                    <th className="p-4 text-center font-bold text-gray-700 dark:text-gray-300">Lab Hrs</th>
-                                    <th className="p-4 text-center font-bold text-gray-700 dark:text-gray-300">Total Credits</th>
-                                    <th className="p-4 text-left font-bold text-gray-700 dark:text-gray-300">Category</th>
-                                    <th className="p-4 text-left font-bold text-gray-700 dark:text-gray-300">Prerequisites</th>
-                                    <th className="p-4 text-center font-bold text-gray-700 dark:text-gray-300">Actions</th>
+                                    <th className="p-4 text-left font-bold text-gray-700 dark:text-gray-300">
+                                      Course Code
+                                    </th>
+                                    <th className="p-4 text-left font-bold text-gray-700 dark:text-gray-300">
+                                      Course Name
+                                    </th>
+                                    <th className="p-4 text-center font-bold text-gray-700 dark:text-gray-300">
+                                      Theory Hrs
+                                    </th>
+                                    <th className="p-4 text-center font-bold text-gray-700 dark:text-gray-300">
+                                      Lab Hrs
+                                    </th>
+                                    <th className="p-4 text-center font-bold text-gray-700 dark:text-gray-300">
+                                      Total Credits
+                                    </th>
+                                    <th className="p-4 text-left font-bold text-gray-700 dark:text-gray-300">
+                                      Category
+                                    </th>
+                                    <th className="p-4 text-left font-bold text-gray-700 dark:text-gray-300">
+                                      Prerequisites
+                                    </th>
+                                    <th className="p-4 text-center font-bold text-gray-700 dark:text-gray-300">
+                                      Actions
+                                    </th>
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {getFilteredCourses(semester.courses).map((course, index) => (
-                                    <tr
-                                      key={course.id}
-                                      className={`transition-all duration-300 ${editingCourse && editingCourse.id === course.id ? "bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-700" : index % 2 === 0 ? "bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700" : "bg-gray-50 dark:bg-gray-900/50 hover:bg-gray-100 dark:hover:bg-gray-700"} border-b border-gray-100 dark:border-gray-700 last:border-b-0`}
-                                    >
-                                      {editingCourse && editingCourse.id === course.id ? (
-                                        <>
-                                          <td className="p-4"><input type="text" value={editValues.code} onChange={(e) => setEditValues({ ...editValues, code: e.target.value })} className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" /></td>
-                                          <td className="p-4"><input type="text" value={editValues.name} onChange={(e) => setEditValues({ ...editValues, name: e.target.value })} className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" /></td>
-                                          <td className="p-4"><input type="number" value={editValues.theoryHrs} onChange={(e) => setEditValues({ ...editValues, theoryHrs: e.target.value })} className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" /></td>
-                                          <td className="p-4"><input type="number" value={editValues.labHrs} onChange={(e) => setEditValues({ ...editValues, labHrs: e.target.value })} className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" /></td>
-                                          <td className="p-4 text-center font-semibold text-gray-700 dark:text-gray-300">{(parseInt(editValues.theoryHrs || '0') + parseInt(editValues.labHrs || '0'))}</td>
-                                          <td className="p-4"><input type="number" value={editValues.courseCategoryID} onChange={(e) => setEditValues({ ...editValues, courseCategoryID: e.target.value })} className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" placeholder="Category ID" /></td>
-                                          <td className="p-4">
-                                            <select
-                                              multiple
-                                              value={editValues.prerequisiteIds.map(String)}
-                                              onChange={(e) => handlePrerequisiteChange(e.target)}
-                                              className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 min-h-[80px]"
-                                            >
-                                              {departmentCoursesForPrerequisites.map((prereqCourse) => (
-                                                <option 
-                                                  key={prereqCourse.id} 
-                                                  value={prereqCourse.id}
-                                                  className={editValues.prerequisiteIds.includes(prereqCourse.id) ? "bg-blue-100 dark:bg-blue-900" : ""}
-                                                >
-                                                  {prereqCourse.ccode} - {prereqCourse.ctitle}
-                                                </option>
-                                              ))}
-                                            </select>
-                                            <div className="text-xs text-gray-500 mt-1">
-                                              Hold Ctrl (Cmd on Mac) to select multiple. Currently selected: {editValues.prerequisiteIds.length}
-                                            </div>
-                                          </td>
-                                          <td className="p-4">
-                                            <div className="flex gap-2 justify-center">
-                                              <button 
-                                                onClick={() => handleUpdateCourse(course.originalCourse?.id || course.id)} 
-                                                disabled={isUpdating === course.id}
-                                                className={`${isUpdating === course.id ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'} text-white px-4 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2 min-w-[100px] justify-center`}
-                                              >
-                                                {isUpdating === course.id ? (
-                                                  <>
-                                                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                    </svg>
-                                                    Saving...
-                                                  </>
-                                                ) : (
-                                                  <>
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                    </svg>
-                                                    Save
-                                                  </>
+                                  {getFilteredCourses(semester.courses).map(
+                                    (course, index) => (
+                                      <tr
+                                        key={course.id}
+                                        className={`transition-all duration-300 ${
+                                          editingCourse &&
+                                          editingCourse.id === course.id
+                                            ? "bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-700"
+                                            : index % 2 === 0
+                                            ? "bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                            : "bg-gray-50 dark:bg-gray-900/50 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                        } border-b border-gray-100 dark:border-gray-700 last:border-b-0`}
+                                      >
+                                        {editingCourse &&
+                                        editingCourse.id === course.id ? (
+                                          <>
+                                            <td className="p-4">
+                                              <input
+                                                type="text"
+                                                value={editValues.code}
+                                                onChange={(e) =>
+                                                  setEditValues({
+                                                    ...editValues,
+                                                    code: e.target.value,
+                                                  })
+                                                }
+                                                className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+                                              />
+                                            </td>
+                                            <td className="p-4">
+                                              <input
+                                                type="text"
+                                                value={editValues.name}
+                                                onChange={(e) =>
+                                                  setEditValues({
+                                                    ...editValues,
+                                                    name: e.target.value,
+                                                  })
+                                                }
+                                                className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+                                              />
+                                            </td>
+                                            <td className="p-4">
+                                              <input
+                                                type="number"
+                                                value={editValues.theoryHrs}
+                                                onChange={(e) =>
+                                                  setEditValues({
+                                                    ...editValues,
+                                                    theoryHrs: e.target.value,
+                                                  })
+                                                }
+                                                className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+                                              />
+                                            </td>
+                                            <td className="p-4">
+                                              <input
+                                                type="number"
+                                                value={editValues.labHrs}
+                                                onChange={(e) =>
+                                                  setEditValues({
+                                                    ...editValues,
+                                                    labHrs: e.target.value,
+                                                  })
+                                                }
+                                                className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+                                              />
+                                            </td>
+                                            <td className="p-4 text-center font-semibold text-gray-700 dark:text-gray-300">
+                                              {parseInt(
+                                                editValues.theoryHrs || "0"
+                                              ) +
+                                                parseInt(
+                                                  editValues.labHrs || "0"
                                                 )}
-                                              </button>
-                                              <button onClick={handleCancelEdit} className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2">
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                </svg>
-                                                Cancel
-                                              </button>
-                                            </div>
-                                          </td>
-                                        </>
-                                      ) : (
-                                        <>
-                                          <td className="p-4 font-mono font-bold text-blue-700 dark:text-blue-300">{course.code}</td>
-                                          <td className="p-4 font-semibold text-gray-800 dark:text-gray-200">{course.name}</td>
-                                          <td className="p-4 text-center font-bold text-gray-700 dark:text-gray-300">{course.theoryHrs}</td>
-                                          <td className="px-[2.5rem] text-center font-bold text-gray-700 dark:text-gray-300">{course.labHrs}</td>
-                                          <td className="p-4 text-center font-bold text-green-600 dark:text-green-400 text-lg">{course.creditHours}</td>
-                                          <td className="p-4">
-                                            <span className="px-1 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-sm font-semibold">{course.category}</span>
-                                          </td>
-                                          <td className="p-4">
-                                            {course.prerequisites.length > 0 ? (
-                                              <div className="flex flex-wrap gap-1">
-                                                {course.prerequisites.map((prereq: string, index: number) => (
-                                                  <span key={index} className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium">
-                                                    {prereq}
-                                                  </span>
-                                                ))}
+                                            </td>
+                                            <td className="p-4">
+                                              <input
+                                                type="number"
+                                                value={
+                                                  editValues.courseCategoryID
+                                                }
+                                                onChange={(e) =>
+                                                  setEditValues({
+                                                    ...editValues,
+                                                    courseCategoryID:
+                                                      e.target.value,
+                                                  })
+                                                }
+                                                className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+                                                placeholder="Category ID"
+                                              />
+                                            </td>
+                                            <td className="p-4">
+                                              <select
+                                                multiple
+                                                value={editValues.prerequisiteIds.map(
+                                                  String
+                                                )}
+                                                onChange={(e) =>
+                                                  handlePrerequisiteChange(
+                                                    e.target
+                                                  )
+                                                }
+                                                className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 min-h-[80px]"
+                                              >
+                                                {departmentCoursesForPrerequisites.map(
+                                                  (prereqCourse) => (
+                                                    <option
+                                                      key={prereqCourse.id}
+                                                      value={prereqCourse.id}
+                                                      className={
+                                                        editValues.prerequisiteIds.includes(
+                                                          prereqCourse.id
+                                                        )
+                                                          ? "bg-blue-100 dark:bg-blue-900"
+                                                          : ""
+                                                      }
+                                                    >
+                                                      {prereqCourse.ccode} -{" "}
+                                                      {prereqCourse.ctitle}
+                                                    </option>
+                                                  )
+                                                )}
+                                              </select>
+                                              <div className="text-xs text-gray-500 mt-1">
+                                                Hold Ctrl (Cmd on Mac) to select
+                                                multiple. Currently selected:{" "}
+                                                {
+                                                  editValues.prerequisiteIds
+                                                    .length
+                                                }
                                               </div>
-                                            ) : (
-                                              <span className="text-gray-400 dark:text-gray-500 text-sm">None</span>
-                                            )}
-                                          </td>
-                                          <td className="p-4">
-                                            <div className="flex gap-2 justify-center">
-                                              <button onClick={() => handleEditCourse(course)} className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2">
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                </svg>
-                                                Edit
-                                              </button>
-                                              <button onClick={() => handleDeleteCourse(course.originalCourse?.id || course.id)} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2">
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                </svg>
-                                                Delete
-                                              </button>
-                                            </div>
-                                          </td>
-                                        </>
-                                      )}
-                                    </tr>
-                                  ))}
+                                            </td>
+                                            <td className="p-4">
+                                              <div className="flex gap-2 justify-center">
+                                                <button
+                                                  onClick={() =>
+                                                    handleUpdateCourse(
+                                                      course.originalCourse
+                                                        ?.id || course.id
+                                                    )
+                                                  }
+                                                  disabled={
+                                                    isUpdating === course.id
+                                                  }
+                                                  className={`${
+                                                    isUpdating === course.id
+                                                      ? "bg-gray-400 cursor-not-allowed"
+                                                      : "bg-green-600 hover:bg-green-700"
+                                                  } text-white px-4 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2 min-w-[100px] justify-center`}
+                                                >
+                                                  {isUpdating === course.id ? (
+                                                    <>
+                                                      <svg
+                                                        className="animate-spin h-4 w-4 text-white"
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        fill="none"
+                                                        viewBox="0 0 24 24"
+                                                      >
+                                                        <circle
+                                                          className="opacity-25"
+                                                          cx="12"
+                                                          cy="12"
+                                                          r="10"
+                                                          stroke="currentColor"
+                                                          strokeWidth="4"
+                                                        ></circle>
+                                                        <path
+                                                          className="opacity-75"
+                                                          fill="currentColor"
+                                                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                                        ></path>
+                                                      </svg>
+                                                      Saving...
+                                                    </>
+                                                  ) : (
+                                                    <>
+                                                      <svg
+                                                        className="w-4 h-4"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        viewBox="0 0 24 24"
+                                                      >
+                                                        <path
+                                                          strokeLinecap="round"
+                                                          strokeLinejoin="round"
+                                                          strokeWidth={2}
+                                                          d="M5 13l4 4L19 7"
+                                                        />
+                                                      </svg>
+                                                      Save
+                                                    </>
+                                                  )}
+                                                </button>
+                                                <button
+                                                  onClick={handleCancelEdit}
+                                                  className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2"
+                                                >
+                                                  <svg
+                                                    className="w-4 h-4"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                  >
+                                                    <path
+                                                      strokeLinecap="round"
+                                                      strokeLinejoin="round"
+                                                      strokeWidth={2}
+                                                      d="M6 18L18 6M6 6l12 12"
+                                                    />
+                                                  </svg>
+                                                  Cancel
+                                                </button>
+                                              </div>
+                                            </td>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <td className="p-4 font-mono font-bold text-blue-700 dark:text-blue-300">
+                                              {course.code}
+                                            </td>
+                                            <td className="p-4 font-semibold text-gray-800 dark:text-gray-200">
+                                              {course.name}
+                                            </td>
+                                            <td className="p-4 text-center font-bold text-gray-700 dark:text-gray-300">
+                                              {course.theoryHrs}
+                                            </td>
+                                            <td className="px-[2.5rem] text-center font-bold text-gray-700 dark:text-gray-300">
+                                              {course.labHrs}
+                                            </td>
+                                            <td className="p-4 text-center font-bold text-green-600 dark:text-green-400 text-lg">
+                                              {course.creditHours}
+                                            </td>
+                                            <td className="p-4">
+                                              <span className="px-1 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-sm font-semibold">
+                                                {course.category}
+                                              </span>
+                                            </td>
+                                            <td className="p-4">
+                                              {course.prerequisites.length >
+                                              0 ? (
+                                                <div className="flex flex-wrap gap-1">
+                                                  {course.prerequisites.map(
+                                                    (
+                                                      prereq: string,
+                                                      index: number
+                                                    ) => (
+                                                      <span
+                                                        key={index}
+                                                        className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium"
+                                                      >
+                                                        {prereq}
+                                                      </span>
+                                                    )
+                                                  )}
+                                                </div>
+                                              ) : (
+                                                <span className="text-gray-400 dark:text-gray-500 text-sm">
+                                                  None
+                                                </span>
+                                              )}
+                                            </td>
+                                            <td className="p-4">
+                                              <div className="flex gap-2 justify-center">
+                                                <button
+                                                  onClick={() =>
+                                                    handleEditCourse(course)
+                                                  }
+                                                  className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2"
+                                                >
+                                                  <svg
+                                                    className="w-4 h-4"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                  >
+                                                    <path
+                                                      strokeLinecap="round"
+                                                      strokeLinejoin="round"
+                                                      strokeWidth={2}
+                                                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                                    />
+                                                  </svg>
+                                                  Edit
+                                                </button>
+                                                <button
+                                                  onClick={() =>
+                                                    handleDeleteCourse(
+                                                      course.originalCourse
+                                                        ?.id || course.id
+                                                    )
+                                                  }
+                                                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2"
+                                                >
+                                                  <svg
+                                                    className="w-4 h-4"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                  >
+                                                    <path
+                                                      strokeLinecap="round"
+                                                      strokeLinejoin="round"
+                                                      strokeWidth={2}
+                                                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                    />
+                                                  </svg>
+                                                  Delete
+                                                </button>
+                                              </div>
+                                            </td>
+                                          </>
+                                        )}
+                                      </tr>
+                                    )
+                                  )}
                                 </tbody>
                               </table>
                             </div>
@@ -904,10 +1495,16 @@ export default function DepartmentDetail() {
         </div>
       ) : (
         <div className="bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 p-12 rounded-2xl border-2 border-yellow-200 dark:border-yellow-800 text-center">
-          <div className="text-yellow-500 dark:text-yellow-400 text-8xl mb-6">No Academic Structure Available</div>
-          <h3 className="text-3xl font-bold text-yellow-800 dark:text-yellow-200 mb-4">No Academic Structure Available</h3>
+          <div className="text-yellow-500 dark:text-yellow-400 text-8xl mb-6">
+            No Academic Structure Available
+          </div>
+          <h3 className="text-3xl font-bold text-yellow-800 dark:text-yellow-200 mb-4">
+            No Academic Structure Available
+          </h3>
           <p className="text-yellow-600 dark:text-yellow-400 text-lg max-w-2xl mx-auto">
-            There are no courses organized by year and semester for this department yet. Start by adding new courses using the "Create New Course" button above.
+            There are no courses organized by year and semester for this
+            department yet. Start by adding new courses using the "Create New
+            Course" button above.
           </p>
         </div>
       )}
