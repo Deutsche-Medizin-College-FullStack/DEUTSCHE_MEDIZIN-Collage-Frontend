@@ -97,6 +97,7 @@ export default function DepartmentDetail() {
   const [expandedSemesters, setExpandedSemesters] = useState<Set<string>>(
     new Set()
   );
+  const [grandTotalCredits, setGrandTotalCredits] = useState<number>(0);
   const [editingCourse, setEditingCourse] = useState<any>(null);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
   const [editValues, setEditValues] = useState({
@@ -138,6 +139,15 @@ export default function DepartmentDetail() {
       setDepartmentId(passedDepartmentData.dptID);
     }
   }, [passedDepartmentData]);
+  useEffect(() => {
+    if (department?.years) {
+      const total = department.years.reduce(
+        (sum, y) => sum + (y.totalCredits || 0),
+        0
+      );
+      setGrandTotalCredits(total);
+    }
+  }, [department?.years]);
 
   // If no department data was passed, fetch it by ID
   useEffect(() => {
@@ -272,53 +282,6 @@ export default function DepartmentDetail() {
         return;
       }
 
-      // const groupedCourses = departmentCourses.reduce((acc: any, course: Course) => {
-      //   const year = course.classYear?.name || "Unknown";
-      //   const semester = course.semester?.name || "Unknown Semester";
-
-      //   if (!acc[year]) acc[year] = {};
-      //   if (!acc[year][semester]) acc[year][semester] = [];
-
-      //   acc[year][semester].push({
-      //     id: course.id.toString(),
-      //     name: course.ctitle,
-      //     code: course.ccode,
-      //     creditHours: course.theoryHrs + course.labHrs,
-      //     prerequisites: course.prerequisites?.map((p: any) => p.ccode || p.prerequisiteCode) || [],
-      //     teacher: "Not Assigned", // API doesn't have teacher field
-      //     theoryHrs: course.theoryHrs,
-      //     labHrs: course.labHrs,
-      //     category: course.courseCategory?.name || "Unknown",
-      //     originalCourse: course,
-      //   });
-
-      //   return acc;
-      // }, {});
-
-      // const departmentInfo: DepartmentInfo = {
-      //   id: id || "",
-      //   name: departmentDetails?.deptName || departmentCourses[0]?.department.name || id || "",
-      //   description: `${departmentDetails?.deptName || departmentCourses[0]?.department.name || id} Department`,
-      //   programLevelCode: finalProgramLevelCode,
-      //   modalityCode: finalModalityCode,
-      //   programLevelName,
-      //   modalityName,
-      //   courses: departmentCourses,
-      //   years: Object.entries(groupedCourses).map(([year, semesters]: [string, any]) => ({
-      //     id: `year${year}`,
-      //     name: `${year} Year`,
-      //     semesters: Object.entries(semesters).map(([semester, courses]: [string, any], index) => ({
-      //       id: `sem${index + 1}`,
-      //       name: semester,
-      //       courses: courses,
-      //     })),
-      //   })),
-      //   departmentData: departmentDetails || undefined,
-      // };
-
-      // setDepartment(departmentInfo);
-      // Inside fetchDepartmentCourses function, replace the reduce block with:
-
       const groupedCourses = departmentCourses.reduce(
         (acc: any, course: Course) => {
           const year = course.classYear?.name || "Unknown";
@@ -402,6 +365,16 @@ export default function DepartmentDetail() {
       };
 
       setDepartment(departmentInfo);
+      const grandTotalCredits = departmentInfo.years
+        ? departmentInfo.years.reduce(
+            (sum, year) => sum + (year.totalCredits || 0),
+            0
+          )
+        : 0;
+
+      // Then either:
+      // Option A: store it in state
+      setGrandTotalCredits(grandTotalCredits);
       if (departmentInfo.years && departmentInfo.years.length > 0) {
         setExpandedYears(new Set([departmentInfo.years[0].id]));
       }
@@ -756,6 +729,13 @@ export default function DepartmentDetail() {
             <div className="flex gap-6 mt-6">
               <p className="text-blue-100 font-medium">
                 Total Courses: {department.courses.length}
+              </p>
+              <p className="text-blue-100 font-medium">
+                Total Credit Hours:{" "}
+                <span className="font-bold text-white">
+                  {grandTotalCredits}
+                </span>{" "}
+                Cr.Hr
               </p>
               <p className="text-blue-100 font-medium">
                 Dept Code:{" "}
