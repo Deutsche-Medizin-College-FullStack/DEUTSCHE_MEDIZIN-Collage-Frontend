@@ -69,6 +69,7 @@ interface Student {
 }
 
 interface FilterOptions {
+  batches: NameEntity[];
   batchClassYearSemesters: NameEntity[];
   departments: NameEntity[];
   programModalities: NameEntity[];
@@ -109,6 +110,8 @@ const [showAdministrativeFilters, setShowAdministrativeFilters] = useState(true)
   const [programModalityFilter, setProgramModalityFilter] = useState<string>("all");
   const [academicYearFilter, setAcademicYearFilter] = useState<string>("all");
   const [batchClassYearSemesterFilter, setBatchClassYearSemesterFilter] = useState<string>("all");
+  // Add with other filter states
+  const [batchFilter, setBatchFilter] = useState<string>("all");
   const [impairmentFilter, setImpairmentFilter] = useState<string>("all");
   const [programLevelFilter, setProgramLevelFilter] = useState<string>("all");
 
@@ -228,6 +231,7 @@ const [showAdministrativeFilters, setShowAdministrativeFilters] = useState(true)
     setProgramModalityFilter("all");
     setAcademicYearFilter("all");
     setBatchClassYearSemesterFilter("all");
+    setBatchFilter("all"); // ← ADD THIS
     setImpairmentFilter("all");
     setProgramLevelFilter("all");
 
@@ -421,6 +425,14 @@ const [showAdministrativeFilters, setShowAdministrativeFilters] = useState(true)
         return false;
       }
 
+      // Batch filter
+      if (
+        batchFilter !== "all" &&
+        getEntityId(student.recentBatch) !== batchFilter
+      ) {
+        return false;
+      }
+
       //========================================================
       // Age Range - FIXED
       if (ageRange.min !== null && student.age !== null && student.age < ageRange.min) return false;
@@ -501,6 +513,7 @@ const [showAdministrativeFilters, setShowAdministrativeFilters] = useState(true)
     impairmentFilter, // ← new
     programLevelFilter,
     batchClassYearSemesterFilter,
+    batchFilter, // ← ADD THIS
     visibleColumns,
     //====================================
     schoolBackgroundFilter,
@@ -943,6 +956,27 @@ const distinctExitExamStatuses = useMemo(() => {
                         {filterOptions?.academicYears?.map((y) => (
                           <SelectItem key={y.id} value={String(y.id)}>
                             {y.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Batch */}
+                  <div>
+                    <Label className="mb-1.5 text-sm">Batch</Label>
+                    <Select
+                      value={batchFilter}
+                      onValueChange={setBatchFilter}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Batches" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Batches</SelectItem>
+                        {filterOptions?.batches?.map((batch) => (
+                          <SelectItem key={batch.id} value={String(batch.id)}>
+                            {batch.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
