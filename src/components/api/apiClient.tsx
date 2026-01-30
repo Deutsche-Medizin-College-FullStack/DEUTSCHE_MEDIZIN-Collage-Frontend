@@ -3,7 +3,7 @@ import axios from "axios";
 const noAuthEndpoints = [
   // GET endpoints that don't require auth
   { url: "/auth/login", method: "POST" },
-  
+
   // GET endpoints that don't require auth
   { url: "/enums/genders", method: "GET" },
   { url: "/enums/marital-statuses", method: "GET" },
@@ -21,10 +21,10 @@ const noAuthEndpoints = [
 ];
 
 const apiClient = axios.create({
-
   // baseURL: "http://localhost:8080/api",
-  // baseURL: "https://concise-skunk-preferably.ngrok-free.app/api",
-   baseURL:"https://deutschemedizin-collage-backend-production.up.railway.app/api",
+  //baseURL: "https://concise-skunk-preferably.ngrok-free.app/api",
+  baseURL:
+    "https://deutschemedizin-collage-backend-production.up.railway.app/api",
   headers: {
     "ngrok-skip-browser-warning": "true",
     "User-Agent":
@@ -44,12 +44,13 @@ const apiClient = axios.create({
 
 //==================================================================================================
 
-  apiClient.interceptors.request.use((config) => {
-    // Check if current request matches any no-auth endpoint pattern
-    const requiresAuth = !noAuthEndpoints.some((endpoint) => {
-      const urlMatches = config.url?.endsWith(endpoint.url);
-      const methodMatches = config.method?.toLowerCase() === endpoint.method.toLowerCase();
-      return urlMatches && methodMatches;
+apiClient.interceptors.request.use((config) => {
+  // Check if current request matches any no-auth endpoint pattern
+  const requiresAuth = !noAuthEndpoints.some((endpoint) => {
+    const urlMatches = config.url?.endsWith(endpoint.url);
+    const methodMatches =
+      config.method?.toLowerCase() === endpoint.method.toLowerCase();
+    return urlMatches && methodMatches;
   });
 
   console.log(`Request to ${config.url}, requires auth: ${requiresAuth}`);
