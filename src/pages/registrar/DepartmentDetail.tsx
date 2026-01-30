@@ -77,6 +77,12 @@ interface DepartmentInfo {
   departmentData?: DepartmentData;
 }
 
+interface DepartmentOption {
+  id: number;
+  name: string;
+  code: string;
+}
+
 export default function DepartmentDetail() {
   const { id } = useParams();
   const location = useLocation();
@@ -131,6 +137,11 @@ export default function DepartmentDetail() {
   ] = useState<Course[]>([]);
   const [departmentDetails, setDepartmentDetails] =
     useState<DepartmentData | null>(null);
+  
+  // New states for department dropdown
+  const [allDepartments, setAllDepartments] = useState<DepartmentOption[]>([]);
+  const [isLoadingDepartments, setIsLoadingDepartments] = useState(false);
+  const [showDepartmentDropdown, setShowDepartmentDropdown] = useState(false);
 
   // If we have passed department data, use it immediately
   useEffect(() => {
@@ -139,6 +150,7 @@ export default function DepartmentDetail() {
       setDepartmentId(passedDepartmentData.dptID);
     }
   }, [passedDepartmentData]);
+  
   useEffect(() => {
     if (department?.years) {
       const total = department.years.reduce(
@@ -156,7 +168,7 @@ export default function DepartmentDetail() {
 
       try {
         const deptId = parseInt(id);
-        const response = await apiService.get(`/api/departments/${deptId}`);
+        const response = await apiService.get(`/departments/${deptId}`);
         setDepartmentDetails(response);
         setDepartmentId(response.dptID);
       } catch (error) {
@@ -174,6 +186,35 @@ export default function DepartmentDetail() {
       fetchDepartmentDetails();
     }
   }, [id, passedDepartmentData]);
+
+  // Fetch all departments for dropdown
+  const fetchAllDepartments = async () => {
+    try {
+      setIsLoadingDepartments(true);
+      const response = await apiService.get("/departments");
+      
+      // Transform the response to match our interface
+      const departments: DepartmentOption[] = response.map((dept: any) => ({
+        id: dept.dptID,
+        name: dept.deptName,
+        code: dept.departmentCode
+      }));
+      
+      setAllDepartments(departments);
+    } catch (error) {
+      console.error("Error fetching departments:", error);
+      setAllDepartments([]);
+    } finally {
+      setIsLoadingDepartments(false);
+    }
+  };
+
+  // Load departments when dropdown is shown
+  useEffect(() => {
+    if (showDepartmentDropdown && allDepartments.length === 0) {
+      fetchAllDepartments();
+    }
+  }, [showDepartmentDropdown]);
 
   // Get level and modality names from department data
   const getProgramLevelAndModality = () => {
@@ -574,6 +615,10 @@ export default function DepartmentDetail() {
                   ctitle: editValues.name,
                   theoryHrs: parseInt(editValues.theoryHrs),
                   labHrs: parseInt(editValues.labHrs),
+                  department: {
+                    id: parseInt(editValues.departmentID),
+                    name: allDepartments.find(d => d.id === parseInt(editValues.departmentID))?.name || "Unknown"
+                  },
                   prerequisites: editValues.prerequisiteIds.map((id) => {
                     const prereqCourse = departmentCoursesForPrerequisites.find(
                       (c) => c.id === id
@@ -621,6 +666,7 @@ export default function DepartmentDetail() {
 
       alert("Course updated successfully!");
       setEditingCourse(null);
+      setShowDepartmentDropdown(false);
 
       // Refresh data in background
       await Promise.all([
@@ -677,6 +723,7 @@ export default function DepartmentDetail() {
       semesterCode: "",
       prerequisiteIds: [],
     });
+    setShowDepartmentDropdown(false);
   };
 
   // Custom handler for prerequisite selection
@@ -689,6 +736,24 @@ export default function DepartmentDetail() {
       ...editValues,
       prerequisiteIds: selectedIds,
     });
+  };
+
+  // Handler for selecting a department from dropdown
+  const handleSelectDepartment = (deptId: number, deptName: string) => {
+    setEditValues({
+      ...editValues,
+      departmentID: deptId.toString(),
+    });
+    setShowDepartmentDropdown(false);
+  };
+
+  // Get selected department name for display
+  const getSelectedDepartmentName = () => {
+    if (!editValues.departmentID) return "Select Department";
+    const selectedDept = allDepartments.find(
+      (d) => d.id === parseInt(editValues.departmentID)
+    );
+    return selectedDept ? `${selectedDept.name} (${selectedDept.code})` : "Select Department";
   };
 
   if (isLoading) {
@@ -953,10 +1018,10 @@ export default function DepartmentDetail() {
                       ).filter((val) => !isNaN(val)),
                     })
                   }
-                  className="w-full border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 min-h-[120px]"
+                  className="w-full border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 min-h-[120px] overflow-y-auto overflow-x-auto"
                 >
                   {departmentCoursesForPrerequisites.map((course) => (
-                    <option key={course.id} value={course.id}>
+                    <option key={course.id} value={course.id} title={`${course.ccode} - ${course.ctitle}`}>
                       {course.ccode} - {course.ctitle}
                     </option>
                   ))}
@@ -1132,7 +1197,7 @@ export default function DepartmentDetail() {
                               </p>
                             </div>
                           ) : (
-                            <div className="overflow-hidden rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+                            <div className="overflow-x-auto rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
                               <table className="w-full">
                                 <thead>
                                   <tr className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 border-b-2 border-gray-200 dark:border-gray-700">
@@ -1154,6 +1219,12 @@ export default function DepartmentDetail() {
                                     <th className="p-4 text-left font-bold text-gray-700 dark:text-gray-300">
                                       Category
                                     </th>
+                                    {/* Department column only shows when editing */}
+                                    {editingCourse && (
+                                      <th className="p-4 text-left font-bold text-gray-700 dark:text-gray-300">
+                                        Department
+                                      </th>
+                                    )}
                                     <th className="p-4 text-left font-bold text-gray-700 dark:text-gray-300">
                                       Prerequisites
                                     </th>
@@ -1256,6 +1327,94 @@ export default function DepartmentDetail() {
                                                 placeholder="Category ID"
                                               />
                                             </td>
+                                            <td className="p-4 relative">
+                                              <div className="relative">
+                                                <button
+                                                  type="button"
+                                                  onClick={() =>
+                                                    setShowDepartmentDropdown(
+                                                      !showDepartmentDropdown
+                                                    )
+                                                  }
+                                                  className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 text-left flex justify-between items-center"
+                                                >
+                                                  <span>
+                                                    {getSelectedDepartmentName()}
+                                                  </span>
+                                                  <svg
+                                                    className={`w-4 h-4 transition-transform ${
+                                                      showDepartmentDropdown
+                                                        ? "rotate-180"
+                                                        : ""
+                                                    }`}
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                  >
+                                                    <path
+                                                      strokeLinecap="round"
+                                                      strokeLinejoin="round"
+                                                      strokeWidth={2}
+                                                      d="M19 9l-7 7-7-7"
+                                                    />
+                                                  </svg>
+                                                </button>
+                                                
+                                                {showDepartmentDropdown && (
+                                                  <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                                                    {isLoadingDepartments ? (
+                                                      <div className="p-4 text-center">
+                                                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
+                                                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                                                          Loading departments...
+                                                        </p>
+                                                      </div>
+                                                    ) : allDepartments.length === 0 ? (
+                                                      <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                                                        No departments found
+                                                      </div>
+                                                    ) : (
+                                                      allDepartments.map((dept) => (
+                                                        <button
+                                                          key={dept.id}
+                                                          type="button"
+                                                          onClick={() =>
+                                                            handleSelectDepartment(
+                                                              dept.id,
+                                                              dept.name
+                                                            )
+                                                          }
+                                                          className={`w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+                                                            editValues.departmentID ===
+                                                            dept.id.toString()
+                                                              ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                                                              : "text-gray-800 dark:text-gray-200"
+                                                          }`}
+                                                        >
+                                                          <div className="font-medium">
+                                                            {dept.name}
+                                                          </div>
+                                                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                                                            Code: {dept.code}
+                                                          </div>
+                                                        </button>
+                                                      ))
+                                                    )}
+                                                  </div>
+                                                )}
+                                              </div>
+                                              
+                                              {editValues.departmentID && (
+                                                <div className="text-xs text-green-600 dark:text-green-400 mt-1">
+                                                  Selected:{" "}
+                                                  {allDepartments.find(
+                                                    (d) =>
+                                                      d.id ===
+                                                      parseInt(editValues.departmentID)
+                                                  )?.name || "Unknown"}
+                                                </div>
+                                              )}
+                                            </td>
                                             <td className="p-4">
                                               <select
                                                 multiple
@@ -1267,13 +1426,14 @@ export default function DepartmentDetail() {
                                                     e.target
                                                   )
                                                 }
-                                                className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 min-h-[80px]"
+                                                className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 min-h-[80px] overflow-y-auto overflow-x-auto"
                                               >
                                                 {departmentCoursesForPrerequisites.map(
                                                   (prereqCourse) => (
                                                     <option
                                                       key={prereqCourse.id}
                                                       value={prereqCourse.id}
+                                                      title={`${prereqCourse.ccode} - ${prereqCourse.ctitle}`}
                                                       className={
                                                         editValues.prerequisiteIds.includes(
                                                           prereqCourse.id
@@ -1402,29 +1562,39 @@ export default function DepartmentDetail() {
                                                 {course.category}
                                               </span>
                                             </td>
-                                            <td className="p-4">
-                                              {course.prerequisites.length >
-                                              0 ? (
-                                                <div className="flex flex-wrap gap-1">
-                                                  {course.prerequisites.map(
-                                                    (
-                                                      prereq: string,
-                                                      index: number
-                                                    ) => (
-                                                      <span
-                                                        key={index}
-                                                        className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium"
-                                                      >
-                                                        {prereq}
-                                                      </span>
-                                                    )
-                                                  )}
-                                                </div>
-                                              ) : (
-                                                <span className="text-gray-400 dark:text-gray-500 text-sm">
-                                                  None
+                                            {/* Department column only shows when editing */}
+                                            {editingCourse && (
+                                              <td className="p-4">
+                                                <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm font-semibold">
+                                                  {course.originalCourse?.department?.name || "Unknown"}
                                                 </span>
-                                              )}
+                                              </td>
+                                            )}
+                                            <td className="p-4">
+                                              <div className="max-w-[200px] overflow-x-auto">
+                                                {course.prerequisites.length >
+                                                0 ? (
+                                                  <div className="flex flex-nowrap gap-1">
+                                                    {course.prerequisites.map(
+                                                      (
+                                                        prereq: string,
+                                                        index: number
+                                                      ) => (
+                                                        <span
+                                                          key={index}
+                                                          className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium whitespace-nowrap"
+                                                        >
+                                                          {prereq}
+                                                        </span>
+                                                      )
+                                                    )}
+                                                  </div>
+                                                ) : (
+                                                  <span className="text-gray-400 dark:text-gray-500 text-sm">
+                                                    None
+                                                  </span>
+                                                )}
+                                              </div>
                                             </td>
                                             <td className="p-4">
                                               <div className="flex gap-2 justify-center">
