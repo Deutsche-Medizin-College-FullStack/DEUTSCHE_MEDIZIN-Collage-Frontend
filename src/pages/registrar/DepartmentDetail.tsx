@@ -1018,7 +1018,7 @@ export default function DepartmentDetail() {
                       ).filter((val) => !isNaN(val)),
                     })
                   }
-                  className="w-full border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 min-h-[120px] overflow-y-auto"
+                  className="w-full border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 min-h-[120px] overflow-y-auto overflow-x-auto"
                 >
                   {departmentCoursesForPrerequisites.map((course) => (
                     <option key={course.id} value={course.id} title={`${course.ccode} - ${course.ctitle}`}>
@@ -1197,7 +1197,7 @@ export default function DepartmentDetail() {
                               </p>
                             </div>
                           ) : (
-                            <div className="overflow-hidden rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+                            <div className="overflow-x-auto rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
                               <table className="w-full">
                                 <thead>
                                   <tr className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 border-b-2 border-gray-200 dark:border-gray-700">
@@ -1362,46 +1362,44 @@ export default function DepartmentDetail() {
                                                 
                                                 {showDepartmentDropdown && (
                                                   <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-xl max-h-60 overflow-y-auto">
-                                                    <div className="max-h-60 overflow-y-auto">
-                                                      {isLoadingDepartments ? (
-                                                        <div className="p-4 text-center">
-                                                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
-                                                          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                                                            Loading departments...
-                                                          </p>
-                                                        </div>
-                                                      ) : allDepartments.length === 0 ? (
-                                                        <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-                                                          No departments found
-                                                        </div>
-                                                      ) : (
-                                                        allDepartments.map((dept) => (
-                                                          <button
-                                                            key={dept.id}
-                                                            type="button"
-                                                            onClick={() =>
-                                                              handleSelectDepartment(
-                                                                dept.id,
-                                                                dept.name
-                                                              )
-                                                            }
-                                                            className={`w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
-                                                              editValues.departmentID ===
-                                                              dept.id.toString()
-                                                                ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                                                                : "text-gray-800 dark:text-gray-200"
-                                                            }`}
-                                                          >
-                                                            <div className="font-medium">
-                                                              {dept.name}
-                                                            </div>
-                                                            <div className="text-sm text-gray-500 dark:text-gray-400">
-                                                              Code: {dept.code}
-                                                            </div>
-                                                          </button>
-                                                        ))
-                                                      )}
-                                                    </div>
+                                                    {isLoadingDepartments ? (
+                                                      <div className="p-4 text-center">
+                                                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
+                                                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                                                          Loading departments...
+                                                        </p>
+                                                      </div>
+                                                    ) : allDepartments.length === 0 ? (
+                                                      <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                                                        No departments found
+                                                      </div>
+                                                    ) : (
+                                                      allDepartments.map((dept) => (
+                                                        <button
+                                                          key={dept.id}
+                                                          type="button"
+                                                          onClick={() =>
+                                                            handleSelectDepartment(
+                                                              dept.id,
+                                                              dept.name
+                                                            )
+                                                          }
+                                                          className={`w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+                                                            editValues.departmentID ===
+                                                            dept.id.toString()
+                                                              ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                                                              : "text-gray-800 dark:text-gray-200"
+                                                          }`}
+                                                        >
+                                                          <div className="font-medium">
+                                                            {dept.name}
+                                                          </div>
+                                                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                                                            Code: {dept.code}
+                                                          </div>
+                                                        </button>
+                                                      ))
+                                                    )}
                                                   </div>
                                                 )}
                                               </div>
@@ -1428,7 +1426,7 @@ export default function DepartmentDetail() {
                                                     e.target
                                                   )
                                                 }
-                                                className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 min-h-[80px] overflow-y-auto"
+                                                className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 min-h-[80px] overflow-y-auto overflow-x-auto"
                                               >
                                                 {departmentCoursesForPrerequisites.map(
                                                   (prereqCourse) => (
