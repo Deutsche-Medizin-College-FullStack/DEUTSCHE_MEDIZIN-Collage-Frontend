@@ -59,69 +59,102 @@ const GradingSystemEditor = () => {
     fetchGradingSystems();
   }, []);
 
-    //==============================================================================================
+  //==============================================================================================
   // Instructions
   const InstructionsReminder = () => (
-  <div className="mb-10 p-8 rounded-3xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 border-2 border-blue-200 dark:border-blue-800/50 shadow-lg">
-    <h3 className="text-2xl font-bold text-blue-700 dark:text-blue-300 mb-4 flex items-center gap-3">
-      <span className="text-3xl">📊</span> Grading System Instructions for Registrars
-    </h3>
-    <div className="space-y-4 text-gray-700 dark:text-gray-300">
-      <div className="flex items-start gap-3">
-        <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full p-2 mt-1">
-          1
-        </span>
-        <div>
-          <span className="font-semibold text-gray-900 dark:text-white">Purpose:</span>
-          <p>Manage grading systems and mark intervals. Students receive grades based on the <strong>active</strong> grading system for their department.</p>
+    <div className="mb-10 p-8 rounded-3xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 border-2 border-blue-200 dark:border-blue-800/50 shadow-lg">
+      <h3 className="text-2xl font-bold text-blue-700 dark:text-blue-300 mb-4 flex items-center gap-3">
+        <span className="text-3xl">📊</span> Grading System Instructions for
+        Registrars
+      </h3>
+      <div className="space-y-4 text-gray-700 dark:text-gray-300">
+        <div className="flex items-start gap-3">
+          <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full p-2 mt-1">
+            1
+          </span>
+          <div>
+            <span className="font-semibold text-gray-900 dark:text-white">
+              Purpose:
+            </span>
+            <p>
+              Manage grading systems and mark intervals. Students receive grades
+              based on the <strong>active</strong> grading system for their
+              department.
+            </p>
+          </div>
         </div>
-      </div>
-      <div className="flex items-start gap-3">
-        <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full p-2 mt-1">
-          2
-        </span>
-        <div>
-          <span className="font-semibold text-gray-900 dark:text-white">Department-Specific vs Global:</span>
-          <p>
-            • <strong>Department-Specific:</strong> Only applies to that department
-            <br />
-            • <strong>Global (No Department):</strong> Applies to all departments without a specific system
+        <div className="flex items-start gap-3">
+          <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full p-2 mt-1">
+            2
+          </span>
+          <div>
+            <span className="font-semibold text-gray-900 dark:text-white">
+              Department-Specific vs Global:
+            </span>
+            <p>
+              • <strong>Department-Specific:</strong> Only applies to that
+              department
+              <br />• <strong>Global (No Department):</strong> Applies to all
+              departments without a specific system
+            </p>
+          </div>
+        </div>
+        <div className="flex items-start gap-3">
+          <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full p-2 mt-1">
+            3
+          </span>
+          <div>
+            <span className="font-semibold text-gray-900 dark:text-white">
+              Mark Intervals Setup:
+            </span>
+            <p>
+              • Must cover the full range from{" "}
+              <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">
+                0
+              </code>{" "}
+              to{" "}
+              <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">
+                100
+              </code>{" "}
+              with <strong>no gaps</strong> and <strong>no overlaps</strong>
+              <br />
+              • Recommended: use .99 endings for better compatibility (example:
+              0–49.99, 50–69.99, 70–84.99, 85–100)
+              <br />
+              • Alternative: whole numbers (example: 0–50, 50–70, 70–85, 85–100)
+              <br />
+              • The system automatically handles tiny adjustments when saving
+              <br />• Each interval needs: Description, Min/Max, Given Value,
+              Grade Letter
+            </p>
+          </div>
+        </div>
+        <div className="flex items-start gap-3">
+          <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full p-2 mt-1">
+            4
+          </span>
+          <div>
+            <span className="font-semibold text-gray-900 dark:text-white">
+              Active Status:
+            </span>
+            <p>
+              Only <strong>one</strong> grading system can be active per
+              department. Activating a system automatically deactivates others
+              in the same department.
+            </p>
+          </div>
+        </div>
+        <div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500 rounded-r-lg">
+          <p className="font-medium text-yellow-800 dark:text-yellow-200">
+            ⚠️ <strong>Important:</strong> Deleting a grading system will{" "}
+            <strong>permanently delete</strong> all associated mark intervals
+            and may affect student records.
           </p>
         </div>
-      </div>
-      <div className="flex items-start gap-3">
-        <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full p-2 mt-1">
-          3
-        </span>
-        <div>
-          <span className="font-semibold text-gray-900 dark:text-white">Mark Intervals Setup:</span>
-          <p>
-            • Must cover full range from <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">0</code> to <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">100</code>
-            <br />
-            • No overlapping intervals allowed
-            <br />
-            • Each interval requires: Description, Min/Max, Given Value, Grade Letter
-          </p>
-        </div>
-      </div>
-      <div className="flex items-start gap-3">
-        <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full p-2 mt-1">
-          4
-        </span>
-        <div>
-          <span className="font-semibold text-gray-900 dark:text-white">Active Status:</span>
-          <p>Only <strong>one</strong> grading system can be active per department. Activating a system automatically deactivates others in the same department.</p>
-        </div>
-      </div>
-      <div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500 rounded-r-lg">
-        <p className="font-medium text-yellow-800 dark:text-yellow-200">
-          ⚠️ <strong>Important:</strong> Deleting a grading system will <strong>permanently delete</strong> all associated mark intervals and may affect student records.
-        </p>
       </div>
     </div>
-  </div>
-);
-//==================================================================================================
+  );
+  //==================================================================================================
 
   return (
     <div className="min-h-screen p-6 transition-colors duration-300 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
@@ -204,6 +237,33 @@ const CrudSection = ({
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const [manyGradingSystem, setManyGradingSystem] = useState<string>("all");
   const [manyDepartments, setManyDepartments] = useState<string>("all");
+  const preparePayloadForBackend = () => {
+    // We sort again just to be extra safe
+    const sortedIntervals = [...formData.intervals].sort(
+      (a, b) => a.min - b.min
+    );
+
+    const adjusted = sortedIntervals.map((interval, index) => {
+      // Last interval → keep max exactly 100 (or whatever user entered)
+      if (index === sortedIntervals.length - 1) {
+        return { ...interval };
+      }
+
+      // For all other intervals, reduce max slightly to avoid backend overlap detection
+      // 0.01 is usually enough when using .99 or whole numbers
+      const safeMax = Number((interval.max - 0.01).toFixed(2));
+
+      return {
+        ...interval,
+        max: safeMax,
+      };
+    });
+
+    return {
+      ...formData,
+      intervals: adjusted,
+    };
+  };
   const emptyInterval: Interval = {
     id: null,
     description: "",
@@ -376,69 +436,197 @@ const CrudSection = ({
     }));
   };
 
+  // const validateForm = () => {
+  //   if (!formData.versionName.trim()) {
+  //     setFormError("Version name is required.");
+  //     return false;
+  //   }
+  //   if (!formData.intervals.length) {
+  //     setFormError("At least one interval is required.");
+  //     return false;
+  //   }
+
+  //   for (const interval of formData.intervals) {
+  //     if (!interval.description.trim() || !interval.gradeLetter.trim()) {
+  //       setFormError("Each interval must have a description and grade letter.");
+  //       return false;
+  //     }
+  //     if (interval.min > interval.max) {
+  //       setFormError("Interval min cannot be greater than max.");
+  //       return false;
+  //     }
+  //   }
+
+  //   // Check overlapping intervals
+  //   const sorted = [...formData.intervals].sort((a, b) => a.min - b.min);
+  //   for (let i = 1; i < sorted.length; i++) {
+  //     if (sorted[i].min <= sorted[i - 1].max) {
+  //       setFormError(
+  //         "Intervals must not overlap. Please adjust min/max values."
+  //       );
+  //       return false;
+  //     }
+  //   }
+
+  //   // Check if intervals cover full range (0-100)
+  //   const totalCoverage = sorted.reduce(
+  //     (sum, int) => sum + (int.max - int.min),
+  //     0
+  //   );
+  //   if (Math.abs(totalCoverage - 99) > 0.0) {
+  //     setFormError("Intervals should cover the full range (0-100).");
+  //     return false;
+  //   }
+
+  //   return true;
+  // };
   const validateForm = () => {
     if (!formData.versionName.trim()) {
       setFormError("Version name is required.");
       return false;
     }
-    if (!formData.intervals.length) {
+
+    if (formData.intervals.length === 0) {
       setFormError("At least one interval is required.");
       return false;
     }
 
-    for (const interval of formData.intervals) {
-      if (!interval.description.trim() || !interval.gradeLetter.trim()) {
-        setFormError("Each interval must have a description and grade letter.");
+    const sorted = [...formData.intervals].sort((a, b) => a.min - b.min);
+
+    // Basic checks for each interval
+    for (const int of sorted) {
+      if (!int.description.trim()) {
+        setFormError("Every interval must have a description.");
         return false;
       }
-      if (interval.min > interval.max) {
-        setFormError("Interval min cannot be greater than max.");
+      if (!int.gradeLetter.trim()) {
+        setFormError("Every interval must have a grade letter.");
+        return false;
+      }
+      if (int.min > int.max) {
+        setFormError(`Invalid range: min (${int.min}) > max (${int.max})`);
         return false;
       }
     }
 
-    // Check overlapping intervals
-    const sorted = [...formData.intervals].sort((a, b) => a.min - b.min);
+    // Must start at 0
+    if (sorted[0].min !== 0) {
+      setFormError("The first interval must start from 0.");
+      return false;
+    }
+
+    // Must end at 100
+    if (sorted[sorted.length - 1].max !== 100) {
+      setFormError("The last interval must end at 100.");
+      return false;
+    }
+
+    // Check for overlaps AND gaps
     for (let i = 1; i < sorted.length; i++) {
-      if (sorted[i].min <= sorted[i - 1].max) {
+      const prev = sorted[i - 1];
+      const curr = sorted[i];
+
+      if (curr.min < prev.max) {
         setFormError(
-          "Intervals must not overlap. Please adjust min/max values."
+          `Overlap detected: ${prev.min}–${prev.max} overlaps with ${curr.min}–${curr.max}`
         );
         return false;
       }
-    }
 
-    // Check if intervals cover full range (0-100)
-    const totalCoverage = sorted.reduce(
-      (sum, int) => sum + (int.max - int.min),
-      0
-    );
-    if (Math.abs(totalCoverage - 99) > 0.0) {
-      setFormError("Intervals should cover the full range (0-100).");
-      return false;
+      if (curr.min > prev.max) {
+        setFormError(
+          `Gap between intervals: ${prev.max} to ${curr.min} is not covered`
+        );
+        return false;
+      }
+      // If curr.min === prev.max → perfect, allowed
     }
 
     return true;
   };
 
   // Submit handler
+  // const handleSubmit = async () => {
+  //   if (!validateForm()) return;
+
+  //   setSaving(true);
+  //   try {
+  //     let updatedData: GradingSystem[] = [...data];
+
+  //     if (editingItem) {
+  //       // Update main data
+  //       if (!window.confirm("Update this grading system?")) return;
+
+  //       const response = await apiService.put(
+  //         `${endPoints.gradingSystem}/${editingItem.id}`,
+  //         formData
+  //       );
+
+  //       // Update active status separately
+  //       if (isActive !== editingItem.active) {
+  //         await apiService.put(
+  //           `${endPoints.gradingSystem}/${editingItem.id}/active-status`,
+  //           { isActive }
+  //         );
+  //       }
+
+  //       updatedData = data.map((d) =>
+  //         d.id === editingItem.id ? { ...response, active: isActive } : d
+  //       );
+  //       setData(updatedData);
+  //     } else {
+  //       // Create new (new ones are inactive by default unless you change logic)
+  //       if (!window.confirm("Add this new grading system?")) return;
+
+  //       const response = await apiService.post(
+  //         endPoints.gradingSystem,
+  //         formData
+  //       );
+
+  //       // If user wants it active immediately, toggle it after creation
+  //       if (isActive) {
+  //         await apiService.post(
+  //           `${endPoints.gradingSystem}/${response.id}/active-status`,
+  //           { isActive: true }
+  //         );
+  //       }
+
+  //       updatedData = [...data, { ...response, active: isActive }];
+  //       setData(updatedData);
+  //     }
+
+  //     handleCloseModal();
+  //     refetch(); // Refresh full list from server
+  //   } catch (e: any) {
+  //     console.error("Save error:", e);
+  //     setFormError(
+  //       e.response?.data?.message ||
+  //         `Failed to ${editingItem ? "update" : "create"} grading system.`
+  //     );
+  //   } finally {
+  //     setSaving(false);
+  //   }
+  // };
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
     setSaving(true);
     try {
-      let updatedData: GradingSystem[] = [...data];
+      // Prepare payload with adjusted max values
+      const payload = preparePayloadForBackend();
+
+      let response;
+      let updatedItem: GradingSystem;
 
       if (editingItem) {
-        // Update main data
         if (!window.confirm("Update this grading system?")) return;
 
-        const response = await apiService.put(
+        response = await apiService.put(
           `${endPoints.gradingSystem}/${editingItem.id}`,
-          formData
+          payload
         );
 
-        // Update active status separately 
+        // Handle active status change separately
         if (isActive !== editingItem.active) {
           await apiService.put(
             `${endPoints.gradingSystem}/${editingItem.id}/active-status`,
@@ -446,20 +634,12 @@ const CrudSection = ({
           );
         }
 
-        updatedData = data.map((d) =>
-          d.id === editingItem.id ? { ...response, active: isActive } : d
-        );
-        setData(updatedData);
+        updatedItem = { ...response, active: isActive };
       } else {
-        // Create new (new ones are inactive by default unless you change logic)
         if (!window.confirm("Add this new grading system?")) return;
 
-        const response = await apiService.post(
-          endPoints.gradingSystem,
-          formData
-        );
+        response = await apiService.post(endPoints.gradingSystem, payload);
 
-        // If user wants it active immediately, toggle it after creation
         if (isActive) {
           await apiService.post(
             `${endPoints.gradingSystem}/${response.id}/active-status`,
@@ -467,18 +647,25 @@ const CrudSection = ({
           );
         }
 
-        updatedData = [...data, { ...response, active: isActive }];
-        setData(updatedData);
+        updatedItem = { ...response, active: isActive };
       }
 
+      // Update local state
+      const updatedData = editingItem
+        ? data.map((d) => (d.id === editingItem.id ? updatedItem : d))
+        : [...data, updatedItem];
+
+      setData(updatedData);
+
       handleCloseModal();
-      refetch(); // Refresh full list from server
+      refetch();
     } catch (e: any) {
       console.error("Save error:", e);
-      setFormError(
+      const msg =
+        e.response?.data?.error ||
         e.response?.data?.message ||
-          `Failed to ${editingItem ? "update" : "create"} grading system.`
-      );
+        `Failed to ${editingItem ? "update" : "create"} grading system.`;
+      setFormError(msg);
     } finally {
       setSaving(false);
     }
@@ -495,93 +682,103 @@ const CrudSection = ({
   };
 
   //=============================================================================
-const HoverableIntervalDisplay = ({ intervals, versionName }: { intervals: Interval[], versionName: string }) => {
-  const [isHovered, setIsHovered] = useState(false);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const badgeRef = useRef<HTMLDivElement>(null);
+  const HoverableIntervalDisplay = ({
+    intervals,
+    versionName,
+  }: {
+    intervals: Interval[];
+    versionName: string;
+  }) => {
+    const [isHovered, setIsHovered] = useState(false);
+    const [position, setPosition] = useState({ x: 0, y: 0 });
+    const badgeRef = useRef<HTMLDivElement>(null);
 
-  const handleMouseEnter = (e: React.MouseEvent) => {
-    if (badgeRef.current) {
-      const rect = badgeRef.current.getBoundingClientRect();
-      setPosition({
-        x: rect.left + rect.width / 2,
-        y: rect.top
-      });
-      setIsHovered(true);
-    }
-  };
+    const handleMouseEnter = (e: React.MouseEvent) => {
+      if (badgeRef.current) {
+        const rect = badgeRef.current.getBoundingClientRect();
+        setPosition({
+          x: rect.left + rect.width / 2,
+          y: rect.top,
+        });
+        setIsHovered(true);
+      }
+    };
 
-  const handleMouseLeave = () => {
-    setIsHovered(false);
-  };
+    const handleMouseLeave = () => {
+      setIsHovered(false);
+    };
 
-  return (
-    <>
-      {/* Brief summary badge */}
-      <div 
-        ref={badgeRef}
-        className="relative inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm font-medium cursor-help hover:bg-blue-100 dark:hover:bg-blue-800/40 transition-colors"
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
-        <span className="font-semibold">{intervals.length} intervals</span>
-        <span className="text-xs opacity-75">
-          ({intervals[0]?.gradeLetter || '?'}...{intervals[intervals.length - 1]?.gradeLetter || '?'})
-        </span>
-      </div>
-
-      {/* Fixed position tooltip - simplified */}
-      {isHovered && (
-        <div 
-          className="fixed z-[9999] pointer-events-none"
-          style={{
-            left: `${position.x}px`,
-            top: `${position.y}px`,
-            transform: 'translate(-50%, calc(-100% - 10px))'
-          }}
+    return (
+      <>
+        {/* Brief summary badge */}
+        <div
+          ref={badgeRef}
+          className="relative inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm font-medium cursor-help hover:bg-blue-100 dark:hover:bg-blue-800/40 transition-colors"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
         >
-          <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-3 pointer-events-auto min-w-[200px]">
-            <div className="font-bold text-sm mb-2 text-gray-800 dark:text-white">
-              {versionName}
-            </div>
-            
-            <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
-              {intervals.map((int, idx) => (
-                <div 
-                  key={int.id ?? `${int.description}-${int.min}`}
-                  className="flex justify-between items-center text-sm"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold w-6 text-center text-md">
-                      {int.gradeLetter}
-                    </span>
-                    <span className="text-gray-600 dark:text-gray-400 text-sm">
-                      [{int.min} - {int.max}]
-                    </span>
+          <span className="font-semibold">{intervals.length} intervals</span>
+          <span className="text-xs opacity-75">
+            ({intervals[0]?.gradeLetter || "?"}...
+            {intervals[intervals.length - 1]?.gradeLetter || "?"})
+          </span>
+        </div>
+
+        {/* Fixed position tooltip - simplified */}
+        {isHovered && (
+          <div
+            className="fixed z-[9999] pointer-events-none"
+            style={{
+              left: `${position.x}px`,
+              top: `${position.y}px`,
+              transform: "translate(-50%, calc(-100% - 10px))",
+            }}
+          >
+            <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-3 pointer-events-auto min-w-[200px]">
+              <div className="font-bold text-sm mb-2 text-gray-800 dark:text-white">
+                {versionName}
+              </div>
+
+              <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+                {intervals.map((int, idx) => (
+                  <div
+                    key={int.id ?? `${int.description}-${int.min}`}
+                    className="flex justify-between items-center text-sm"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold w-6 text-center text-md">
+                        {int.gradeLetter}
+                      </span>
+                      <span className="text-gray-600 dark:text-gray-400 text-sm">
+                        [{int.min} - {int.max}]
+                      </span>
+                    </div>
+                    <div className="font-semibold text-blue-600 dark:text-blue-400 text-sm">
+                      {int.givenValue}
+                    </div>
                   </div>
-                  <div className="font-semibold text-blue-600 dark:text-blue-400 text-sm">
-                     {int.givenValue}
-                  </div>
+                ))}
+              </div>
+
+              <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
+                <div className="flex justify-between">
+                  <span>Total: {intervals.length}</span>
+                  <span>
+                    Range: {intervals[0]?.min || 0}-
+                    {intervals[intervals.length - 1]?.max || 100}
+                  </span>
                 </div>
-              ))}
-            </div>
-            
-            <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
-              <div className="flex justify-between">
-                <span>Total: {intervals.length}</span>
-                <span>Range: {intervals[0]?.min || 0}-{intervals[intervals.length - 1]?.max || 100}</span>
               </div>
             </div>
+
+            {/* Arrow */}
+            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-b-[6px] border-l-transparent border-r-transparent border-b-white dark:border-b-gray-800"></div>
           </div>
-          
-          {/* Arrow */}
-          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-b-[6px] border-l-transparent border-r-transparent border-b-white dark:border-b-gray-800"></div>
-        </div>
-      )}
-    </>
-  );
-};
-// ==========================================================================================
+        )}
+      </>
+    );
+  };
+  // ==========================================================================================
   // Rest of the JSX remains exactly the same as your original component
   // (Header Controls, Search, Table/Grid Views, Pagination, Modal)
   return (
@@ -661,7 +858,10 @@ const HoverableIntervalDisplay = ({ intervals, versionName }: { intervals: Inter
                     </ul>
                   </td> */}
                   <td className="px-6 py-4">
-                    <HoverableIntervalDisplay intervals={item.intervals} versionName={item.versionName} />
+                    <HoverableIntervalDisplay
+                      intervals={item.intervals}
+                      versionName={item.versionName}
+                    />
                   </td>
                   <td className="px-6 py-4">
                     {item.active ? (
@@ -835,7 +1035,53 @@ const HoverableIntervalDisplay = ({ intervals, versionName }: { intervals: Inter
             )}
 
             <h4 className="font-semibold mb-2">Intervals</h4>
-            
+
+            <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg text-sm">
+              <p className="font-medium text-blue-800 dark:text-blue-300 mb-2 flex items-center gap-2">
+                <span className="text-lg">💡</span> How to enter score ranges
+                correctly:
+              </p>
+              <ul className="list-disc pl-5 space-y-1.5 text-gray-700 dark:text-gray-300">
+                <li>
+                  Use ranges that <strong>touch exactly</strong> (no gaps, no
+                  overlaps)
+                </li>
+                <li>
+                  <strong>Recommended style (most reliable):</strong>
+                </li>
+                <li className="ml-4 font-mono">
+                  0 – 49.99 → 50 – 69.99 → 70 – 84.99 → 85 – 100
+                </li>
+                <li>
+                  <strong>
+                    Clean whole-number style (also usually works):
+                  </strong>
+                </li>
+                <li className="ml-4 font-mono">
+                  0 – 50 → 50 – 70 → 70 – 85 → 85 – 100
+                </li>
+                <li>
+                  The system automatically adjusts the numbers slightly when
+                  saving so the backend accepts them
+                </li>
+                <li>
+                  <strong>Important rules:</strong>
+                </li>
+                <li className="ml-4">
+                  • First range <strong>must start at 0</strong>
+                </li>
+                <li className="ml-4">
+                  • Last range <strong>must end at 100</strong>
+                </li>
+                <li className="ml-4">
+                  • No gaps (e.g. don't jump from 49 to 51)
+                </li>
+                <li className="ml-4">
+                  • No overlaps (e.g. don't have 80–90 and 85–95 at the same
+                  time)
+                </li>
+              </ul>
+            </div>
             <div className="space-y-4 mb-6">
               {formData.intervals.map((interval, idx) => (
                 <div
