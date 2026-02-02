@@ -484,7 +484,8 @@ export default function StudentCourseScoreTable() {
                   c.cTitle ||
                   c.name ||
                   c.displayName ||
-                  `Course ${c.id}`}
+                  `Course ${c.id}`}{" "}
+                {c.cCode}
               </Select.Option>
             ))}
           </Select>
@@ -739,7 +740,7 @@ export default function StudentCourseScoreTable() {
                     <div className="flex items-center gap-2">
                       <span>{item.course.displayName}</span>
                       <span className="text-gray-500 text-xs">
-                        ({item.courseSource.id})
+                        ({item.course.id})
                       </span>
                     </div>
                   </td>
