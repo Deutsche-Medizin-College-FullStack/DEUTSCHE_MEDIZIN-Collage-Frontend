@@ -3,7 +3,7 @@ import { message, Input, Modal, InputNumber, Select } from "antd";
 import apiClient from "../../components/api/apiClient";
 import endPoints from "../../components/api/endPoints";
 import { Pencil, Eye, EyeOff } from "lucide-react";
-
+import { useMemo } from "react";
 const initialData = [];
 
 export default function StudentCourseScoreTable() {
@@ -34,6 +34,7 @@ export default function StudentCourseScoreTable() {
     bcysId: "", // renamed from batchClassYearSemester
     studentId: null, // better name than "search"
     isReleased: null, // null = all, true, false
+    departmentId: "" as string | "", // ← new
   });
 
   const [filterOptions, setFilterOptions] = useState({
@@ -45,6 +46,7 @@ export default function StudentCourseScoreTable() {
     courseSources: [],
     //courses: [], // ← new or rename if you already have course list
     batchClassYearSemesters: [],
+    departments: [] as Array<{ id: number; name: string }>, // ← new
     // classYears: [],
   });
 
@@ -74,13 +76,13 @@ export default function StudentCourseScoreTable() {
   const fetchFilterOptions = async () => {
     try {
       const response = await apiClient.get(endPoints.lookupsDropdown);
-      console.log(response);
+      console.log("lookupsDropdown response:", response.data); // ← look here!
+
       if (response.data) {
         setFilterOptions({
-          // courses: response.data.classYear || [],
+          departments: response.data.departments || [], // ← hope this key exists
           batchClassYearSemesters: response.data.batchClassYearSemesters || [],
-          courseSources: response.data.courseSources || [], // keep for batch update
-          // remove departments, studentStatuses, etc.
+          courseSources: response.data.courseSources || [],
         });
       }
     } catch (error) {
@@ -111,13 +113,49 @@ export default function StudentCourseScoreTable() {
       setCoursesLoading(false);
     }
   };
+  // useEffect(() => {
+  //   const load = async () => {
+  //     try {
+  //       const [lookupsRes, deptsRes] = await Promise.all([
+  //         apiClient.get(endPoints.lookupsDropdown),
+  //         apiClient.get(endPoints.departments), // or /departments/list — adjust path
+  //       ]);
+
+  //       setFilterOptions((prev) => ({
+  //         ...prev,
+  //         departments: deptsRes.data || [],
+  //         batchClassYearSemesters:
+  //           lookupsRes.data.batchClassYearSemesters || [],
+  //         courseSources: lookupsRes.data.courseSources || [],
+  //       }));
+  //     } catch (err) {
+  //       message.error("Failed to load filters");
+  //     }
+  //   };
+  //   load();
+  // }, []);
   useEffect(() => {
     fetchCourseList();
   }, []);
   useEffect(() => {
     fetchStudnet();
   }, []);
+  const displayedData = useMemo(() => {
+    if (!filters.departmentId) {
+      return data; // show everything when no department filter
+    }
 
+    const selectedDeptId = Number(filters.departmentId);
+
+    return data.filter((row) => row.department?.id === selectedDeptId);
+  }, [data, filters.departmentId]);
+  console.log("Raw data:", data);
+  console.log("Filtered data:", displayedData);
+  console.log("Selected department ID:", filters.departmentId);
+  // useEffect(() => {
+  //   // When department changes → immediately update the displayed table
+  //   setData(displayedData);
+  // }, [displayedData]); // ← reacts only when displayedData changes
   const fetchStudentCourseScores = async () => {
     setLoading(true);
     try {
@@ -131,6 +169,9 @@ export default function StudentCourseScoreTable() {
         ...(filters.bcysId && { bcysId: filters.bcysId }),
         ...(filters.studentId && { studentId: Number(filters.studentId) }),
         ...(filters.isReleased !== null && { isReleased: filters.isReleased }),
+        ...(filters.departmentId && {
+          departmentId: Number(filters.departmentId),
+        }), // ← NEW
       };
 
       const response = await apiClient.get(endPoints.getAllScores, { params });
@@ -145,6 +186,7 @@ export default function StudentCourseScoreTable() {
             student: { name: item.studentName }, // ← most likely NOT returned
           },
           course: item.course || { id: null, displayName: "N/A" },
+          department: item.department || { id: null, displayName: "N/A" },
           batchClassYearSemester: item.bcys || {
             id: item.bcys?.id?.toString(),
             displayName: item.bcys?.displayName || "N/A",
@@ -391,8 +433,36 @@ export default function StudentCourseScoreTable() {
         {/* Course Filter */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Department
+          </label>
+          <Select
+            value={filters.departmentId || undefined}
+            onChange={(v) => handleFilterChange("departmentId", v)}
+            placeholder="All Departments"
+            allowClear
+            showSearch
+            className="w-full"
+            filterOption={(input, option) =>
+              (option?.children ?? "")
+                .toLowerCase()
+                .includes(input.toLowerCase())
+            }
+          >
+            {/* ─── This is the new explicit "All" option ─── */}
+            <Select.Option value="">All Departments</Select.Option>
+
+            {filterOptions.departments.map((dept) => (
+              <Select.Option key={dept.id} value={dept.id}>
+                {dept.name}
+              </Select.Option>
+            ))}
+          </Select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Course
           </label>
+
           <Select
             loading={coursesLoading}
             value={filters.courseId || undefined}
@@ -636,7 +706,7 @@ export default function StudentCourseScoreTable() {
                   <div className="animate-spin inline-block w-8 h-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
                 </td>
               </tr>
-            ) : data.length === 0 ? (
+            ) : displayedData.length === 0 ? (
               <tr>
                 <td
                   colSpan={9}
@@ -646,7 +716,7 @@ export default function StudentCourseScoreTable() {
                 </td>
               </tr>
             ) : (
-              data.map((item) => (
+              displayedData.map((item) => (
                 <tr
                   key={item.key}
                   className={
