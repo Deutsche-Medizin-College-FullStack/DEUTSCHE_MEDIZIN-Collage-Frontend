@@ -149,6 +149,13 @@ export default function StudentCourseScoreTable() {
 
     return data.filter((row) => row.department?.id === selectedDeptId);
   }, [data, filters.departmentId]);
+  console.log("Raw data:", data);
+  console.log("Filtered data:", displayedData);
+  console.log("Selected department ID:", filters.departmentId);
+  // useEffect(() => {
+  //   // When department changes → immediately update the displayed table
+  //   setData(displayedData);
+  // }, [displayedData]); // ← reacts only when displayedData changes
   const fetchStudentCourseScores = async () => {
     setLoading(true);
     try {
@@ -426,32 +433,36 @@ export default function StudentCourseScoreTable() {
         {/* Course Filter */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Department
+          </label>
+          <Select
+            value={filters.departmentId || undefined}
+            onChange={(v) => handleFilterChange("departmentId", v)}
+            placeholder="All Departments"
+            allowClear
+            showSearch
+            className="w-full"
+            filterOption={(input, option) =>
+              (option?.children ?? "")
+                .toLowerCase()
+                .includes(input.toLowerCase())
+            }
+          >
+            {/* ─── This is the new explicit "All" option ─── */}
+            <Select.Option value="">All Departments</Select.Option>
+
+            {filterOptions.departments.map((dept) => (
+              <Select.Option key={dept.id} value={dept.id}>
+                {dept.name}
+              </Select.Option>
+            ))}
+          </Select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Course
           </label>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Department
-            </label>
-            <Select
-              value={filters.departmentId || undefined}
-              onChange={(v) => handleFilterChange("departmentId", v)}
-              placeholder="All Departments"
-              allowClear
-              showSearch
-              className="w-full"
-              filterOption={(input, option) =>
-                (option?.children ?? "")
-                  .toLowerCase()
-                  .includes(input.toLowerCase())
-              }
-            >
-              {filterOptions.departments.map((dept) => (
-                <Select.Option key={dept.id} value={dept.id}>
-                  {dept.name}
-                </Select.Option>
-              ))}
-            </Select>
-          </div>
+
           <Select
             loading={coursesLoading}
             value={filters.courseId || undefined}
