@@ -736,7 +736,12 @@ export default function StudentCourseScoreTable() {
                     {item.studentId.student?.name || "N/A"}
                   </td>
                   <td className="px-6 py-4 text-sm">
-                    {item.course.displayName}
+                    <div className="flex items-center gap-2">
+                      <span>{item.course.displayName}</span>
+                      <span className="text-gray-500 text-xs">
+                        ({item.courseSource.id})
+                      </span>
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-sm">
                     {item.batchClassYearSemester.displayName}
