@@ -71,6 +71,7 @@ export default function StudentCourseScoreTable() {
     filters.bcysId,
     filters.studentId,
     filters.isReleased,
+    filters.departmentId,
   ]);
 
   const fetchFilterOptions = async () => {
@@ -425,13 +426,8 @@ export default function StudentCourseScoreTable() {
         </p>
       </div>
 
-      {/* Filters */}
-
-      {/* Filters */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
-        {/* Course */}
-        {/* Course Filter */}
-        <div>
+        {/* <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Department
           </label>
@@ -439,6 +435,7 @@ export default function StudentCourseScoreTable() {
             value={filters.departmentId || undefined}
             onChange={(v) => handleFilterChange("departmentId", v)}
             placeholder="All Departments"
+            y
             allowClear
             showSearch
             className="w-full"
@@ -448,7 +445,6 @@ export default function StudentCourseScoreTable() {
                 .includes(input.toLowerCase())
             }
           >
-            {/* ─── This is the new explicit "All" option ─── */}
             <Select.Option value="">All Departments</Select.Option>
 
             {filterOptions.departments.map((dept) => (
@@ -484,13 +480,125 @@ export default function StudentCourseScoreTable() {
                   c.cTitle ||
                   c.name ||
                   c.displayName ||
-                  `Course ${c.id}`}
+                  `Course ${c.id}`}{" "}
+                {c.cCode}
+              </Select.Option>
+            ))}
+          </Select>
+        </div> */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Department
+          </label>
+          <Select
+            value={filters.departmentId || undefined}
+            onChange={(value) => {
+              // Reset course selection when department changes
+              setFilters((prev) => ({
+                ...prev,
+                departmentId: value,
+                courseId: undefined, // ← this prevents invalid course staying selected
+              }));
+              setPagination((prev) => ({ ...prev, current: 1 }));
+            }}
+            placeholder="All Departments"
+            allowClear
+            showSearch
+            className="w-full"
+            filterOption={(input, option) =>
+              (option?.children ?? "")
+                .toLowerCase()
+                .includes(input.toLowerCase())
+            }
+          >
+            <Select.Option value="">All Departments</Select.Option>
+            {filterOptions.departments.map((dept) => (
+              <Select.Option key={dept.id} value={dept.id}>
+                {dept.name}
               </Select.Option>
             ))}
           </Select>
         </div>
 
-        {/* Batch / Year / Semester */}
+        {/* Course Filter – only shows matching department */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Course
+          </label>
+
+          <Select
+            loading={coursesLoading}
+            value={filters.courseId || undefined}
+            onChange={(v) => handleFilterChange("courseId", v)}
+            placeholder={
+              filters.departmentId
+                ? "Courses in selected department"
+                : "All Courses"
+            }
+            allowClear
+            showSearch
+            className="w-full"
+            dropdownClassName="min-w-[340px] sm:min-w-[420px] md:min-w-[500px]" // wider for long names
+            filterOption={(input, option) =>
+              (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+            }
+            optionLabelProp="label"
+          >
+            {/* Optional: All courses in the selected department */}
+            {filters.departmentId && filters.departmentId !== "" && (
+              <Select.Option value="">
+                <span className="text-gray-500 dark:text-gray-400 italic">
+                  All courses in this department
+                </span>
+              </Select.Option>
+            )}
+
+            {courseList
+              .filter((course) => {
+                // No department selected → show everything
+                if (!filters.departmentId || filters.departmentId === "") {
+                  return true;
+                }
+
+                // Get the selected department's NAME (because courses store department as string/name)
+                const selectedDept = filterOptions.departments.find(
+                  (d) => d.id === Number(filters.departmentId)
+                );
+
+                if (!selectedDept) return false;
+
+                // Compare with course.department (which seems to be a string like "Medicine")
+                return course.department === selectedDept.name;
+              })
+              .map((c) => {
+                const title =
+                  c.cTitle ||
+                  c.title ||
+                  c.name ||
+                  c.displayName ||
+                  `Course ${c.id}`;
+                const codePart = c.cCode ? `(${c.cCode}) ` : "";
+                const deptName = c.department || "—";
+
+                const fullLabel = `${codePart}${title} — ${deptName}`;
+
+                return (
+                  <Select.Option key={c.id} value={c.id} label={fullLabel}>
+                    <div className="flex flex-col text-sm py-0.5">
+                      <span className="font-medium text-gray-900 dark:text-gray-100">
+                        {codePart}
+                        {title}
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {deptName}
+                      </span>
+                    </div>
+                  </Select.Option>
+                );
+              })}
+          </Select>
+        </div>
+
         <div>
           <label className="block text-sm font-medium ...">
             Batch/Year/Semester
@@ -736,7 +844,12 @@ export default function StudentCourseScoreTable() {
                     {item.studentId.student?.name || "N/A"}
                   </td>
                   <td className="px-6 py-4 text-sm">
-                    {item.course.displayName}
+                    <div className="flex items-center gap-2">
+                      <span>{item.course.displayName}</span>
+                      <span className="text-gray-500 text-xs">
+                        ({item.course.id})
+                      </span>
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-sm">
                     {item.batchClassYearSemester.displayName}
