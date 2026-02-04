@@ -13,7 +13,7 @@ import endPoints from "@/components/api/endPoints";
 import DarkVeil from "@/designs/DarkVeil";
 import apiService from "@/components/api/apiService";
 import { toast } from "@/hooks/use-toast";
-
+import { Eye, EyeOff } from "lucide-react";
 const DropdownIndicator = (props) => (
   <components.DropdownIndicator {...props}>
     <svg
@@ -610,8 +610,107 @@ const PersonalInformationStep = ({
 /* ==============================================================
    STEP 2 – ACCOUNT CREATION (NEW)
    ============================================================== */
+// const AccountCreationStep = ({ formData, setFormData }) => {
+//   const [passwordError, setPasswordError] = useState("");
+
+//   const handleChange = (e) => {
+//     const { name, value } = e.target;
+//     setFormData((prev) => ({ ...prev, [name]: value }));
+//   };
+
+//   useEffect(() => {
+//     if (formData.password && formData.confirmPassword) {
+//       if (formData.password !== formData.confirmPassword) {
+//         setPasswordError("Passwords do not match");
+//       } else if (formData.password.length < 6) {
+//         setPasswordError("Password must be at least 6 characters");
+//       } else {
+//         setPasswordError("");
+//       }
+//     } else {
+//       setPasswordError("");
+//     }
+//   }, [formData.password, formData.confirmPassword]);
+
+//   return (
+//     <div className="space-y-6">
+//       <div className="text-center mb-6">
+//         <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
+//           Create Account
+//         </h2>
+//         <p className="text-sm text-gray-600 dark:text-gray-300">
+//           Choose a username and a strong password for the student portal.
+//         </p>
+//       </div>
+
+//       <section className="border-2 border-gray-200 rounded-lg p-6">
+//         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
+//               Username *
+//             </label>
+//             <input
+//               type="text"
+//               name="username"
+//               value={formData.username || ""}
+//               onChange={handleChange}
+//               placeholder="Enter username"
+//               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+//             />
+//           </div>
+
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
+//               Password *
+//             </label>
+//             <input
+//               type="password"
+//               name="password"
+//               value={formData.password || ""}
+//               onChange={handleChange}
+//               placeholder="Enter password"
+//               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+//             />
+//           </div>
+
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
+//               Confirm Password *
+//             </label>
+//             <input
+//               type="password"
+//               name="confirmPassword"
+//               value={formData.confirmPassword || ""}
+//               onChange={handleChange}
+//               placeholder="Confirm password"
+//               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+//             />
+//             {passwordError && (
+//               <p className="mt-1 text-xs text-red-600">{passwordError}</p>
+//             )}
+//           </div>
+//         </div>
+
+//         <div className="mt-4 text-sm text-gray-600 dark:text-gray-300">
+//           <ul className="list-disc pl-5 space-y-1">
+//             <li>Username must be unique (will be checked on submit).</li>
+//             <li>Password must be at least 6 characters.</li>
+//             <li>
+//               Use a mix of letters, numbers, and symbols for a strong password.
+//             </li>
+//           </ul>
+//         </div>
+//       </section>
+//     </div>
+//   );
+// };
+/* ==============================================================
+   STEP 2 – ACCOUNT CREATION (with password visibility toggle)
+   ============================================================== */
 const AccountCreationStep = ({ formData, setFormData }) => {
   const [passwordError, setPasswordError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -645,6 +744,7 @@ const AccountCreationStep = ({ formData, setFormData }) => {
 
       <section className="border-2 border-gray-200 rounded-lg p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Username */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
               Username *
@@ -659,32 +759,65 @@ const AccountCreationStep = ({ formData, setFormData }) => {
             />
           </div>
 
-          <div>
+          {/* Password with toggle */}
+          <div className="relative">
             <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
               Password *
             </label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password || ""}
-              onChange={handleChange}
-              placeholder="Enter password"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={formData.password || ""}
+                onChange={handleChange}
+                placeholder="Enter password"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-5 w-5" />
+                ) : (
+                  <Eye className="h-5 w-5" />
+                )}
+              </button>
+            </div>
           </div>
 
-          <div>
+          {/* Confirm Password with toggle */}
+          <div className="relative">
             <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
               Confirm Password *
             </label>
-            <input
-              type="password"
-              name="confirmPassword"
-              value={formData.confirmPassword || ""}
-              onChange={handleChange}
-              placeholder="Confirm password"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                name="confirmPassword"
+                value={formData.confirmPassword || ""}
+                onChange={handleChange}
+                placeholder="Confirm password"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                aria-label={
+                  showConfirmPassword ? "Hide password" : "Show password"
+                }
+              >
+                {showConfirmPassword ? (
+                  <EyeOff className="h-5 w-5" />
+                ) : (
+                  <Eye className="h-5 w-5" />
+                )}
+              </button>
+            </div>
+
             {passwordError && (
               <p className="mt-1 text-xs text-red-600">{passwordError}</p>
             )}
@@ -844,7 +977,7 @@ const EducationalInformationStep = ({ formData, setFormData, dropdowns }) => {
             ))}
           </select>
         </div>
-        <div className="mb-6">
+        {/* <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
             Is The Student A Transfer:
           </label>
@@ -864,8 +997,8 @@ const EducationalInformationStep = ({ formData, setFormData, dropdowns }) => {
               </label>
             ))}
           </div>
-        </div>
-        <div className="grid md:grid-cols-2">
+        </div> */}
+        {/* <div className="grid md:grid-cols-2">
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
               Exit Exam Id{" "}
@@ -894,7 +1027,7 @@ const EducationalInformationStep = ({ formData, setFormData, dropdowns }) => {
               />
             </div>
           </div>
-        </div>
+        </div> */}
 
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
@@ -910,7 +1043,7 @@ const EducationalInformationStep = ({ formData, setFormData, dropdowns }) => {
             />
           </div>
         </div>
-        <div className="mb-6">
+        {/* <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
             Is The Student A Transfer:
           </label>
@@ -929,6 +1062,36 @@ const EducationalInformationStep = ({ formData, setFormData, dropdowns }) => {
                 {index == 0 ? "is transfer" : "not transfer"}
               </label>
             ))}
+          </div>
+        </div> */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
+            Is the Student a Transfer?
+          </label>
+          <div className="flex gap-x-10">
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="radio"
+                name="isTransfer"
+                value="true" // ← string "true"
+                checked={formData.isTransfer === true} // ← compare with boolean true
+                onChange={handleInputChange}
+                className="mr-2 accent-blue-600"
+              />
+              Yes
+            </label>
+
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="radio"
+                name="isTransfer"
+                value="false" // ← string "false"
+                checked={formData.isTransfer === false}
+                onChange={handleInputChange}
+                className="mr-2 accent-blue-600"
+              />
+              No
+            </label>
           </div>
         </div>
 

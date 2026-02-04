@@ -652,93 +652,167 @@ export default function Transcript_Generate() {
       .slice(0, 31); // Excel sheet name limit
   };
 
-  // Prepare Student Copy data for Excel export
+  // Prepare Student Copy data for Excel export (Matching PDF Landscape Design)
   const prepareStudentCopySheets = (report: RealGradeReport) => {
     const sheets: Record<string, any[][]> = {};
 
     report.studentCopies.forEach((copy, index) => {
       const sheetData: any[][] = [];
 
-      // Header
-      sheetData.push(["DEUTSCHE HOCHSCHULE FÜR MEDIZIN"]);
-      sheetData.push(["STUDENT ACADEMIC RECORD - STUDENT COPY"]);
-      sheetData.push([]); // Empty row
+      // Yellow Header Band equivalent in Excel
+      sheetData.push(["MD1_[PC_I]"]);
+      sheetData.push(["DEUTSCHE HOCHSCHULE FÜR MEDIZINE MEDICAL COLLEGE"]);
+      sheetData.push(["STUDENT ACADEMIC RECORD"]);
+      sheetData.push([]);
 
-      // Student Info
+      // Student Info Table (PDF 4-column layout)
       sheetData.push([
         "ID Number",
-        report.idNumber,
-        "Date of Birth (GC)",
-        report.birthDateGC,
+        report.idNumber || "",
+        "Date Of Admission",
+        report.dateEnrolledGC || "",
       ]);
       sheetData.push([
-        "Gender",
-        report.gender,
-        "Date Enrolled (GC)",
-        report.dateEnrolledGC,
+        "Name of Student",
+        report.fullName || "",
+        "Enrolment Type",
+        report.programModality?.name || "Regular",
       ]);
       sheetData.push([
-        "Full Name",
-        report.fullName,
-        "Program Modality",
-        report.programModality?.name || "-",
-      ]);
-      sheetData.push([
-        "Program Level",
-        report.programLevel?.name || "-",
+        "Sex",
+        report.gender || "",
         "Department",
-        report.department?.name || "-",
+        report.department?.name || "",
       ]);
       sheetData.push([
-        "Class Year",
-        copy.classyear?.name || "-",
-        "Semester",
-        copy.semester?.name || "-",
+        "Program",
+        report.programLevel?.name || "Degree",
+        "Field of Study",
+        report.department?.name || "Medicine",
       ]);
       sheetData.push([
-        "Academic Year",
-        copy.academicYear || "-",
-        "Status",
-        copy.status,
+        "Date Of Birth",
+        report.birthDateGC || "",
+        "Date Issued",
+        report.dateIssuedGC || new Date().toLocaleDateString("en-GB"),
       ]);
+      sheetData.push([]);
+
+      // Academic Period Info
       sheetData.push([
-        "Semester GPA",
-        copy.semesterGPA,
-        "Cumulative GPA",
-        copy.semesterCGPA,
+        `Academic Year: ${copy.academicYear || "N/A"}   Class Year: ${copy.classyear?.name || "PC I"
+        }   Semester: ${copy.semester?.name || "Year Based"}`,
       ]);
-      sheetData.push([]); // Empty row
+      sheetData.push([]);
 
       // Courses Table Header
       sheetData.push([
-        "Course Code",
         "Course Title",
-        "Cr Hrs",
+        "Course Code",
+        "Cr.Hr.",
         "Letter Grade",
-        "Gr. Point",
+        "Gr.Point",
       ]);
 
       // Courses Data
-      copy.courses.forEach((course) => {
+      copy.courses.forEach((c) => {
         sheetData.push([
-          course.courseCode,
-          course.courseTitle,
-          course.totalCrHrs,
-          course.letterGrade,
-          course.gradePoint,
+          c.courseTitle || "",
+          c.courseCode || "",
+          c.totalCrHrs?.toFixed(2) || "0.00",
+          c.letterGrade || "",
+          c.gradePoint?.toFixed(2) || "0.00",
         ]);
       });
 
-      sheetData.push([]); // Empty row
+      // Totals Line
+      const totalCr = copy.courses.reduce((sum, c) => sum + (c.totalCrHrs || 0), 0);
+      const totalPoint = copy.courses.reduce((sum, c) => sum + (c.gradePoint || 0), 0);
+      sheetData.push(["Total:", "", totalCr.toFixed(2), "", totalPoint.toFixed(2)]);
+      sheetData.push([]);
 
-      // Totals
-      const totalCH = copy.courses.reduce((sum, c) => sum + c.totalCrHrs, 0);
-      const totalPoints = copy.courses.reduce(
-        (sum, c) => sum + c.gradePoint,
-        0
-      );
-      sheetData.push(["TOTAL", "", totalCH, "", totalPoints]);
-      sheetData.push(["SGPA", copy.semesterGPA]);
+      // Summary Table Calculation (matching PDF logic)
+      const currentIndex = report.studentCopies.indexOf(copy);
+      const previousCopies = report.studentCopies.slice(0, currentIndex);
+
+      let prevTotalCredit = 0;
+      let prevTotalGP = 0;
+      let prevCGPA = "N/A";
+
+      if (previousCopies.length > 0) {
+        previousCopies.forEach((prevCopy) => {
+          prevTotalCredit += prevCopy.courses.reduce(
+            (sum, c) => sum + (c.totalCrHrs || 0),
+            0
+          );
+          prevTotalGP += prevCopy.courses.reduce(
+            (sum, c) => sum + (c.gradePoint || 0),
+            0
+          );
+        });
+        prevCGPA =
+          previousCopies[previousCopies.length - 1].semesterCGPA?.toFixed(2) ||
+          "N/A";
+      }
+
+      const cumulativeCredit = copy.cumulativeCredit ? copy.cumulativeCredit : (prevTotalCredit + totalCr);
+      const cumulativeGP = copy.cumulativeTotalPoint ? copy.cumulativeTotalPoint : (prevTotalGP + totalPoint);
+
+      sheetData.push(["Summary", "Credit", "GP", "ANG", "ALG"]);
+      sheetData.push([
+        "Previous TOTAL",
+        previousCopies.length > 0 ? prevTotalCredit.toFixed(2) : "N/A",
+        previousCopies.length > 0 ? prevTotalGP.toFixed(2) : "N/A",
+        prevCGPA,
+        previousCopies.length > 0
+          ? prevTotalGP / prevTotalCredit >= 2
+            ? "C"
+            : "F"
+          : "N/A",
+      ]);
+      sheetData.push([
+        "Semestre TOTAL",
+        totalCr.toFixed(2),
+        totalPoint.toFixed(2),
+        copy.semesterGPA?.toFixed(2) || "N/A",
+        copy.status || "N/A",
+      ]);
+      sheetData.push([
+        "Cummulative",
+        typeof cumulativeCredit === "number" ? cumulativeCredit.toFixed(2) : cumulativeCredit,
+        typeof cumulativeGP === "number" ? cumulativeGP.toFixed(2) : cumulativeGP,
+        copy.semesterCGPA?.toFixed(2) || "N/A",
+        copy.semesterCGPAGrade || (copy.semesterCGPA >= 2 ? "C" : "F"),
+      ]);
+      sheetData.push([
+        "Notes:",
+        copy.status === "PASSED"
+          ? "Pass"
+          : copy.status === "FAILED"
+            ? "Re-Exam"
+            : "Pass & Re-Exam",
+      ]);
+      sheetData.push([]);
+
+      // Grading Scale
+      sheetData.push(["Grading Scale:"]);
+      sheetData.push(["Point Score", "Grade"]);
+      sheetData.push(["85-100", "A"]);
+      sheetData.push(["80-85", "B+"]);
+      sheetData.push(["70-80", "B"]);
+      sheetData.push(["65-70", "C+"]);
+      sheetData.push(["60-65", "C"]);
+      sheetData.push(["50-60", "D"]);
+      sheetData.push(["Below 50", "F"]);
+      sheetData.push([]);
+
+      // Signatures
+      sheetData.push([
+        "REGISTRAR: ______________________",
+        "",
+        "",
+        "DEAN/VICE DEAN: ______________________",
+      ]);
 
       const sheetName = `${copy.semester?.name || "Semester"}_${copy.classyear?.name || index + 1
         }`;
@@ -748,7 +822,7 @@ export default function Transcript_Generate() {
     return sheets;
   };
 
-  // Prepare Transcript data for Excel export
+  // Prepare Transcript data for Excel export (Matching PDF Portrait Design)
   const prepareTranscriptSheets = (report: RealGradeReport) => {
     const sheets: Record<string, any[][]> = {};
     const sheetData: any[][] = [];
@@ -756,62 +830,79 @@ export default function Transcript_Generate() {
     // Header
     sheetData.push(["DEUTSCHE HOCHSCHULE FÜR MEDIZIN"]);
     sheetData.push(["STUDENT ACADEMIC TRANSCRIPT"]);
-    sheetData.push(["OFFICE OF REGISTRAR"]);
+    sheetData.push(["OFFICE OF THE REGISTRAR"]);
+    if (report.dateIssuedGC) {
+      sheetData.push([`Issued on: ${report.dateIssuedGC}`]);
+    }
     sheetData.push([]); // Empty row
 
     // Student Info
     sheetData.push([
-      "ID Number",
+      "ID Number:",
       report.idNumber,
-      "Full Name",
-      report.fullName,
-    ]);
-    sheetData.push(["Sex", report.gender, "Date of Birth", report.birthDateGC]);
-    sheetData.push([
-      "Program",
-      report.programModality?.name || "-",
-      "Enrollment Type",
-      "Regular",
-    ]);
-    sheetData.push([
-      "Department",
-      report.department?.name || "-",
-      "Date of Admission",
+      "Date of Admission:",
       report.dateEnrolledGC,
+    ]);
+    sheetData.push([
+      "Name of Student:",
+      report.fullName,
+      "Program Modality:",
+      report.programModality?.name || "-",
+    ]);
+    sheetData.push([
+      "Sex:",
+      report.gender,
+      "Field of Study:",
+      report.department?.name || "-",
+    ]);
+    sheetData.push([
+      "Date Of Birth:",
+      report.birthDateGC,
+      "Level:",
+      report.programLevel?.name || "-",
     ]);
     sheetData.push([]); // Empty row
 
     // Process each semester
-    report.studentCopies.forEach((copy, index) => {
+    report.studentCopies.forEach((copy) => {
       sheetData.push([
-        `Academic Year: ${copy.academicYear || "N/A"} • Semester: ${copy.semester?.name
-        } • Class Year: ${copy.classyear?.name}`,
+        `Academic Year: ${copy.academicYear || "N/A"}   Class Year: ${copy.classyear?.name || "N/A"
+        }`,
       ]);
-      sheetData.push(["Code", "Title", "CH", "Letter Grade", "Gr. Point"]);
+      sheetData.push([`Semester: ${copy.semester?.name || "N/A"}`]);
+      sheetData.push([`SGPA: ${copy.semesterGPA.toFixed(2)}   ${copy.status}`]);
+      sheetData.push([]);
 
-      copy.courses.forEach((course) => {
+      sheetData.push([
+        "No",
+        "Code",
+        "Course Title",
+        "Cr.Hr",
+        "Letter Grade",
+        "Gr Point",
+      ]);
+
+      copy.courses.forEach((course, i) => {
         sheetData.push([
+          (i + 1).toString(),
           course.courseCode,
           course.courseTitle,
-          course.totalCrHrs,
+          course.totalCrHrs.toFixed(2),
           course.letterGrade,
-          course.gradePoint,
+          course.gradePoint.toFixed(2),
         ]);
       });
 
-      const totalCH = copy.courses.reduce((sum, c) => sum + c.totalCrHrs, 0);
+      const totalCH = copy.courses.reduce((sum, c) => sum + (c.totalCrHrs || 0), 0);
       const totalPoints = copy.courses.reduce(
-        (sum, c) => sum + c.gradePoint,
+        (sum, c) => sum + (c.gradePoint || 0),
         0
       );
 
       sheetData.push([
-        "TOTAL",
-        "",
-        totalCH,
-        "",
-        totalPoints,
-        `GPA: ${copy.semesterGPA.toFixed(2)}`,
+        `TOTAL Cr.Hr: ${totalCH.toFixed(2)}   Points: ${totalPoints.toFixed(
+          2
+        )}   SGPA: ${copy.semesterGPA.toFixed(2)}`,
       ]);
       sheetData.push([]); // Empty row between semesters
     });
@@ -823,7 +914,22 @@ export default function Transcript_Generate() {
           report.studentCopies.length - 1
         ].semesterCGPA.toFixed(2)
         : "N/A";
-    sheetData.push(["FINAL CUMULATIVE GPA (CGPA)", finalCGPA]);
+    sheetData.push(["Cumulative GPA (CGPA):", finalCGPA]);
+    sheetData.push([]);
+    sheetData.push([]);
+
+    // Signatures
+    sheetData.push([
+      "_________________________________________",
+      "",
+      "_________________________________________",
+    ]);
+    sheetData.push([
+      "Registrar / Office of the Registrar",
+      "",
+      "Dean Office",
+    ]);
+    sheetData.push(["Date: ____________________", "", "Date: ____________________"]);
 
     sheets["Transcript"] = sheetData;
     return sheets;
