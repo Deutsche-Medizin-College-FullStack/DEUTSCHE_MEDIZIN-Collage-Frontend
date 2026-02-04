@@ -17,16 +17,13 @@ import {
   Mail,
   Phone,
   MapPin,
-  Calendar,
   User,
   Briefcase,
   Award,
-  Building,
   CalendarDays,
   UserCircle,
   AlertCircle,
   Shield,
-  GraduationCap,
   FileText,
   Loader2,
   Save,
@@ -721,12 +718,6 @@ export default function Dean_Profile() {
           <CardTitle className="flex items-center"><Briefcase className="mr-2 h-5 w-5" />Professional Information</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="space-y-2"><Label className="flex items-center"><Building className="h-4 w-4 mr-2" />Role</Label><Input value={profile.role || "Dean"} readOnly className="bg-gray-50 dark:bg-gray-800" /></div>
-            <div className="space-y-2"><Label className="flex items-center"><Award className="h-4 w-4 mr-2" />Academic Title</Label><Input value={formData.title || profile.title || "Not specified"} readOnly className="bg-gray-50 dark:bg-gray-800" /></div>
-            <div className="space-y-2"><Label className="flex items-center"><GraduationCap className="h-4 w-4 mr-2" />Institution Level</Label><Input value="University" readOnly className="bg-gray-50 dark:bg-gray-800" /></div>
-            <div className="space-y-2"><Label className="flex items-center"><CalendarDays className="h-4 w-4 mr-2" />Employee ID</Label><Input value={`DEAN-${profile.id.toString().padStart(3, '0')}`} readOnly className="bg-gray-50 dark:bg-gray-800" /></div>
-          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2"><Label className="flex items-center"><CalendarDays className="h-4 w-4 mr-2" />Appointment Date (Gregorian)</Label><Input value={formatDate(profile.hiredDateGC)} readOnly className="bg-gray-50 dark:bg-gray-800" /></div>
             <div className="space-y-2"><Label className="flex items-center"><UserCircle className="h-4 w-4 mr-2" />Username</Label><Input value={profile.username} readOnly className="bg-gray-50 dark:bg-gray-800" /></div>
