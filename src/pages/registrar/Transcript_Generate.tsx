@@ -1,5 +1,5 @@
 "use client";
-
+import * as XLSX from "xlsx";
 import { useMemo, useState, useEffect } from "react";
 import {
   Search,
@@ -15,6 +15,7 @@ import endPoints from "@/components/api/endPoints";
 import apiService from "@/components/api/apiService";
 import { Square } from "lucide-react";
 import { Loader2 } from "lucide-react";
+import LOGO_BASE64 from "@/components/Extra/LOGO_BASE64";
 type ReportCourse = {
   code: string;
   title: string;
@@ -644,202 +645,1031 @@ export default function Transcript_Generate() {
     );
   }, [searchTerm, selectedBatch, selectedDepartment, transcriptBatch]);
 
-  const exportToPDF = () => {
+  // Helper function to sanitize sheet names (Excel limit: 31 chars, no special chars)
+  const sanitizeSheetName = (name: string): string => {
+    return name
+      .replace(/[\\\/\?\*\[\]:]/g, "_") // Replace invalid chars
+      .slice(0, 31); // Excel sheet name limit
+  };
+
+  // Prepare Student Copy data for Excel export
+  const prepareStudentCopySheets = (report: RealGradeReport) => {
+    const sheets: Record<string, any[][]> = {};
+
+    report.studentCopies.forEach((copy, index) => {
+      const sheetData: any[][] = [];
+
+      // Header
+      sheetData.push(["DEUTSCHE HOCHSCHULE FÜR MEDIZIN"]);
+      sheetData.push(["STUDENT ACADEMIC RECORD - STUDENT COPY"]);
+      sheetData.push([]); // Empty row
+
+      // Student Info
+      sheetData.push([
+        "ID Number",
+        report.idNumber,
+        "Date of Birth (GC)",
+        report.birthDateGC,
+      ]);
+      sheetData.push([
+        "Gender",
+        report.gender,
+        "Date Enrolled (GC)",
+        report.dateEnrolledGC,
+      ]);
+      sheetData.push([
+        "Full Name",
+        report.fullName,
+        "Program Modality",
+        report.programModality?.name || "-",
+      ]);
+      sheetData.push([
+        "Program Level",
+        report.programLevel?.name || "-",
+        "Department",
+        report.department?.name || "-",
+      ]);
+      sheetData.push([
+        "Class Year",
+        copy.classyear?.name || "-",
+        "Semester",
+        copy.semester?.name || "-",
+      ]);
+      sheetData.push([
+        "Academic Year",
+        copy.academicYear || "-",
+        "Status",
+        copy.status,
+      ]);
+      sheetData.push([
+        "Semester GPA",
+        copy.semesterGPA,
+        "Cumulative GPA",
+        copy.semesterCGPA,
+      ]);
+      sheetData.push([]); // Empty row
+
+      // Courses Table Header
+      sheetData.push([
+        "Course Code",
+        "Course Title",
+        "Cr Hrs",
+        "Letter Grade",
+        "Gr. Point",
+      ]);
+
+      // Courses Data
+      copy.courses.forEach((course) => {
+        sheetData.push([
+          course.courseCode,
+          course.courseTitle,
+          course.totalCrHrs,
+          course.letterGrade,
+          course.gradePoint,
+        ]);
+      });
+
+      sheetData.push([]); // Empty row
+
+      // Totals
+      const totalCH = copy.courses.reduce((sum, c) => sum + c.totalCrHrs, 0);
+      const totalPoints = copy.courses.reduce(
+        (sum, c) => sum + c.gradePoint,
+        0
+      );
+      sheetData.push(["TOTAL", "", totalCH, "", totalPoints]);
+      sheetData.push(["SGPA", copy.semesterGPA]);
+
+      const sheetName = `${copy.semester?.name || "Semester"}_${copy.classyear?.name || index + 1
+        }`;
+      sheets[sheetName] = sheetData;
+    });
+
+    return sheets;
+  };
+
+  // Prepare Transcript data for Excel export
+  const prepareTranscriptSheets = (report: RealGradeReport) => {
+    const sheets: Record<string, any[][]> = {};
+    const sheetData: any[][] = [];
+
+    // Header
+    sheetData.push(["DEUTSCHE HOCHSCHULE FÜR MEDIZIN"]);
+    sheetData.push(["STUDENT ACADEMIC TRANSCRIPT"]);
+    sheetData.push(["OFFICE OF REGISTRAR"]);
+    sheetData.push([]); // Empty row
+
+    // Student Info
+    sheetData.push([
+      "ID Number",
+      report.idNumber,
+      "Full Name",
+      report.fullName,
+    ]);
+    sheetData.push(["Sex", report.gender, "Date of Birth", report.birthDateGC]);
+    sheetData.push([
+      "Program",
+      report.programModality?.name || "-",
+      "Enrollment Type",
+      "Regular",
+    ]);
+    sheetData.push([
+      "Department",
+      report.department?.name || "-",
+      "Date of Admission",
+      report.dateEnrolledGC,
+    ]);
+    sheetData.push([]); // Empty row
+
+    // Process each semester
+    report.studentCopies.forEach((copy, index) => {
+      sheetData.push([
+        `Academic Year: ${copy.academicYear || "N/A"} • Semester: ${copy.semester?.name
+        } • Class Year: ${copy.classyear?.name}`,
+      ]);
+      sheetData.push(["Code", "Title", "CH", "Letter Grade", "Gr. Point"]);
+
+      copy.courses.forEach((course) => {
+        sheetData.push([
+          course.courseCode,
+          course.courseTitle,
+          course.totalCrHrs,
+          course.letterGrade,
+          course.gradePoint,
+        ]);
+      });
+
+      const totalCH = copy.courses.reduce((sum, c) => sum + c.totalCrHrs, 0);
+      const totalPoints = copy.courses.reduce(
+        (sum, c) => sum + c.gradePoint,
+        0
+      );
+
+      sheetData.push([
+        "TOTAL",
+        "",
+        totalCH,
+        "",
+        totalPoints,
+        `GPA: ${copy.semesterGPA.toFixed(2)}`,
+      ]);
+      sheetData.push([]); // Empty row between semesters
+    });
+
+    // Final CGPA
+    const finalCGPA =
+      report.studentCopies.length > 0
+        ? report.studentCopies[
+          report.studentCopies.length - 1
+        ].semesterCGPA.toFixed(2)
+        : "N/A";
+    sheetData.push(["FINAL CUMULATIVE GPA (CGPA)", finalCGPA]);
+
+    sheets["Transcript"] = sheetData;
+    return sheets;
+  };
+
+  const exportToExcel = () => {
     if (!searchType) return;
 
-    if (
-      (searchType === "report" && realReports.length === 0) ||
-      (searchType === "transcript" && realTranscripts.length === 0)
-    ) {
+    const filename =
+      searchType === "report" ? "Student_Copies.xlsx" : "Transcripts.xlsx";
+
+    console.log("Starting export...");
+
+    // ── THIS IS THE MOST IMPORTANT LINE ──
+    // Use the REAL generated data, not demo/fake arrays
+    const items = searchType === "report" ? realReports : realTranscripts;
+
+    console.log("Exporting items count:", items.length);
+    console.log("First item:", items[0]); // ← debug
+    if (items.length >= 2) {
+      console.log("Second item:", items[1]); // ← debug
+    }
+
+    if (items.length === 0) {
+      alert("No data available to export. Generate reports/transcripts first.");
       return;
     }
 
-    const doc = new jsPDF("p", "mm", "a4");
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 9;
-    const colWidth = (pageWidth - margin * 3) / 2;
+    const wb = XLSX.utils.book_new();
 
+    items.forEach((report, index) => {
+      console.log(
+        `Processing student ${index + 1}:`,
+        report.idNumber,
+        report.fullName
+      );
+
+      let sheets;
+      if (searchType === "report") {
+        sheets = prepareStudentCopySheets(report);
+      } else {
+        sheets = prepareTranscriptSheets(report);
+      }
+
+      Object.entries(sheets).forEach(([sheetName, data]) => {
+        const prefix =
+          items.length > 1
+            ? `${report.idNumber || "Student"}_${index + 1}_`
+            : "";
+
+        const safeName = `${prefix}${sanitizeSheetName(sheetName)}`.slice(
+          0,
+          31
+        );
+
+        console.log(`→ Creating sheet: ${safeName}`);
+
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        XLSX.utils.book_append_sheet(wb, ws, safeName);
+      });
+    });
+
+    // Write and download
+    const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([wbout], { type: "application/octet-stream" });
+
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    console.log("Download triggered");
+  };
+  // const exportToPDF = () => {
+  //   if (!searchType) return;
+
+  //   if (
+  //     (searchType === "report" && realReports.length === 0) ||
+  //     (searchType === "transcript" && realTranscripts.length === 0)
+  //   ) {
+  //     return;
+  //   }
+
+  //   const doc = new jsPDF("p", "mm", "a4");
+  //   const pageWidth = doc.internal.pageSize.getWidth();
+  //   const margin = 9;
+  //   const colWidth = (pageWidth - margin * 3) / 2;
+
+  //   const items = searchType === "report" ? realReports : realTranscripts;
+
+  //   items.forEach((item, index) => {
+  //     if (index > 0) doc.addPage();
+
+  //     let y = 10;
+
+  //     if (searchType === "report") {
+  //       const r = item as RealGradeReport;
+
+  //       // Header
+  //       doc.setFontSize(14);
+  //       doc.setFont("helvetica", "bold");
+  //       doc.text("DEUTSCHE HOCHSCHULE FÜR MEDIZIN", pageWidth / 2, y, {
+  //         align: "center",
+  //       });
+  //       y += 7;
+  //       doc.setFontSize(11);
+  //       doc.text("STUDENT ACADEMIC RECORD", pageWidth / 2, y, {
+  //         align: "center",
+  //       });
+  //       y += 12;
+
+  //       // Student info block (like transcript style)
+  //       doc.setFontSize(8);
+  //       const leftX = margin;
+  //       const rightX = pageWidth / 2 + 4;
+
+  //       const info = [
+  //         [`ID: ${r.idNumber}`, `Date of Admission: ${r.dateEnrolledGC}`],
+  //         [`Name: ${r.fullName}`, `Program: ${r.programModality?.name || "-"}`],
+  //         [`Sex: ${r.gender}`, `Field of Study: ${r.department?.name || "-"}`],
+  //         [
+  //           `Date of Birth: ${r.birthDateGC}`,
+  //           `Level: ${r.programLevel?.name || "-"}`,
+  //         ],
+  //       ];
+
+  //       info.forEach(([l, rgt], i) => {
+  //         const rowY = y + i * 5;
+  //         doc.setFont("helvetica", "bold");
+  //         doc.text(l.split(":")[0] + ":", leftX, rowY);
+  //         doc.setFont("helvetica", "normal");
+  //         doc.text(l.split(":")[1]?.trim() || "", leftX + 18, rowY);
+
+  //         doc.setFont("helvetica", "bold");
+  //         doc.text(rgt.split(":")[0] + ":", rightX, rowY);
+  //         doc.setFont("helvetica", "normal");
+  //         doc.text(rgt.split(":")[1]?.trim() || "", rightX + 22, rowY);
+  //       });
+
+  //       y += info.length * 5 + 12;
+
+  //       // Semester copies
+  //       r.studentCopies.forEach((copy) => {
+  //         if (y > 220) {
+  //           doc.addPage();
+  //           y = 20;
+  //         }
+
+  //         // Two-line semester header + SGPA/Status
+  //         doc.setFontSize(9);
+  //         doc.setFont("helvetica", "bold");
+  //         doc.text(
+  //           `Academic Year: ${copy.academicYear || "N/A"}   Class Year: ${copy.classyear.name
+  //           }`,
+  //           margin,
+  //           y
+  //         );
+  //         y += 6;
+  //         doc.text(`Semester: ${copy.semester.name}`, margin, y);
+  //         y += 8;
+
+  //         doc.setFontSize(8);
+  //         doc.setFont("helvetica", "normal");
+  //         doc.text(
+  //           `SGPA: ${copy.semesterGPA.toFixed(2)}   ${copy.status}`,
+  //           margin,
+  //           y
+  //         );
+  //         y += 10;
+
+  //         // Courses table
+  //         const body = copy.courses.map((c, i) => [
+  //           (i + 1).toString(),
+  //           c.courseCode,
+  //           c.courseTitle,
+  //           c.totalCrHrs.toFixed(2),
+  //           c.letterGrade,
+  //           c.gradePoint.toFixed(2),
+  //         ]);
+
+  //         autoTable(doc, {
+  //           startY: y,
+  //           head: [
+  //             [
+  //               "No",
+  //               "Code",
+  //               "Course Title",
+  //               "Cr.Hr",
+  //               "Letter Grade",
+  //               "Gr Point",
+  //             ],
+  //           ],
+  //           body,
+  //           theme: "grid",
+  //           margin: { left: margin, right: margin },
+  //           styles: {
+  //             fontSize: 8,
+  //             cellPadding: 1.5,
+  //             overflow: "linebreak",
+  //             lineWidth: 0.1,
+  //           },
+  //           headStyles: {
+  //             fontSize: 8.5,
+  //             fillColor: [220, 220, 220],
+  //             textColor: [0, 0, 0],
+  //             fontStyle: "bold",
+  //           },
+  //           columnStyles: {
+  //             0: { cellWidth: 8, halign: "center" },
+  //             1: { cellWidth: 22, halign: "left" },
+  //             2: { cellWidth: "auto" },
+  //             3: { cellWidth: 12, halign: "center" },
+  //             4: { cellWidth: 15, halign: "center" },
+  //             5: { cellWidth: 15, halign: "center" },
+  //           },
+  //           didParseCell: (data) => {
+  //             if (data.column.index === 2 && data.cell.section === "body") {
+  //               data.cell.styles.fontSize = 7.5;
+  //             }
+  //           },
+  //         });
+
+  //         y = (doc as any).lastAutoTable.finalY + 10;
+
+  //         // Total line
+  //         doc.setFontSize(8);
+  //         const totCH = copy.courses.reduce((s, c) => s + c.totalCrHrs, 0);
+  //         const totPt = copy.courses.reduce((s, c) => s + c.gradePoint, 0);
+  //         doc.text(
+  //           `TOTAL Cr.Hr: ${totCH.toFixed(2)}   Points: ${totPt.toFixed(
+  //             2
+  //           )}   SGPA: ${copy.semesterGPA.toFixed(2)}`,
+  //           margin,
+  //           y
+  //         );
+  //         y += 12;
+  //       });
+
+  //       // Signature area — stacked vertically on LEFT side, no date
+  //       if (y > 240) {
+  //         doc.addPage();
+  //         y = 30;
+  //       }
+
+  //       doc.setFontSize(11);
+  //       doc.setFont("helvetica", "normal");
+
+  //       // Registrar (top left)
+  //       doc.text(
+  //         "_________________________________________",
+  //         margin + 10,
+  //         y + 10
+  //       );
+  //       doc.setFontSize(9);
+  //       doc.text("Registrar / Office of the Registrar", margin + 10, y + 18);
+
+  //       y += 35; // good vertical space
+
+  //       // Dean / Vice Dean (below left)
+  //       doc.text(
+  //         "_________________________________________",
+  //         margin + 10,
+  //         y + 10
+  //       );
+  //       doc.setFontSize(9);
+  //       doc.text("Dean / Vice Dean Office", margin + 10, y + 18);
+  //     } else {
+  //       // TRANSCRIPT — completely untouched, exactly as you pasted
+  //       const r = item as RealGradeReport;
+
+  //       // Header
+  //       doc.setFontSize(12);
+  //       doc.setFont("helvetica", "bold");
+  //       doc.text("DEUTSCHE HOCHSCHULE FÜR MEDIZIN", pageWidth / 2, y, {
+  //         align: "center",
+  //       });
+  //       y += 5;
+  //       doc.setFontSize(9.5);
+  //       doc.text("STUDENT ACADEMIC TRANSCRIPT", pageWidth / 2, y, {
+  //         align: "center",
+  //       });
+  //       y += 4;
+  //       doc.setFontSize(8);
+  //       doc.text("OFFICE OF THE REGISTRAR", pageWidth / 2, y, {
+  //         align: "center",
+  //       });
+  //       y += 4;
+  //       if (r.dateIssuedGC) {
+  //         doc.setFontSize(7.5);
+  //         doc.text(`Issued on: ${r.dateIssuedGC}`, pageWidth / 2, y, {
+  //           align: "center",
+  //         });
+  //         y += 4;
+  //       }
+  //       y += 3;
+
+  //       // Student info
+  //       doc.setFontSize(7.5);
+  //       const leftX = margin;
+  //       const rightX = pageWidth / 2 + 2;
+  //       const info = [
+  //         [`ID: ${r.idNumber}`, `Date of Admission: ${r.dateEnrolledGC}`],
+  //         [
+  //           `Name: ${r.fullName.substring(0, 28)}${r.fullName.length > 28 ? "…" : ""
+  //           }`,
+  //           `Program: ${r.programModality?.name?.substring(0, 20) || "-"}`,
+  //         ],
+  //         [
+  //           `Sex: ${r.gender}`,
+  //           `Field of Study: ${r.department?.name?.substring(0, 20) || "-"}`,
+  //         ],
+  //         [
+  //           `Date of Birth: ${r.birthDateGC}`,
+  //           `Level: ${r.programLevel?.name?.substring(0, 16) || "-"}`,
+  //         ],
+  //       ];
+  //       info.forEach(([l, rgt], i) => {
+  //         const rowY = y + i * 3.4;
+  //         doc.setFont("helvetica", "bold");
+  //         doc.text(l.split(":")[0] + ":", leftX, rowY);
+  //         doc.setFont("helvetica", "normal");
+  //         doc.text(l.split(":")[1]?.trim() || "", leftX + 16, rowY);
+  //         doc.setFont("helvetica", "bold");
+  //         doc.text(rgt.split(":")[0] + ":", rightX, rowY);
+  //         doc.setFont("helvetica", "normal");
+  //         doc.text(rgt.split(":")[1]?.trim() || "", rightX + 20, rowY);
+  //       });
+  //       y += info.length * 3.4 + 7;
+
+  //       // Semesters
+  //       let leftBottom = y;
+  //       let rightBottom = y;
+
+  //       r.studentCopies.forEach((copy, idx) => {
+  //         const isLeft = idx % 2 === 0;
+  //         const colX = isLeft ? margin : pageWidth / 2 + margin / 2;
+  //         let cy = isLeft ? leftBottom : rightBottom;
+
+  //         // Two-line header
+  //         doc.setFontSize(8.5);
+  //         doc.setFont("helvetica", "bold");
+  //         const line1 = `Academic Year: ${copy.academicYear || "N/A"
+  //           }   Class Year: ${copy.classyear.name}`;
+  //         doc.text(line1, colX, cy);
+  //         cy += 4.5;
+  //         doc.text(`Semester: ${copy.semester.name}`, colX, cy);
+  //         cy += 5;
+
+  //         // SGPA + Status
+  //         doc.setFontSize(7);
+  //         doc.setFont("helvetica", "normal");
+  //         doc.text(
+  //           `SGPA: ${copy.semesterGPA.toFixed(2)}   ${copy.status}`,
+  //           colX,
+  //           cy
+  //         );
+  //         cy += 4.5;
+
+  //         // Table
+  //         const body = copy.courses.map((c, i) => [
+  //           (i + 1).toString(),
+  //           c.courseCode,
+  //           c.courseTitle,
+  //           c.totalCrHrs.toFixed(2),
+  //           c.letterGrade,
+  //           c.gradePoint.toFixed(2),
+  //         ]);
+
+  //         autoTable(doc, {
+  //           startY: cy,
+  //           head: [
+  //             [
+  //               "No",
+  //               "Code",
+  //               "Course Title",
+  //               "Cr.Hr",
+  //               "Letter Grade",
+  //               "Gr Point",
+  //             ],
+  //           ],
+  //           body,
+  //           theme: "grid",
+  //           margin: { left: colX, right: pageWidth - colX - colWidth },
+  //           styles: {
+  //             fontSize: 7,
+  //             cellPadding: 1.2,
+  //             overflow: "linebreak",
+  //             lineWidth: 0.1,
+  //             valign: "middle",
+  //             textColor: [0, 0, 0],
+  //           },
+  //           headStyles: {
+  //             fontSize: 7.2,
+  //             fillColor: [220, 220, 220],
+  //             textColor: [0, 0, 0],
+  //             lineWidth: 0.1,
+  //             fontStyle: "bold",
+  //           },
+  //           columnStyles: {
+  //             0: { cellWidth: 7, halign: "center" },
+  //             1: { cellWidth: 22, halign: "left" },
+  //             2: { cellWidth: "auto" },
+  //             3: { cellWidth: 11, halign: "center" },
+  //             4: { cellWidth: 10, halign: "center" },
+  //             5: { cellWidth: 12, halign: "center" },
+  //           },
+  //           didParseCell: (data) => {
+  //             if (data.column.index === 2 && data.cell.section === "body") {
+  //               data.cell.styles.fontSize = 6.6;
+  //             }
+  //           },
+  //         });
+
+  //         cy = (doc as any).lastAutoTable.finalY + 3.5;
+
+  //         // Total line
+  //         doc.setFontSize(7);
+  //         const totCH = copy.courses.reduce((s, c) => s + c.totalCrHrs, 0);
+  //         const totPt = copy.courses.reduce((s, c) => s + c.gradePoint, 0);
+  //         doc.text(
+  //           `TOTAL Cr.Hr: ${totCH.toFixed(2)}   Points: ${totPt.toFixed(
+  //             2
+  //           )}   SGPA: ${copy.semesterGPA.toFixed(2)}`,
+  //           colX,
+  //           cy
+  //         );
+
+  //         if (isLeft) leftBottom = Math.max(leftBottom, cy + 6);
+  //         else rightBottom = Math.max(rightBottom, cy + 6);
+  //       });
+
+  //       y = Math.max(leftBottom, rightBottom) + 8;
+
+  //       // FINAL CGPA – small, left-aligned
+  //       const finalCGPA =
+  //         items[index].studentCopies.length > 0
+  //           ? items[index].studentCopies[
+  //             items[index].studentCopies.length - 1
+  //           ].semesterCGPA.toFixed(2)
+  //           : "N/A";
+
+  //       doc.setFontSize(7);
+  //       doc.setFont("helvetica", "normal");
+  //       doc.text(`Cumulative GPA (CGPA): ${finalCGPA}`, margin, y);
+  //       y += 6;
+
+  //       // Signature area – Registrar + Dean
+  //       if (y < 225) y = 225;
+  //       if (y > 270) {
+  //         doc.addPage();
+  //         y = 18;
+  //       }
+
+  //       doc.setFontSize(9);
+  //       // Registrar (left)
+  //       doc.text(
+  //         "_________________________________________",
+  //         pageWidth * 0.25,
+  //         y,
+  //         { align: "center" }
+  //       );
+  //       doc.setFontSize(8.5);
+  //       doc.text(
+  //         "Registrar / Office of the Registrar",
+  //         pageWidth * 0.25,
+  //         y + 5,
+  //         { align: "center" }
+  //       );
+  //       doc.setFontSize(8);
+  //       doc.text("Date: ____________________", pageWidth * 0.25, y + 10, {
+  //         align: "center",
+  //       });
+
+  //       // Dean Office (right)
+  //       doc.setFontSize(9);
+  //       doc.text(
+  //         "_________________________________________",
+  //         pageWidth * 0.75,
+  //         y,
+  //         { align: "center" }
+  //       );
+  //       doc.setFontSize(8.5);
+  //       doc.text("Dean Office", pageWidth * 0.75, y + 5, { align: "center" });
+  //       doc.setFontSize(8);
+  //       doc.text("Date: ____________________", pageWidth * 0.75, y + 10, {
+  //         align: "center",
+  //       });
+  //     }
+  //   });
+
+  //   doc.save(searchType === "report" ? "GradeReports.pdf" : "Transcripts.pdf");
+  // };
+  const exportToPDF = () => {
+    if (!searchType) return;
     const items = searchType === "report" ? realReports : realTranscripts;
 
+    if (items.length === 0) {
+      alert("No data to export. Generate first.");
+      return;
+    }
+
+    // Create PDF document ONCE based on type
+    const orientation = searchType === "report" ? "l" : "p";
+    const doc = new jsPDF(orientation, "mm", "a4");
+
     items.forEach((item, index) => {
-      if (index > 0) doc.addPage();
-
-      let y = 10;
-
+      // ═══════════════════════════════════════════════════════
+      // STUDENT COPY (REPORT) - New Compact Landscape Design
+      // ═══════════════════════════════════════════════════════
       if (searchType === "report") {
-        const r = item as RealGradeReport;
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 8;
 
-        // Header
-        doc.setFontSize(14);
+        if (index > 0) doc.addPage();
+
+        let y = margin;
+
+        // ────────────────────────────────────────────────
+        //  YELLOW HEADER BAND (like your image)
+        // ────────────────────────────────────────────────
+        doc.setFillColor(212, 175, 55); // More golden yellow like image
+        doc.rect(0, 0, pageWidth, 24, "F"); // Reduced from 28 to 24
+
+        doc.setFontSize(16);
+        doc.setTextColor(0, 0, 0);
         doc.setFont("helvetica", "bold");
-        doc.text("DEUTSCHE HOCHSCHULE FÜR MEDIZIN", pageWidth / 2, y, {
-          align: "center",
-        });
-        y += 7;
-        doc.setFontSize(11);
+        doc.text("MD1_[PC_I]", pageWidth / 2, 9, { align: "center" });
+
+        doc.setFontSize(9);
+        doc.text(
+          "DEUTSCHE HOCHSCHULE FÜR MEDIZINE MEDICAL COLLEGE",
+          pageWidth / 2,
+          16,
+          { align: "center" }
+        );
+
+        // Logo placeholder
+        doc.setFontSize(8);
+        // doc.text("[Logo]", margin + 3, 24);
+        doc.addImage(LOGO_BASE64, "PNG", margin + 5, 2, 24, 24);
+        y = 28; // Start closer
+
+        // ────────────────────────────────────────────────
+        // STUDENT INFO TABLE (using actual table)
+        // ────────────────────────────────────────────────
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
         doc.text("STUDENT ACADEMIC RECORD", pageWidth / 2, y, {
           align: "center",
         });
-        y += 12;
+        y += 6;
 
-        // Student info block (like transcript style)
-        doc.setFontSize(8);
-        const leftX = margin;
-        const rightX = pageWidth / 2 + 4;
-
-        const info = [
-          [`ID: ${r.idNumber}`, `Date of Admission: ${r.dateEnrolledGC}`],
-          [`Name: ${r.fullName}`, `Program: ${r.programModality?.name || "-"}`],
-          [`Sex: ${r.gender}`, `Field of Study: ${r.department?.name || "-"}`],
-          [
-            `Date of Birth: ${r.birthDateGC}`,
-            `Level: ${r.programLevel?.name || "-"}`,
+        // Use autoTable for student info for better alignment
+        autoTable(doc, {
+          startY: y,
+          head: [],
+          body: [
+            [
+              "ID Number",
+              item.idNumber || "",
+              "Date Of Admission",
+              item.dateEnrolledGC || "",
+            ],
+            [
+              "Name of Student",
+              item.fullName || "",
+              "Enrolment Type",
+              item.programModality?.name || "Regular",
+            ],
+            [
+              "Sex",
+              item.gender || "",
+              "Department",
+              item.department?.name || "",
+            ],
+            [
+              "Program",
+              item.programLevel?.name || "Degree",
+              "Field of Study",
+              item.department?.name || "Medicine",
+            ],
+            [
+              "Date Of Birth",
+              item.birthDateGC || "",
+              "Date Issued",
+              item.dateIssuedGC || new Date().toLocaleDateString("en-GB"),
+            ],
           ],
-        ];
-
-        info.forEach(([l, rgt], i) => {
-          const rowY = y + i * 5;
-          doc.setFont("helvetica", "bold");
-          doc.text(l.split(":")[0] + ":", leftX, rowY);
-          doc.setFont("helvetica", "normal");
-          doc.text(l.split(":")[1]?.trim() || "", leftX + 18, rowY);
-
-          doc.setFont("helvetica", "bold");
-          doc.text(rgt.split(":")[0] + ":", rightX, rowY);
-          doc.setFont("helvetica", "normal");
-          doc.text(rgt.split(":")[1]?.trim() || "", rightX + 22, rowY);
+          theme: "grid",
+          styles: {
+            fontSize: 8,
+            cellPadding: 2,
+            lineWidth: 0.2,
+            textColor: [0, 0, 0],
+          },
+          columnStyles: {
+            0: { fontStyle: "bold", cellWidth: 40 },
+            1: { cellWidth: 65 },
+            2: { fontStyle: "bold", cellWidth: 40 },
+            3: { cellWidth: 65 },
+          },
+          margin: { left: margin, right: margin },
         });
 
-        y += info.length * 5 + 12;
+        y = (doc as any).lastAutoTable.finalY + 6;
 
-        // Semester copies
-        r.studentCopies.forEach((copy) => {
-          if (y > 220) {
-            doc.addPage();
-            y = 20;
-          }
-
-          // Two-line semester header + SGPA/Status
+        // ────────────────────────────────────────────────
+        // ACADEMIC PERIOD
+        // ────────────────────────────────────────────────
+        const copy = item.studentCopies[0];
+        if (copy) {
           doc.setFontSize(9);
-          doc.setFont("helvetica", "bold");
-          doc.text(
-            `Academic Year: ${copy.academicYear || "N/A"}   Class Year: ${
-              copy.classyear.name
-            }`,
-            margin,
-            y
-          );
-          y += 6;
-          doc.text(`Semester: ${copy.semester.name}`, margin, y);
-          y += 8;
-
-          doc.setFontSize(8);
           doc.setFont("helvetica", "normal");
           doc.text(
-            `SGPA: ${copy.semesterGPA.toFixed(2)}   ${copy.status}`,
+            `Academic Year: ${copy.academicYear || "N/A"}   Class Year: ${copy.classyear?.name || "PC I"
+            }   Semester: ${copy.semester?.name || "Year Based"}`,
             margin,
             y
           );
-          y += 10;
+          y += 7;
+        }
 
-          // Courses table
-          const body = copy.courses.map((c, i) => [
-            (i + 1).toString(),
-            c.courseCode,
-            c.courseTitle,
-            c.totalCrHrs.toFixed(2),
-            c.letterGrade,
-            c.gradePoint.toFixed(2),
-          ]);
+        // ────────────────────────────────────────────────
+        // COURSES TABLE (Blue header like image)
+        // ────────────────────────────────────────────────
+        autoTable(doc, {
+          startY: y,
+          head: [
+            [
+              "Course Title",
+              "Course Code",
+              "Cr.Hr.",
+              "Letter Grade",
+              "Gr.Point",
+            ],
+          ],
+          body:
+            copy?.courses.map((c) => [
+              c.courseTitle || "",
+              c.courseCode || "",
+              c.totalCrHrs?.toFixed(2) || "",
+              c.letterGrade || "",
+              c.gradePoint?.toFixed(2) || "",
+            ]) || [],
+          theme: "grid",
+          styles: {
+            fontSize: 8,
+            cellPadding: 1.5,
+            lineWidth: 0.2,
+            textColor: [0, 0, 0],
+          },
+          headStyles: {
+            fillColor: [135, 206, 235], // Sky blue like image
+            textColor: [0, 0, 0],
+            fontStyle: "bold",
+            halign: "center",
+            fontSize: 9,
+          },
+          columnStyles: {
+            0: { cellWidth: 70, halign: "left" },
+            1: { cellWidth: 30, halign: "center" },
+            2: { cellWidth: 18, halign: "center" },
+            3: { cellWidth: 25, halign: "center" },
+            4: { cellWidth: 22, halign: "center" },
+          },
+          margin: { left: margin, right: pageWidth - 95 }, // Leave room for grading scale
+        });
+
+        const tableEnd = (doc as any).lastAutoTable.finalY;
+
+        // ────────────────────────────────────────────────
+        // GRADING SCALE (right side, positioned beside table)
+        // ────────────────────────────────────────────────
+        const scaleX = pageWidth - 85;
+        let scaleY = y + 10;
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "bold");
+        doc.text("Point Score", scaleX, scaleY);
+        scaleY += 5;
+        doc.setFont("helvetica", "normal");
+        doc.text("A=(85-100)", scaleX, scaleY);
+        scaleY += 4;
+        doc.text("B+=(80-85)", scaleX, scaleY);
+        scaleY += 4;
+        doc.text("B=(70-80)", scaleX, scaleY);
+        scaleY += 4;
+        doc.text("C+=(65-70)", scaleX, scaleY);
+        scaleY += 4;
+        doc.text("C=(60-65)", scaleX, scaleY);
+        scaleY += 4;
+        doc.text("D=(50-60)", scaleX, scaleY);
+        scaleY += 4;
+        doc.text("F=Below 50", scaleX, scaleY);
+
+        y = tableEnd + 4;
+
+        // ────────────────────────────────────────────────
+        // TOTAL LINE
+        // ────────────────────────────────────────────────
+        if (copy) {
+          const totalCr = copy.courses.reduce(
+            (sum, c) => sum + (c.totalCrHrs || 0),
+            0
+          );
+          const totalPoint = copy.courses.reduce(
+            (sum, c) => sum + (c.gradePoint || 0),
+            0
+          );
+
+          doc.setFontSize(8);
+          doc.text(`Total:`, margin, y);
+          doc.text(`${totalCr.toFixed(2)}`, margin + 80, y, { align: "right" });
+          doc.text(`${totalPoint.toFixed(2)}`, margin + 165, y, {
+            align: "right",
+          });
+          y += 6;
+
+          // ────────────────────────────────────────────────
+          // SUMMARY TABLE (beige/tan like image)
+          // ────────────────────────────────────────────────
+
+          // Calculate previous totals (all semesters before current one)
+          const currentIndex = item.studentCopies.indexOf(copy);
+          const previousCopies = item.studentCopies.slice(0, currentIndex);
+
+          let prevTotalCredit = 0;
+          let prevTotalGP = 0;
+          let prevCGPA = "N/A";
+
+          if (previousCopies.length > 0) {
+            // Sum all previous semesters
+            previousCopies.forEach((prevCopy) => {
+              prevTotalCredit += prevCopy.courses.reduce(
+                (sum, c) => sum + (c.totalCrHrs || 0),
+                0
+              );
+              prevTotalGP += prevCopy.courses.reduce(
+                (sum, c) => sum + (c.gradePoint || 0),
+                0
+              );
+            });
+            // Get CGPA from last previous semester
+            prevCGPA =
+              previousCopies[previousCopies.length - 1].semesterCGPA?.toFixed(
+                2
+              ) || "N/A";
+          }
+
+          // Calculate cumulative (previous + current)
+          const cumulativeCredit = prevTotalCredit + totalCr;
+          const cumulativeGP = prevTotalGP + totalPoint;
 
           autoTable(doc, {
             startY: y,
-            head: [
+            head: [["Summary", "Credit", "GP", "ANG", "ALG"]],
+            body: [
               [
-                "No",
-                "Code",
-                "Course Title",
-                "Cr.Hr",
-                "Letter Grade",
-                "Gr Point",
+                "Previous TOTAL",
+                previousCopies.length > 0 ? prevTotalCredit.toFixed(2) : "N/A",
+                previousCopies.length > 0 ? prevTotalGP.toFixed(2) : "N/A",
+                prevCGPA,
+                previousCopies.length > 0
+                  ? prevTotalGP / prevTotalCredit >= 2
+                    ? "C"
+                    : "F"
+                  : "N/A",
+              ],
+              [
+                "Semestre TOTAL",
+                totalCr.toFixed(2),
+                totalPoint.toFixed(2),
+                copy.semesterGPA?.toFixed(2) || "N/A",
+                copy.status || "N/A",
+              ],
+              [
+                "Cummulative",
+                // cumulativeCredit.toFixed(2),
+                copy.cumulativeCredit ? copy.cumulativeCredit : "N/A",
+                copy.cumulativeTotalPoint ? copy.cumulativeTotalPoint : "N/A",
+                copy.semesterCGPA?.toFixed(2) || "N/A",
+                copy.semesterCGPAGrade ? copy.semesterCGPAGrade : "N/A",
+              ],
+              [
+                "Notes:",
+                copy.status === "PASSED"
+                  ? "Pass"
+                  : copy.status === "FAILED"
+                    ? "Re-Exam"
+                    : "Pass & Re-Exam",
+                "",
+                "",
+                "",
               ],
             ],
-            body,
             theme: "grid",
-            margin: { left: margin, right: margin },
             styles: {
               fontSize: 8,
-              cellPadding: 1.5,
-              overflow: "linebreak",
-              lineWidth: 0.1,
+              cellPadding: 2,
+              lineWidth: 0.2,
+              fillColor: [245, 222, 179], // Wheat/beige
+              textColor: [0, 0, 0],
             },
             headStyles: {
-              fontSize: 8.5,
-              fillColor: [220, 220, 220],
-              textColor: [0, 0, 0],
+              fillColor: [135, 206, 235], // Blue header
               fontStyle: "bold",
             },
             columnStyles: {
-              0: { cellWidth: 8, halign: "center" },
-              1: { cellWidth: 22, halign: "left" },
-              2: { cellWidth: "auto" },
-              3: { cellWidth: 12, halign: "center" },
-              4: { cellWidth: 15, halign: "center" },
-              5: { cellWidth: 15, halign: "center" },
+              0: { cellWidth: 35 },
+              1: { cellWidth: 20, halign: "center" },
+              2: { cellWidth: 20, halign: "center" },
+              3: { cellWidth: 20, halign: "center" },
+              4: { cellWidth: 20, halign: "center" },
             },
-            didParseCell: (data) => {
-              if (data.column.index === 2 && data.cell.section === "body") {
-                data.cell.styles.fontSize = 7.5;
-              }
-            },
+            margin: { left: margin, right: margin },
           });
 
-          y = (doc as any).lastAutoTable.finalY + 10;
-
-          // Total line
-          doc.setFontSize(8);
-          const totCH = copy.courses.reduce((s, c) => s + c.totalCrHrs, 0);
-          const totPt = copy.courses.reduce((s, c) => s + c.gradePoint, 0);
-          doc.text(
-            `TOTAL Cr.Hr: ${totCH.toFixed(2)}   Points: ${totPt.toFixed(
-              2
-            )}   SGPA: ${copy.semesterGPA.toFixed(2)}`,
-            margin,
-            y
-          );
-          y += 12;
-        });
-
-        // Signature area — stacked vertically on LEFT side, no date
-        if (y > 240) {
-          doc.addPage();
-          y = 30;
+          y = (doc as any).lastAutoTable.finalY + 15;
         }
 
-        doc.setFontSize(11);
+        // ────────────────────────────────────────────────
+        // SIGNATURES (bottom)
+        // ────────────────────────────────────────────────
+        y = pageHeight - 18;
+        doc.setFontSize(9);
         doc.setFont("helvetica", "normal");
-
-        // Registrar (top left)
+        doc.text("REGISTRAR: ______________________", margin, y);
         doc.text(
-          "_________________________________________",
-          margin + 10,
-          y + 10
+          "DEAN/VICE DEAN: ______________________",
+          pageWidth / 2 + 10,
+          y
         );
-        doc.setFontSize(9);
-        doc.text("Registrar / Office of the Registrar", margin + 10, y + 18);
-
-        y += 35; // good vertical space
-
-        // Dean / Vice Dean (below left)
-        doc.text(
-          "_________________________________________",
-          margin + 10,
-          y + 10
-        );
-        doc.setFontSize(9);
-        doc.text("Dean / Vice Dean Office", margin + 10, y + 18);
       } else {
-        // TRANSCRIPT — completely untouched, exactly as you pasted
+        // ═══════════════════════════════════════════════════════
+        // TRANSCRIPT - Original Two-Column Portrait Design
+        // ═══════════════════════════════════════════════════════
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const margin = 9;
+
+        if (index > 0) doc.addPage();
+
+        let y = 10;
         const r = item as RealGradeReport;
 
         // Header
@@ -875,8 +1705,7 @@ export default function Transcript_Generate() {
         const info = [
           [`ID: ${r.idNumber}`, `Date of Admission: ${r.dateEnrolledGC}`],
           [
-            `Name: ${r.fullName.substring(0, 28)}${
-              r.fullName.length > 28 ? "…" : ""
+            `Name: ${r.fullName.substring(0, 28)}${r.fullName.length > 28 ? "…" : ""
             }`,
             `Program: ${r.programModality?.name?.substring(0, 20) || "-"}`,
           ],
@@ -902,27 +1731,25 @@ export default function Transcript_Generate() {
         });
         y += info.length * 3.4 + 7;
 
-        // Semesters
+        // Semesters in two columns
         let leftBottom = y;
         let rightBottom = y;
+        const colWidth = (pageWidth - margin * 3) / 2;
 
         r.studentCopies.forEach((copy, idx) => {
           const isLeft = idx % 2 === 0;
           const colX = isLeft ? margin : pageWidth / 2 + margin / 2;
           let cy = isLeft ? leftBottom : rightBottom;
 
-          // Two-line header
           doc.setFontSize(8.5);
           doc.setFont("helvetica", "bold");
-          const line1 = `Academic Year: ${
-            copy.academicYear || "N/A"
-          }   Class Year: ${copy.classyear.name}`;
+          const line1 = `Academic Year: ${copy.academicYear || "N/A"
+            }   Class Year: ${copy.classyear.name}`;
           doc.text(line1, colX, cy);
           cy += 4.5;
           doc.text(`Semester: ${copy.semester.name}`, colX, cy);
           cy += 5;
 
-          // SGPA + Status
           doc.setFontSize(7);
           doc.setFont("helvetica", "normal");
           doc.text(
@@ -932,7 +1759,6 @@ export default function Transcript_Generate() {
           );
           cy += 4.5;
 
-          // Table
           const body = copy.courses.map((c, i) => [
             (i + 1).toString(),
             c.courseCode,
@@ -989,7 +1815,6 @@ export default function Transcript_Generate() {
 
           cy = (doc as any).lastAutoTable.finalY + 3.5;
 
-          // Total line
           doc.setFontSize(7);
           const totCH = copy.courses.reduce((s, c) => s + c.totalCrHrs, 0);
           const totPt = copy.courses.reduce((s, c) => s + c.gradePoint, 0);
@@ -1007,12 +1832,12 @@ export default function Transcript_Generate() {
 
         y = Math.max(leftBottom, rightBottom) + 8;
 
-        // FINAL CGPA – small, left-aligned
+        // Final CGPA
         const finalCGPA =
-          items[index].studentCopies.length > 0
-            ? items[index].studentCopies[
-                items[index].studentCopies.length - 1
-              ].semesterCGPA.toFixed(2)
+          r.studentCopies.length > 0
+            ? r.studentCopies[r.studentCopies.length - 1].semesterCGPA.toFixed(
+              2
+            )
             : "N/A";
 
         doc.setFontSize(7);
@@ -1020,7 +1845,7 @@ export default function Transcript_Generate() {
         doc.text(`Cumulative GPA (CGPA): ${finalCGPA}`, margin, y);
         y += 6;
 
-        // Signature area – Registrar + Dean
+        // Signatures
         if (y < 225) y = 225;
         if (y > 270) {
           doc.addPage();
@@ -1028,7 +1853,6 @@ export default function Transcript_Generate() {
         }
 
         doc.setFontSize(9);
-        // Registrar (left)
         doc.text(
           "_________________________________________",
           pageWidth * 0.25,
@@ -1047,7 +1871,6 @@ export default function Transcript_Generate() {
           align: "center",
         });
 
-        // Dean Office (right)
         doc.setFontSize(9);
         doc.text(
           "_________________________________________",
@@ -1064,7 +1887,12 @@ export default function Transcript_Generate() {
       }
     });
 
-    doc.save(searchType === "report" ? "GradeReports.pdf" : "Transcripts.pdf");
+    // Save the PDF after all pages are added
+    doc.save(
+      searchType === "report"
+        ? "Student_Academic_Record.pdf"
+        : "Transcripts.pdf"
+    );
   };
 
   // === TYPE SELECTION SCREEN ===
@@ -1084,7 +1912,7 @@ export default function Transcript_Generate() {
             {[
               {
                 type: "report" as const,
-                label: "Report Cards",
+                label: "Student Copy",
                 icon: FileText,
               },
               {
@@ -1144,6 +1972,34 @@ export default function Transcript_Generate() {
               ? realReports.length
               : transcriptBatch.length}
             )
+          </button>
+          {/* Example — place near your PDF button */}
+          {/* <button
+            onClick={exportToExcel}
+            disabled={
+              (searchType === "report" && realReports.length === 0) ||
+              (searchType === "transcript" && realTranscripts.length === 0)
+            }
+            className="flex items-center gap-2 px-5 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+          >
+            <Download className="w-5 h-5" />
+            Export Excel (
+            {searchType === "report"
+              ? realReports.length
+              : realTranscripts.length}
+            )
+          </button> */}
+          <button
+            type="button" // ← Add this line
+            onClick={exportToExcel}
+            disabled={
+              (searchType === "report" && realReports.length === 0) ||
+              (searchType === "transcript" && realTranscripts.length === 0)
+            }
+            className="flex items-center gap-2 px-5 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+          >
+            <Download className="w-5 h-5" />
+            Export Excel ({realReports.length || realTranscripts.length})
           </button>
         </div>
 
@@ -1322,14 +2178,13 @@ export default function Transcript_Generate() {
                     loadingReports ||
                     loadingDropdowns
                   }
-                  className={`px-8 py-4 rounded-xl font-bold text-white shadow-lg transition ${
-                    selectedStudents.length === 0 ||
+                  className={`px-8 py-4 rounded-xl font-bold text-white shadow-lg transition ${selectedStudents.length === 0 ||
                     !selectedSemesterId ||
                     !selectedClassYearId ||
                     loadingDropdowns
-                      ? "bg-gray-400 dark:bg-gray-600 cursor-not-allowed"
-                      : "bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-                  }`}
+                    ? "bg-gray-400 dark:bg-gray-600 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+                    }`}
                 >
                   {loadingReports ? (
                     <>
@@ -1537,11 +2392,10 @@ export default function Transcript_Generate() {
                   }
                 }}
                 disabled={selectedStudents.length === 0 || loadingTranscripts}
-                className={`px-8 py-4 rounded-xl font-bold text-white shadow-lg transition ${
-                  selectedStudents.length === 0 || loadingTranscripts
-                    ? "bg-gray-400 dark:bg-gray-600 cursor-not-allowed"
-                    : "bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600"
-                }`}
+                className={`px-8 py-4 rounded-xl font-bold text-white shadow-lg transition ${selectedStudents.length === 0 || loadingTranscripts
+                  ? "bg-gray-400 dark:bg-gray-600 cursor-not-allowed"
+                  : "bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600"
+                  }`}
               >
                 {loadingTranscripts ? (
                   <>
@@ -1588,7 +2442,358 @@ export default function Transcript_Generate() {
 }
 
 // === PRESENTATION COMPONENTS ===
+// ────────────────────────────────────────────────
+//  Helper: flatten + format one student copy (grade report)
+// ────────────────────────────────────────────────
+function sanitizeSheetName(name: string): string {
+  return name
+    .replace(/[\/\\:*?"<>|]/g, "_")
+    .replace(/\s+/g, "_")
+    .slice(0, 31);
+}
 
+// ────────────────────────────────────────────────
+// Helper: Student Copy (Grade Report) → Excel sheets
+// ────────────────────────────────────────────────
+// function prepareStudentCopySheets(report: RealGradeReport) {
+//   const sheets: Record<string, any[]> = {};
+
+//   // 1. Student Info sheet
+//   sheets["Student Info"] = [
+//     {
+//       "ID Number": report.idNumber || "",
+//       "Full Name": report.fullName || "",
+//       Gender: report.gender || "",
+//       "Date of Birth (GC)": report.birthDateGC || "",
+//       "Date Enrolled (GC)": report.dateEnrolledGC || "",
+//       Department: report.department?.name || "",
+//       "Program Modality": report.programModality?.name || "",
+//       "Program Level": report.programLevel?.name || "N/A",
+//     },
+//   ];
+
+//   // 2. One sheet per semester
+//   report.studentCopies.forEach((copy) => {
+//     const sheetName = sanitizeSheetName(
+//       `Sem_${copy.semester?.name || "Unknown"}`
+//     );
+
+//     const header = [
+//       "No",
+//       "Course Code",
+//       "Course Title",
+//       "Cr.Hrs",
+//       "Letter Grade",
+//       "Grade Point",
+//     ];
+
+//     const rows = copy.courses.map((c, i) => [
+//       i + 1,
+//       c.courseCode || "",
+//       c.courseTitle || "",
+//       c.totalCrHrs || 0,
+//       c.letterGrade || "",
+//       Number(c.gradePoint || 0).toFixed(2),
+//     ]);
+
+//     const totalCr = copy.courses.reduce(
+//       (sum, c) => sum + (c.totalCrHrs || 0),
+//       0
+//     );
+//     const totalPt = copy.courses.reduce(
+//       (sum, c) => sum + (c.gradePoint || 0),
+//       0
+//     );
+
+//     rows.push(["TOTAL", "", "", totalCr.toFixed(2), "", totalPt.toFixed(2)]);
+//     rows.push([
+//       "",
+//       "",
+//       "",
+//       "",
+//       "SGPA",
+//       Number(copy.semesterGPA || 0).toFixed(2),
+//     ]);
+//     rows.push([
+//       "",
+//       "",
+//       "",
+//       "",
+//       "CGPA",
+//       Number(copy.semesterCGPA || 0).toFixed(2),
+//     ]);
+//     rows.push(["", "", "", "", "Status", copy.status || ""]);
+
+//     sheets[sheetName] = [header, ...rows];
+//   });
+
+//   return sheets;
+// }
+
+// // ────────────────────────────────────────────────
+// // Helper: Transcript → Excel sheets
+// // ────────────────────────────────────────────────
+// function prepareTranscriptSheets(report: RealGradeReport) {
+//   const sheets: Record<string, any[]> = {};
+
+//   // Student Info
+//   sheets["Student Info"] = [
+//     {
+//       "ID Number": report.idNumber || "",
+//       "Full Name": report.fullName || "",
+//       Gender: report.gender || "",
+//       "Date of Birth (GC)": report.birthDateGC || "",
+//       "Date Enrolled (GC)": report.dateEnrolledGC || "",
+//       Department: report.department?.name || "",
+//       "Program Modality": report.programModality?.name || "",
+//       "Program Level": report.programLevel?.name || "N/A",
+//     },
+//   ];
+
+//   report.studentCopies.forEach((copy) => {
+//     const sheetName = sanitizeSheetName(
+//       `Sem_${copy.semester?.name || "Unknown"}`
+//     );
+
+//     const header = [
+//       "No",
+//       "Course Code",
+//       "Course Title",
+//       "Cr.Hrs",
+//       "Letter Grade",
+//       "Grade Point",
+//     ];
+
+//     const rows = copy.courses.map((c, i) => [
+//       i + 1,
+//       c.courseCode || "",
+//       c.courseTitle || "",
+//       c.totalCrHrs || 0,
+//       c.letterGrade || "",
+//       Number(c.gradePoint || 0).toFixed(2),
+//     ]);
+
+//     const totalCr = copy.courses.reduce(
+//       (sum, c) => sum + (c.totalCrHrs || 0),
+//       0
+//     );
+//     const totalPt = copy.courses.reduce(
+//       (sum, c) => sum + (c.gradePoint || 0),
+//       0
+//     );
+
+//     rows.push(["TOTAL", "", "", totalCr.toFixed(2), "", totalPt.toFixed(2)]);
+//     rows.push([
+//       "",
+//       "",
+//       "",
+//       "",
+//       "SGPA",
+//       Number(copy.semesterGPA || 0).toFixed(2),
+//     ]);
+//     rows.push([
+//       "",
+//       "",
+//       "",
+//       "",
+//       "CGPA",
+//       Number(copy.semesterCGPA || 0).toFixed(2),
+//     ]);
+//     rows.push(["", "", "", "", "Status", copy.status || ""]);
+
+//     sheets[sheetName] = [header, ...rows];
+//   });
+
+//   if (report.studentCopies.length > 0) {
+//     const last = report.studentCopies[report.studentCopies.length - 1];
+//     sheets["Final CGPA"] = [
+//       ["Final CGPA", Number(last.semesterCGPA || 0).toFixed(2)],
+//     ];
+//   }
+
+//   return sheets;
+// }
+function prepareStudentCopySheets(report: RealGradeReport) {
+  const sheets: Record<string, any[][]> = {};
+
+  // ── Student Info ── proper headers + values as array of arrays
+  sheets["Student Info"] = [
+    [
+      "ID Number",
+      "Full Name",
+      "Gender",
+      "Date of Birth (GC)",
+      "Date Enrolled (GC)",
+      "Department",
+      "Program Modality",
+      "Program Level",
+    ],
+    [
+      report.idNumber || "",
+      report.fullName || "",
+      report.gender || "",
+      report.birthDateGC || "",
+      report.dateEnrolledGC || "",
+      report.department?.name || "",
+      report.programModality?.name || "",
+      report.programLevel?.name || "N/A",
+    ],
+  ];
+
+  // ── One sheet per semester copy ── (this part was already mostly correct)
+  report.studentCopies.forEach((copy) => {
+    const sheetName = sanitizeSheetName(
+      `Sem_${copy.semester?.name || "Unknown"}`
+    );
+
+    const header = [
+      "No",
+      "Course Code",
+      "Course Title",
+      "Cr.Hrs",
+      "Letter Grade",
+      "Grade Point",
+    ];
+
+    const rows = copy.courses.map((c, i) => [
+      i + 1,
+      c.courseCode || "",
+      c.courseTitle || "",
+      c.totalCrHrs || 0,
+      c.letterGrade || "",
+      Number(c.gradePoint || 0).toFixed(2),
+    ]);
+
+    const totalCr = copy.courses.reduce(
+      (sum, c) => sum + (c.totalCrHrs || 0),
+      0
+    );
+    const totalPt = copy.courses.reduce(
+      (sum, c) => sum + (c.gradePoint || 0),
+      0
+    );
+
+    rows.push(["TOTAL", "", "", totalCr.toFixed(2), "", totalPt.toFixed(2)]);
+    rows.push([
+      "",
+      "",
+      "",
+      "",
+      "SGPA",
+      Number(copy.semesterGPA || 0).toFixed(2),
+    ]);
+    rows.push([
+      "",
+      "",
+      "",
+      "",
+      "CGPA",
+      Number(copy.semesterCGPA || 0).toFixed(2),
+    ]);
+    rows.push(["", "", "", "", "Status", copy.status || ""]);
+
+    sheets[sheetName] = [header, ...rows];
+  });
+
+  return sheets;
+}
+
+// Same fix for transcripts (copy-paste & adjust field names if needed)
+function prepareTranscriptSheets(report: RealGradeReport) {
+  const sheets: Record<string, any[][]> = {};
+
+  // ── Student Info ── same structure
+  sheets["Student Info"] = [
+    [
+      "ID Number",
+      "Full Name",
+      "Gender",
+      "Date of Birth (GC)",
+      "Date Enrolled (GC)",
+      "Department",
+      "Program Modality",
+      "Program Level",
+    ],
+    [
+      report.idNumber || "",
+      report.fullName || "",
+      report.gender || "",
+      report.birthDateGC || "",
+      report.dateEnrolledGC || "",
+      report.department?.name || "",
+      report.programModality?.name || "",
+      report.programLevel?.name || "N/A",
+    ],
+  ];
+
+  // Semester sheets — same as above
+  report.studentCopies.forEach((copy) => {
+    const sheetName = sanitizeSheetName(
+      `Sem_${copy.semester?.name || "Unknown"}`
+    );
+
+    const header = [
+      "No",
+      "Course Code",
+      "Course Title",
+      "Cr.Hrs",
+      "Letter Grade",
+      "Grade Point",
+    ];
+
+    const rows = copy.courses.map((c, i) => [
+      i + 1,
+      c.courseCode || "",
+      c.courseTitle || "",
+      c.totalCrHrs || 0,
+      c.letterGrade || "",
+      Number(c.gradePoint || 0).toFixed(2),
+    ]);
+
+    const totalCr = copy.courses.reduce(
+      (sum, c) => sum + (c.totalCrHrs || 0),
+      0
+    );
+    const totalPt = copy.courses.reduce(
+      (sum, c) => sum + (c.gradePoint || 0),
+      0
+    );
+
+    rows.push(["TOTAL", "", "", totalCr.toFixed(2), "", totalPt.toFixed(2)]);
+    rows.push([
+      "",
+      "",
+      "",
+      "",
+      "SGPA",
+      Number(copy.semesterGPA || 0).toFixed(2),
+    ]);
+    rows.push([
+      "",
+      "",
+      "",
+      "",
+      "CGPA",
+      Number(copy.semesterCGPA || 0).toFixed(2),
+    ]);
+    rows.push(["", "", "", "", "Status", copy.status || ""]);
+
+    sheets[sheetName] = [header, ...rows];
+  });
+
+  // Optional: final CGPA summary sheet
+  if (report.studentCopies.length > 0) {
+    const lastCopy = report.studentCopies[report.studentCopies.length - 1];
+    sheets["Final CGPA"] = [
+      [
+        "Final Cumulative GPA (CGPA)",
+        Number(lastCopy.semesterCGPA || 0).toFixed(2),
+      ],
+    ];
+  }
+
+  return sheets;
+}
 function RealReportView({ report }: { report: RealGradeReport }) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 transition-colors overflow-hidden">
@@ -2082,219 +3287,14 @@ function ReportCardView({ reportData }: { reportData: ReportRecord }) {
     </div>
   );
 }
-// function DynamicTranscriptView({ report }: { report: RealGradeReport }) {
-//   return (
-//     <div className="bg-white dark:bg-gray-800 shadow-2xl border-4 border-black dark:border-gray-600 font-mono text-xs sm:text-sm overflow-x-auto transition-colors">
-//       <div className="text-center py-4 bg-cyan-100 dark:bg-cyan-900 border-b-4 border-black dark:border-gray-600">
-//         <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-//           DEUTSCHE HOCHSCHULE FÜR MEDIZIN
-//         </h1>
-//         <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
-//           STUDENT ACADEMIC TRANSCRIPT
-//         </h2>
-//         <p className="font-bold text-gray-800 dark:text-gray-300">
-//           OFFICE OF REGISTRAR
-//         </p>
-//         {report.dateIssuedGC && (
-//           <p className="text-sm mt-2 opacity-90 text-gray-700 dark:text-gray-400">
-//             Issued on: {report.dateIssuedGC}
-//           </p>
-//         )}
-//       </div>
 
-//       <div className="p-4 bg-white dark:bg-gray-800">
-//         <table className="w-full border-collapse mb-6">
-//           <tbody>
-//             <tr className="bg-cyan-100 dark:bg-cyan-900/50 border-2 border-black dark:border-gray-600">
-//               <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">
-//                 ID Number
-//               </td>
-//               <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">
-//                 {report.idNumber}
-//               </td>
-//               <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">
-//                 Full Name
-//               </td>
-//               <td
-//                 colSpan={5}
-//                 className="px-3 py-2 text-gray-800 dark:text-gray-300"
-//               >
-//                 {report.fullName}
-//               </td>
-//             </tr>
-//             <tr className="bg-cyan-100 dark:bg-cyan-900/50 border-2 border-black dark:border-gray-600">
-//               <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">
-//                 Birth Date
-//               </td>
-//               <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">
-//                 {report.birthDateGC}
-//               </td>
-//               <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">
-//                 Issue Date
-//               </td>
-//               <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">
-//                 {report.dateIssuedGC}
-//               </td>
-
-//               <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">
-//                 Field Of Study
-//               </td>
-//               <td className="px-3 py-2 text-gray-800 dark:text-gray-300">
-//                 {report.department.name}{" "}
-//               </td>
-//             </tr>
-//             <tr className="bg-cyan-100 dark:bg-cyan-900/50 border-2 border-black dark:border-gray-600">
-//               <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">
-//                 Sex
-//               </td>
-//               <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">
-//                 {report.gender}
-//               </td>
-//               <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">
-//                 Date of Birth
-//               </td>
-//               <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">
-//                 {report.birthDateGC}
-//               </td>
-//               <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">
-//                 Program
-//               </td>
-//               <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">
-//                 {report.programLevel.name}
-//               </td>
-//               <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">
-//                 Enrollment Type
-//               </td>
-//               <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">
-//                 {report.programModality.name}
-//               </td>
-//             </tr>
-//             <tr className="bg-cyan-100 dark:bg-cyan-900/50 border-2 border-black dark:border-gray-600">
-//               <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">
-//                 Batch
-//               </td>
-//               <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">
-//                 —
-//               </td>
-//               <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">
-//                 Department
-//               </td>
-//               <td className="px-3 py-2 text-gray-800 dark:text-gray-300 border-r border-black dark:border-gray-600">
-//                 {report.department.name}
-//               </td>
-//               <td className="px-3 py-2 font-bold text-gray-900 dark:text-white border-r border-black dark:border-gray-600">
-//                 Date of Admission
-//               </td>
-//               <td
-//                 colSpan={3}
-//                 className="px-3 py-2 text-gray-800 dark:text-gray-300"
-//               >
-//                 {report.dateEnrolledGC}
-//               </td>
-//             </tr>
-//           </tbody>
-//         </table>
-
-//         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-//           {report.studentCopies.map((copy, i) => {
-//             const totalCH = copy.courses.reduce(
-//               (sum, c) => sum + c.totalCrHrs,
-//               0
-//             );
-//             const totalPoints = copy.courses.reduce(
-//               (sum, c) => sum + c.gradePoint,
-//               0
-//             );
-
-//             return (
-//               <div
-//                 key={i}
-//                 className="border-4 border-black dark:border-gray-600 overflow-hidden"
-//               >
-//                 <div className="bg-orange-500 dark:bg-orange-600 text-white font-bold px-3 py-2 text-center text-xs sm:text-sm">
-//                   Academic Year: {copy.academicYear || "N/A"} G.C • Semester :
-//                   {copy.semester.id} • Class Year: {copy.classyear.name}
-//                 </div>
-//                 <table className="w-full border-collapse bg-white dark:bg-gray-800">
-//                   <thead className="bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-gray-100">
-//                     <tr>
-//                       <th className="border border-black dark:border-gray-600 px-2 py-1">
-//                         Code
-//                       </th>
-//                       <th className="border border-black dark:border-gray-600 px-2 py-1">
-//                         Title
-//                       </th>
-//                       <th className="border border-black dark:border-gray-600 px-2 py-1">
-//                         CH
-//                       </th>
-//                       <th className="border border-black dark:border-gray-600 px-2 py-1">
-//                         Letter Grade
-//                       </th>
-//                       <th className="border border-black dark:border-gray-600 px-2 py-1">
-//                         Gr. Point
-//                       </th>
-//                     </tr>
-//                   </thead>
-//                   <tbody className="text-gray-800 dark:text-gray-300">
-//                     {copy.courses.map((c, j) => (
-//                       <tr
-//                         key={j}
-//                         className="hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
-//                       >
-//                         <td className="border border-black dark:border-gray-600 px-2 py-1 font-mono">
-//                           {c.courseCode}
-//                         </td>
-//                         <td className="border border-black dark:border-gray-600 px-2 py-1">
-//                           {c.courseTitle}
-//                         </td>
-//                         <td className="border border-black dark:border-gray-600 px-2 py-1 text-center">
-//                           {c.totalCrHrs}
-//                         </td>
-//                         <td className="border border-black dark:border-gray-600 px-2 py-1 text-center font-bold text-blue-700 dark:text-blue-400">
-//                           {c.letterGrade}
-//                         </td>
-//                         <td className="border border-black dark:border-gray-600 px-2 py-1 text-center font-mono">
-//                           {c.gradePoint.toFixed(1)}
-//                         </td>
-//                       </tr>
-//                     ))}
-//                   </tbody>
-//                 </table>
-//                 <div className="bg-orange-500 dark:bg-orange-600 text-white font-bold px-3 py-2 text-right text-xs sm:text-sm">
-//                   TOTAL CrHr: {totalCH} , Grade Points: {totalPoints.toFixed(1)}{" "}
-//                   , GPA: {copy.semesterGPA.toFixed(2)}, Commulative CGPA:{" "}
-//                   {copy.semesterCGPA}
-//                 </div>
-//               </div>
-//             );
-//           })}
-//         </div>
-
-//         <div className="grid grid-cols-2 gap-8 sm:gap-16 p-8 sm:p-12 border-t-4 border-black dark:border-gray-600 mt-8">
-//           <div className="text-center">
-//             <div className="h-28 sm:h-32 border-4 border-dashed border-gray-300 dark:border-gray-600 rounded-xl mb-4 bg-gray-50 dark:bg-gray-900/40"></div>
-//             <p className="font-bold text-base sm:text-lg text-gray-900 dark:text-white">
-//               REGISTRAR OFFICE
-//             </p>
-//           </div>
-//           <div className="text-center">
-//             <div className="h-28 sm:h-32 border-4 border-dashed border-gray-300 dark:border-gray-600 rounded-xl mb-4 bg-gray-50 dark:bg-gray-900/40"></div>
-//             <p className="font-bold text-base sm:text-lg text-gray-900 dark:text-white">
-//               DEAN OFFICE
-//             </p>
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
 function DynamicTranscriptView({ report }: { report: RealGradeReport }) {
   // Find the FINAL (last) CGPA from the last semester copy
   const finalCGPA =
     report.studentCopies.length > 0
       ? report.studentCopies[
-          report.studentCopies.length - 1
-        ].semesterCGPA.toFixed(2)
+        report.studentCopies.length - 1
+      ].semesterCGPA.toFixed(2)
       : "N/A";
 
   return (
