@@ -5,6 +5,7 @@ import { useModal } from "@/hooks/Modal";
 import { ImageModal } from "@/hooks/ImageModal";
 import apiService from "@/components/api/apiService";
 import endPoints from "@/components/api/endPoints";
+import { Checkbox } from "antd";
 
 interface FilterOption {
   id: string | number;
@@ -27,7 +28,7 @@ export interface DataTypes {
 export default function RegistrarStudents() {
   const [filters, setFilters] = useState({
     department: "",
-    batch: "",
+    batch: [] as string[], // Changed to array for multiple selection
     status: "",
   });
 
@@ -45,6 +46,7 @@ export default function RegistrarStudents() {
   const [students, setStudents] = useState<DataTypes[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAmharic, setShowAmharic] = useState(false);
+  const [showBatchDropdown, setShowBatchDropdown] = useState(false);
   
   const { openModal, closeModal } = useModal() as any;
   const navigate = useNavigate();
@@ -152,6 +154,25 @@ export default function RegistrarStudents() {
     closeModal();
   };
 
+  /* ===================== Handle Batch Selection ===================== */
+  const handleBatchSelection = (batchName: string) => {
+    setFilters((prev) => {
+      const newBatch = prev.batch.includes(batchName)
+        ? prev.batch.filter(b => b !== batchName)
+        : [...prev.batch, batchName];
+      return { ...prev, batch: newBatch };
+    });
+  };
+
+  /* ===================== Select/Deselect All Batches ===================== */
+  const handleSelectAllBatches = () => {
+    const allBatchNames = options.batchClassYearSemesters.map(b => b.name);
+    setFilters((prev) => ({
+      ...prev,
+      batch: prev.batch.length === allBatchNames.length ? [] : allBatchNames
+    }));
+  };
+
   /* ===================== Filtering ===================== */
   const filteredData = useMemo(() => {
     const search = searchText.toLowerCase();
@@ -161,7 +182,9 @@ export default function RegistrarStudents() {
         ? s.department === filters.department
         : true;
 
-      const matchBatch = filters.batch ? s.batch === filters.batch : true;
+      const matchBatch = filters.batch.length > 0
+        ? filters.batch.includes(s.batch)
+        : true;
 
       const matchStatus = filters.status
         ? s.status === filters.status
@@ -179,6 +202,14 @@ export default function RegistrarStudents() {
       );
     });
   }, [students, filters, searchText]);
+
+  /* ===================== Format Selected Batches Display ===================== */
+  const getBatchDisplayText = () => {
+    if (filters.batch.length === 0) return "All BCYS";
+    if (filters.batch.length === 1) return filters.batch[0];
+    if (filters.batch.length === options.batchClassYearSemesters.length) return "All BCYS Selected";
+    return `${filters.batch.length} Selected`;
+  };
 
   /* ===================== Table Columns ===================== */
   const columns = [
@@ -383,21 +414,77 @@ export default function RegistrarStudents() {
             ))}
           </select>
 
-          {/* BCY */}
-          <select
-            className="filter-select"
-            onChange={(e) =>
-              setFilters((p) => ({ ...p, batch: e.target.value }))
-            }
-            value={filters.batch}
-          >
-            <option value="">All BCYS</option>
-            {options.batchClassYearSemesters.map((b) => (
-              <option key={b.id} value={b.name}>
-                {b.name}
-              </option>
-            ))}
-          </select>
+          {/* Multi-select BCYS Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowBatchDropdown(!showBatchDropdown)}
+              className="filter-select flex items-center justify-between min-w-[160px] text-left"
+            >
+              <span>{getBatchDisplayText()}</span>
+              <svg
+                className={`w-4 h-4 ml-2 transition-transform ${
+                  showBatchDropdown ? "rotate-180" : ""
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </button>
+            
+            {showBatchDropdown && (
+              <div className="absolute top-full left-0 mt-1 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg w-64 max-h-96 overflow-y-auto">
+                <div className="p-2 border-b border-gray-200 dark:border-gray-700">
+                  <Checkbox
+                    onChange={handleSelectAllBatches}
+                    checked={filters.batch.length === options.batchClassYearSemesters.length}
+                    indeterminate={
+                      filters.batch.length > 0 && 
+                      filters.batch.length < options.batchClassYearSemesters.length
+                    }
+                  >
+                    <span className="font-medium text-sm">Select All</span>
+                  </Checkbox>
+                </div>
+                
+                <div className="p-2 max-h-80 overflow-y-auto">
+                  {options.batchClassYearSemesters.map((batch) => (
+                    <div
+                      key={batch.id}
+                      className="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer"
+                      onClick={() => handleBatchSelection(batch.name)}
+                    >
+                      <Checkbox
+                        checked={filters.batch.includes(batch.name)}
+                        onChange={() => handleBatchSelection(batch.name)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="mr-2"
+                      />
+                      <span className="text-sm">{batch.name}</span>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="p-2 border-t border-gray-200 dark:border-gray-700">
+                  <button
+                    onClick={() => {
+                      setFilters(prev => ({ ...prev, batch: [] }));
+                      setShowBatchDropdown(false);
+                    }}
+                    className="w-full text-sm text-center text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 py-1"
+                  >
+                    Clear Selection
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Search */}
           <div className="flex-grow md:max-w-sm">
@@ -410,10 +497,10 @@ export default function RegistrarStudents() {
           </div>
 
           {/* Clear Filters */}
-          {(filters.department || filters.batch || filters.status || searchText) && (
+          {(filters.department || filters.batch.length > 0 || filters.status || searchText) && (
             <button
               onClick={() => {
-                setFilters({ department: "", batch: "", status: "" });
+                setFilters({ department: "", batch: [], status: "" });
                 setSearchText("");
               }}
               className="px-3 py-1.5 rounded-lg bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 text-sm text-gray-700 dark:text-gray-300"
@@ -422,6 +509,27 @@ export default function RegistrarStudents() {
             </button>
           )}
         </div>
+
+        {/* Selected BCYS Chips */}
+        {filters.batch.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-2">
+            <span className="text-sm text-gray-600 dark:text-gray-400">Selected BCYS:</span>
+            {filters.batch.map((batch) => (
+              <span
+                key={batch}
+                className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200"
+              >
+                {batch}
+                <button
+                  onClick={() => handleBatchSelection(batch)}
+                  className="ml-1 text-blue-600 dark:text-blue-300 hover:text-blue-800 dark:hover:text-blue-100"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
 
         {/* Info Bar */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
@@ -482,6 +590,14 @@ export default function RegistrarStudents() {
         )}
       </div>
 
+      {/* Close dropdown when clicking outside */}
+      {showBatchDropdown && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setShowBatchDropdown(false)}
+        />
+      )}
+
       {/* Styles */}
       <style>{`
         .filter-select {
@@ -493,6 +609,7 @@ export default function RegistrarStudents() {
           font-size: 0.875rem;
           min-width: 140px;
           height: 36px;
+          cursor: pointer;
         }
         
         .filter-select:focus {
@@ -537,6 +654,32 @@ export default function RegistrarStudents() {
         .dark .filter-input:focus {
           border-color: #60a5fa;
           box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.1);
+        }
+        
+        /* Custom Checkbox Styling */
+        .ant-checkbox-wrapper {
+          display: flex;
+          align-items: center;
+        }
+        
+        .ant-checkbox-inner {
+          border-radius: 0.25rem;
+          border-color: #d1d5db;
+        }
+        
+        .dark .ant-checkbox-inner {
+          background-color: #374151;
+          border-color: #6b7280;
+        }
+        
+        .ant-checkbox-checked .ant-checkbox-inner {
+          background-color: #3b82f6;
+          border-color: #3b82f6;
+        }
+        
+        .dark .ant-checkbox-checked .ant-checkbox-inner {
+          background-color: #60a5fa;
+          border-color: #60a5fa;
         }
         
         /* Compact Table Styles */
@@ -774,6 +917,15 @@ export default function RegistrarStudents() {
           .compact-table .ant-pagination {
             padding: 0.5rem !important;
             font-size: 0.8125rem;
+          }
+          
+          /* Multi-select dropdown responsive */
+          .relative > .filter-select {
+            width: 100%;
+          }
+          
+          .absolute {
+            width: 100%;
           }
         }
         
