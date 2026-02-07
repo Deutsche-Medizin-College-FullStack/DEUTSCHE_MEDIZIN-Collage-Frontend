@@ -16,7 +16,7 @@ const endPoints = {
   registerDepartmentHead: "/auth/register/department-head",
 
   /* =======================     Profiles  ======================== */
-  profile: "/students/profile",
+  profile: "/student/profile",
   getTeacherProfile: "/teachers/profile",
   getViceDeanProfile: "/vice-deans/profile",
   updateViceDeanProfile: "/vice-deans/update",
