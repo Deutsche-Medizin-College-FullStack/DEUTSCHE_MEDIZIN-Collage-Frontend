@@ -2327,7 +2327,7 @@ export default function Transcript_Generate() {
                       <th className="p-3 text-left">ID / Username</th>
                       <th className="p-3 text-left">Name</th>
                       <th className="p-3 text-left">Department</th>
-                      <th className="p-3 text-left">Batch</th>
+                      <th className="p-3 text-left">Current BCYS</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -2428,7 +2428,7 @@ export default function Transcript_Generate() {
                       <th className="p-3 text-left">ID / Username</th>
                       <th className="p-3 text-left">Name</th>
                       <th className="p-3 text-left">Department</th>
-                      <th className="p-3 text-left">Batch</th>
+                      <th className="p-3 text-left">Current BCYS</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">

@@ -1723,7 +1723,7 @@ export default function RegistrationSlips() {
                 {/* Batch Filter */}
                 <div className="space-y-1">
                   <Label htmlFor="batch" className="text-xs">
-                    Batch
+                    Current Batches
                   </Label>
                   <Select
                     value={filters.batchId}
@@ -1745,7 +1745,7 @@ export default function RegistrationSlips() {
                 </div>
 
                 {/* Enrollment Type Filter */}
-                <div className="space-y-1">
+                {/* <div className="space-y-1">
                   <Label htmlFor="enrollmentType" className="text-xs">
                     Enrollment Type
                   </Label>
@@ -1766,10 +1766,10 @@ export default function RegistrationSlips() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
+                </div> */}
 
                 {/* Program Level Filter */}
-                <div className="space-y-1">
+                {/* <div className="space-y-1">
                   <Label htmlFor="programLevel" className="text-xs">
                     Program Level
                   </Label>
@@ -1790,7 +1790,7 @@ export default function RegistrationSlips() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
+                </div> */}
 
                 {/* Class Year Filter */}
                 <div className="space-y-1">
@@ -1817,7 +1817,7 @@ export default function RegistrationSlips() {
                 </div>
 
                 {/* Program Modality Filter */}
-                <div className="space-y-1">
+                {/* <div className="space-y-1">
                   <Label htmlFor="programModality" className="text-xs">
                     Program Modality
                   </Label>
@@ -1838,7 +1838,7 @@ export default function RegistrationSlips() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
+                </div> */}
               </div>
             </div>
 

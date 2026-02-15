@@ -205,7 +205,7 @@ export default function RegistrarStudents() {
 
   /* ===================== Format Selected Batches Display ===================== */
   const getBatchDisplayText = () => {
-    if (filters.batch.length === 0) return "All BCYS";
+    if (filters.batch.length === 0) return "All Current BCYS";
     if (filters.batch.length === 1) return filters.batch[0];
     if (filters.batch.length === options.batchClassYearSemesters.length) return "All BCYS Selected";
     return `${filters.batch.length} Selected`;

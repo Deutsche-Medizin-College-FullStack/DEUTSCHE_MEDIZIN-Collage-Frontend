@@ -964,7 +964,7 @@ const distinctExitExamStatuses = useMemo(() => {
 
                   {/* Batch */}
                   <div>
-                    <Label className="mb-1.5 text-sm">Batch</Label>
+                    <Label className="mb-1.5 text-sm">Recent Batch</Label>
                     <Select
                       value={batchFilter}
                       onValueChange={setBatchFilter}
@@ -985,7 +985,7 @@ const distinctExitExamStatuses = useMemo(() => {
 
                   {/* Batch / Year / Semester */}
                   <div>
-                    <Label className="mb-1.5 text-sm">Batch / Year / Sem</Label>
+                    <Label className="mb-1.5 text-sm">Recent BCYS</Label>
                     <Select
                       value={batchClassYearSemesterFilter}
                       onValueChange={setBatchClassYearSemesterFilter}
@@ -994,7 +994,7 @@ const distinctExitExamStatuses = useMemo(() => {
                         <SelectValue placeholder="All" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">All Batches</SelectItem>
+                        <SelectItem value="all">All BCYS</SelectItem>
                         {filterOptions?.batchClassYearSemesters?.map((b) => (
                           <SelectItem key={b.id} value={String(b.id)}>
                             {b.name}
@@ -1027,7 +1027,7 @@ const distinctExitExamStatuses = useMemo(() => {
 
                   {/* Status */}
                   <div>
-                    <Label className="mb-1.5 text-sm">Status</Label>
+                    <Label className="mb-1.5 text-sm">Recent Status</Label>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
                       <SelectTrigger>
                         <SelectValue placeholder="All Statuses" />
