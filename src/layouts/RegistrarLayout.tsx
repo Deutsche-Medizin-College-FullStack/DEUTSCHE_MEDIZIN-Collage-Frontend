@@ -222,6 +222,9 @@ export default function RegistrarLayout() {
   const [courseOpen, setCourseOpen] = useState(false);
   const [programOpen, setProgramOpen] = useState(false);
 
+  const [classYearsProgressionOpen, setClassYearsProgressionOpen] = useState(false); // Add this line
+
+
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Mobile sidebar backdrop */}
@@ -419,303 +422,388 @@ export default function RegistrarLayout() {
               </button>
 
               {setupOpen && (
-                <div className="pl-6 space-y-1">
-                  <Link
-                    to="/registrar/settings/location"
-                    className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                      location.pathname.includes("/registrar/settings/location")
-                        ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
-                        : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
-                    }`}
-                    onClick={() =>
-                      window.innerWidth <= 1024 && setSidebarOpen(false)
-                    }
-                  >
-                    Locations
-                  </Link>
-                  <Link
-                    to="/registrar/settings/academic-years"
-                    className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                      location.pathname.includes(
-                        "/registrar/settings/academic-years"
-                      )
-                        ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
-                        : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
-                    }`}
-                    onClick={() =>
-                      window.innerWidth <= 1024 && setSidebarOpen(false)
-                    }
-                  >
-                    Academic Years
-                  </Link>
-                  <Link
-                    to="/registrar/settings/impairments"
-                    className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                      location.pathname.includes(
-                        "/registrar/settings/impairments"
-                      )
-                        ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
-                        : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
-                    }`}
-                    onClick={() =>
-                      window.innerWidth <= 1024 && setSidebarOpen(false)
-                    }
-                  >
-                    Impairments
-                  </Link>
+  <div className="pl-6 space-y-1">
+    <Link
+      to="/registrar/settings/location"
+      className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+        location.pathname.includes("/registrar/settings/location")
+          ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
+          : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
+      }`}
+      onClick={() =>
+        window.innerWidth <= 1024 && setSidebarOpen(false)
+      }
+    >
+      Locations
+    </Link>
+    <Link
+      to="/registrar/settings/academic-years"
+      className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+        location.pathname.includes(
+          "/registrar/settings/academic-years"
+        )
+          ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
+          : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
+      }`}
+      onClick={() =>
+        window.innerWidth <= 1024 && setSidebarOpen(false)
+      }
+    >
+      Academic Years
+    </Link>
+    <Link
+      to="/registrar/settings/impairments"
+      className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+        location.pathname.includes(
+          "/registrar/settings/impairments"
+        )
+          ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
+          : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
+      }`}
+      onClick={() =>
+        window.innerWidth <= 1024 && setSidebarOpen(false)
+      }
+    >
+      Impairments
+    </Link>
 
-                  <div className="space-y-1">
-                    <button
-                      className={`flex items-center w-full px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                        programOpen ||
-                        location.pathname.includes(
-                          "/registrar/settings/program"
-                        )
-                          ? "bg-gray-100 dark:text-gray-300 dark:bg-gray-700"
-                          : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                      }`}
-                      onClick={() => {
-                        setProgramOpen(!programOpen);
-                      }}
-                    >
-                      <div className="flex justify-between w-full">
-                        <span>Program</span>
-                        <svg
-                          className={`mr-3 ml-2 h-5 w-5 transition-transform duration-200 ${
-                            programOpen ? "rotate-90" : ""
-                          }`}
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M9 5l7 7-7 7"
-                          />
-                        </svg>
-                      </div>
-                    </button>
-                    {programOpen && (
-                      <div className="pl-6 space-y-1">
-                        <Link
-                          to="/registrar/settings/program-level"
-                          className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                            location.pathname.includes(
-                              "/registrar/settings/program-level"
-                            )
-                              ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
-                              : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
-                          }`}
-                          onClick={() =>
-                            window.innerWidth <= 1024 && setSidebarOpen(false)
-                          }
-                        >
-                          Program Level
-                        </Link>
-                        <Link
-                          to="/registrar/settings/program-modality"
-                          className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                            location.pathname.includes(
-                              "/registrar/settings/program-modality"
-                            )
-                              ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
-                              : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
-                          }`}
-                          onClick={() =>
-                            window.innerWidth <= 1024 && setSidebarOpen(false)
-                          }
-                        >
-                          Program Modality
-                        </Link>
-                      </div>
-                    )}
-                  </div>
-                  <div className="space-y-1">
-                    <button
-                      className={`flex items-center w-full px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                        courseOpen ||
-                        location.pathname.includes("/registrar/settings/course")
-                          ? "bg-gray-100 dark:text-gray-300 dark:bg-gray-700"
-                          : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                      }`}
-                      onClick={() => {
-                        setCourseOpen(!courseOpen);
-                      }}
-                    >
-                      <div className="flex justify-between w-full">
-                        <span>Courses</span>
-                        <svg
-                          className={`mr-3 ml-2 h-5 w-5 transition-transform duration-200 ${
-                            courseOpen ? "rotate-90" : ""
-                          }`}
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M9 5l7 7-7 7"
-                          />
-                        </svg>
-                      </div>
-                    </button>
-                    {courseOpen && (
-                      <div className="pl-6 space-y-1">
-                        <Link
-                          to="/registrar/settings/course-category"
-                          className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                            location.pathname.includes(
-                              "/registrar/settings/course-category"
-                            )
-                              ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
-                              : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
-                          }`}
-                          onClick={() =>
-                            window.innerWidth <= 1024 && setSidebarOpen(false)
-                          }
-                        >
-                          Course Category
-                        </Link>
-                        <Link
-                          to="/registrar/settings/course-source"
-                          className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                            location.pathname.includes(
-                              "/registrar/settings/course-source"
-                            )
-                              ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
-                              : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
-                          }`}
-                          onClick={() =>
-                            window.innerWidth <= 1024 && setSidebarOpen(false)
-                          }
-                        >
-                          Course Source
-                        </Link>
-                      </div>
-                    )}
-                  </div>
-                  <Link
-                    to="/registrar/settings/batches"
-                    className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                      location.pathname.includes("/registrar/settings/batches")
-                        ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
-                        : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
-                    }`}
-                    onClick={() =>
-                      window.innerWidth <= 1024 && setSidebarOpen(false)
-                    }
-                  >
-                    Batches
-                  </Link>
-                  <Link
-                    to="/registrar/settings/bcys"
-                    className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                      location.pathname.includes("/registrar/settings/bcys")
-                        ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
-                        : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
-                    }`}
-                    onClick={() =>
-                      window.innerWidth <= 1024 && setSidebarOpen(false)
-                    }
-                  >
-                    Batch Class Year
-                  </Link>
-                  <Link
-                    to="/registrar/settings/enrollment"
-                    className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                      location.pathname.includes(
-                        "/registrar/settings/enrollment"
-                      )
-                        ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
-                        : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
-                    }`}
-                    onClick={() =>
-                      window.innerWidth <= 1024 && setSidebarOpen(false)
-                    }
-                  >
-                    Enrolment Type
-                  </Link>
-                  <Link
-                    to="/registrar/settings/school-background"
-                    className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                      location.pathname.includes(
-                        "/registrar/settings/school-background"
-                      )
-                        ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
-                        : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
-                    }`}
-                    onClick={() =>
-                      window.innerWidth <= 1024 && setSidebarOpen(false)
-                    }
-                  >
-                    School Background
-                  </Link>
-                  <Link
-                    to="/registrar/settings/class-years"
-                    className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                      location.pathname.includes(
-                        "/registrar/settings/class-years"
-                      )
-                        ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
-                        : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
-                    }`}
-                    onClick={() =>
-                      window.innerWidth <= 1024 && setSidebarOpen(false)
-                    }
-                  >
-                    Class Years
-                  </Link>
-                  <Link
-                    to="/registrar/settings/semesters"
-                    className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                      location.pathname.includes(
-                        "/registrar/settings/semesters"
-                      )
-                        ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
-                        : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
-                    }`}
-                    onClick={() =>
-                      window.innerWidth <= 1024 && setSidebarOpen(false)
-                    }
-                  >
-                    Semesters
-                  </Link>
-                  <Link
-                    to="/registrar/settings/grading-systems"
-                    className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                      location.pathname.includes("/registrar/settings/grading")
-                        ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
-                        : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
-                    }`}
-                    onClick={() =>
-                      window.innerWidth <= 1024 && setSidebarOpen(false)
-                    }
-                  >
-                    Grading System
-                  </Link>
-                  <Link
-                    to="/registrar/settings/attritions"
-                    className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                      location.pathname.includes(
-                        "/registrar/settings/attritions"
-                      )
-                        ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
-                        : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
-                    }`}
-                    onClick={() =>
-                      window.innerWidth <= 1024 && setSidebarOpen(false)
-                    }
-                  >
-                    Attrition Cause
-                  </Link>
-                </div>
-              )}
+    {/* Program section remains the same */}
+    <div className="space-y-1">
+      <button
+        className={`flex items-center w-full px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+          programOpen ||
+          location.pathname.includes(
+            "/registrar/settings/program"
+          )
+            ? "bg-gray-100 dark:text-gray-300 dark:bg-gray-700"
+            : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+        }`}
+        onClick={() => {
+          setProgramOpen(!programOpen);
+        }}
+      >
+        <div className="flex justify-between w-full">
+          <span>Program</span>
+          <svg
+            className={`mr-3 ml-2 h-5 w-5 transition-transform duration-200 ${
+              programOpen ? "rotate-90" : ""
+            }`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+        </div>
+      </button>
+      {programOpen && (
+        <div className="pl-6 space-y-1">
+          <Link
+            to="/registrar/settings/program-level"
+            className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              location.pathname.includes(
+                "/registrar/settings/program-level"
+              )
+                ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
+                : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
+            }`}
+            onClick={() =>
+              window.innerWidth <= 1024 && setSidebarOpen(false)
+            }
+          >
+            Program Level
+          </Link>
+          <Link
+            to="/registrar/settings/program-modality"
+            className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              location.pathname.includes(
+                "/registrar/settings/program-modality"
+              )
+                ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
+                : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
+            }`}
+            onClick={() =>
+              window.innerWidth <= 1024 && setSidebarOpen(false)
+            }
+          >
+            Program Modality
+          </Link>
+        </div>
+      )}
+    </div>
+
+    {/* Courses section remains the same */}
+    <div className="space-y-1">
+      <button
+        className={`flex items-center w-full px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+          courseOpen ||
+          location.pathname.includes("/registrar/settings/course")
+            ? "bg-gray-100 dark:text-gray-300 dark:bg-gray-700"
+            : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+        }`}
+        onClick={() => {
+          setCourseOpen(!courseOpen);
+        }}
+      >
+        <div className="flex justify-between w-full">
+          <span>Courses</span>
+          <svg
+            className={`mr-3 ml-2 h-5 w-5 transition-transform duration-200 ${
+              courseOpen ? "rotate-90" : ""
+            }`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+        </div>
+      </button>
+      {courseOpen && (
+        <div className="pl-6 space-y-1">
+          <Link
+            to="/registrar/settings/course-category"
+            className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              location.pathname.includes(
+                "/registrar/settings/course-category"
+              )
+                ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
+                : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
+            }`}
+            onClick={() =>
+              window.innerWidth <= 1024 && setSidebarOpen(false)
+            }
+          >
+            Course Category
+          </Link>
+          <Link
+            to="/registrar/settings/course-source"
+            className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              location.pathname.includes(
+                "/registrar/settings/course-source"
+              )
+                ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
+                : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
+            }`}
+            onClick={() =>
+              window.innerWidth <= 1024 && setSidebarOpen(false)
+            }
+          >
+            Course Source
+          </Link>
+        </div>
+      )}
+    </div>
+
+    <Link
+      to="/registrar/settings/batches"
+      className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+        location.pathname.includes("/registrar/settings/batches")
+          ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
+          : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
+      }`}
+      onClick={() =>
+        window.innerWidth <= 1024 && setSidebarOpen(false)
+      }
+    >
+      Batches
+    </Link>
+
+    <Link
+      to="/registrar/settings/bcys"
+      className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+        location.pathname.includes("/registrar/settings/bcys")
+          ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
+          : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
+      }`}
+      onClick={() =>
+        window.innerWidth <= 1024 && setSidebarOpen(false)
+      }
+    >
+      Batch Class Year
+    </Link>
+
+    <Link
+      to="/registrar/settings/enrollment"
+      className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+        location.pathname.includes(
+          "/registrar/settings/enrollment"
+        )
+          ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
+          : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
+      }`}
+      onClick={() =>
+        window.innerWidth <= 1024 && setSidebarOpen(false)
+      }
+    >
+      Enrolment Type
+    </Link>
+
+    <Link
+      to="/registrar/settings/school-background"
+      className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+        location.pathname.includes(
+          "/registrar/settings/school-background"
+        )
+          ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
+          : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
+      }`}
+      onClick={() =>
+        window.innerWidth <= 1024 && setSidebarOpen(false)
+      }
+    >
+      School Background
+    </Link>
+
+    {/* NEW: Classyears and their Progression Section */}
+    <div className="space-y-1">
+      <button
+        className={`flex items-center w-full px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+          classYearsProgressionOpen ||
+          location.pathname.includes("/registrar/settings/classyears-progression")
+            ? "bg-gray-100 dark:text-gray-300 dark:bg-gray-700"
+            : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+        }`}
+        onClick={() => {
+          setClassYearsProgressionOpen(!classYearsProgressionOpen);
+        }}
+      >
+        <div className="flex justify-between w-full">
+          <span>Classyears and their Progression</span>
+          <svg
+            className={`mr-3 ml-2 h-5 w-5 transition-transform duration-200 ${
+              classYearsProgressionOpen ? "rotate-90" : ""
+            }`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+        </div>
+      </button>
+
+      {classYearsProgressionOpen && (
+        <div className="pl-6 space-y-1">
+          {/* Existing Class Years link */}
+          <Link
+            to="/registrar/settings/class-years"
+            className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              location.pathname.includes(
+                "/registrar/settings/class-years"
+              )
+                ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
+                : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
+            }`}
+            onClick={() =>
+              window.innerWidth <= 1024 && setSidebarOpen(false)
+            }
+          >
+            ClassYears
+          </Link>
+          
+          {/* NEW: Progression of ClassYears link */}
+          <Link
+            to="/registrar/settings/progression-class-years"
+            className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              location.pathname.includes(
+                "/registrar/settings/progression-class-years"
+              )
+                ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
+                : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
+            }`}
+            onClick={() =>
+              window.innerWidth <= 1024 && setSidebarOpen(false)
+            }
+          >
+            Progression of ClassYears
+          </Link>
+        </div>
+      )}
+    </div>
+
+    {/* Remove the old Class Years link from here - it's now inside the new section */}
+    
+    <Link
+      to="/registrar/settings/semesters"
+      className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+        location.pathname.includes(
+          "/registrar/settings/semesters"
+        )
+          ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
+          : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
+      }`}
+      onClick={() =>
+        window.innerWidth <= 1024 && setSidebarOpen(false)
+      }
+    >
+      Semesters
+    </Link>
+
+    <Link
+      to="/registrar/settings/grading-systems"
+      className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+        location.pathname.includes("/registrar/settings/grading")
+          ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
+          : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
+      }`}
+      onClick={() =>
+        window.innerWidth <= 1024 && setSidebarOpen(false)
+      }
+    >
+      Grading System
+    </Link>
+
+    <Link
+      to="/registrar/settings/attritions"
+      className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+        location.pathname.includes(
+          "/registrar/settings/attritions"
+        )
+          ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
+          : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
+      }`}
+      onClick={() =>
+        window.innerWidth <= 1024 && setSidebarOpen(false)
+      }
+    >
+      Attrition Cause
+    </Link>
+
+     {/* Templates and Forms */}
+    <Link
+      to="/registrar/settings/templates-forms"
+      className={`flex items-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+        location.pathname.includes("/registrar/settings/templates-forms")
+          ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
+          : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900"
+      }`}
+      onClick={() =>
+        window.innerWidth <= 1024 && setSidebarOpen(false)
+      }
+    >
+      Templates and Forms
+    </Link>
+  </div>
+)}
             </div>
           </div>
         </nav>

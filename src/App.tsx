@@ -4,6 +4,9 @@ import { ThemeProvider } from "./components/theme-provider";
 import { Toaster } from "sonner";
 import PageLoader from "./components/ui/PageLoader";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+// Add these imports with your other Registrar settings imports
+import ProgressionOfClassYears from "./pages/registrar/settings/ProgressionOfClassYears";
+import TemplatesAndForms from "./pages/registrar/settings/TemplatesAndForms";
 
 // Lazy load all components for code splitting
 const LandingPage = React.lazy(() => import("./pages/public/LandingPage"));
@@ -146,6 +149,7 @@ const ImpairmentEditor = React.lazy(
 const CourseCategoriesEditor = React.lazy(
   () => import("./pages/registrar/settings/CourseCategoriesEditor")
 );
+
 
 // Finance Pages
 const FinanceLayout = React.lazy(() => import("./layouts/FinanceLayout"));
@@ -408,9 +412,18 @@ function App() {
                   path="settings/class-years"
                   element={<ClassYearsEditor />}
                 />
+
+{/* NEW: Progression of ClassYears Routes */}
+    <Route path="settings/progression-class-years" element={<ProgressionOfClassYears />} />
+    
+
                 <Route
                   path="settings/impairments"
                   element={<ImpairmentEditor />}
+                />
+                <Route
+                  path="settings/templates-forms"
+                  element={<TemplatesAndForms />}
                 />
                 <Route
                   path="settings/program-modality"

@@ -372,9 +372,8 @@ const ClassYearsEditor = () => {
           <p>
             • <strong>Numbered years:</strong> Use <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">1</code>, <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">2</code>, <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">3</code>, etc.
             <br />
-            • <strong>Special programs:</strong> Use names like <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">PC1</code> (Preparatory Class 1), <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">C1</code> (Certificate 1)
-            <br />
-            • <strong>Examples:</strong> "Grade 9", "Year 1", "Level 4"
+            • <strong>Special programs:</strong> Use names like <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">PC1</code> (Pre-Clinical 1), <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">C1</code> (Clinical 1)
+            
           </p>
         </div>
       </div>
