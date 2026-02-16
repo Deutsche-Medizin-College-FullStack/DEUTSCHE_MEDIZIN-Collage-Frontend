@@ -8,16 +8,26 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import ProgressionOfClassYears from "./pages/registrar/settings/ProgressionOfClassYears";
 import TemplatesAndForms from "./pages/registrar/settings/TemplatesAndForms";
 
+// NORMAL IMPORTS (NOT LAZY) - ADD THESE LINES:
+import LandingPage from "./pages/public/LandingPage";
+import LearnMore from "./pages/public/LearnMore";
+import MultiStepRegistrationForm from "./registeration/MultiStepRegistrationForm";
+import NotFound from "./pages/NotFound/NotFound";
+import SigningUp from "./registeration/SigningUp";
+
 // Lazy load all components for code splitting
-const LandingPage = React.lazy(() => import("./pages/public/LandingPage"));
-const LearnMore = React.lazy(() => import("./pages/public/LearnMore"));
-const LoginPage = React.lazy(() => import("./pages/public/LoginPage"));
-const RegisterPage = React.lazy(() => import("./pages/public/RegisterPage"));
-const MultiStepRegistrationForm = React.lazy(
-  () => import("./registeration/MultiStepRegistrationForm")
-);
-const NotFound = React.lazy(() => import("./pages/NotFound/NotFound"));
-const SigningUp = React.lazy(() => import("./registeration/SigningUp"));
+// const LandingPage = React.lazy(() => import("./pages/public/LandingPage"));
+// const LearnMore = React.lazy(() => import("./pages/public/LearnMore"));
+// const MultiStepRegistrationForm = React.lazy(
+//   () => import("./registeration/MultiStepRegistrationForm")
+// );
+// const NotFound = React.lazy(() => import("./pages/NotFound/NotFound"));
+// const SigningUp = React.lazy(() => import("./registeration/SigningUp"));
+
+// ------------- Unused Public Pages (Consider removing if not needed) -------------
+// const LoginPage = React.lazy(() => import("./pages/public/LoginPage"));
+// const RegisterPage = React.lazy(() => import("./pages/public/RegisterPage"));
+
 
 // Student Pages
 const StudentLayout = React.lazy(() => import("./layouts/StudentLayout"));

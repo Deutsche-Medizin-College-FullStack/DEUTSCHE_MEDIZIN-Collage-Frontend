@@ -14,6 +14,93 @@ import DarkVeil from "@/designs/DarkVeil";
 import apiService from "@/components/api/apiService";
 import { toast } from "@/hooks/use-toast";
 import { Eye, EyeOff } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+
+
+// Validation utility to check if a field is empty
+const isFieldEmpty = (value) => {
+  return value === undefined || value === null || String(value).trim() === "";
+};
+
+// Required fields configuration based on backend requirements
+const REQUIRED_FIELDS = {
+  // Step 1: Personal Information
+  firstName: "First Name (English)",
+  middleName: "Father Name (English)",
+  lastName: "Grandfather Name (English)",
+  firstNameAMH: "First Name (Amharic)",
+  middleNameAMH: "Father Name (Amharic)",
+  lastNameAMH: "Grandfather Name (Amharic)",
+  sex: "Gender",
+  phoneNo: "Phone Number",
+  birthDateGC: "Date of Birth (GC)",
+  placeOfBirthRegionCode: "Birth Region",
+  placeOfBirthZoneCode: "Birth Zone",
+  placeOfBirthWoredaCode: "Birth Woreda",
+  currentAddressRegionCode: "Current Region",
+  currentAddressZoneCode: "Current Zone",
+  currentAddressWoredaCode: "Current Woreda",
+  maritalStatus: "Marital Status",
+  
+  // Step 2: Account Creation
+  username: "Username",
+  password: "Password",
+  confirmPassword: "Confirm Password",
+  
+  // Step 3: Family Background
+  motherFirstName: "Mother's First Name (English)",
+  motherLastName: "Mother's Last Name (English)",
+  motherFirstNameAMH: "Mother's First Name (Amharic)",
+  motherLastNameAMH: "Mother's Last Name (Amharic)",
+  
+  // Step 4: Educational Information
+  schoolBackgroundId: "School Background",
+  departmentEnrolledId: "Department",
+  programModalityCode: "Program Modality",
+  studentRecentStatusId: "Student Status",
+  batchClassYearSemesterId: "Batch/Class/Semester",
+  
+  // Step 5: Emergency Contact (all required except relation)
+  emergencyfirstName: "Emergency Contact First Name",
+  emergencylastName: "Emergency Contact Last Name",
+  emergencyfirstNameAMH: "Emergency Contact First Name (Amharic)",
+  emergencylastNameAMH: "Emergency Contact Last Name (Amharic)",
+  contactPersonPhoneNumber: "Emergency Contact Phone",
+  
+  // Step 5: Enrollment Date
+  dateEnrolledGC: "Enrollment Date (GC)",
+};
+
+// Get required fields for current step
+const getRequiredFieldsForStep = (step) => {
+  switch(step) {
+    case 1:
+      return [
+        "firstName", "middleName", "lastName",
+        "firstNameAMH", "middleNameAMH", "lastNameAMH",
+        "sex", "phoneNo", "birthDateGC",
+        "placeOfBirthRegionCode", "placeOfBirthZoneCode", "placeOfBirthWoredaCode",
+        "currentAddressRegionCode", "currentAddressZoneCode", "currentAddressWoredaCode",
+        "maritalStatus"
+      ];
+    case 2:
+      return ["username", "password", "confirmPassword"];
+    case 3:
+      return ["motherFirstName", "motherLastName", "motherFirstNameAMH", "motherLastNameAMH"];
+    case 4:
+      return ["schoolBackgroundId", "departmentEnrolledId", "programModalityCode", "studentRecentStatusId", "batchClassYearSemesterId"];
+    case 5:
+      return [
+        "emergencyfirstName", "emergencylastName", 
+        "emergencyfirstNameAMH", "emergencylastNameAMH",
+        "contactPersonPhoneNumber", "dateEnrolledGC"
+      ];
+    default:
+      return [];
+  }
+};
+
+
 const DropdownIndicator = (props) => (
   <components.DropdownIndicator {...props}>
     <svg
@@ -41,6 +128,11 @@ const PersonalInformationStep = ({
   dropdowns,
   fetchZonesByRegion,
   fetchWoredasByZone,
+
+  shouldShowError,      // new
+  getInputClassName,    // new
+  handleFieldBlur,      // new
+
 }) => {
   const [previews, setPreviews] = useState(
     "https://www.shutterstock.com/image-vector/default-avatar-profile-icon-social-600nw-1677509740.jpg"
@@ -139,8 +231,12 @@ const PersonalInformationStep = ({
                   name={field}
                   value={formData[field]}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onBlur={() => handleFieldBlur(field)}
+                  className={getInputClassName(field, "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2")}
                 />
+                {shouldShowError(field) && (
+                  <p className="mt-1 text-xs text-red-500">This field is required</p>
+                )}
               </div>
             ))}
           </div>
@@ -163,8 +259,12 @@ const PersonalInformationStep = ({
                   name={field}
                   value={formData[field]}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onBlur={() => handleFieldBlur(field)}
+                  className={getInputClassName(field, "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2")}
                 />
+                {shouldShowError(field) && (
+                  <p className="mt-1 text-xs text-red-500">This field is required</p>
+                )}
               </div>
             ))}
           </div>
@@ -185,17 +285,21 @@ const PersonalInformationStep = ({
                     value={g}
                     checked={formData.sex === g}
                     onChange={handleInputChange}
+                    onBlur={() => handleFieldBlur("sex")}
                     className="mr-2"
                   />
                   {g}
                 </label>
               ))}
             </div>
+            {shouldShowError("sex") && (
+              <p className="mt-1 text-xs text-red-500">Please select a gender</p>
+            )}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-              Age: *
+              Age: (Optional)
             </label>
             <input
               type="number"
@@ -292,18 +396,19 @@ const PersonalInformationStep = ({
         {/* PLACE OF BIRTH (Cascading) */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-            Place of Birth:
+            Place of Birth: *
           </label>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-semibold text-gray-800 dark:text-white mb-2">
-                Region
+                Region *
               </label>
               <select
                 name="placeOfBirthRegionCode"
                 value={formData.placeOfBirthRegionCode}
                 onChange={handleRegionChange}
-                className="w-full appearance-none bg-white dark:bg-black border border-gray-300 rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onBlur={() => handleFieldBlur("placeOfBirthRegionCode")}
+                className={getInputClassName("placeOfBirthRegionCode", "w-full appearance-none bg-white dark:bg-black border rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2")}
               >
                 <option value="">Choose Region</option>
                 {dropdowns.regions.map((opt) => (
@@ -312,18 +417,22 @@ const PersonalInformationStep = ({
                   </option>
                 ))}
               </select>
+              {shouldShowError("placeOfBirthRegionCode") && (
+                <p className="mt-1 text-xs text-red-500">Please select a region</p>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-semibold text-gray-800 dark:text-white mb-2">
-                Zone
+                Zone *
               </label>
               <select
                 name="placeOfBirthZoneCode"
                 value={formData.placeOfBirthZoneCode}
                 onChange={handleZoneChange}
+                onBlur={() => handleFieldBlur("placeOfBirthZoneCode")}
                 disabled={!formData.placeOfBirthRegionCode}
-                className="w-full appearance-none bg-white dark:bg-black border border-gray-300 rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                className={getInputClassName("placeOfBirthZoneCode", "w-full appearance-none bg-white dark:bg-black border rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 disabled:opacity-50")}
               >
                 <option value="">Choose Zone</option>
                 {dropdowns.birthZones.map((opt) => (
@@ -332,18 +441,22 @@ const PersonalInformationStep = ({
                   </option>
                 ))}
               </select>
+              {shouldShowError("placeOfBirthZoneCode") && (
+                <p className="mt-1 text-xs text-red-500">Please select a zone</p>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-semibold text-gray-800 dark:text-white mb-2">
-                Woreda (Town)
+                Woreda (Town) *
               </label>
               <select
                 name="placeOfBirthWoredaCode"
                 value={formData.placeOfBirthWoredaCode}
                 onChange={handleInputChange}
+                onBlur={() => handleFieldBlur("placeOfBirthWoredaCode")}
                 disabled={!formData.placeOfBirthZoneCode}
-                className="w-full appearance-none bg-white dark:bg-black border border-gray-300 rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                className={getInputClassName("placeOfBirthWoredaCode", "w-full appearance-none bg-white dark:bg-black border rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 disabled:opacity-50")}
               >
                 <option value="">Choose Woreda</option>
                 {dropdowns.birthWoredas.map((opt) => (
@@ -352,6 +465,9 @@ const PersonalInformationStep = ({
                   </option>
                 ))}
               </select>
+              {shouldShowError("placeOfBirthWoredaCode") && (
+                <p className="mt-1 text-xs text-red-500">Please select a woreda</p>
+              )}
             </div>
           </div>
         </div>
@@ -402,8 +518,12 @@ const PersonalInformationStep = ({
                 name="birthDateGC"
                 value={formData.birthDateGC}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onBlur={() => handleFieldBlur("birthDateGC")}
+                className={getInputClassName("birthDateGC", "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2")}
               />
+              {shouldShowError("birthDateGC") && (
+                <p className="mt-1 text-xs text-red-500">Please select a date</p>
+              )}
             </div>
           </div>
         </div>
@@ -411,18 +531,19 @@ const PersonalInformationStep = ({
         {/* CURRENT ADDRESS (Cascading) */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-            Current Residential Address:
+            Current Residential Address: *
           </label>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-semibold text-gray-800 dark:text-white mb-2">
-                Region
+                Region *
               </label>
               <select
                 name="currentAddressRegionCode"
                 value={formData.currentAddressRegionCode}
                 onChange={handleCurrentRegionChange}
-                className="w-full appearance-none bg-white dark:bg-black border border-gray-300 rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onBlur={() => handleFieldBlur("currentAddressRegionCode")}
+                className={getInputClassName("currentAddressRegionCode", "w-full appearance-none bg-white dark:bg-black border rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2")}
               >
                 <option value="">Choose Region</option>
                 {dropdowns.regions.map((opt) => (
@@ -431,18 +552,22 @@ const PersonalInformationStep = ({
                   </option>
                 ))}
               </select>
+              {shouldShowError("currentAddressRegionCode") && (
+                <p className="mt-1 text-xs text-red-500">Please select a region</p>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-semibold text-gray-800 dark:text-white mb-2">
-                Zone
+                Zone *
               </label>
               <select
                 name="currentAddressZoneCode"
                 value={formData.currentAddressZoneCode}
                 onChange={handleCurrentZoneChange}
+                onBlur={() => handleFieldBlur("currentAddressZoneCode")}
                 disabled={!formData.currentAddressRegionCode}
-                className="w-full appearance-none bg-white dark:bg-black border border-gray-300 rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                className={getInputClassName("currentAddressZoneCode", "w-full appearance-none bg-white dark:bg-black border rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 disabled:opacity-50")}
               >
                 <option value="">Choose Zone</option>
                 {dropdowns.currentZones.map((opt) => (
@@ -451,18 +576,22 @@ const PersonalInformationStep = ({
                   </option>
                 ))}
               </select>
+              {shouldShowError("currentAddressZoneCode") && (
+                <p className="mt-1 text-xs text-red-500">Please select a zone</p>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-semibold text-gray-800 dark:text-white mb-2">
-                Woreda (Town)
+                Woreda (Town) *
               </label>
               <select
                 name="currentAddressWoredaCode"
                 value={formData.currentAddressWoredaCode}
                 onChange={handleInputChange}
+                onBlur={() => handleFieldBlur("currentAddressWoredaCode")}
                 disabled={!formData.currentAddressZoneCode}
-                className="w-full appearance-none bg-white dark:bg-black border border-gray-300 rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                className={getInputClassName("currentAddressWoredaCode", "w-full appearance-none bg-white dark:bg-black border rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 disabled:opacity-50")}
               >
                 <option value="">Choose Woreda</option>
                 {dropdowns.currentWoredas.map((opt) => (
@@ -471,6 +600,9 @@ const PersonalInformationStep = ({
                   </option>
                 ))}
               </select>
+              {shouldShowError("currentAddressWoredaCode") && (
+                <p className="mt-1 text-xs text-red-500">Please select a woreda</p>
+              )}
             </div>
           </div>
         </div>
@@ -478,7 +610,7 @@ const PersonalInformationStep = ({
         {/* MARITAL STATUS */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-            Marital Status:
+            Marital Status: *
           </label>
           <div className="flex flex-wrap gap-4">
             {["Single", "Married", "Divorced", "Separated"].map((s) => (
@@ -489,62 +621,108 @@ const PersonalInformationStep = ({
                   value={s}
                   checked={formData.maritalStatus === s}
                   onChange={handleInputChange}
+                  onBlur={() => handleFieldBlur("maritalStatus")}
                   className="mr-2"
                 />
                 {s}
               </label>
             ))}
           </div>
+          {shouldShowError("maritalStatus") && (
+            <p className="mt-1 text-xs text-red-500">Please select a marital status</p>
+          )}
         </div>
 
         {/* EMERGENCY CONTACT */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-            Contact Person in case of Emergency: (Optional)
+            Contact Person in case of Emergency: (required)
           </label>
           <div className="space-y-4">
+            {/* English Names */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {["emergencyfirstName", "emergencylastName"].map((field) => (
-                <div key={field}>
-                  <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                    {field.includes("first") ? "First Name" : "Last Name"}
-                  </label>
-                  <input
-                    type="text"
-                    name={field}
-                    value={formData[field]}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {["emergencyfirstNameAMH", "emergencylastNameAMH"].map(
-                (field) => (
-                  <div key={field}>
-                    <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                      {field.includes("first")
-                        ? "First Name (AMH)"
-                        : "Last Name (AMH)"}
-                    </label>
-                    <input
-                      type="text"
-                      name={field}
-                      value={formData[field]}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                )
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* First Name (English) */}
               <div>
                 <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                  Relation
+                  First Name *
+                </label>
+                <input
+                  type="text"
+                  name="emergencyfirstName"
+                  value={formData.emergencyfirstName}
+                  onChange={handleInputChange}
+                  onBlur={() => handleFieldBlur("emergencyfirstName")}
+                  className={getInputClassName("emergencyfirstName", "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2")}
+                />
+                {shouldShowError("emergencyfirstName") && (
+                  <p className="mt-1 text-xs text-red-500">First name is required</p>
+                )}
+              </div>
+
+              {/* Last Name (English) */}
+              <div>
+                <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
+                  Last Name *
+                </label>
+                <input
+                  type="text"
+                  name="emergencylastName"
+                  value={formData.emergencylastName}
+                  onChange={handleInputChange}
+                  onBlur={() => handleFieldBlur("emergencylastName")}
+                  className={getInputClassName("emergencylastName", "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2")}
+                />
+                {shouldShowError("emergencylastName") && (
+                  <p className="mt-1 text-xs text-red-500">Last name is required</p>
+                )}
+              </div>
+            </div>
+
+            {/* Amharic Names */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* First Name (Amharic) */}
+              <div>
+                <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
+                  First Name (AMH) *
+                </label>
+                <input
+                  type="text"
+                  name="emergencyfirstNameAMH"
+                  value={formData.emergencyfirstNameAMH}
+                  onChange={handleInputChange}
+                  onBlur={() => handleFieldBlur("emergencyfirstNameAMH")}
+                  className={getInputClassName("emergencyfirstNameAMH", "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2")}
+                />
+                {shouldShowError("emergencyfirstNameAMH") && (
+                  <p className="mt-1 text-xs text-red-500">First name (Amharic) is required</p>
+                )}
+              </div>
+
+              {/* Last Name (Amharic) */}
+              <div>
+                <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
+                  Last Name (AMH) *
+                </label>
+                <input
+                  type="text"
+                  name="emergencylastNameAMH"
+                  value={formData.emergencylastNameAMH}
+                  onChange={handleInputChange}
+                  onBlur={() => handleFieldBlur("emergencylastNameAMH")}
+                  className={getInputClassName("emergencylastNameAMH", "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2")}
+                />
+                {shouldShowError("emergencylastNameAMH") && (
+                  <p className="mt-1 text-xs text-red-500">Last name (Amharic) is required</p>
+                )}
+              </div>
+            </div>
+
+            {/* Relation and Phone */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Relation (Optional) */}
+              <div>
+                <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
+                  Relation (Optional)
                 </label>
                 <input
                   type="text"
@@ -554,17 +732,23 @@ const PersonalInformationStep = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+
+              {/* Phone Number (Required) */}
               <div>
                 <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                  Phone Number
+                  Phone Number *
                 </label>
                 <input
                   type="text"
                   name="contactPersonPhoneNumber"
                   value={formData.contactPersonPhoneNumber}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onBlur={() => handleFieldBlur("contactPersonPhoneNumber")}
+                  className={getInputClassName("contactPersonPhoneNumber", "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2")}
                 />
+                {shouldShowError("contactPersonPhoneNumber") && (
+                  <p className="mt-1 text-xs text-red-500">Phone number is required</p>
+                )}
               </div>
             </div>
           </div>
@@ -573,12 +757,12 @@ const PersonalInformationStep = ({
         {/* USER CONTACT */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-            User Contact Information:
+            Student's Contact Information:
           </label>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                Email address
+                Email address (Optional)
               </label>
               <input
                 type="email"
@@ -590,15 +774,19 @@ const PersonalInformationStep = ({
             </div>
             <div>
               <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                Phone No.
+                Phone No. *
               </label>
               <input
                 type="tel"
                 name="phoneNo"
                 value={formData.phoneNo}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onBlur={() => handleFieldBlur("phoneNo")}
+                className={getInputClassName("phoneNo", "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2")}
               />
+              {shouldShowError("phoneNo") && (
+                <p className="mt-1 text-xs text-red-500">Phone number is required</p>
+              )}
             </div>
           </div>
         </div>
@@ -607,107 +795,17 @@ const PersonalInformationStep = ({
   );
 };
 
-/* ==============================================================
-   STEP 2 – ACCOUNT CREATION (NEW)
-   ============================================================== */
-// const AccountCreationStep = ({ formData, setFormData }) => {
-//   const [passwordError, setPasswordError] = useState("");
 
-//   const handleChange = (e) => {
-//     const { name, value } = e.target;
-//     setFormData((prev) => ({ ...prev, [name]: value }));
-//   };
-
-//   useEffect(() => {
-//     if (formData.password && formData.confirmPassword) {
-//       if (formData.password !== formData.confirmPassword) {
-//         setPasswordError("Passwords do not match");
-//       } else if (formData.password.length < 6) {
-//         setPasswordError("Password must be at least 6 characters");
-//       } else {
-//         setPasswordError("");
-//       }
-//     } else {
-//       setPasswordError("");
-//     }
-//   }, [formData.password, formData.confirmPassword]);
-
-//   return (
-//     <div className="space-y-6">
-//       <div className="text-center mb-6">
-//         <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
-//           Create Account
-//         </h2>
-//         <p className="text-sm text-gray-600 dark:text-gray-300">
-//           Choose a username and a strong password for the student portal.
-//         </p>
-//       </div>
-
-//       <section className="border-2 border-gray-200 rounded-lg p-6">
-//         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-//           <div>
-//             <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-//               Username *
-//             </label>
-//             <input
-//               type="text"
-//               name="username"
-//               value={formData.username || ""}
-//               onChange={handleChange}
-//               placeholder="Enter username"
-//               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-//             />
-//           </div>
-
-//           <div>
-//             <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-//               Password *
-//             </label>
-//             <input
-//               type="password"
-//               name="password"
-//               value={formData.password || ""}
-//               onChange={handleChange}
-//               placeholder="Enter password"
-//               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-//             />
-//           </div>
-
-//           <div>
-//             <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-//               Confirm Password *
-//             </label>
-//             <input
-//               type="password"
-//               name="confirmPassword"
-//               value={formData.confirmPassword || ""}
-//               onChange={handleChange}
-//               placeholder="Confirm password"
-//               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-//             />
-//             {passwordError && (
-//               <p className="mt-1 text-xs text-red-600">{passwordError}</p>
-//             )}
-//           </div>
-//         </div>
-
-//         <div className="mt-4 text-sm text-gray-600 dark:text-gray-300">
-//           <ul className="list-disc pl-5 space-y-1">
-//             <li>Username must be unique (will be checked on submit).</li>
-//             <li>Password must be at least 6 characters.</li>
-//             <li>
-//               Use a mix of letters, numbers, and symbols for a strong password.
-//             </li>
-//           </ul>
-//         </div>
-//       </section>
-//     </div>
-//   );
-// };
 /* ==============================================================
    STEP 2 – ACCOUNT CREATION (with password visibility toggle)
    ============================================================== */
-const AccountCreationStep = ({ formData, setFormData }) => {
+const AccountCreationStep = ({ 
+  formData, 
+  setFormData,
+  shouldShowError,
+  getInputClassName,
+  handleFieldBlur 
+}) => {
   const [passwordError, setPasswordError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -754,9 +852,13 @@ const AccountCreationStep = ({ formData, setFormData }) => {
               name="username"
               value={formData.username || ""}
               onChange={handleChange}
+              onBlur={() => handleFieldBlur("username")}
               placeholder="Enter username"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={getInputClassName("username", "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2")}
             />
+            {shouldShowError("username") && (
+              <p className="mt-1 text-xs text-red-500">Username is required</p>
+            )}
           </div>
 
           {/* Password with toggle */}
@@ -770,8 +872,9 @@ const AccountCreationStep = ({ formData, setFormData }) => {
                 name="password"
                 value={formData.password || ""}
                 onChange={handleChange}
+                onBlur={() => handleFieldBlur("password")}
                 placeholder="Enter password"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
+                className={getInputClassName("password", "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 pr-10")}
               />
               <button
                 type="button"
@@ -786,6 +889,9 @@ const AccountCreationStep = ({ formData, setFormData }) => {
                 )}
               </button>
             </div>
+            {shouldShowError("password") && (
+              <p className="mt-1 text-xs text-red-500">Password is required</p>
+            )}
           </div>
 
           {/* Confirm Password with toggle */}
@@ -799,8 +905,9 @@ const AccountCreationStep = ({ formData, setFormData }) => {
                 name="confirmPassword"
                 value={formData.confirmPassword || ""}
                 onChange={handleChange}
+                onBlur={() => handleFieldBlur("confirmPassword")}
                 placeholder="Confirm password"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
+                className={getInputClassName("confirmPassword", "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 pr-10")}
               />
               <button
                 type="button"
@@ -818,8 +925,12 @@ const AccountCreationStep = ({ formData, setFormData }) => {
               </button>
             </div>
 
+            {/* Show both password match error and required error */}
             {passwordError && (
-              <p className="mt-1 text-xs text-red-600">{passwordError}</p>
+              <p className="mt-1 text-xs text-red-500">{passwordError}</p>
+            )}
+            {shouldShowError("confirmPassword") && !passwordError && (
+              <p className="mt-1 text-xs text-red-500">Please confirm your password</p>
             )}
           </div>
         </div>
@@ -841,7 +952,13 @@ const AccountCreationStep = ({ formData, setFormData }) => {
 /* ==============================================================
    STEP 3 – FAMILY BACKGROUND
    ============================================================== */
-const FamilyBackgroundStep = ({ formData, setFormData }) => {
+const FamilyBackgroundStep = ({ 
+  formData, 
+  setFormData,
+  shouldShowError,
+  getInputClassName,
+  handleFieldBlur 
+}) => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -868,40 +985,82 @@ const FamilyBackgroundStep = ({ formData, setFormData }) => {
             Mother's Full Name (English): *
           </label>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {["motherFirstName", "motherLastName"].map((field) => (
-              <div key={field}>
-                <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                  {field.includes("First") ? "First Name *" : "Last Name *"}
-                </label>
-                <input
-                  type="text"
-                  name={field}
-                  value={formData[field]}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            ))}
+            {/* Mother First Name (English) */}
+            <div>
+              <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
+                First Name *
+              </label>
+              <input
+                type="text"
+                name="motherFirstName"
+                value={formData.motherFirstName}
+                onChange={handleInputChange}
+                onBlur={() => handleFieldBlur("motherFirstName")}
+                className={getInputClassName("motherFirstName", "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2")}
+              />
+              {shouldShowError("motherFirstName") && (
+                <p className="mt-1 text-xs text-red-500">Mother's first name is required</p>
+              )}
+            </div>
+
+            {/* Mother Last Name (English) */}
+            <div>
+              <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
+                Last Name *
+              </label>
+              <input
+                type="text"
+                name="motherLastName"
+                value={formData.motherLastName}
+                onChange={handleInputChange}
+                onBlur={() => handleFieldBlur("motherLastName")}
+                className={getInputClassName("motherLastName", "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2")}
+              />
+              {shouldShowError("motherLastName") && (
+                <p className="mt-1 text-xs text-red-500">Mother's last name is required</p>
+              )}
+            </div>
           </div>
 
           <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2 mt-4">
             Mother's Full Name (Amharic): *
           </label>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {["motherFirstNameAMH", "motherLastNameAMH"].map((field) => (
-              <div key={field}>
-                <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                  {field.includes("First") ? "First Name *" : "Last Name *"}
-                </label>
-                <input
-                  type="text"
-                  name={field}
-                  value={formData[field]}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            ))}
+            {/* Mother First Name (Amharic) */}
+            <div>
+              <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
+                First Name *
+              </label>
+              <input
+                type="text"
+                name="motherFirstNameAMH"
+                value={formData.motherFirstNameAMH}
+                onChange={handleInputChange}
+                onBlur={() => handleFieldBlur("motherFirstNameAMH")}
+                className={getInputClassName("motherFirstNameAMH", "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2")}
+              />
+              {shouldShowError("motherFirstNameAMH") && (
+                <p className="mt-1 text-xs text-red-500">Mother's first name (Amharic) is required</p>
+              )}
+            </div>
+
+            {/* Mother Last Name (Amharic) */}
+            <div>
+              <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
+                Last Name *
+              </label>
+              <input
+                type="text"
+                name="motherLastNameAMH"
+                value={formData.motherLastNameAMH}
+                onChange={handleInputChange}
+                onBlur={() => handleFieldBlur("motherLastNameAMH")}
+                className={getInputClassName("motherLastNameAMH", "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2")}
+              />
+              {shouldShowError("motherLastNameAMH") && (
+                <p className="mt-1 text-xs text-red-500">Mother's last name (Amharic) is required</p>
+              )}
+            </div>
           </div>
         </div>
       </section>
@@ -912,7 +1071,14 @@ const FamilyBackgroundStep = ({ formData, setFormData }) => {
 /* ==============================================================
    STEP 4 – EDUCATIONAL INFORMATION
    ============================================================== */
-const EducationalInformationStep = ({ formData, setFormData, dropdowns }) => {
+const EducationalInformationStep = ({ 
+  formData, 
+  setFormData, 
+  dropdowns,
+  shouldShowError,
+  getInputClassName,
+  handleFieldBlur 
+}) => {
   const [showInstructions, setShowInstructions] = useState(false);
 
   const getInstructions = (id) => {
@@ -959,6 +1125,7 @@ const EducationalInformationStep = ({ formData, setFormData, dropdowns }) => {
           4. EDUCATIONAL INFORMATION
         </h3>
 
+        {/* School Background - Required */}
         <div className="mb-6">
           <label className="block text-sm font-semibold text-gray-800 dark:text-white mb-2">
             Select School Background *
@@ -967,7 +1134,8 @@ const EducationalInformationStep = ({ formData, setFormData, dropdowns }) => {
             name="schoolBackgroundId"
             value={formData.schoolBackgroundId}
             onChange={handleInputChange}
-            className="w-full appearance-none bg-white dark:bg-black border border-gray-300 rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onBlur={() => handleFieldBlur("schoolBackgroundId")}
+            className={getInputClassName("schoolBackgroundId", "w-full appearance-none bg-white dark:bg-black border rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2")}
           >
             <option value="">Choose Background</option>
             {dropdowns.schoolBackgrounds.map((opt) => (
@@ -976,116 +1144,52 @@ const EducationalInformationStep = ({ formData, setFormData, dropdowns }) => {
               </option>
             ))}
           </select>
+          {shouldShowError("schoolBackgroundId") && (
+            <p className="mt-1 text-xs text-red-500">Please select a school background</p>
+          )}
         </div>
-        {/* <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-            Is The Student A Transfer:
-          </label>
 
-          <div className="flex gap-x-10">
-            {[true, false].map((s, index) => (
-              <label key={index} className="flex items-center">
-                <input
-                  type="radio"
-                  name="hasPassedExitExam"
-                  value={s}
-                  checked={formData.hasPassedExitExam == s} // fixed: should match the field name
-                  onChange={handleInputChange}
-                  className="mr-2"
-                />
-                {index == 0 ? "Passed Exit Exam" : "Failed Exit Exam"}
-              </label>
-            ))}
-          </div>
-        </div> */}
-        {/* <div className="grid md:grid-cols-2">
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-              Exit Exam Id{" "}
-            </label>
-            <div className=" w-[50%] ">
-              <input
-                type="text"
-                name="exitExamId"
-                value={formData.exitExamId}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-              Exit Exam Score{" "}
-            </label>
-            <div className=" w-[50%] ">
-              <input
-                type="number"
-                name="exitExamScore"
-                value={formData.exitExamScore}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-        </div> */}
-
+        {/* Grade 12 Result - Optional */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-            Grade 12 Result{" "}
+            Grade 12 Result (Optional)
           </label>
-          <div className=" w-[25%] ">
+          <div className="w-[25%]">
             <input
               type="number"
               name="grade12Result"
               value={formData.grade12Result}
               onChange={handleInputChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              step="0.01"
+              min="0"
+              max="4.0"
             />
           </div>
         </div>
-        {/* <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-            Is The Student A Transfer:
-          </label>
 
-          <div className="flex gap-x-10">
-            {[true, false].map((s, index) => (
-              <label key={index} className="flex items-center">
-                <input
-                  type="radio"
-                  name="isTransfer"
-                  value={s}
-                  checked={formData.isTransfer === s} // fixed: should match the field name
-                  onChange={handleInputChange}
-                  className="mr-2"
-                />
-                {index == 0 ? "is transfer" : "not transfer"}
-              </label>
-            ))}
-          </div>
-        </div> */}
+        {/* Is Transfer - Optional */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-            Is the Student a Transfer?
+            Is the Student a Transfer? (Optional)
           </label>
           <div className="flex gap-x-10">
             <label className="flex items-center cursor-pointer">
               <input
                 type="radio"
                 name="isTransfer"
-                value="true" // ← string "true"
-                checked={formData.isTransfer === true} // ← compare with boolean true
+                value="true"
+                checked={formData.isTransfer === true}
                 onChange={handleInputChange}
                 className="mr-2 accent-blue-600"
               />
               Yes
             </label>
-
             <label className="flex items-center cursor-pointer">
               <input
                 type="radio"
                 name="isTransfer"
-                value="false" // ← string "false"
+                value="false"
                 checked={formData.isTransfer === false}
                 onChange={handleInputChange}
                 className="mr-2 accent-blue-600"
@@ -1095,6 +1199,7 @@ const EducationalInformationStep = ({ formData, setFormData, dropdowns }) => {
           </div>
         </div>
 
+        {/* Document Upload - Optional */}
         <section className="border-2 border-blue-200 rounded-lg p-6 bg-white dark:bg-gray-800 dark:border-gray-700 mb-6">
           <div className="border-t-2 border-blue-400 pt-4 flex flex-col items-center">
             <img
@@ -1103,7 +1208,7 @@ const EducationalInformationStep = ({ formData, setFormData, dropdowns }) => {
               className="w-24 h-24 mb-4"
             />
             <h3 className="text-lg font-semibold text-blue-800 mb-2">
-              Upload Your Document
+              Upload Your Document (Optional)
             </h3>
 
             {currentInstructions ? (
@@ -1199,32 +1304,16 @@ const EducationalInformationStep = ({ formData, setFormData, dropdowns }) => {
             )}
           </div>
         </section>
-        {/* <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-            Information about Impairment (if any): (Optional)
-          </label>
-          <select
-            name="impairmentCode"
-            value={formData.impairmentCode}
-            onChange={handleInputChange}
-            className="w-full bg-white dark:bg-black px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Select Impairment</option>
-            {dropdowns.impairments.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div> */}
+
+        {/* Required Dropdowns */}
         {[
           {
-            label: "Select Department Your*",
+            label: "Select Department *",
             name: "departmentEnrolledId",
             options: dropdowns.departments,
           },
           {
-            label: "Select Students Status",
+            label: "Select Students Status *",
             name: "studentRecentStatusId",
             options: dropdowns.studentStatus,
           },
@@ -1234,20 +1323,10 @@ const EducationalInformationStep = ({ formData, setFormData, dropdowns }) => {
             options: dropdowns.programModalities,
           },
           {
-            label: "Select Batch Class Year And Semester",
+            label: "Select Batch Class Year And Semester *",
             name: "batchClassYearSemesterId",
             options: dropdowns.batchClassSemsterYear,
           },
-          // {
-          //   label: "Select Class Year *",
-          //   name: "classYearId",
-          //   options: dropdowns.classYears,
-          // },
-          // {
-          //   label: "Select Semester *",
-          //   name: "semesterCode",
-          //   options: dropdowns.semesters,
-          // },
         ].map((field) => (
           <div key={field.name} className="mb-6">
             <label className="block text-sm font-semibold text-gray-800 dark:text-white mb-2">
@@ -1257,7 +1336,8 @@ const EducationalInformationStep = ({ formData, setFormData, dropdowns }) => {
               name={field.name}
               value={formData[field.name]}
               onChange={handleInputChange}
-              className="w-full appearance-none bg-white dark:bg-black border border-gray-300 rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onBlur={() => handleFieldBlur(field.name)}
+              className={getInputClassName(field.name, "w-full appearance-none bg-white dark:bg-black border rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2")}
             >
               <option value="">Choose {field.label.split(" ")[1]}</option>
               {field.options.map((opt) => (
@@ -1266,6 +1346,11 @@ const EducationalInformationStep = ({ formData, setFormData, dropdowns }) => {
                 </option>
               ))}
             </select>
+            {shouldShowError(field.name) && (
+              <p className="mt-1 text-xs text-red-500">
+                Please select {field.label.split(" ")[1].toLowerCase()}
+              </p>
+            )}
           </div>
         ))}
       </section>
@@ -1281,15 +1366,20 @@ const ReviewSubmitStep = ({
   setFormData,
   onSubmit,
   isSubmitting,
+  shouldShowError,
+  getInputClassName,
+  handleFieldBlur
 }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     await onSubmit(formData);
   };
+  
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
+
   return (
     <div className="space-y-6">
       <div className="text-center mb-6">
@@ -1338,17 +1428,15 @@ const ReviewSubmitStep = ({
       </section>
 
       <section className="border-2 border-gray-200 rounded-lg p-6">
-        {/* <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-          6. STATEMENT BY THE APPLICANT
-        </h3> */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
             Date of Enrollment:
           </label>
           <div className="space-y-4">
+            {/* Ethiopian Calendar - Optional */}
             <div>
               <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                Ethiopian Calendar (E.C)
+                Ethiopian Calendar (E.C) - Optional
               </label>
               <div className="grid grid-cols-3 gap-4">
                 <input
@@ -1377,43 +1465,45 @@ const ReviewSubmitStep = ({
                 />
               </div>
             </div>
+            
+            {/* Gregorian Calendar - Required */}
             <div>
               <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
                 Gregorian Calendar (G.C) *
               </label>
-              {/* <input
-                type="date"
-                name="dateEnrolledGc"
-                value={formData.dateEnrolledGc}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              /> */}
               <input
                 type="date"
                 name="dateEnrolledGC"
                 value={formData.dateEnrolledGC}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onBlur={() => handleFieldBlur("dateEnrolledGC")}
+                className={getInputClassName("dateEnrolledGC", "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2")}
               />
+              {shouldShowError("dateEnrolledGC") && (
+                <p className="mt-1 text-xs text-red-500">Enrollment date is required</p>
+              )}
             </div>
           </div>
         </div>
+
+        {/* Remarks - Optional */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-            Enter a few remark about this regestartion here{" "}
+            Enter a few remarks about this registration (Optional)
           </label>
-
           <textarea
             name="remark"
-            value={formData.studentDescription}
+            value={formData.remark}
             onChange={handleInputChange}
             placeholder="Enter remarks about the student..."
             className="w-full h-32 px-4 py-2 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
           />
         </div>
+
         <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-6">
-          Are you sure this information of the students are accurate{" "}
+          Are you sure the information of the student is accurate?
         </p>
+
         <form onSubmit={handleSubmit} className="flex justify-center">
           <button
             type="submit"
@@ -1519,67 +1609,93 @@ const AddStudent = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
+  const navigate = useNavigate();
+  
+  const [touchedFields, setTouchedFields] = useState({}); // Track which fields have been touched
+
   const [formData, setFormData] = useState(() => {
-    const saved = localStorage.getItem("registrarRegistrationFormData");
-    return saved
-      ? JSON.parse(saved)
-      : {
-          firstName: "",
-          firstNameAMH: "",
-          middleName: "",
-          middleNameAMH: "",
-          lastName: "",
-          lastNameAMH: "",
-          sex: "",
-          age: "",
-          impairmentCode: "",
-          studentPhoto: null,
-          prevPhoto: null,
-          birthDateEC: "",
-          birthMonthEC: "",
-          birthYearEC: "",
-          dateEnrolledDateEC: "",
-          dateEnrolledMonthEC: "",
-          dateEnrolledYearEC: "",
-          dateEnrolledGC: "",
-          birthDateGC: "",
-          placeOfBirthRegionCode: "",
-          placeOfBirthZoneCode: "",
-          placeOfBirthWoredaCode: "",
-          currentAddressRegionCode: "",
-          currentAddressZoneCode: "",
-          currentAddressWoredaCode: "",
-          email: "",
-          phoneNo: "",
-          username: "",
-          password: "",
-          confirmPassword: "",
-          motherFirstName: "",
-          motherFirstNameAMH: "",
-          motherLastName: "",
-          motherLastNameAMH: "",
-          emergencyfirstName: "",
-          emergencylastName: "",
-          emergencyfirstNameAMH: "",
-          emergencylastNameAMH: "",
-          contactPersonRelation: "",
-          studentRecentStatusId: "",
-          batchClassYearSemesterId: "",
-          contactPersonPhoneNumber: "",
-          schoolBackgroundId: "",
-          document: null,
-          departmentEnrolledId: "",
-          remark: "",
-          isTransfer: "",
-          exitExamUserID: "",
-          exitExamScore: "",
-          hasPassedExitExam: "",
-          grade12Result: "",
-          programModalityCode: "",
-          //  classYearId: "",
-          // semesterCode: "",
-        };
-  });
+  const saved = localStorage.getItem("registrarRegistrationFormData");
+  return saved
+    ? JSON.parse(saved)
+    : {
+        // Personal Info (English)
+        firstName: "",           // maps to firstNameENG
+        middleName: "",          // maps to fatherNameENG
+        lastName: "",            // maps to grandfatherNameENG
+        
+        // Personal Info (Amharic)
+        firstNameAMH: "",        // maps to firstNameAMH
+        middleNameAMH: "",       // maps to fatherNameAMH
+        lastNameAMH: "",         // maps to grandfatherNameAMH
+        
+        // Mother's Info (English)
+        motherFirstName: "",      // maps to motherNameENG
+        motherLastName: "",       // maps to motherFatherNameENG
+        
+        // Mother's Info (Amharic)
+        motherFirstNameAMH: "",   // maps to motherNameAMH
+        motherLastNameAMH: "",    // maps to motherFatherNameAMH
+        
+        sex: "",
+        age: "",                  // Remove asterisk from UI (optional)
+        impairmentCode: "",
+        studentPhoto: null,
+        prevPhoto: null,
+        
+        // Dates
+        birthDateEC: "",
+        birthMonthEC: "",
+        birthYearEC: "",
+        dateEnrolledDateEC: "",
+        dateEnrolledMonthEC: "",
+        dateEnrolledYearEC: "",
+        dateEnrolledGC: "",
+        birthDateGC: "",
+        
+        // Place of Birth (ALL required - add asterisks)
+        placeOfBirthRegionCode: "",
+        placeOfBirthZoneCode: "",
+        placeOfBirthWoredaCode: "",
+        
+        // Current Address (ALL required - add asterisks)
+        currentAddressRegionCode: "",
+        currentAddressZoneCode: "",
+        currentAddressWoredaCode: "",
+        
+        // Contact
+        email: "",                // Optional - remove any asterisk
+        phoneNo: "",              // Required - ensure asterisk
+        
+        // Account
+        username: "",
+        password: "",
+        confirmPassword: "",
+        
+        // Emergency Contact (ALL required except relation)
+        emergencyfirstName: "",        // contactPersonFirstNameENG
+        emergencylastName: "",         // contactPersonLastNameENG
+        emergencyfirstNameAMH: "",     // contactPersonFirstNameAMH
+        emergencylastNameAMH: "",      // contactPersonLastNameAMH
+        contactPersonRelation: "",     // Optional
+        contactPersonPhoneNumber: "",  // Required - add asterisk
+        
+        // Academic Required
+        studentRecentStatusId: "",     // Required - add asterisk
+        batchClassYearSemesterId: "",  // Required - REMOVE HARDCODED "13"
+        schoolBackgroundId: "",        // Required
+        departmentEnrolledId: "",      // Required
+        programModalityCode: "",       // Required
+        
+        // Academic Optional
+        isTransfer: "",
+        exitExamUserID: "",
+        exitExamScore: "",
+        hasPassedExitExam: "",
+        grade12Result: "",
+        remark: "",
+        document: null,
+      };
+});
 
   useEffect(() => {
     localStorage.setItem(
@@ -1693,6 +1809,53 @@ const AddStudent = () => {
     load();
   }, []);
 
+  // Check if current step has all required fields filled
+const isStepValid = () => {
+  const requiredFields = getRequiredFieldsForStep(currentStep);
+  
+  for (const field of requiredFields) {
+    // Special handling for confirmPassword - check if it matches password
+    if (field === "confirmPassword") {
+      if (formData.password !== formData.confirmPassword || isFieldEmpty(formData.confirmPassword)) {
+        return false;
+      }
+      continue;
+    }
+    
+    if (isFieldEmpty(formData[field])) {
+      return false;
+    }
+  }
+  
+  // Additional validation for Step 2: password length
+  if (currentStep === 2) {
+    if (formData.password && formData.password.length < 6) {
+      return false;
+    }
+  }
+  
+  return true;
+};
+
+// Handle field blur to mark as touched
+const handleFieldBlur = (fieldName) => {
+  setTouchedFields(prev => ({ ...prev, [fieldName]: true }));
+};
+
+// Check if a field should show error (required, touched, and empty)
+const shouldShowError = (fieldName) => {
+  const requiredFields = getRequiredFieldsForStep(currentStep);
+  return requiredFields.includes(fieldName) && 
+         touchedFields[fieldName] && 
+         isFieldEmpty(formData[fieldName]);
+};
+
+// Get input className based on validation state
+const getInputClassName = (fieldName, baseClasses = "") => {
+  const isError = shouldShowError(fieldName);
+  return `${baseClasses} ${isError ? 'border-red-500 focus:ring-red-500 dark:border-red-500' : 'border-gray-300 focus:ring-blue-500'}`;
+};
+
   const fetchZonesByRegion = async (regionCode, target) => {
     try {
       const zones = await apiService.get(
@@ -1762,177 +1925,353 @@ const AddStudent = () => {
     if (currentStep > 1) setCurrentStep((s) => s - 1);
   };
 
-  const handleSubmit = async (data) => {
-    //  const formDataObj = new FormData();
+const handleSubmit = async (data) => {
+  setIsSubmitting(true);
+  setErrorMessage("");
 
-    setIsSubmitting(true);
-    setErrorMessage("");
+  const form = new FormData();
 
-    const form = new FormData();
+  const nullIfEmpty = (v) =>
+    v === undefined || v === null || String(v).trim() === "" ? null : v;
+  
+  const intOrNull = (v) =>
+    Number.isFinite(parseInt(v, 10)) ? parseInt(v, 10) : null;
+  
+  const floatOrNull = (v) =>
+    !isNaN(parseFloat(v)) && isFinite(v) ? parseFloat(v) : null;
+  
+  const boolOrNull = (v) => {
+    if (v === "true") return true;
+    if (v === "false") return false;
+    return null;
+  };
 
-    const nullIfEmpty = (v) =>
-      v === undefined || v === null || String(v).trim() === "" ? null : v;
-    const intOrNull = (v) =>
-      Number.isFinite(parseInt(v, 10)) ? parseInt(v, 10) : null;
-    const safeUpper = (v) => (v ? String(v).toUpperCase() : null);
-    const dateOrNull = (y, m, d) => (y && m && d ? `${y}-${m}-${d}` : null);
+  const dateOrNull = (y, m, d) => {
+    if (y && m && d) {
+      // Format as YYYY-MM-DD
+      const year = String(y).padStart(4, '0');
+      const month = String(m).padStart(2, '0');
+      const day = String(d).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    return null;
+  };
 
-    const jsonBody = {
-      firstNameAMH: nullIfEmpty(data.firstNameAMH),
-      firstNameENG: nullIfEmpty(data.firstName),
-      fatherNameAMH: nullIfEmpty(data.middleNameAMH),
-      fatherNameENG: nullIfEmpty(data.middleName),
-      grandfatherNameAMH: nullIfEmpty(data.lastNameAMH),
-      grandfatherNameENG: nullIfEmpty(data.lastName),
-      motherNameAMH: nullIfEmpty(data.motherFirstNameAMH),
-      motherNameENG: nullIfEmpty(data.motherFirstName),
-      motherFatherNameAMH: nullIfEmpty(data.motherLastNameAMH),
-      motherFatherNameENG: nullIfEmpty(data.motherLastName),
-      gender: data.sex ? (data.sex === "Male" ? "MALE" : "FEMALE") : null,
-      age: intOrNull(data.age),
-      phoneNumber: nullIfEmpty(data.phoneNo),
-      dateOfBirthEC: dateOrNull(
-        data.birthYearEC,
-        data.birthMonthEC,
-        data.birthDateEC
-      ),
-      dateEnrolledEC: dateOrNull(
-        data.dateEnrolledDateEC,
-        data.dateEnrolledMonthEC,
-        data.dateEnrolledYearEC
-      ),
-      dateEnrolledGC: nullIfEmpty(data.dateEnrolledGC),
-      dateOfBirthGC: data.birthDateGC || null,
-      placeOfBirthWoredaCode: nullIfEmpty(data.placeOfBirthWoredaCode),
-      placeOfBirthZoneCode: nullIfEmpty(data.placeOfBirthZoneCode),
-      placeOfBirthRegionCode: nullIfEmpty(data.placeOfBirthRegionCode),
-      currentAddressWoredaCode: nullIfEmpty(data.currentAddressWoredaCode),
-      currentAddressZoneCode: nullIfEmpty(data.currentAddressZoneCode),
-      currentAddressRegionCode: nullIfEmpty(data.currentAddressRegionCode),
-      email: nullIfEmpty(data.email),
-      maritalStatus: safeUpper(data.maritalStatus),
-      impairmentCode: nullIfEmpty(data.impairmentCode),
-      schoolBackgroundId: intOrNull(data.schoolBackgroundId),
-      contactPersonFirstNameAMH: nullIfEmpty(data.emergencyfirstNameAMH),
-      contactPersonFirstNameENG: nullIfEmpty(data.emergencyfirstName),
-      contactPersonLastNameAMH: nullIfEmpty(data.emergencylastNameAMH),
-      contactPersonLastNameENG: nullIfEmpty(data.emergencylastName),
-      contactPersonPhoneNumber: nullIfEmpty(data.contactPersonPhoneNumber),
-      contactPersonRelation: nullIfEmpty(data.contactPersonRelation),
-      batchClassYearSemesterId: "13",
-      departmentEnrolledId: intOrNull(data.departmentEnrolledId),
-      programModalityCode: nullIfEmpty(data.programModalityCode),
-      //classYearId: intOrNull(data.classYearId),
-      // semesterCode: nullIfEmpty(data.semesterCode),
-      username: nullIfEmpty(data.username),
-      password: nullIfEmpty(data.password),
-      remark: nullIfEmpty(data.remark),
-      studentRecentStatusId: nullIfEmpty(data.studentRecentStatusId),
-      isTransfer: nullIfEmpty(data.isTransfer),
-      exitExamUserID: nullIfEmpty(data.exitExamUserID),
-      exitExamScore: nullIfEmpty(data.exitExamScore),
-      hasPassedExitExam: nullIfEmpty(data.hasPassedExitExam),
-      grade12Result: nullIfEmpty(data.grade12Result),
+  // Map marital status from frontend display to backend enum
+  const mapMaritalStatus = (status) => {
+    const statusMap = {
+      "Single": "SINGLE",
+      "Married": "MARRIED", 
+      "Divorced": "DIVORCED",
+      "Separated": "WIDOWED"  // Map "Separated" to "WIDOWED" as per backend
     };
+    return statusMap[status] || null;
+  };
 
-    const cleaned = Object.fromEntries(
-      Object.entries(jsonBody).filter(([_, v]) => v !== null)
-    );
-    // formDataObj.append(
-    //   "data",
-    //   new Blob([JSON.stringify(body)], { type: "application/json" })
-    // );
-    form.append(
-      "data",
-      new Blob([JSON.stringify(cleaned)], { type: "application/json" })
-    );
-    // if (formData.studentPhoto && formData.studentPhoto instanceof File) {
-    //   formDataObj.append("studentPhoto", formData.studentPhoto);
-    // }
-    // if (data.studentPhoto) form.append("studentPhoto", data.studentPhoto);
-    //       if (formData.document && formData.document instanceof File) {
-    //     formDataObj.append("document", formData.document);
-    //   }
-    //if (data.document) form.append("document", data.document);
+  // Determine document status based on whether document is uploaded
+  const documentStatus = data.document ? "COMPLETE" : "INCOMPLETE";
 
-    try {
-      console.log(form, cleaned);
-      const resp = await apiService.post(
-        endPoints.registrarApplicantRegister,
-        form,
-        {
-          responseType: "blob",
-          headers: {
-            requiresAuth: true,
-          },
-        }
-      );
-      toast({
-        title: "Success",
-        description: "Student registered successfully.",
-      });
-      localStorage.removeItem("registrarRegistrationFormData");
-      localStorage.removeItem("registrarRegistrationCurrentStep");
-    } catch (err) {
-      console.log(err);
-      let msg = "An error occurred.";
-      if (err.response?.data?.message) msg = err.response.data.message;
-      else if (err.message) msg = err.message;
-      setErrorMessage(msg);
+  const jsonBody = {
+    // User Credentials
+    username: nullIfEmpty(data.username),
+    password: nullIfEmpty(data.password),
+
+    // Personal Information - English
+    firstNameENG: nullIfEmpty(data.firstName),
+    fatherNameENG: nullIfEmpty(data.middleName),
+    grandfatherNameENG: nullIfEmpty(data.lastName),
+
+    // Personal Information - Amharic
+    firstNameAMH: nullIfEmpty(data.firstNameAMH),
+    fatherNameAMH: nullIfEmpty(data.middleNameAMH),
+    grandfatherNameAMH: nullIfEmpty(data.lastNameAMH),
+
+    // Mother's Information - English
+    motherNameENG: nullIfEmpty(data.motherFirstName),
+    motherFatherNameENG: nullIfEmpty(data.motherLastName),
+
+    // Mother's Information - Amharic
+    motherNameAMH: nullIfEmpty(data.motherFirstNameAMH),
+    motherFatherNameAMH: nullIfEmpty(data.motherLastNameAMH),
+
+    // Demographic
+    gender: data.sex === "Male" ? "MALE" : data.sex === "Female" ? "FEMALE" : null,
+    age: intOrNull(data.age),
+    phoneNumber: nullIfEmpty(data.phoneNo),
+
+    // Date of Birth
+    dateOfBirthEC: dateOrNull(data.birthYearEC, data.birthMonthEC, data.birthDateEC),
+    dateOfBirthGC: nullIfEmpty(data.birthDateGC),
+
+    // Place of Birth
+    placeOfBirthWoredaCode: nullIfEmpty(data.placeOfBirthWoredaCode),
+    placeOfBirthZoneCode: nullIfEmpty(data.placeOfBirthZoneCode),
+    placeOfBirthRegionCode: nullIfEmpty(data.placeOfBirthRegionCode),
+
+    // Current Address
+    currentAddressWoredaCode: nullIfEmpty(data.currentAddressWoredaCode),
+    currentAddressZoneCode: nullIfEmpty(data.currentAddressZoneCode),
+    currentAddressRegionCode: nullIfEmpty(data.currentAddressRegionCode),
+
+    // Contact
+    email: nullIfEmpty(data.email),
+
+    // Marital & Background
+    maritalStatus: mapMaritalStatus(data.maritalStatus),
+    impairmentCode: nullIfEmpty(data.impairmentCode),
+    schoolBackgroundId: intOrNull(data.schoolBackgroundId),
+
+    // Emergency Contact
+    contactPersonFirstNameAMH: nullIfEmpty(data.emergencyfirstNameAMH),
+    contactPersonFirstNameENG: nullIfEmpty(data.emergencyfirstName),
+    contactPersonLastNameAMH: nullIfEmpty(data.emergencylastNameAMH),
+    contactPersonLastNameENG: nullIfEmpty(data.emergencylastName),
+    contactPersonPhoneNumber: nullIfEmpty(data.contactPersonPhoneNumber),
+    contactPersonRelation: nullIfEmpty(data.contactPersonRelation),
+
+    // Academic Dates
+    dateEnrolledEC: dateOrNull(data.dateEnrolledYearEC, data.dateEnrolledMonthEC, data.dateEnrolledDateEC),
+    dateEnrolledGC: nullIfEmpty(data.dateEnrolledGC),
+
+    // Academic Required
+    batchClassYearSemesterId: intOrNull(data.batchClassYearSemesterId),
+    studentRecentStatusId: intOrNull(data.studentRecentStatusId),
+    departmentEnrolledId: intOrNull(data.departmentEnrolledId),
+    programModalityCode: nullIfEmpty(data.programModalityCode),
+
+    // Academic Optional
+    isTransfer: boolOrNull(data.isTransfer),
+    exitExamUserID: nullIfEmpty(data.exitExamUserID),
+    exitExamScore: floatOrNull(data.exitExamScore),
+    isStudentPassExitExam: boolOrNull(data.hasPassedExitExam),
+    grade12Result: floatOrNull(data.grade12Result),
+    remark: nullIfEmpty(data.remark),
+
+    // Document Status
+    documentStatus: documentStatus
+  };
+
+  // Remove null values
+  const cleaned = Object.fromEntries(
+    Object.entries(jsonBody).filter(([_, v]) => v !== null && v !== undefined)
+  );
+
+  // Add the JSON data to form
+  form.append(
+    "data",
+    new Blob([JSON.stringify(cleaned)], { type: "application/json" })
+  );
+
+  // Add files if they exist
+  if (data.studentPhoto && data.studentPhoto instanceof File) {
+    // Check file size (2MB limit)
+    if (data.studentPhoto.size > 2 * 1024 * 1024) {
       toast({
         title: "Error",
-        description: msg,
+        description: "Student photo must be less than 2MB",
         variant: "destructive",
       });
-    } finally {
       setIsSubmitting(false);
+      return;
     }
-  };
+    form.append("studentPhoto", data.studentPhoto);
+  }
+
+  if (data.document && data.document instanceof File) {
+    // Check file size (10MB limit)
+    if (data.document.size > 10 * 1024 * 1024) {
+      toast({
+        title: "Error",
+        description: "Document must be less than 10MB",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+    form.append("document", data.document);
+  }
+
+  try {
+    console.log("Submitting form data:", cleaned);
+    
+    const resp = await apiService.post(
+      endPoints.registrarApplicantRegister,
+      form,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          requiresAuth: true,
+        },
+      }
+    );
+
+    // Handle successful response
+    if (resp) {
+      // Show success message with student details
+      toast({
+        title: "✅ Success!",
+        description: (
+          <div className="mt-2">
+            <p className="font-semibold">{resp.message + " with ID: " + resp.username || "Student registered successfully."}</p>
+          </div>
+        ),
+        variant: "default",
+        duration: 5000,
+      });
+      
+      // Clear ALL localStorage items
+      localStorage.removeItem("registrarRegistrationFormData");
+      localStorage.removeItem("registrarRegistrationCurrentStep");
+      
+      // Reset form state for fresh start
+      setFormData({
+        // Personal Info (English)
+        firstName: "", middleName: "", lastName: "",
+        // Personal Info (Amharic)
+        firstNameAMH: "", middleNameAMH: "", lastNameAMH: "",
+        // Mother's Info (English)
+        motherFirstName: "", motherLastName: "",
+        // Mother's Info (Amharic)
+        motherFirstNameAMH: "", motherLastNameAMH: "",
+        sex: "", age: "", impairmentCode: "",
+        studentPhoto: null, prevPhoto: null,
+        // Dates
+        birthDateEC: "", birthMonthEC: "", birthYearEC: "",
+        dateEnrolledDateEC: "", dateEnrolledMonthEC: "", dateEnrolledYearEC: "",
+        dateEnrolledGC: "", birthDateGC: "",
+        // Place of Birth
+        placeOfBirthRegionCode: "", placeOfBirthZoneCode: "", placeOfBirthWoredaCode: "",
+        // Current Address
+        currentAddressRegionCode: "", currentAddressZoneCode: "", currentAddressWoredaCode: "",
+        // Contact
+        email: "", phoneNo: "",
+        // Account
+        username: "", password: "", confirmPassword: "",
+        // Emergency Contact
+        emergencyfirstName: "", emergencylastName: "",
+        emergencyfirstNameAMH: "", emergencylastNameAMH: "",
+        contactPersonRelation: "", contactPersonPhoneNumber: "",
+        // Academic Required
+        studentRecentStatusId: "", batchClassYearSemesterId: "",
+        schoolBackgroundId: "", departmentEnrolledId: "", programModalityCode: "",
+        // Academic Optional
+        isTransfer: "", exitExamUserID: "", exitExamScore: "",
+        hasPassedExitExam: "", grade12Result: "", remark: "", document: null,
+      });
+      
+      // Reset touched fields
+      setTouchedFields({});
+      
+      // Redirect to step 1 after a short delay to show the success message
+      setTimeout(() => {
+        setCurrentStep(1);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 1500);
+    }
+  } catch (err) {
+    console.error("Registration error:", err);
+    
+    // Handle different error responses
+    let errorMessage = "An error occurred during registration.";
+    
+    if (err.response) {
+      const status = err.response.status;
+      const errorData = err.response.data;
+      
+      // Handle different status codes
+      switch (status) {
+        case 400:
+          errorMessage = errorData.error || "Bad request. Please check all required fields.";
+          break;
+        case 409:
+          if (errorData.error?.includes("phone")) {
+            errorMessage = "Phone number already exists. Please use a different phone number.";
+          } else if (errorData.error?.includes("exit exam")) {
+            errorMessage = "Exit exam ID already exists. Please check and try again.";
+          } else {
+            errorMessage = errorData.error || "Duplicate entry found.";
+          }
+          break;
+        case 500:
+          errorMessage = "Server error. Please try again later.";
+          break;
+        default:
+          errorMessage = errorData.error || `Error ${status}: ${err.response.statusText}`;
+      }
+    } else if (err.request) {
+      errorMessage = "No response from server. Please check your connection.";
+    } else {
+      errorMessage = err.message || "An unexpected error occurred.";
+    }
+    
+    setErrorMessage(errorMessage);
+    toast({
+      title: "Error",
+      description: errorMessage,
+      variant: "destructive",
+    });
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   // THIS IS THE ONLY CHANGE: ALWAYS ALLOW NEXT
-  const isStepValid = () => true;
+  // const isStepValid = () => true;
 
   const renderStep = () => {
-    switch (currentStep) {
-      case 1:
-        return (
-          <PersonalInformationStep
-            formData={formData}
-            setFormData={setFormData}
-            dropdowns={dropdowns}
-            fetchZonesByRegion={fetchZonesByRegion}
-            fetchWoredasByZone={fetchWoredasByZone}
-          />
-        );
-      case 2:
-        return (
-          <AccountCreationStep formData={formData} setFormData={setFormData} />
-        );
-      case 3:
-        return (
-          <FamilyBackgroundStep formData={formData} setFormData={setFormData} />
-        );
-      case 4:
-        return (
-          <EducationalInformationStep
-            formData={formData}
-            setFormData={setFormData}
-            dropdowns={dropdowns}
-          />
-        );
-      case 5:
-        return (
-          <ReviewSubmitStep
-            formData={formData}
-            setFormData={setFormData}
-            onSubmit={handleSubmit}
-            isSubmitting={isSubmitting}
-          />
-        );
-      default:
-        return null;
-    }
+  const commonProps = {
+    formData,
+    setFormData,
+    shouldShowError,
+    getInputClassName,
+    handleFieldBlur,
   };
+
+  switch (currentStep) {
+    case 1:
+      return (
+        <PersonalInformationStep
+          {...commonProps}
+          dropdowns={dropdowns}
+          fetchZonesByRegion={fetchZonesByRegion}
+          fetchWoredasByZone={fetchWoredasByZone}
+        />
+      );
+    case 2:
+      return (
+        <AccountCreationStep
+          {...commonProps}
+        />
+      );
+    case 3:
+      return (
+        <FamilyBackgroundStep
+          {...commonProps}
+        />
+      );
+    case 4:
+      return (
+        <EducationalInformationStep
+          {...commonProps}
+          dropdowns={dropdowns}
+        />
+      );
+    case 5:
+      return (
+        <ReviewSubmitStep
+          formData={formData}
+          setFormData={setFormData}
+          onSubmit={handleSubmit}
+          isSubmitting={isSubmitting}
+          shouldShowError={shouldShowError}
+          getInputClassName={getInputClassName}
+          handleFieldBlur={handleFieldBlur}
+        />
+      );
+    default:
+      return null;
+  }
+};
 
   return (
     <div className="relative min-h-screen bg-gray-50 dark:bg-gray-900 px-6 md:px-16 lg:px-16 ">
