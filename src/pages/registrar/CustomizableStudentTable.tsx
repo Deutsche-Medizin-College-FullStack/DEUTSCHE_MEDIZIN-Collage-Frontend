@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 import {
   Table,
   TableBody,
@@ -40,11 +41,14 @@ import {
   RefreshCw,
   AlertCircle,
   RotateCcw,
+  Bookmark, // ← ADD THIS (or Save icon)
 } from "lucide-react";
 
 // ─── API ────────────────────────────────────────────────────────────────
 import apiClient from "@/components/api/apiClient";
 import endPoints from "@/components/api/endPoints";
+
+const COLUMNS_STORAGE_KEY = 'student-table-visible-columns';
 
 // ─── Types ────────────────────────────────────────────────────────────────
 interface NameEntity {
@@ -85,6 +89,7 @@ interface FilterOptions {
 // ─── Component ────────────────────────────────────────────────────────────
 export default function CustomizableStudentTable() {
   const [fields, setFields] = useState<string[]>([]);
+  const { toast } = useToast();
   const [students, setStudents] = useState<Student[]>([]);
   const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
   const [filterOptions, setFilterOptions] = useState<FilterOptions | null>(
@@ -175,22 +180,33 @@ const [showAdministrativeFilters, setShowAdministrativeFilters] = useState(true)
 
         // Default visible columns
         const defaults = [
-          "id",
+          "username",
           "firstNameENG",
           "fatherNameENG",
-          "gender",
-          "phoneNumber",
-          "age",
-          "academicYear",
           "studentRecentStatus",
           "departmentEnrolled",
-          "programModality",
           "batchClassYearSemester",
         ].filter((f) => allFields.includes(f));
 
-        setVisibleColumns(
-          defaults.length > 0 ? defaults : allFields.slice(0, 10)
-        );
+        // Try to load saved columns from localStorage
+        const savedColumns = localStorage.getItem(COLUMNS_STORAGE_KEY);
+        if (savedColumns) {
+          try {
+            const parsed = JSON.parse(savedColumns);
+            // Only use saved columns if they're valid (exist in allFields)
+            const validSaved = parsed.filter((col: string) => allFields.includes(col));
+            if (validSaved.length > 0) {
+              setVisibleColumns(validSaved);
+            } else {
+              setVisibleColumns(defaults.length > 0 ? defaults : allFields.slice(0, 10));
+            }
+          } catch (e) {
+            // If parsing fails, use defaults
+            setVisibleColumns(defaults.length > 0 ? defaults : allFields.slice(0, 10));
+          }
+        } else {
+          setVisibleColumns(defaults.length > 0 ? defaults : allFields.slice(0, 10));
+        }
 
         // 2. Get filter options
         const optionsRes = await apiClient.get<FilterOptions>(
@@ -221,6 +237,13 @@ const [showAdministrativeFilters, setShowAdministrativeFilters] = useState(true)
       mounted = false;
     };
   }, []);
+
+  // Save visible columns to localStorage whenever they change
+  useEffect(() => {
+    if (visibleColumns.length > 0) {
+      localStorage.setItem(COLUMNS_STORAGE_KEY, JSON.stringify(visibleColumns));
+    }
+  }, [visibleColumns]);
 
   // Reset all filters
   const resetFilters = () => {
@@ -675,6 +698,22 @@ const distinctExitExamStatuses = useMemo(() => {
                 )}
                 Columns
               </Button>
+              {/* Save button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  localStorage.setItem(COLUMNS_STORAGE_KEY, JSON.stringify(visibleColumns));
+                  // Optional: Show a toast notification
+                  toast({
+                    title: "Success",
+                    description: "Column preferences saved!",
+                    status: "success",
+                  });
+                }}
+              >
+                <Bookmark className="mr-2 h-4 w-4" /> Save Columns
+              </Button>
               <Button variant="outline" size="sm" onClick={exportExcel}>
                 <Download className="mr-2 h-4 w-4" /> Excel
               </Button>
@@ -687,36 +726,66 @@ const distinctExitExamStatuses = useMemo(() => {
 
         <CardContent className="space-y-6">
           {/* Column selection */}
-          {showColumnsPanel && (
-            <div className="rounded-lg border bg-muted/40 p-5">
-              <Label className="mb-4 block text-base font-medium">
-                Visible Columns
-              </Label>
-              <div className="grid grid-cols-2 gap-x-8 gap-y-2.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                {fields.map((field) => (
-                  <div key={field} className="flex items-center gap-2">
-                    <Checkbox
-                      id={`col-${field}`}
-                      checked={visibleColumns.includes(field)}
-                      onCheckedChange={() => {
-                        setVisibleColumns((prev) =>
-                          prev.includes(field)
-                            ? prev.filter((f) => f !== field)
-                            : [...prev, field]
-                        );
-                      }}
-                    />
-                    <Label
-                      htmlFor={`col-${field}`}
-                      className="cursor-pointer text-sm font-normal capitalize"
-                    >
-                      {field.replace(/([A-Z])/g, " $1")}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+{showColumnsPanel && (
+  <div className="rounded-lg border bg-muted/40 p-5">
+    <div className="flex items-center justify-between mb-4">
+      <Label className="text-base font-medium">
+        Visible Columns ({visibleColumns.length}/{fields.length} selected)
+      </Label>
+      <div className="flex gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setVisibleColumns([...fields])}
+          className="h-8 text-xs"
+        >
+          Select All
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setVisibleColumns([])}
+          className="h-8 text-xs"
+        >
+          Clear All
+        </Button>
+      </div>
+    </div>
+    
+    <div className="grid grid-cols-2 gap-x-8 gap-y-2.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+      {fields.map((field) => (
+        <div 
+          key={field} 
+          className={`flex items-center gap-2 p-1.5 rounded-md transition-colors ${
+            visibleColumns.includes(field) 
+              ? "bg-primary/10" 
+              : "hover:bg-muted/50"
+          }`}
+        >
+          <Checkbox
+            id={`col-${field}`}
+            checked={visibleColumns.includes(field)}
+            onCheckedChange={() => {
+              setVisibleColumns((prev) =>
+                prev.includes(field)
+                  ? prev.filter((f) => f !== field)
+                  : [...prev, field]
+              );
+            }}
+          />
+          <Label
+            htmlFor={`col-${field}`}
+            className={`cursor-pointer text-sm font-normal capitalize ${
+              visibleColumns.includes(field) ? "text-primary font-medium" : ""
+            }`}
+          >
+            {field.replace(/([A-Z])/g, " $1")}
+          </Label>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
 
           {/* Filters */}
           <div className="space-y-4">
