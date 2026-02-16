@@ -176,6 +176,8 @@ const endPoints = {
   getRegistrarDeanApprovedScores: "/registrar/dean-approved-scores",
   registrarFinalApproveAll:
     "/registrar/assignments/:teacherCourseAssignmentId/final-approve-all",
+  progressionSequences: "/registrar/progression-sequences",
+  formTemplates: "/registrar/form-templates",
 
   /* =======================     Vice Deans  ======================== */
   createViceDean: "/auth/register/vice-dean",
