@@ -23,7 +23,8 @@ const noAuthEndpoints = [
 const apiClient = axios.create({
   // baseURL: "http://localhost:8080/api",
   // baseURL: "https://concise-skunk-preferably.ngrok-free.app/api",
-  baseURL: "https://deutschemedizin-collage-backend-production.up.railway.app/api",
+  baseURL:
+    "https://deutschemedizin-collage-backend-production.up.railway.app/api",
   headers: {
     "ngrok-skip-browser-warning": "true",
     "User-Agent":
@@ -86,13 +87,13 @@ apiClient.interceptors.response.use(
     } else if (error.response?.status === 403) {
       // Handle forbidden access - possibly redirect to login or show error
       console.error(
-        "Access forbidden: You do not have permission to access this resource"
+        "Access forbidden: You do not have permission to access this resource",
       );
       // You can add redirect logic here if needed
       // window.location.href = '/login';
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default apiClient;

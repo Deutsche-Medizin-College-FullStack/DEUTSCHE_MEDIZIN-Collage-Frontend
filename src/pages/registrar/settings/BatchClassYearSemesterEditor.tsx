@@ -63,7 +63,7 @@ const BatchClassYearSemesterEditor = () => {
       try {
         setLoading(true);
         const res = await apiService.get<any[]>(
-          endPoints.BatchClassYearSemesters
+          endPoints.BatchClassYearSemesters,
         );
 
         const transformed = res.map((it: any) => ({
@@ -90,7 +90,8 @@ const BatchClassYearSemesterEditor = () => {
   const Instructions = () => (
     <div className="mb-10 p-8 rounded-3xl bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-gray-800 dark:to-gray-900 border-2 border-indigo-200 dark:border-indigo-800/50 shadow-lg">
       <h3 className="text-2xl font-bold text-indigo-700 dark:text-indigo-300 mb-5 flex items-center gap-3">
-        <span className="text-4xl">📅</span> Batch–Class–Year–Semester Management
+        <span className="text-4xl">📅</span> Batch–Class–Year–Semester
+        Management
       </h3>
       <div className="space-y-4 text-gray-700 dark:text-gray-300 text-[15px] leading-relaxed">
         <div className="flex items-start gap-3">
@@ -100,8 +101,9 @@ const BatchClassYearSemesterEditor = () => {
           <div>
             <strong className="text-gray-900 dark:text-white">Purpose:</strong>
             <br />
-            Create and manage academic combinations that link batches to specific class years, 
-            semesters, and departments. Each BCYS defines the academic period for departments.
+            Create and manage academic combinations that link batches to
+            specific class years, semesters, and departments. Each BCYS defines
+            the academic period for departments.
           </div>
         </div>
         <div className="flex items-start gap-3">
@@ -112,14 +114,12 @@ const BatchClassYearSemesterEditor = () => {
             <strong className="text-gray-900 dark:text-white">
               Department Management:
             </strong>
-            <br />
-            • Each BCYS can have <strong>multiple departments</strong>
-            <br />
-            • Departments can have <strong>different academic years</strong> and dates
+            <br />• Each BCYS can have <strong>multiple departments</strong>
+            <br />• Departments can have{" "}
+            <strong>different academic years</strong> and dates
             <br />
             • Add/remove departments using the Edit form
-            <br />
-            • Set department-specific class start/end dates
+            <br />• Set department-specific class start/end dates
           </div>
         </div>
         <div className="flex items-start gap-3">
@@ -130,12 +130,17 @@ const BatchClassYearSemesterEditor = () => {
             <strong className="text-gray-900 dark:text-white">
               Date Formats:
             </strong>
-            <br />
-            • <strong>Gregorian (G.C.)</strong>: Use <code className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">YYYY-MM-DD</code> format
-            <br />
-            • <strong>Ethiopian (E.C.)</strong>: Use <code className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">DD-MM-YYYY</code> format
-            <br />
-            • Academic Year: Select from dropdown (e.g., 2024/2025)
+            <br />• <strong>Gregorian (G.C.)</strong>: Use{" "}
+            <code className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">
+              YYYY-MM-DD
+            </code>{" "}
+            format
+            <br />• <strong>Ethiopian (E.C.)</strong>: Use{" "}
+            <code className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">
+              DD-MM-YYYY
+            </code>{" "}
+            format
+            <br />• Academic Year: Select from dropdown (e.g., 2024/2025)
           </div>
         </div>
         <div className="flex items-start gap-3">
@@ -146,14 +151,14 @@ const BatchClassYearSemesterEditor = () => {
             <strong className="text-gray-900 dark:text-white">
               Important Notes:
             </strong>
-            <br />
-            • BCYS name is <strong>auto-generated</strong> from batch, year, and semester
-            <br />
-            • <strong>At least one department</strong> is required when creating new BCYS
-            <br />
-            • Changes affect <strong>student records, transcripts, and reports</strong>
-            <br />
-            • Use the <strong>View/Edit modal</strong> for detailed management
+            <br />• BCYS name is <strong>auto-generated</strong> from batch,
+            year, and semester
+            <br />• <strong>At least one department</strong> is required when
+            creating new BCYS
+            <br />• Changes affect{" "}
+            <strong>student records, transcripts, and reports</strong>
+            <br />• Use the <strong>View/Edit modal</strong> for detailed
+            management
           </div>
         </div>
         <div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500 rounded-r-lg">
@@ -163,11 +168,13 @@ const BatchClassYearSemesterEditor = () => {
           <ul className="text-sm space-y-1 text-yellow-700 dark:text-yellow-300">
             <li>• Deleting a BCYS may fail if students are enrolled in it</li>
             <li>• Changing dates affects existing academic records</li>
-            <li>• Departments marked for removal will be permanently deleted</li>
+            <li>
+              • Departments marked for removal will be permanently deleted
+            </li>
             <li>• Always verify dates before saving changes</li>
           </ul>
         </div>
-        
+
         {/* Quick Tips */}
         <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 rounded-r-lg">
           <div className="font-medium text-blue-800 dark:text-blue-200 mb-2 flex items-center gap-2">
@@ -238,41 +245,41 @@ const CrudSection = ({ title, data, setData }: CrudProps) => {
   const { toast } = useToast(); // Add this line
 
   // Combined modal state
-const [modalState, setModalState] = useState<{
-  isOpen: boolean;
-  mode: 'view' | 'edit' | 'create';
-  data: BCSY | null;
-  formData: {
-    batchId: string;
-    classYearId: string;
-    semesterId: string;
-    departments: Array<{
-      departmentId: number;
-      departmentName: string;
-      entryYearId: string;
-      classStartGC: string;
-      classStartEC: string;
-      classEndGC: string;
-      classEndEC: string;
-      markedForRemoval?: boolean;
-      isNew?: boolean;
-    }>;
-  };
-}>({
-  isOpen: false,
-  mode: 'view',
-  data: null,
-  formData: {
-    batchId: '',
-    classYearId: '',
-    semesterId: '',
-    departments: [],
-  },
-});
+  const [modalState, setModalState] = useState<{
+    isOpen: boolean;
+    mode: "view" | "edit" | "create";
+    data: BCSY | null;
+    formData: {
+      batchId: string;
+      classYearId: string;
+      semesterId: string;
+      departments: Array<{
+        departmentId: number;
+        departmentName: string;
+        entryYearId: string;
+        classStartGC: string;
+        classStartEC: string;
+        classEndGC: string;
+        classEndEC: string;
+        markedForRemoval?: boolean;
+        isNew?: boolean;
+      }>;
+    };
+  }>({
+    isOpen: false,
+    mode: "view",
+    data: null,
+    formData: {
+      batchId: "",
+      classYearId: "",
+      semesterId: "",
+      departments: [],
+    },
+  });
 
   const [batches, setBatches] = useState<{ id: number; name?: string }[]>([]);
   const [classYears, setClassYears] = useState<{ id: number; name?: string }[]>(
-    []
+    [],
   );
   const [semesters] = useState<string[]>([
     "S1",
@@ -306,10 +313,9 @@ const [modalState, setModalState] = useState<{
   const [lookupData, setLookupData] = useState<any>(null);
   const [loadingOptions, setLoadingOptions] = useState(true);
 
-
   const [optionsError, setOptionsError] = useState<string | null>(null);
   const filtered = data.filter((it) =>
-    it.name.toLowerCase().includes(search.toLowerCase())
+    it.name.toLowerCase().includes(search.toLowerCase()),
   );
   const pageSize = showAll ? filtered.length : 12;
   const totalPages = Math.ceil(filtered.length / pageSize);
@@ -319,7 +325,7 @@ const [modalState, setModalState] = useState<{
       try {
         setLoadingOptions(true);
         const res = await apiService.get(
-          endPoints.lookupsDropdown || "/api/filters/options"
+          endPoints.lookupsDropdown || "/api/filters/options",
         );
         setLookupData(res);
         console.log(res);
@@ -353,55 +359,55 @@ const [modalState, setModalState] = useState<{
   const openViewModal = (item: BCSY) => {
     setModalState({
       isOpen: true,
-      mode: 'view',
+      mode: "view",
       data: item,
       formData: {
         batchId: String(item.batchId),
         classYearId: String(item.classYearId),
         semesterId: item.semesterId,
-        departments: item.departments.map(dept => ({
+        departments: item.departments.map((dept) => ({
           departmentId: dept.departmentId,
           departmentName: dept.departmentName,
-          entryYearId: dept.entryYearId || '',
-          classStartGC: dept.classStartGC || '',
-          classStartEC: dept.classStartEC || '',
-          classEndGC: dept.classEndGC || '',
-          classEndEC: dept.classEndEC || '',
+          entryYearId: dept.entryYearId || "",
+          classStartGC: dept.classStartGC || "",
+          classStartEC: dept.classStartEC || "",
+          classEndGC: dept.classEndGC || "",
+          classEndEC: dept.classEndEC || "",
         })),
       },
     });
   };
-  
+
   const openCreateModal = () => {
     setModalState({
       isOpen: true,
-      mode: 'create',
+      mode: "create",
       data: null,
       formData: {
-        batchId: '',
-        classYearId: '',
-        semesterId: 'FS', // default
+        batchId: "",
+        classYearId: "",
+        semesterId: "FS", // default
         departments: [],
       },
     });
   };
-  
+
   const openEditModal = () => {
-    setModalState(prev => ({
+    setModalState((prev) => ({
       ...prev,
-      mode: 'edit'
+      mode: "edit",
     }));
   };
-  
+
   const closeModal = () => {
     setModalState({
       isOpen: false,
-      mode: 'view',
+      mode: "view",
       data: null,
       formData: {
-        batchId: '',
-        classYearId: '',
-        semesterId: '',
+        batchId: "",
+        classYearId: "",
+        semesterId: "",
         departments: [],
       },
     });
@@ -409,104 +415,111 @@ const [modalState, setModalState] = useState<{
 
   // Add these functions after the closeModal function
 
-const addDepartment = () => {
-  if (!lookupData?.departments?.length) return;
-  
-  const firstDept = lookupData.departments[0];
-  setModalState(prev => ({
-    ...prev,
-    formData: {
-      ...prev.formData,
-      departments: [
-        ...prev.formData.departments,
-        {
-          departmentId: firstDept.id,
-          departmentName: firstDept.name,
-          entryYearId: '',
-          classStartGC: '',
-          classStartEC: '',
-          classEndGC: '',
-          classEndEC: '',
-          isNew: true
-        }
-      ]
-    }
-  }));
-};
+  const addDepartment = () => {
+    if (!lookupData?.departments?.length) return;
 
-const removeDepartment = (index: number) => {
-  setModalState(prev => {
-    const updatedDepartments = [...prev.formData.departments];
-    const department = updatedDepartments[index];
-    
-    if (department.isNew) {
-      // Remove completely if it's new
-      updatedDepartments.splice(index, 1);
-    } else {
-      // Mark for removal if it exists in the database
-      updatedDepartments[index] = { ...department, markedForRemoval: true };
-    }
-    
-    return {
+    const firstDept = lookupData.departments[0];
+    setModalState((prev) => ({
       ...prev,
       formData: {
         ...prev.formData,
-        departments: updatedDepartments
-      }
-    };
-  });
-};
+        departments: [
+          ...prev.formData.departments,
+          {
+            departmentId: firstDept.id,
+            departmentName: firstDept.name,
+            entryYearId: "",
+            classStartGC: "",
+            classStartEC: "",
+            classEndGC: "",
+            classEndEC: "",
+            isNew: true,
+          },
+        ],
+      },
+    }));
+  };
 
-const updateDepartmentField = (index: number, field: string, value: string) => {
-  setModalState(prev => {
-    const updatedDepartments = [...prev.formData.departments];
-    updatedDepartments[index] = {
-      ...updatedDepartments[index],
-      [field]: value
-    };
-    
-    return {
-      ...prev,
-      formData: {
-        ...prev.formData,
-        departments: updatedDepartments
+  const removeDepartment = (index: number) => {
+    setModalState((prev) => {
+      const updatedDepartments = [...prev.formData.departments];
+      const department = updatedDepartments[index];
+
+      if (department.isNew) {
+        // Remove completely if it's new
+        updatedDepartments.splice(index, 1);
+      } else {
+        // Mark for removal if it exists in the database
+        updatedDepartments[index] = { ...department, markedForRemoval: true };
       }
-    };
-  });
-};
+
+      return {
+        ...prev,
+        formData: {
+          ...prev.formData,
+          departments: updatedDepartments,
+        },
+      };
+    });
+  };
+
+  const updateDepartmentField = (
+    index: number,
+    field: string,
+    value: string,
+  ) => {
+    setModalState((prev) => {
+      const updatedDepartments = [...prev.formData.departments];
+      updatedDepartments[index] = {
+        ...updatedDepartments[index],
+        [field]: value,
+      };
+
+      return {
+        ...prev,
+        formData: {
+          ...prev.formData,
+          departments: updatedDepartments,
+        },
+      };
+    });
+  };
   //=================================================
 
-  const handleSubmit = async () => {
-    
-  };
+  const handleSubmit = async () => {};
 
   const handleDelete = async (id: number, bcsyName?: string) => {
     if (
       !window.confirm(
-        `Delete this BCYS combination?${bcsyName ? `\n\n"${bcsyName}"` : ''}\n\nThis action may be restricted if students/results exist.`
+        `Delete this BCYS combination?${bcsyName ? `\n\n"${bcsyName}"` : ""}\n\nThis action may be restricted if students/results exist.`,
       )
     )
       return;
-  
+
     try {
-      const res = await apiService.delete(`${endPoints.BatchClassYearSemesters}/${id}`);
-      
+      const res = await apiService.delete(
+        `${endPoints.BatchClassYearSemesters}/${id}`,
+      );
+
       // Show success toast
       toast({
         title: "Success",
         description: res.message || `BCYS deleted successfully`,
       });
-      
+
       // Remove from local state
       setData(data.filter((d) => d.id !== id));
-      
+
       return true; // Return success
     } catch (err: any) {
       // Show error toast
       toast({
         title: "Error",
-        description: err?.response?.data?.error || err?.response?.data?.message || "Delete failed",
-        variant: "destructive"
+        description:
+          err?.response?.data?.error ||
+          err?.response?.data?.message ||
+          "Delete failed",
+        variant: "destructive",
       });
       return false; // Return failure
     }
@@ -519,40 +532,40 @@ const updateDepartmentField = (index: number, field: string, value: string) => {
         classYearId: Number(modalState.formData.classYearId),
         semesterId: modalState.formData.semesterId,
       };
-  
+
       // Build departmentUpdates array
       const departmentUpdates = modalState.formData.departments
-        .filter(dept => !dept.markedForRemoval) // Skip removed ones
-        .map(dept => {
+        .filter((dept) => !dept.markedForRemoval) // Skip removed ones
+        .map((dept) => {
           const update: any = { departmentId: dept.departmentId };
-          
+
           if (dept.entryYearId) update.entryYearId = dept.entryYearId;
           if (dept.classStartGC) update.classStartGC = dept.classStartGC;
           if (dept.classStartEC) update.classStartEC = dept.classStartEC;
           if (dept.classEndGC) update.classEndGC = dept.classEndGC;
           if (dept.classEndEC) update.classEndEC = dept.classEndEC;
-          
+
           return update;
         });
-  
+
       // Add removals
       modalState.formData.departments
-        .filter(dept => dept.markedForRemoval && !dept.isNew)
-        .forEach(dept => {
+        .filter((dept) => dept.markedForRemoval && !dept.isNew)
+        .forEach((dept) => {
           departmentUpdates.push({
             departmentId: dept.departmentId,
-            remove: true
+            remove: true,
           });
         });
-  
+
       if (departmentUpdates.length > 0) {
         payload.departmentUpdates = departmentUpdates;
       }
-  
+
       let res;
-      if (modalState.mode === 'create') {
+      if (modalState.mode === "create") {
         res = await apiService.post(endPoints.BatchClassYearSemesters, payload);
-        
+
         // Add new BCYS to list
         const newBCYS: BCSY = {
           id: res.bcysId,
@@ -560,10 +573,10 @@ const updateDepartmentField = (index: number, field: string, value: string) => {
           batchId: res.batchId,
           classYearId: res.classYearId,
           semesterId: res.semesterId,
-          departments: res.departments || []
+          departments: res.departments || [],
         };
-        setData(prev => [...prev, newBCYS]);
-        
+        setData((prev) => [...prev, newBCYS]);
+
         toast({
           title: "Success",
           description: "BCYS created successfully",
@@ -571,9 +584,9 @@ const updateDepartmentField = (index: number, field: string, value: string) => {
       } else if (modalState.data) {
         res = await apiService.put(
           `${endPoints.BatchClassYearSemesters}/${modalState.data.id}`,
-          payload
+          payload,
         );
-        
+
         // Update in list
         const updatedBCYS: BCSY = {
           id: res.bcysId || modalState.data.id,
@@ -581,24 +594,26 @@ const updateDepartmentField = (index: number, field: string, value: string) => {
           batchId: res.batchId,
           classYearId: res.classYearId,
           semesterId: res.semesterId,
-          departments: res.departments || []
+          departments: res.departments || [],
         };
-        setData(prev => prev.map(item => 
-          item.id === modalState.data!.id ? updatedBCYS : item
-        ));
-        
+        setData((prev) =>
+          prev.map((item) =>
+            item.id === modalState.data!.id ? updatedBCYS : item,
+          ),
+        );
+
         toast({
           title: "Success",
           description: "BCYS updated successfully",
         });
       }
-  
+
       closeModal();
     } catch (err: any) {
       toast({
         title: "Error",
         description: err?.response?.data?.error || "Save failed",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -611,11 +626,11 @@ const updateDepartmentField = (index: number, field: string, value: string) => {
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       const months = Math.floor(diffDays / 30);
       const days = diffDays % 30;
-      
+
       if (months > 0) {
-        return `${months} month${months > 1 ? 's' : ''}${days > 0 ? `, ${days} day${days > 1 ? 's' : ''}` : ''}`;
+        return `${months} month${months > 1 ? "s" : ""}${days > 0 ? `, ${days} day${days > 1 ? "s" : ""}` : ""}`;
       }
-      return `${diffDays} day${diffDays > 1 ? 's' : ''}`;
+      return `${diffDays} day${diffDays > 1 ? "s" : ""}`;
     } catch {
       return "Invalid dates";
     }
@@ -661,7 +676,7 @@ const updateDepartmentField = (index: number, field: string, value: string) => {
       {view === "table" ? (
         <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
           <table className="w-full text-left">
-          <thead className="bg-gray-100 dark:bg-gray-700">
+            <thead className="bg-gray-100 dark:bg-gray-700">
               <tr>
                 <th className="p-4 font-semibold">BCYS ID</th>
                 <th className="p-4 font-semibold">Name</th>
@@ -671,161 +686,172 @@ const updateDepartmentField = (index: number, field: string, value: string) => {
                 <th className="p-4 text-right font-semibold">Actions</th>
               </tr>
             </thead>
-<tbody>
-  {currentItems.flatMap((item, index) => {
-    const departments = item.departments || [];
-    const rowCount = Math.max(1, departments.length);
-    
-    return departments.length > 0 
-      ? departments.map((dept, deptIndex) => (
-          <tr
-            key={`${item.id}-${dept.departmentId}`}
-            className="group border-b border-gray-200 dark:border-gray-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 cursor-pointer transition"
-            onClick={() => openViewModal(item)}
-          >
-            {deptIndex === 0 && (
-              <>
-                <td 
-                  rowSpan={rowCount} 
-                  className="p-4 font-medium border-r border-gray-200 dark:border-gray-700"
-                >
-                  #{item.id}
-                </td>
-                <td 
-                  rowSpan={rowCount} 
-                  className="p-4 font-medium border-r border-gray-200 dark:border-gray-700"
-                >
-                  {item.name}
-                </td>
-              </>
-            )}
-            <td className="p-4 border-r border-gray-200 dark:border-gray-700">
-              <div className="font-medium">{dept.departmentName}</div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">
-                {dept.departmentCode}
-              </div>
-            </td>
-            <td className="p-4 border-r border-gray-200 dark:border-gray-700">
-              <div className="space-y-1 text-sm">
-                {dept.classStartGC && dept.classEndGC && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-500 dark:text-gray-400">GC:</span>
-                    <span className="font-mono">
-                      {dept.classStartGC} → {dept.classEndGC}
-                    </span>
-                  </div>
-                )}
-                {dept.classStartEC && dept.classEndEC && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-500 dark:text-gray-400">EC:</span>
-                    <span className="font-mono">
-                      {dept.classStartEC} → {dept.classEndEC}
-                    </span>
-                  </div>
-                )}
-                {(!dept.classStartGC || !dept.classEndGC) && 
-                 (!dept.classStartEC || !dept.classEndEC) && (
-                  <span className="text-gray-400 dark:text-gray-500 italic">No dates set</span>
-                )}
-              </div>
-            </td>
-            <td className="p-4 border-r border-gray-200 dark:border-gray-700">
-              {dept.entryYearId || dept.academicYearGC || dept.academicYearEC ? (
-                <div className="space-y-1">
-                  {dept.entryYearId && (
-                    <div className="font-medium">{dept.entryYearId}</div>
-                  )}
-                  {dept.academicYearGC && (
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      GC: {dept.academicYearGC}
-                    </div>
-                  )}
-                  {dept.academicYearEC && (
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      EC: {dept.academicYearEC}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <span className="text-gray-400 dark:text-gray-500 italic">Not set</span>
-              )}
-            </td>
-            {deptIndex === 0 && (
-              <td 
-                rowSpan={rowCount} 
-                className="p-4"
-              >
-                <div className="flex justify-end gap-2">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openViewModal(item);
-                    }}
-                    className="p-2 text-yellow-500 hover:bg-yellow-100 dark:hover:bg-yellow-900/40 rounded-full"
-                  >
-                    <FaEdit />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(item.id);
-                    }}
-                    className="p-2 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-full"
-                  >
-                    <FaTrash />
-                  </button>
-                </div>
-              </td>
-            )}
-          </tr>
-        ))
-      : [
-          <tr
-            key={item.id}
-            className="group border-b border-gray-200 dark:border-gray-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 cursor-pointer transition"
-            onClick={() => openViewModal(item)}
-          >
-            <td className="p-4 font-medium border-r border-gray-200 dark:border-gray-700">
-              #{item.id}
-            </td>
-            <td className="p-4 font-medium border-r border-gray-200 dark:border-gray-700">
-              {item.name}
-            </td>
-            <td className="p-4 text-gray-400 dark:text-gray-500 italic border-r border-gray-200 dark:border-gray-700">
-              No departments
-            </td>
-            <td className="p-4 text-gray-400 dark:text-gray-500 italic border-r border-gray-200 dark:border-gray-700">
-              —
-            </td>
-            <td className="p-4 text-gray-400 dark:text-gray-500 italic border-r border-gray-200 dark:border-gray-700">
-              —
-            </td>
-            <td className="p-4">
-              <div className="flex justify-end gap-2">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openViewModal(item);
-                  }}
-                  className="p-2 text-yellow-500 hover:bg-yellow-100 dark:hover:bg-yellow-900/40 rounded-full"
-                >
-                  <FaEdit />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete(item.id);
-                  }}
-                  className="p-2 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-full"
-                >
-                  <FaTrash />
-                </button>
-              </div>
-            </td>
-          </tr>
-        ];
-  })}
-</tbody>
+            <tbody>
+              {currentItems.flatMap((item, index) => {
+                const departments = item.departments || [];
+                const rowCount = Math.max(1, departments.length);
+
+                return departments.length > 0
+                  ? departments.map((dept, deptIndex) => (
+                      <tr
+                        key={`${item.id}-${dept.departmentId}`}
+                        className="group border-b border-gray-200 dark:border-gray-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 cursor-pointer transition"
+                        onClick={() => openViewModal(item)}
+                      >
+                        {deptIndex === 0 && (
+                          <>
+                            <td
+                              rowSpan={rowCount}
+                              className="p-4 font-medium border-r border-gray-200 dark:border-gray-700"
+                            >
+                              #{item.id}
+                            </td>
+                            <td
+                              rowSpan={rowCount}
+                              className="p-4 font-medium border-r border-gray-200 dark:border-gray-700"
+                            >
+                              {item.name}
+                            </td>
+                          </>
+                        )}
+                        <td className="p-4 border-r border-gray-200 dark:border-gray-700">
+                          <div className="font-medium">
+                            {dept.departmentName}
+                          </div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                            {dept.departmentCode}
+                          </div>
+                        </td>
+                        <td className="p-4 border-r border-gray-200 dark:border-gray-700">
+                          <div className="space-y-1 text-sm">
+                            {dept.classStartGC && dept.classEndGC && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-500 dark:text-gray-400">
+                                  GC:
+                                </span>
+                                <span className="font-mono">
+                                  {dept.classStartGC} → {dept.classEndGC}
+                                </span>
+                              </div>
+                            )}
+                            {dept.classStartEC && dept.classEndEC && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-500 dark:text-gray-400">
+                                  EC:
+                                </span>
+                                <span className="font-mono">
+                                  {dept.classStartEC} → {dept.classEndEC}
+                                </span>
+                              </div>
+                            )}
+                            {(!dept.classStartGC || !dept.classEndGC) &&
+                              (!dept.classStartEC || !dept.classEndEC) && (
+                                <span className="text-gray-400 dark:text-gray-500 italic">
+                                  No dates set
+                                </span>
+                              )}
+                          </div>
+                        </td>
+                        <td className="p-4 border-r border-gray-200 dark:border-gray-700">
+                          {dept.entryYearId ||
+                          dept.academicYearGC ||
+                          dept.academicYearEC ? (
+                            <div className="space-y-1">
+                              {dept.entryYearId && (
+                                <div className="font-medium">
+                                  {dept.entryYearId}
+                                </div>
+                              )}
+                              {dept.academicYearGC && (
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                  GC: {dept.academicYearGC}
+                                </div>
+                              )}
+                              {dept.academicYearEC && (
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                  EC: {dept.academicYearEC}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 dark:text-gray-500 italic">
+                              Not set
+                            </span>
+                          )}
+                        </td>
+                        {deptIndex === 0 && (
+                          <td rowSpan={rowCount} className="p-4">
+                            <div className="flex justify-end gap-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openViewModal(item);
+                                }}
+                                className="p-2 text-yellow-500 hover:bg-yellow-100 dark:hover:bg-yellow-900/40 rounded-full"
+                              >
+                                <FaEdit />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDelete(item.id);
+                                }}
+                                className="p-2 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-full"
+                              >
+                                <FaTrash />
+                              </button>
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    ))
+                  : [
+                      <tr
+                        key={item.id}
+                        className="group border-b border-gray-200 dark:border-gray-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 cursor-pointer transition"
+                        onClick={() => openViewModal(item)}
+                      >
+                        <td className="p-4 font-medium border-r border-gray-200 dark:border-gray-700">
+                          #{item.id}
+                        </td>
+                        <td className="p-4 font-medium border-r border-gray-200 dark:border-gray-700">
+                          {item.name}
+                        </td>
+                        <td className="p-4 text-gray-400 dark:text-gray-500 italic border-r border-gray-200 dark:border-gray-700">
+                          No departments
+                        </td>
+                        <td className="p-4 text-gray-400 dark:text-gray-500 italic border-r border-gray-200 dark:border-gray-700">
+                          —
+                        </td>
+                        <td className="p-4 text-gray-400 dark:text-gray-500 italic border-r border-gray-200 dark:border-gray-700">
+                          —
+                        </td>
+                        <td className="p-4">
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openViewModal(item);
+                              }}
+                              className="p-2 text-yellow-500 hover:bg-yellow-100 dark:hover:bg-yellow-900/40 rounded-full"
+                            >
+                              <FaEdit />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(item.id);
+                              }}
+                              className="p-2 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-full"
+                            >
+                              <FaTrash />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>,
+                    ];
+              })}
+            </tbody>
           </table>
         </div>
       ) : (
@@ -890,558 +916,810 @@ const updateDepartmentField = (index: number, field: string, value: string) => {
         </div>
       )}
 
-{/*==================================================================*/}
-{/* Combined View/Edit/Create Modal */}
-{modalState.isOpen && (
-  <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto">
-      <div className="p-6 md:p-8">
-        {/* Modal Header */}
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-2xl font-bold text-indigo-600">
-            {modalState.mode === 'create' ? 'Create New BCYS' : 
-             modalState.mode === 'edit' ? 'Edit BCYS' : 'BCYS Details'}
-          </h3>
-          <button
-            onClick={closeModal}
-            className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full"
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* View Mode */}
-        {modalState.mode === 'view' && modalState.data && (
-          <div className="space-y-6">
-            {/* Basic BCYS Info */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-                <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">BCYS ID</div>
-                <div className="text-xl font-bold text-indigo-600 dark:text-indigo-400">#{modalState.data.id}</div>
-              </div>
-              <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-                <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Name</div>
-                <div className="text-xl font-semibold">{modalState.data.name}</div>
-              </div>
-              <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-                <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Batch • Year • Semester</div>
-                <div className="text-xl">
-                  B{modalState.data.batchId} • Y{modalState.data.classYearId} • {modalState.data.semesterId}
-                </div>
-              </div>
-            </div>
-
-            {/* Departments Section */}
-            <div>
-              <div className="mb-6">
-                <h4 className="text-lg font-semibold mb-2">
-                  Departments ({modalState.data.departments.length})
-                </h4>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Each department can have its own academic year and class dates
-                </p>
+      {/*==================================================================*/}
+      {/* Combined View/Edit/Create Modal */}
+      {modalState.isOpen && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 md:p-8">
+              {/* Modal Header */}
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold text-indigo-600">
+                  {modalState.mode === "create"
+                    ? "Create New BCYS"
+                    : modalState.mode === "edit"
+                      ? "Edit BCYS"
+                      : "BCYS Details"}
+                </h3>
+                <button
+                  onClick={closeModal}
+                  className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full"
+                >
+                  ✕
+                </button>
               </div>
 
-              {modalState.data.departments.length === 0 ? (
-                <div className="text-center py-8 text-gray-400 dark:text-gray-500 italic bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                  No departments assigned to this BCYS
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {modalState.data.departments.map((dept) => (
-                    <div
-                      key={dept.departmentId}
-                      className="border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 overflow-hidden"
-                    >
-                      {/* Department Header */}
-                      <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 border-b">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <div className="font-semibold text-lg">{dept.departmentName}</div>
-                              <span className="text-sm px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">
-                                {dept.departmentCode}
-                              </span>
-                            </div>
-                          </div>
-                          
-                          {/* Academic Year - PROMINENT DISPLAY */}
-                          {(dept.entryYearId || dept.academicYearGC || dept.academicYearEC) && (
-                            <div className="text-right">
-                              <div className="inline-flex items-center gap-2 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-3 py-1.5 rounded-lg">
-                                <span className="text-lg font-bold">📅</span>
+              {/* View Mode */}
+              {modalState.mode === "view" && modalState.data && (
+                <div className="space-y-6">
+                  {/* Basic BCYS Info */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                      <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                        BCYS ID
+                      </div>
+                      <div className="text-xl font-bold text-indigo-600 dark:text-indigo-400">
+                        #{modalState.data.id}
+                      </div>
+                    </div>
+                    <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                      <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                        Name
+                      </div>
+                      <div className="text-xl font-semibold">
+                        {modalState.data.name}
+                      </div>
+                    </div>
+                    <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                      <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                        Batch • Year • Semester
+                      </div>
+                      <div className="text-xl">
+                        B{modalState.data.batchId} • Y
+                        {modalState.data.classYearId} •{" "}
+                        {modalState.data.semesterId}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Departments Section */}
+                  <div>
+                    <div className="mb-6">
+                      <h4 className="text-lg font-semibold mb-2">
+                        Departments ({modalState.data.departments.length})
+                      </h4>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Each department can have its own academic year and class
+                        dates
+                      </p>
+                    </div>
+
+                    {modalState.data.departments.length === 0 ? (
+                      <div className="text-center py-8 text-gray-400 dark:text-gray-500 italic bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                        No departments assigned to this BCYS
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {modalState.data.departments.map((dept) => (
+                          <div
+                            key={dept.departmentId}
+                            className="border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 overflow-hidden"
+                          >
+                            {/* Department Header */}
+                            <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 border-b">
+                              <div className="flex justify-between items-start">
                                 <div>
-                                  {dept.entryYearId && (
-                                    <div className="font-bold text-base">{dept.entryYearId}</div>
-                                  )}
-                                  {(dept.academicYearGC || dept.academicYearEC) && (
-                                    <div className="text-xs mt-0.5">
-                                      {dept.academicYearGC && <div>GC: {dept.academicYearGC}</div>}
-                                      {dept.academicYearEC && <div>EC: {dept.academicYearEC}</div>}
+                                  <div className="flex items-center gap-2">
+                                    <div className="font-semibold text-lg">
+                                      {dept.departmentName}
+                                    </div>
+                                    <span className="text-sm px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">
+                                      {dept.departmentCode}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Academic Year - PROMINENT DISPLAY */}
+                                {(dept.entryYearId ||
+                                  dept.academicYearGC ||
+                                  dept.academicYearEC) && (
+                                  <div className="text-right">
+                                    <div className="inline-flex items-center gap-2 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-3 py-1.5 rounded-lg">
+                                      <span className="text-lg font-bold">
+                                        📅
+                                      </span>
+                                      <div>
+                                        {dept.entryYearId && (
+                                          <div className="font-bold text-base">
+                                            {dept.entryYearId}
+                                          </div>
+                                        )}
+                                        {(dept.academicYearGC ||
+                                          dept.academicYearEC) && (
+                                          <div className="text-xs mt-0.5">
+                                            {dept.academicYearGC && (
+                                              <div>
+                                                GC: {dept.academicYearGC}
+                                              </div>
+                                            )}
+                                            {dept.academicYearEC && (
+                                              <div>
+                                                EC: {dept.academicYearEC}
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Dates Section - Simplified Display */}
+                            <div className="p-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Class Dates */}
+                                <div className="space-y-3">
+                                  <h5 className="font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+                                    Class Dates
+                                  </h5>
+
+                                  {/* Gregorian Dates */}
+                                  <div className="space-y-1">
+                                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                                      Gregorian Calendar
+                                    </div>
+                                    {dept.classStartGC && dept.classEndGC ? (
+                                      <div className="font-medium">
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-gray-600 dark:text-gray-400">
+                                            From:
+                                          </span>
+                                          <span className="font-mono">
+                                            {dept.classStartGC} G.C.
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-1">
+                                          <span className="text-gray-600 dark:text-gray-400">
+                                            To:
+                                          </span>
+                                          <span className="font-mono">
+                                            {dept.classEndGC} G.C.
+                                          </span>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div className="text-gray-400 dark:text-gray-500 italic text-sm">
+                                        No Gregorian dates set
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Ethiopian Dates */}
+                                  <div className="space-y-1">
+                                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                                      Ethiopian Calendar
+                                    </div>
+                                    {dept.classStartEC && dept.classEndEC ? (
+                                      <div className="font-medium">
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-gray-600 dark:text-gray-400">
+                                            From:
+                                          </span>
+                                          <span className="font-mono">
+                                            {dept.classStartEC} E.C.
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-1">
+                                          <span className="text-gray-600 dark:text-gray-400">
+                                            To:
+                                          </span>
+                                          <span className="font-mono">
+                                            {dept.classEndEC} E.C.
+                                          </span>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div className="text-gray-400 dark:text-gray-500 italic text-sm">
+                                        No Ethiopian dates set
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Summary & Status */}
+                                <div className="space-y-3">
+                                  <h5 className="font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                                    Status
+                                  </h5>
+
+                                  {/* Date Status Indicators */}
+                                  <div className="space-y-2">
+                                    <div className="flex items-center gap-2">
+                                      <div
+                                        className={`w-3 h-3 rounded-full ${dept.classStartGC && dept.classEndGC ? "bg-green-500" : "bg-gray-300 dark:bg-gray-600"}`}
+                                      ></div>
+                                      <span className="text-sm">
+                                        Gregorian Dates:{" "}
+                                        {dept.classStartGC && dept.classEndGC
+                                          ? "✓ Set"
+                                          : "✗ Not Set"}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <div
+                                        className={`w-3 h-3 rounded-full ${dept.classStartEC && dept.classEndEC ? "bg-green-500" : "bg-gray-300 dark:bg-gray-600"}`}
+                                      ></div>
+                                      <span className="text-sm">
+                                        Ethiopian Dates:{" "}
+                                        {dept.classStartEC && dept.classEndEC
+                                          ? "✓ Set"
+                                          : "✗ Not Set"}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <div
+                                        className={`w-3 h-3 rounded-full ${dept.entryYearId ? "bg-blue-500" : "bg-gray-300 dark:bg-gray-600"}`}
+                                      ></div>
+                                      <span className="text-sm">
+                                        Academic Year:{" "}
+                                        {dept.entryYearId
+                                          ? "✓ Set"
+                                          : "✗ Not Set"}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {/* Missing Dates Warning */}
+                                  {(!dept.classStartGC ||
+                                    !dept.classEndGC ||
+                                    !dept.classStartEC ||
+                                    !dept.classEndEC) && (
+                                    <div className="mt-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded text-sm text-yellow-700 dark:text-yellow-300">
+                                      <span className="font-medium">⚠</span>{" "}
+                                      Some dates are missing. Consider adding
+                                      them in Edit mode.
                                     </div>
                                   )}
                                 </div>
                               </div>
                             </div>
-                          )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex justify-end gap-3 pt-6 border-t dark:border-gray-700">
+                    <button
+                      onClick={openEditModal}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition"
+                    >
+                      <FaEdit /> Edit BCYS
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (modalState.data) {
+                          const success = await handleDelete(
+                            modalState.data.id,
+                            modalState.data.name,
+                          );
+                          if (success) {
+                            closeModal(); // Close the modal only on success
+                          }
+                        }
+                      }}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition"
+                    >
+                      <FaTrash /> Delete BCYS
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Edit/Create Mode */}
+              {(modalState.mode === "edit" || modalState.mode === "create") && (
+                <div className="space-y-6">
+                  {loadingOptions ? (
+                    <div className="text-center py-8">Loading options...</div>
+                  ) : (
+                    <>
+                      {/* BCYS Basic Info */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Batch Dropdown */}
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">
+                            Batch *
+                          </label>
+                          <select
+                            value={modalState.formData.batchId}
+                            onChange={(e) =>
+                              setModalState((prev) => ({
+                                ...prev,
+                                formData: {
+                                  ...prev.formData,
+                                  batchId: e.target.value,
+                                },
+                              }))
+                            }
+                            className="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            required
+                          >
+                            <option value="">Select Batch</option>
+                            {lookupData?.batches?.map((batch: any) => (
+                              <option key={batch.id} value={batch.id}>
+                                {batch.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Class Year Dropdown */}
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">
+                            Class Year *
+                          </label>
+                          <select
+                            value={modalState.formData.classYearId}
+                            onChange={(e) =>
+                              setModalState((prev) => ({
+                                ...prev,
+                                formData: {
+                                  ...prev.formData,
+                                  classYearId: e.target.value,
+                                },
+                              }))
+                            }
+                            className="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            required
+                          >
+                            <option value="">Select Class Year</option>
+                            {lookupData?.classYears?.map((year: any) => (
+                              <option key={year.id} value={year.id}>
+                                {year.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Semester Dropdown */}
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">
+                            Semester *
+                          </label>
+                          <select
+                            value={modalState.formData.semesterId}
+                            onChange={(e) =>
+                              setModalState((prev) => ({
+                                ...prev,
+                                formData: {
+                                  ...prev.formData,
+                                  semesterId: e.target.value,
+                                },
+                              }))
+                            }
+                            className="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            required
+                          >
+                            <option value="">Select Semester</option>
+                            {lookupData?.semesters?.map((sem: any) => (
+                              <option key={sem.id} value={sem.id}>
+                                {sem.name}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                       </div>
 
-                      {/* Dates Section - Simplified Display */}
-                      <div className="p-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {/* Class Dates */}
-                          <div className="space-y-3">
-                            <h5 className="font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                              <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
-                              Class Dates
-                            </h5>
-                            
-                            {/* Gregorian Dates */}
-                            <div className="space-y-1">
-                              <div className="text-sm text-gray-500 dark:text-gray-400">Gregorian Calendar</div>
-                              {dept.classStartGC && dept.classEndGC ? (
-                                <div className="font-medium">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-gray-600 dark:text-gray-400">From:</span>
-                                    <span className="font-mono">{dept.classStartGC} G.C.</span>
-                                  </div>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-gray-600 dark:text-gray-400">To:</span>
-                                    <span className="font-mono">{dept.classEndGC} G.C.</span>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="text-gray-400 dark:text-gray-500 italic text-sm">
-                                  No Gregorian dates set
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Ethiopian Dates */}
-                            <div className="space-y-1">
-                              <div className="text-sm text-gray-500 dark:text-gray-400">Ethiopian Calendar</div>
-                              {dept.classStartEC && dept.classEndEC ? (
-                                <div className="font-medium">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-gray-600 dark:text-gray-400">From:</span>
-                                    <span className="font-mono">{dept.classStartEC} E.C.</span>
-                                  </div>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-gray-600 dark:text-gray-400">To:</span>
-                                    <span className="font-mono">{dept.classEndEC} E.C.</span>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="text-gray-400 dark:text-gray-500 italic text-sm">
-                                  No Ethiopian dates set
-                                </div>
-                              )}
-                            </div>
+                      {/* Departments Section */}
+                      <div className="border-t pt-6">
+                        <div className="flex justify-between items-center mb-4">
+                          <div>
+                            <h4 className="text-lg font-semibold">
+                              Departments
+                            </h4>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              Manage departments, academic years, and class
+                              dates
+                            </p>
                           </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              addDepartment();
+                              // Scroll to the newly added department after a brief delay
+                              setTimeout(() => {
+                                const departmentsContainer =
+                                  document.querySelector(
+                                    ".departments-container",
+                                  );
+                                if (departmentsContainer) {
+                                  departmentsContainer.scrollTop =
+                                    departmentsContainer.scrollHeight;
+                                }
+                              }, 100);
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition"
+                          >
+                            <span>+</span>
+                            <span>Add Department to BCYS</span>
+                          </button>
+                        </div>
 
-                          {/* Summary & Status */}
-                          <div className="space-y-3">
-                            <h5 className="font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                              <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                              Status
-                            </h5>
-                            
-                            {/* Date Status Indicators */}
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2">
-                                <div className={`w-3 h-3 rounded-full ${dept.classStartGC && dept.classEndGC ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
-                                <span className="text-sm">Gregorian Dates: {dept.classStartGC && dept.classEndGC ? '✓ Set' : '✗ Not Set'}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className={`w-3 h-3 rounded-full ${dept.classStartEC && dept.classEndEC ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
-                                <span className="text-sm">Ethiopian Dates: {dept.classStartEC && dept.classEndEC ? '✓ Set' : '✗ Not Set'}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className={`w-3 h-3 rounded-full ${dept.entryYearId ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
-                                <span className="text-sm">Academic Year: {dept.entryYearId ? '✓ Set' : '✗ Not Set'}</span>
-                              </div>
+                        {modalState.formData.departments.length === 0 ? (
+                          <div className="text-center py-8 text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                            <div className="text-lg mb-2">
+                              No departments added yet
                             </div>
+                            <p className="text-sm">
+                              Click "Add Department to BCYS" to associate
+                              departments with this BCYS
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="departments-container space-y-4 max-h-[400px] overflow-y-auto pr-2">
+                            {modalState.formData.departments.map(
+                              (dept, index) => (
+                                <div
+                                  key={index}
+                                  className={`border rounded-lg p-4 transition-all duration-200 ${
+                                    dept.markedForRemoval
+                                      ? "border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20"
+                                      : "border-gray-200 dark:border-gray-700"
+                                  }`}
+                                  ref={(el) => {
+                                    // Auto-scroll to newly added department
+                                    if (
+                                      el &&
+                                      dept.isNew &&
+                                      !dept._hasScrolled
+                                    ) {
+                                      el.scrollIntoView({
+                                        behavior: "smooth",
+                                        block: "nearest",
+                                      });
+                                      // Mark as scrolled
+                                      updateDepartmentField(
+                                        index,
+                                        "_hasScrolled",
+                                        "true",
+                                      );
+                                    }
+                                  }}
+                                >
+                                  <div className="flex justify-between items-start mb-4">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2 mb-2">
+                                        <div
+                                          className={`w-3 h-3 rounded-full ${dept.markedForRemoval ? "bg-red-500" : "bg-green-500"}`}
+                                        ></div>
+                                        <span className="font-medium">
+                                          Department {index + 1}
+                                          {dept.isNew && (
+                                            <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded">
+                                              New
+                                            </span>
+                                          )}
+                                          {dept.markedForRemoval && (
+                                            <span className="ml-2 text-xs bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 px-2 py-0.5 rounded">
+                                              Marked for Removal
+                                            </span>
+                                          )}
+                                        </span>
+                                      </div>
 
-                            {/* Missing Dates Warning */}
-                            {(!dept.classStartGC || !dept.classEndGC || !dept.classStartEC || !dept.classEndEC) && (
-                              <div className="mt-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded text-sm text-yellow-700 dark:text-yellow-300">
-                                <span className="font-medium">⚠</span> Some dates are missing. Consider adding them in Edit mode.
-                              </div>
+                                      {/* Department Dropdown - Always enabled for new departments */}
+                                      <select
+                                        value={dept.departmentId}
+                                        onChange={(e) => {
+                                          const selectedDept =
+                                            lookupData?.departments?.find(
+                                              (d: any) =>
+                                                d.id === Number(e.target.value),
+                                            );
+                                          updateDepartmentField(
+                                            index,
+                                            "departmentId",
+                                            e.target.value,
+                                          );
+                                          updateDepartmentField(
+                                            index,
+                                            "departmentName",
+                                            selectedDept?.name || "",
+                                          );
+                                        }}
+                                        className={`w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                                          dept.markedForRemoval
+                                            ? "opacity-50 cursor-not-allowed"
+                                            : ""
+                                        }`}
+                                        disabled={
+                                          dept.markedForRemoval || !dept.isNew
+                                        }
+                                      >
+                                        <option value="">
+                                          Select Department *
+                                        </option>
+                                        {lookupData?.departments?.map(
+                                          (department: any) => (
+                                            <option
+                                              key={department.id}
+                                              value={department.id}
+                                              disabled={modalState.formData.departments.some(
+                                                (d, i) =>
+                                                  i !== index &&
+                                                  d.departmentId ===
+                                                    department.id &&
+                                                  !d.markedForRemoval,
+                                              )}
+                                            >
+                                              {department.name}
+                                              {department.programModalityId &&
+                                                ` (${department.programModalityId})`}
+                                              {modalState.formData.departments.some(
+                                                (d, i) =>
+                                                  i !== index &&
+                                                  d.departmentId ===
+                                                    department.id &&
+                                                  !d.markedForRemoval,
+                                              ) && " - Already added"}
+                                            </option>
+                                          ),
+                                        )}
+                                      </select>
+
+                                      {dept.departmentName &&
+                                        !dept.markedForRemoval && (
+                                          <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                                            Selected:{" "}
+                                            <span className="font-medium">
+                                              {dept.departmentName}
+                                            </span>
+                                          </div>
+                                        )}
+                                    </div>
+
+                                    {/* Action Buttons */}
+                                    <div className="ml-4 flex flex-col gap-2">
+                                      {!dept.markedForRemoval ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            if (
+                                              window.confirm(
+                                                dept.isNew
+                                                  ? "Remove this new department?"
+                                                  : "Mark this department for removal?",
+                                              )
+                                            ) {
+                                              removeDepartment(index);
+                                            }
+                                          }}
+                                          className="px-3 py-1.5 bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 rounded text-sm hover:bg-red-200 dark:hover:bg-red-800 transition"
+                                        >
+                                          {dept.isNew
+                                            ? "Remove"
+                                            : "Mark for Removal"}
+                                        </button>
+                                      ) : (
+                                        <div className="text-center">
+                                          <div className="text-xs text-red-600 dark:text-red-400 mb-1">
+                                            Will be removed
+                                          </div>
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              updateDepartmentField(
+                                                index,
+                                                "markedForRemoval",
+                                                "false",
+                                              )
+                                            }
+                                            className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded text-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition"
+                                          >
+                                            Undo
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {!dept.markedForRemoval && (
+                                    <div className="space-y-4">
+                                      {/* Entry Year */}
+                                      <div>
+                                        <label className="block text-sm font-medium mb-1">
+                                          Academic/Entry Year *
+                                        </label>
+                                        <select
+                                          value={dept.entryYearId}
+                                          onChange={(e) =>
+                                            updateDepartmentField(
+                                              index,
+                                              "entryYearId",
+                                              e.target.value,
+                                            )
+                                          }
+                                          className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                          required
+                                        >
+                                          <option value="">
+                                            Select Entry Year
+                                          </option>
+                                          {lookupData?.academicYears?.map(
+                                            (year: any) => (
+                                              <option
+                                                key={year.id}
+                                                value={year.id}
+                                              >
+                                                {year.name + " G.C. "}
+                                              </option>
+                                            ),
+                                          )}
+                                        </select>
+                                      </div>
+
+                                      {/* Dates Section */}
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                          <label className="block text-sm font-medium mb-1">
+                                            Class Start (G.C.)
+                                          </label>
+                                          <input
+                                            type="date"
+                                            value={dept.classStartGC}
+                                            onChange={(e) =>
+                                              updateDepartmentField(
+                                                index,
+                                                "classStartGC",
+                                                e.target.value,
+                                              )
+                                            }
+                                            className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="block text-sm font-medium mb-1">
+                                            Class Start (E.C.)
+                                          </label>
+                                          <input
+                                            type="text"
+                                            value={dept.classStartEC}
+                                            onChange={(e) =>
+                                              updateDepartmentField(
+                                                index,
+                                                "classStartEC",
+                                                e.target.value,
+                                              )
+                                            }
+                                            placeholder="DD-MM-YYYY"
+                                            className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="block text-sm font-medium mb-1">
+                                            Class End (G.C.)
+                                          </label>
+                                          <input
+                                            type="date"
+                                            value={dept.classEndGC}
+                                            onChange={(e) =>
+                                              updateDepartmentField(
+                                                index,
+                                                "classEndGC",
+                                                e.target.value,
+                                              )
+                                            }
+                                            className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="block text-sm font-medium mb-1">
+                                            Class End (E.C.)
+                                          </label>
+                                          <input
+                                            type="text"
+                                            value={dept.classEndEC}
+                                            onChange={(e) =>
+                                              updateDepartmentField(
+                                                index,
+                                                "classEndEC",
+                                                e.target.value,
+                                              )
+                                            }
+                                            placeholder="DD-MM-YYYY"
+                                            className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                          />
+                                        </div>
+                                      </div>
+
+                                      {/* Date Format Help */}
+                                      <div className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 p-2 rounded">
+                                        <div className="flex items-center gap-2">
+                                          <span>💡</span>
+                                          <span>
+                                            Format: G.C. = YYYY-MM-DD, E.C. =
+                                            DD-MM-YYYY
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              ),
                             )}
                           </div>
-                        </div>
+                        )}
+
+                        {/* Departments Summary */}
+                        {modalState.formData.departments.length > 0 && (
+                          <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                            <div className="flex items-center justify-between text-sm">
+                              <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-1">
+                                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                                  <span>
+                                    Active:{" "}
+                                    {
+                                      modalState.formData.departments.filter(
+                                        (d) => !d.markedForRemoval,
+                                      ).length
+                                    }
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                                  <span>
+                                    To Remove:{" "}
+                                    {
+                                      modalState.formData.departments.filter(
+                                        (d) => d.markedForRemoval,
+                                      ).length
+                                    }
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="text-gray-600 dark:text-gray-400">
+                                Total: {modalState.formData.departments.length}{" "}
+                                departments
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+
+                      {/* Action Buttons */}
+                      <div className="flex justify-end gap-3 pt-6 border-t">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (modalState.mode === "edit") {
+                              setModalState((prev) => ({
+                                ...prev,
+                                mode: "view",
+                              }));
+                            } else {
+                              closeModal();
+                            }
+                          }}
+                          className="px-5 py-2.5 bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 rounded-lg transition"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSave}
+                          className="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition disabled:opacity-50"
+                          disabled={loadingOptions}
+                        >
+                          {modalState.mode === "create"
+                            ? "Create BCYS"
+                            : "Save Changes"}
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
-
-            {/* Action Buttons */}
-            <div className="flex justify-end gap-3 pt-6 border-t dark:border-gray-700">
-              <button
-                onClick={openEditModal}
-                className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition"
-              >
-                <FaEdit /> Edit BCYS
-              </button>
-              <button
-  onClick={async () => {
-    if (modalState.data) {
-      const success = await handleDelete(modalState.data.id, modalState.data.name);
-      if (success) {
-        closeModal(); // Close the modal only on success
-      }
-    }
-  }}
-  className="flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition"
->
-  <FaTrash /> Delete BCYS
-</button>
-            </div>
           </div>
-        )}
-
-        {/* Edit/Create Mode */}
-        {(modalState.mode === 'edit' || modalState.mode === 'create') && (
-          <div className="space-y-6">
-            {loadingOptions ? (
-              <div className="text-center py-8">Loading options...</div>
-            ) : (
-              <>
-                {/* BCYS Basic Info */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Batch Dropdown */}
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">Batch *</label>
-                    <select
-                      value={modalState.formData.batchId}
-                      onChange={(e) => setModalState(prev => ({
-                        ...prev,
-                        formData: { ...prev.formData, batchId: e.target.value }
-                      }))}
-                      className="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      required
-                    >
-                      <option value="">Select Batch</option>
-                      {lookupData?.batches?.map((batch: any) => (
-                        <option key={batch.id} value={batch.id}>
-                          {batch.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Class Year Dropdown */}
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">Class Year *</label>
-                    <select
-                      value={modalState.formData.classYearId}
-                      onChange={(e) => setModalState(prev => ({
-                        ...prev,
-                        formData: { ...prev.formData, classYearId: e.target.value }
-                      }))}
-                      className="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      required
-                    >
-                      <option value="">Select Class Year</option>
-                      {lookupData?.classYears?.map((year: any) => (
-                        <option key={year.id} value={year.id}>
-                          {year.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Semester Dropdown */}
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">Semester *</label>
-                    <select
-                      value={modalState.formData.semesterId}
-                      onChange={(e) => setModalState(prev => ({
-                        ...prev,
-                        formData: { ...prev.formData, semesterId: e.target.value }
-                      }))}
-                      className="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      required
-                    >
-                      <option value="">Select Semester</option>
-                      {lookupData?.semesters?.map((sem: any) => (
-                        <option key={sem.id} value={sem.id}>
-                          {sem.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Departments Section */}
-                <div className="border-t pt-6">
-                  <div className="flex justify-between items-center mb-4">
-                    <div>
-                      <h4 className="text-lg font-semibold">Departments</h4>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Manage departments, academic years, and class dates
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        addDepartment();
-                        // Scroll to the newly added department after a brief delay
-                        setTimeout(() => {
-                          const departmentsContainer = document.querySelector('.departments-container');
-                          if (departmentsContainer) {
-                            departmentsContainer.scrollTop = departmentsContainer.scrollHeight;
-                          }
-                        }, 100);
-                      }}
-                      className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition"
-                    >
-                      <span>+</span>
-                      <span>Add Department to BCYS</span>
-                    </button>
-                  </div>
-
-                  {modalState.formData.departments.length === 0 ? (
-                    <div className="text-center py-8 text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                      <div className="text-lg mb-2">No departments added yet</div>
-                      <p className="text-sm">Click "Add Department to BCYS" to associate departments with this BCYS</p>
-                    </div>
-                  ) : (
-                    <div className="departments-container space-y-4 max-h-[400px] overflow-y-auto pr-2">
-                      {modalState.formData.departments.map((dept, index) => (
-                        <div 
-                          key={index} 
-                          className={`border rounded-lg p-4 transition-all duration-200 ${
-                            dept.markedForRemoval 
-                              ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20' 
-                              : 'border-gray-200 dark:border-gray-700'
-                          }`}
-                          ref={(el) => {
-                            // Auto-scroll to newly added department
-                            if (el && dept.isNew && !dept._hasScrolled) {
-                              el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                              // Mark as scrolled
-                              updateDepartmentField(index, '_hasScrolled', 'true');
-                            }
-                          }}
-                        >
-                          <div className="flex justify-between items-start mb-4">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <div className={`w-3 h-3 rounded-full ${dept.markedForRemoval ? 'bg-red-500' : 'bg-green-500'}`}></div>
-                                <span className="font-medium">
-                                  Department {index + 1}
-                                  {dept.isNew && <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded">New</span>}
-                                  {dept.markedForRemoval && <span className="ml-2 text-xs bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 px-2 py-0.5 rounded">Marked for Removal</span>}
-                                </span>
-                              </div>
-                              
-                              {/* Department Dropdown - Always enabled for new departments */}
-                              <select
-                                value={dept.departmentId}
-                                onChange={(e) => {
-                                  const selectedDept = lookupData?.departments?.find(
-                                    (d: any) => d.id === Number(e.target.value)
-                                  );
-                                  updateDepartmentField(index, 'departmentId', e.target.value);
-                                  updateDepartmentField(index, 'departmentName', selectedDept?.name || '');
-                                }}
-                                className={`w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                                  dept.markedForRemoval ? 'opacity-50 cursor-not-allowed' : ''
-                                }`}
-                                disabled={dept.markedForRemoval || !dept.isNew}
-                              >
-                                <option value="">Select Department *</option>
-                                {lookupData?.departments?.map((department: any) => (
-                                  <option 
-                                    key={department.id} 
-                                    value={department.id}
-                                    disabled={modalState.formData.departments.some(
-                                      (d, i) => i !== index && d.departmentId === department.id && !d.markedForRemoval
-                                    )}
-                                  >
-                                    {department.name} 
-                                    {department.programModalityId && ` (${department.programModalityId})`}
-                                    {modalState.formData.departments.some(
-                                      (d, i) => i !== index && d.departmentId === department.id && !d.markedForRemoval
-                                    ) && ' - Already added'}
-                                  </option>
-                                ))}
-                              </select>
-                              
-                              {dept.departmentName && !dept.markedForRemoval && (
-                                <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                                  Selected: <span className="font-medium">{dept.departmentName}</span>
-                                </div>
-                              )}
-                            </div>
-                            
-                            {/* Action Buttons */}
-                            <div className="ml-4 flex flex-col gap-2">
-                              {!dept.markedForRemoval ? (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (window.confirm(dept.isNew 
-                                      ? 'Remove this new department?' 
-                                      : 'Mark this department for removal?')) {
-                                      removeDepartment(index);
-                                    }
-                                  }}
-                                  className="px-3 py-1.5 bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 rounded text-sm hover:bg-red-200 dark:hover:bg-red-800 transition"
-                                >
-                                  {dept.isNew ? 'Remove' : 'Mark for Removal'}
-                                </button>
-                              ) : (
-                                <div className="text-center">
-                                  <div className="text-xs text-red-600 dark:text-red-400 mb-1">Will be removed</div>
-                                  <button
-                                    type="button"
-                                    onClick={() => updateDepartmentField(index, 'markedForRemoval', 'false')}
-                                    className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded text-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition"
-                                  >
-                                    Undo
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          {!dept.markedForRemoval && (
-                            <div className="space-y-4">
-                              {/* Entry Year */}
-                              <div>
-                                <label className="block text-sm font-medium mb-1">Academic/Entry Year *</label>
-                                <select
-                                  value={dept.entryYearId}
-                                  onChange={(e) => updateDepartmentField(index, 'entryYearId', e.target.value)}
-                                  className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                  required
-                                >
-                                  <option value="">Select Entry Year</option>
-                                  {lookupData?.academicYears?.map((year: any) => (
-                                    <option key={year.id} value={year.id}>
-                                      {year.name}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-
-                              {/* Dates Section */}
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                  <label className="block text-sm font-medium mb-1">Class Start (G.C.)</label>
-                                  <input
-                                    type="date"
-                                    value={dept.classStartGC}
-                                    onChange={(e) => updateDepartmentField(index, 'classStartGC', e.target.value)}
-                                    className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-medium mb-1">Class Start (E.C.)</label>
-                                  <input
-                                    type="text"
-                                    value={dept.classStartEC}
-                                    onChange={(e) => updateDepartmentField(index, 'classStartEC', e.target.value)}
-                                    placeholder="DD-MM-YYYY"
-                                    className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-medium mb-1">Class End (G.C.)</label>
-                                  <input
-                                    type="date"
-                                    value={dept.classEndGC}
-                                    onChange={(e) => updateDepartmentField(index, 'classEndGC', e.target.value)}
-                                    className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-medium mb-1">Class End (E.C.)</label>
-                                  <input
-                                    type="text"
-                                    value={dept.classEndEC}
-                                    onChange={(e) => updateDepartmentField(index, 'classEndEC', e.target.value)}
-                                    placeholder="DD-MM-YYYY"
-                                    className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                  />
-                                </div>
-                              </div>
-
-                              {/* Date Format Help */}
-                              <div className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 p-2 rounded">
-                                <div className="flex items-center gap-2">
-                                  <span>💡</span>
-                                  <span>Format: G.C. = YYYY-MM-DD, E.C. = DD-MM-YYYY</span>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Departments Summary */}
-                  {modalState.formData.departments.length > 0 && (
-                    <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center gap-1">
-                            <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                            <span>Active: {modalState.formData.departments.filter(d => !d.markedForRemoval).length}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                            <span>To Remove: {modalState.formData.departments.filter(d => d.markedForRemoval).length}</span>
-                          </div>
-                        </div>
-                        <div className="text-gray-600 dark:text-gray-400">
-                          Total: {modalState.formData.departments.length} departments
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex justify-end gap-3 pt-6 border-t">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (modalState.mode === 'edit') {
-                        setModalState(prev => ({ ...prev, mode: 'view' }));
-                      } else {
-                        closeModal();
-                      }
-                    }}
-                    className="px-5 py-2.5 bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 rounded-lg transition"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSave}
-                    className="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition disabled:opacity-50"
-                    disabled={loadingOptions}
-                  >
-                    {modalState.mode === 'create' ? 'Create BCYS' : 'Save Changes'}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  </div>
-)}
-{/*==================================================================*/}
-      
+        </div>
+      )}
+      {/*==================================================================*/}
     </div>
   );
 };
@@ -1476,7 +1754,7 @@ const SingleBCSYPage = () => {
     const fetchOne = async () => {
       try {
         const res = await apiService.get<any>(
-          `${endPoints.BatchClassYearSemesters}/${id}`
+          `${endPoints.BatchClassYearSemesters}/${id}`,
         );
         const data: BCSY = {
           id: res.bcysId ?? res.id,
@@ -1536,7 +1814,7 @@ const SingleBCSYPage = () => {
 
       const res = await apiService.put(
         `${endPoints.BatchClassYearSemesters}/${item.id}`,
-        payload
+        payload,
       );
 
       setItem({
@@ -1562,29 +1840,33 @@ const SingleBCSYPage = () => {
   const handleDelete = async (id: number) => {
     if (
       !window.confirm(
-        "Delete this BCSY combination?\n\nThis action may be restricted if students/results exist."
+        "Delete this BCSY combination?\n\nThis action may be restricted if students/results exist.",
       )
     )
       return;
-  
+
     try {
-      const res = await apiService.delete(`${endPoints.BatchClassYearSemesters}/${id}`);
-      
+      const res = await apiService.delete(
+        `${endPoints.BatchClassYearSemesters}/${id}`,
+      );
+
       // Show success toast with the response message
       toast({
         title: "Success",
         description: res.message || `BCYS deleted successfully`,
       });
-      
+
       // Remove from local state
       setData(data.filter((d) => d.id !== id));
-      
     } catch (err: any) {
       // Show error toast
       toast({
         title: "Error",
-        description: err?.response?.data?.error || err?.response?.data?.message || "Delete failed",
-        variant: "destructive"
+        description:
+          err?.response?.data?.error ||
+          err?.response?.data?.message ||
+          "Delete failed",
+        variant: "destructive",
       });
     }
   };

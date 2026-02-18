@@ -25,6 +25,8 @@ import {
   AlertCircle,
   Home,
   Camera,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -38,6 +40,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 
 export default function StudentProfile() {
   const location = useLocation();
@@ -46,8 +49,14 @@ export default function StudentProfile() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedPhotoFile, setSelectedPhotoFile] = useState<File | null>(null);
 
+  const { toast } = useToast();
+
   const [editMode, setEditMode] = useState(false);
   const [passwordForm, setPasswordForm] = useState(false);
+  // Add these new state variables for password visibility
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [studentData, setStudentData] = useState<any>({});
@@ -135,7 +144,7 @@ export default function StudentProfile() {
   };
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     setStudentData((prev: any) => ({ ...prev, [name]: value }));
@@ -188,84 +197,89 @@ export default function StudentProfile() {
 
     // Check file type
     if (!file.type.startsWith("image/")) {
-      alert("Please upload an image file");
+      toast({
+        title: "Invalid File Type",
+        description: "Please upload an image file (JPEG, PNG, etc.)",
+        variant: "destructive",
+      });
       return;
     }
 
     // Check file size (5MB limit)
     if (file.size > 5 * 1024 * 1024) {
-      alert("File size should be less than 5MB");
+      toast({
+        title: "File Too Large",
+        description: "File size should be less than 5MB",
+        variant: "destructive",
+      });
       return;
     }
 
     try {
       setUploadingPhoto(true);
-      setSelectedPhotoFile(file); // Store the file for later use
+      setSelectedPhotoFile(file);
 
       // Create FormData
       const formData = new FormData();
-
-      // Add empty data object as JSON blob
-      const emptyData = {}; // Empty object since we're only updating photo
+      const emptyData = {};
       formData.append(
         "data",
         new Blob([JSON.stringify(emptyData)], {
           type: "application/json",
-        })
+        }),
       );
-
-      // Add the photo file with correct parameter name
       formData.append("studentPhoto", file);
 
-      console.log("Uploading photo with FormData:");
-      for (let [key, value] of formData.entries()) {
-        console.log(key, value);
-      }
+      // Show uploading toast
+      toast({
+        title: "Uploading photo...",
+        description: "Please wait while we upload your image.",
+      });
 
-      // Use fetch directly to avoid issues
-      const token = localStorage.getItem("xy9a7b");
-      const response = await fetch(
-        `https://growing-crayfish-firstly.ngrok-free.app/api/students/${id}`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            // Don't set Content-Type for FormData - browser sets it automatically
-          },
-          body: formData,
-        }
+      // Use apiService.put with FormData
+      const response = await apiService.put(
+        `${endPoints.students}/${id}`,
+        formData,
       );
 
-      console.log("Photo upload response status:", response.status);
+      console.log("Photo upload successful:", response);
 
-      if (response.ok) {
-        const result = await response.json();
-        console.log("Photo upload successful:", result);
+      // Success toast
+      toast({
+        title: "Photo Updated Successfully!",
+        description: "Student profile picture has been updated.",
+        variant: "default",
+      });
 
-        // Update student data with new photo from response
-        if (result.student?.studentPhoto) {
-          setStudentData((prev: any) => ({
-            ...prev,
-            studentPhoto: result.student.studentPhoto,
-          }));
-        } else if (result.photo) {
-          setStudentData((prev: any) => ({
-            ...prev,
-            studentPhoto: result.photo,
-          }));
-        }
-
-        alert("Photo updated successfully!");
-      } else {
-        const errorText = await response.text();
-        console.error("Photo upload error response:", errorText);
-        alert(
-          `Failed to upload photo: ${response.status} ${response.statusText}`
-        );
+      // Update student data with new photo from response
+      if (response.student?.studentPhoto) {
+        setStudentData((prev: any) => ({
+          ...prev,
+          studentPhoto: response.student.studentPhoto,
+        }));
+      } else if (response.photo) {
+        setStudentData((prev: any) => ({
+          ...prev,
+          studentPhoto: response.photo,
+        }));
       }
     } catch (err: any) {
       console.error("Error uploading photo:", err);
-      alert("Failed to upload photo: " + (err.message || "Unknown error"));
+
+      let errorMessage = "Failed to upload photo";
+      if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
+      toast({
+        title: "Photo Upload Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
     } finally {
       setUploadingPhoto(false);
       if (fileInputRef.current) {
@@ -381,7 +395,7 @@ export default function StudentProfile() {
         "data",
         new Blob([JSON.stringify(payload)], {
           type: "application/json",
-        })
+        }),
       );
 
       // If there's a selected photo file, add it
@@ -390,63 +404,98 @@ export default function StudentProfile() {
         console.log("Adding photo file:", selectedPhotoFile.name);
       }
 
-      // Debug FormData
-      console.log("FormData entries:");
-      for (let [key, value] of formData.entries()) {
-        if (key === "data") {
-          console.log(key, "Blob with JSON data");
-        } else {
-          console.log(key, value);
-        }
-      }
+      // Show loading toast
+      toast({
+        title: "Updating profile...",
+        description: "Please wait while we save the changes.",
+      });
 
-      // Use fetch directly with your API base URL
-      const token = localStorage.getItem("xy9a7b");
-      const response = await fetch(
-        `https://growing-crayfish-firstly.ngrok-free.app/api/students/${id}`,
+      // Use apiService.put with FormData
+      const response = await apiService.put(
+        `${endPoints.students}/${id}`,
+        formData,
         {
-          method: "PUT",
           headers: {
-            Authorization: `Bearer ${token}`,
-            // Don't set Content-Type for FormData - browser sets it automatically
+            // Don't set Content-Type - browser will set it with boundary for FormData
           },
-          body: formData,
-        }
+        },
       );
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Server error response:", errorText);
-        let errorMessage = `HTTP ${response.status}`;
+      console.log("Update successful:", response);
 
-        try {
-          const errorJson = JSON.parse(errorText);
-          errorMessage = errorJson.error || errorJson.message || errorText;
-        } catch {
-          errorMessage = errorText;
-        }
+      // Success toast with student name
+      toast({
+        title: "Profile Updated Successfully!",
+        description: `${response.student?.firstNameENG || "Student"}'s information has been updated.`,
+        variant: "default",
+      });
 
-        throw new Error(errorMessage);
-      }
-
-      const result = await response.json();
-      console.log("Update successful:", result);
-
-      alert("Student profile updated successfully!");
       setEditMode(false);
       setSelectedPhotoFile(null);
 
       // Update local state with new data
-      if (result.student) {
-        setStudentData(result.student);
-        setOriginalData(result.student);
+      if (response.student) {
+        setStudentData(response.student);
+        setOriginalData(response.student);
       } else {
         // Refresh data from server
         fetchStudentData();
       }
     } catch (err: any) {
       console.error("Error updating profile:", err);
-      alert("Failed to update profile: " + (err.message || "Unknown error"));
+
+      // Error handling with appropriate toast messages
+      let errorMessage = "Failed to update profile";
+      let errorTitle = "Update Failed";
+
+      if (err.response) {
+        // The request was made and the server responded with a status code
+        console.error("Error response data:", err.response.data);
+        console.error("Error response status:", err.response.status);
+
+        // Extract error message from response based on your error format
+        if (err.response.data?.error) {
+          errorMessage = err.response.data.error;
+        } else if (err.response.data?.message) {
+          errorMessage = err.response.data.message;
+        } else if (typeof err.response.data === "string") {
+          errorMessage = err.response.data;
+        }
+
+        // Customize title based on status code
+        switch (err.response.status) {
+          case 400:
+            errorTitle = "Validation Error";
+            break;
+          case 404:
+            errorTitle = "Not Found";
+            break;
+          case 409:
+            errorTitle = "Duplicate Entry";
+            break;
+          case 500:
+            errorTitle = "Server Error";
+            break;
+          default:
+            errorTitle = `Error ${err.response.status}`;
+        }
+      } else if (err.request) {
+        // The request was made but no response was received
+        console.error("No response received:", err.request);
+        errorMessage = "No response from server. Please check your connection.";
+        errorTitle = "Connection Error";
+      } else {
+        // Something happened in setting up the request
+        errorMessage = err.message || "Unknown error occurred";
+        errorTitle = "Request Error";
+      }
+
+      // Show error toast
+      toast({
+        title: errorTitle,
+        description: errorMessage,
+        variant: "destructive",
+      });
     }
   };
 
@@ -458,34 +507,69 @@ export default function StudentProfile() {
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (formData.newPassword !== formData.confirmPassword) {
       setPasswordError("Passwords do not match");
+      toast({
+        title: "Password Mismatch",
+        description: "New password and confirm password do not match.",
+        variant: "destructive",
+      });
       return;
     }
+
     if (!formData.newPassword.trim()) {
       setPasswordError("New password cannot be empty");
+      toast({
+        title: "Invalid Password",
+        description: "New password cannot be empty.",
+        variant: "destructive",
+      });
       return;
     }
+
     try {
+      toast({
+        title: "Resetting password...",
+        description: "Please wait while we update the password.",
+      });
+
       await apiService.post(
         endPoints.resetStudentPassword.replace(
           ":studentUserId",
-          studentData.userId || id
+          studentData.userId || id,
         ),
         {
           newPassword: formData.newPassword,
-        }
+        },
       );
-      alert("Student password reset successfully");
+
+      toast({
+        title: "Password Reset Successful",
+        description: "Student password has been updated successfully.",
+        variant: "default",
+      });
+
       setPasswordForm(false);
       setFormData({ newPassword: "", confirmPassword: "" });
       setPasswordError("");
     } catch (err: any) {
       console.error("Error resetting password:", err);
-      const errorMessage =
-        err.response?.data?.message || "Failed to reset password";
+
+      let errorMessage = "Failed to reset password";
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      }
+
       setPasswordError(errorMessage);
-      alert(errorMessage);
+
+      toast({
+        title: "Password Reset Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
     }
   };
 
@@ -511,7 +595,7 @@ export default function StudentProfile() {
           // Convert DD-MM-YYYY to YYYY-MM-DD
           return `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(
             2,
-            "0"
+            "0",
           )}`;
         }
       }
@@ -540,7 +624,7 @@ export default function StudentProfile() {
     list: any[],
     value: any,
     valueKey: string,
-    displayKey: string
+    displayKey: string,
   ) => {
     if (!Array.isArray(list) || !value) return "";
     const item = list.find(
@@ -549,7 +633,7 @@ export default function StudentProfile() {
         (item[valueKey] == value ||
           item.id == value ||
           item.code == value ||
-          String(item[valueKey]) === String(value))
+          String(item[valueKey]) === String(value)),
     );
     return item?.[displayKey] || "";
   };
@@ -558,7 +642,7 @@ export default function StudentProfile() {
   const getValidSelectItems = (arr: any[], valueKey: string): any[] => {
     if (!Array.isArray(arr)) return [];
     return arr.filter(
-      (item) => item != null && item[valueKey] != null && item[valueKey] !== ""
+      (item) => item != null && item[valueKey] != null && item[valueKey] !== "",
     );
   };
 
@@ -584,16 +668,16 @@ export default function StudentProfile() {
 
   // Get filtered zones and woredas for both place of birth and current address
   const filteredPlaceOfBirthZones = getFilteredZones(
-    studentData.placeOfBirthRegionCode
+    studentData.placeOfBirthRegionCode,
   );
   const filteredPlaceOfBirthWoredas = getFilteredWoredas(
-    studentData.placeOfBirthZoneCode
+    studentData.placeOfBirthZoneCode,
   );
   const filteredCurrentAddressZones = getFilteredZones(
-    studentData.currentAddressRegionCode
+    studentData.currentAddressRegionCode,
   );
   const filteredCurrentAddressWoredas = getFilteredWoredas(
-    studentData.currentAddressZoneCode
+    studentData.currentAddressZoneCode,
   );
 
   return (
@@ -693,7 +777,7 @@ export default function StudentProfile() {
                   ],
                   studentData.programModalityCode,
                   "modalityCode",
-                  "modality"
+                  "modality",
                 )}
               </Badge>
               {studentData.isTransfer && (
@@ -752,12 +836,12 @@ export default function StudentProfile() {
               {editMode ? (
                 <Select
                   value={getSafeSelectValue(
-                    studentData.batchClassYearSemesterId
+                    studentData.batchClassYearSemesterId,
                   )}
                   onValueChange={(v) =>
                     handleSelectChange(
                       "batchClassYearSemesterId",
-                      v === "_none" ? null : v ? parseInt(v) : null
+                      v === "_none" ? null : v ? parseInt(v) : null,
                     )
                   }
                 >
@@ -789,7 +873,7 @@ export default function StudentProfile() {
                   onValueChange={(v) =>
                     handleSelectChange(
                       "studentRecentStatusId",
-                      v === "_none" ? null : v ? parseInt(v) : null
+                      v === "_none" ? null : v ? parseInt(v) : null,
                     )
                   }
                 >
@@ -932,7 +1016,7 @@ export default function StudentProfile() {
                     onValueChange={(v) =>
                       handleSelectChange(
                         "maritalStatus",
-                        v === "_none" ? null : v
+                        v === "_none" ? null : v,
                       )
                     }
                   >
@@ -1002,7 +1086,7 @@ export default function StudentProfile() {
                     onValueChange={(v) =>
                       handleSelectChange(
                         "impairmentCode",
-                        v === "_none" ? null : v
+                        v === "_none" ? null : v,
                       )
                     }
                   >
@@ -1013,7 +1097,7 @@ export default function StudentProfile() {
                               impairments,
                               studentData.impairmentCode,
                               "disabilityCode",
-                              "disability"
+                              "disability",
                             )
                           : "Select impairment"}
                       </SelectValue>
@@ -1028,7 +1112,7 @@ export default function StudentProfile() {
                           >
                             {i.disability || `Impairment ${i.disabilityCode}`}
                           </SelectItem>
-                        )
+                        ),
                       )}
                     </SelectContent>
                   </Select>
@@ -1038,7 +1122,7 @@ export default function StudentProfile() {
                       impairments,
                       studentData.impairmentCode,
                       "disabilityCode",
-                      "disability"
+                      "disability",
                     ) || "None"}
                   </div>
                 )}
@@ -1059,12 +1143,12 @@ export default function StudentProfile() {
                 {editMode ? (
                   <Select
                     value={getSafeSelectValue(
-                      studentData.placeOfBirthRegionCode
+                      studentData.placeOfBirthRegionCode,
                     )}
                     onValueChange={(v) =>
                       handleSelectChange(
                         "placeOfBirthRegionCode",
-                        v === "_none" ? null : v
+                        v === "_none" ? null : v,
                       )
                     }
                   >
@@ -1075,7 +1159,7 @@ export default function StudentProfile() {
                               regions,
                               studentData.placeOfBirthRegionCode,
                               "regionCode",
-                              "region"
+                              "region",
                             )
                           : "Select region"}
                       </SelectValue>
@@ -1098,7 +1182,7 @@ export default function StudentProfile() {
                       regions,
                       studentData.placeOfBirthRegionCode,
                       "regionCode",
-                      "region"
+                      "region",
                     ) || "N/A"}
                   </div>
                 )}
@@ -1112,7 +1196,7 @@ export default function StudentProfile() {
                     onValueChange={(v) =>
                       handleSelectChange(
                         "placeOfBirthZoneCode",
-                        v === "_none" ? null : v
+                        v === "_none" ? null : v,
                       )
                     }
                     disabled={!studentData.placeOfBirthRegionCode}
@@ -1124,7 +1208,7 @@ export default function StudentProfile() {
                               zones,
                               studentData.placeOfBirthZoneCode,
                               "zoneCode",
-                              "zone"
+                              "zone",
                             )
                           : "Select zone"}
                       </SelectValue>
@@ -1144,7 +1228,7 @@ export default function StudentProfile() {
                       zones,
                       studentData.placeOfBirthZoneCode,
                       "zoneCode",
-                      "zone"
+                      "zone",
                     ) || "N/A"}
                   </div>
                 )}
@@ -1155,12 +1239,12 @@ export default function StudentProfile() {
                 {editMode ? (
                   <Select
                     value={getSafeSelectValue(
-                      studentData.placeOfBirthWoredaCode
+                      studentData.placeOfBirthWoredaCode,
                     )}
                     onValueChange={(v) =>
                       handleSelectChange(
                         "placeOfBirthWoredaCode",
-                        v === "_none" ? null : v
+                        v === "_none" ? null : v,
                       )
                     }
                     disabled={!studentData.placeOfBirthZoneCode}
@@ -1172,7 +1256,7 @@ export default function StudentProfile() {
                               woredas,
                               studentData.placeOfBirthWoredaCode,
                               "woredaCode",
-                              "woreda"
+                              "woreda",
                             )
                           : "Select woreda"}
                       </SelectValue>
@@ -1195,7 +1279,7 @@ export default function StudentProfile() {
                       woredas,
                       studentData.placeOfBirthWoredaCode,
                       "woredaCode",
-                      "woreda"
+                      "woreda",
                     ) || "N/A"}
                   </div>
                 )}
@@ -1216,12 +1300,12 @@ export default function StudentProfile() {
                 {editMode ? (
                   <Select
                     value={getSafeSelectValue(
-                      studentData.currentAddressRegionCode
+                      studentData.currentAddressRegionCode,
                     )}
                     onValueChange={(v) =>
                       handleSelectChange(
                         "currentAddressRegionCode",
-                        v === "_none" ? null : v
+                        v === "_none" ? null : v,
                       )
                     }
                   >
@@ -1232,7 +1316,7 @@ export default function StudentProfile() {
                               regions,
                               studentData.currentAddressRegionCode,
                               "regionCode",
-                              "region"
+                              "region",
                             )
                           : "Select region"}
                       </SelectValue>
@@ -1255,7 +1339,7 @@ export default function StudentProfile() {
                       regions,
                       studentData.currentAddressRegionCode,
                       "regionCode",
-                      "region"
+                      "region",
                     ) || "N/A"}
                   </div>
                 )}
@@ -1266,12 +1350,12 @@ export default function StudentProfile() {
                 {editMode ? (
                   <Select
                     value={getSafeSelectValue(
-                      studentData.currentAddressZoneCode
+                      studentData.currentAddressZoneCode,
                     )}
                     onValueChange={(v) =>
                       handleSelectChange(
                         "currentAddressZoneCode",
-                        v === "_none" ? null : v
+                        v === "_none" ? null : v,
                       )
                     }
                     disabled={!studentData.currentAddressRegionCode}
@@ -1283,7 +1367,7 @@ export default function StudentProfile() {
                               zones,
                               studentData.currentAddressZoneCode,
                               "zoneCode",
-                              "zone"
+                              "zone",
                             )
                           : "Select zone"}
                       </SelectValue>
@@ -1303,7 +1387,7 @@ export default function StudentProfile() {
                       zones,
                       studentData.currentAddressZoneCode,
                       "zoneCode",
-                      "zone"
+                      "zone",
                     ) || "N/A"}
                   </div>
                 )}
@@ -1314,12 +1398,12 @@ export default function StudentProfile() {
                 {editMode ? (
                   <Select
                     value={getSafeSelectValue(
-                      studentData.currentAddressWoredaCode
+                      studentData.currentAddressWoredaCode,
                     )}
                     onValueChange={(v) =>
                       handleSelectChange(
                         "currentAddressWoredaCode",
-                        v === "_none" ? null : v
+                        v === "_none" ? null : v,
                       )
                     }
                     disabled={!studentData.currentAddressZoneCode}
@@ -1331,7 +1415,7 @@ export default function StudentProfile() {
                               woredas,
                               studentData.currentAddressWoredaCode,
                               "woredaCode",
-                              "woreda"
+                              "woreda",
                             )
                           : "Select woreda"}
                       </SelectValue>
@@ -1354,7 +1438,7 @@ export default function StudentProfile() {
                       woredas,
                       studentData.currentAddressWoredaCode,
                       "woredaCode",
-                      "woreda"
+                      "woreda",
                     ) || "N/A"}
                   </div>
                 )}
@@ -1378,7 +1462,7 @@ export default function StudentProfile() {
                     onValueChange={(v) =>
                       handleSelectChange(
                         "departmentEnrolledId",
-                        v === "_none" ? null : v ? parseInt(v, 10) : null
+                        v === "_none" ? null : v ? parseInt(v, 10) : null,
                       )
                     }
                   >
@@ -1389,7 +1473,7 @@ export default function StudentProfile() {
                               departments,
                               studentData.departmentEnrolledId,
                               "dptID",
-                              "deptName"
+                              "deptName",
                             )
                           : "Select department"}
                       </SelectValue>
@@ -1409,7 +1493,7 @@ export default function StudentProfile() {
                       departments,
                       studentData.departmentEnrolledId,
                       "dptID",
-                      "deptName"
+                      "deptName",
                     ) || "N/A"}
                   </div>
                 )}
@@ -1423,7 +1507,7 @@ export default function StudentProfile() {
                     onValueChange={(v) =>
                       handleSelectChange(
                         "schoolBackgroundId",
-                        v === "_none" ? null : v ? parseInt(v) : null
+                        v === "_none" ? null : v ? parseInt(v) : null,
                       )
                     }
                   >
@@ -1434,7 +1518,7 @@ export default function StudentProfile() {
                               schoolBackgrounds,
                               studentData.schoolBackgroundId,
                               "id",
-                              "background"
+                              "background",
                             )
                           : "Select school background"}
                       </SelectValue>
@@ -1448,7 +1532,7 @@ export default function StudentProfile() {
                           <SelectItem key={sb.id} value={String(sb.id)}>
                             {sb.background || `Background ${sb.id}`}
                           </SelectItem>
-                        )
+                        ),
                       )}
                     </SelectContent>
                   </Select>
@@ -1458,7 +1542,7 @@ export default function StudentProfile() {
                       schoolBackgrounds,
                       studentData.schoolBackgroundId,
                       "id",
-                      "background"
+                      "background",
                     ) || "N/A"}
                   </div>
                 )}
@@ -1472,7 +1556,7 @@ export default function StudentProfile() {
                     onValueChange={(v) =>
                       handleSelectChange(
                         "programModalityCode",
-                        v === "_none" ? null : v
+                        v === "_none" ? null : v,
                       )
                     }
                   >
@@ -1491,7 +1575,7 @@ export default function StudentProfile() {
                               ],
                               studentData.programModalityCode,
                               "modalityCode",
-                              "modality"
+                              "modality",
                             )
                           : "Select modality"}
                       </SelectValue>
@@ -1514,7 +1598,7 @@ export default function StudentProfile() {
                       ],
                       studentData.programModalityCode,
                       "modalityCode",
-                      "modality"
+                      "modality",
                     ) || "Unknown"}
                   </div>
                 )}
@@ -1661,7 +1745,8 @@ export default function StudentProfile() {
                   <Card>
                     <CardHeader>
                       <CardTitle>
-                        <Shield className="inline mr-2" /> Change Password
+                        <Shield className="inline mr-2" /> Change Student's
+                        Password
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -1669,27 +1754,62 @@ export default function StudentProfile() {
                         onSubmit={handlePasswordSubmit}
                         className="space-y-4"
                       >
-                        <Input
-                          type="password"
-                          placeholder="New Password"
-                          name="newPassword"
-                          value={formData.newPassword}
-                          onChange={handlePasswordChange}
-                          required
-                        />
-                        <Input
-                          type="password"
-                          placeholder="Confirm Password"
-                          name="confirmPassword"
-                          value={formData.confirmPassword}
-                          onChange={handlePasswordChange}
-                          required
-                        />
+                        {/* New Password Field with Eye Button */}
+                        <div className="relative">
+                          <Input
+                            type={showNewPassword ? "text" : "password"}
+                            placeholder="New Password"
+                            name="newPassword"
+                            value={formData.newPassword}
+                            onChange={handlePasswordChange}
+                            required
+                            className="pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowNewPassword(!showNewPassword)}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                          >
+                            {showNewPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+
+                        {/* Confirm Password Field with Eye Button */}
+                        <div className="relative">
+                          <Input
+                            type={showConfirmPassword ? "text" : "password"}
+                            placeholder="Confirm Password"
+                            name="confirmPassword"
+                            value={formData.confirmPassword}
+                            onChange={handlePasswordChange}
+                            required
+                            className="pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setShowConfirmPassword(!showConfirmPassword)
+                            }
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                          >
+                            {showConfirmPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+
                         {passwordError && (
                           <div className="text-red-600 text-sm">
                             {passwordError}
                           </div>
                         )}
+
                         <Button type="submit" className="w-full">
                           Update Password
                         </Button>
