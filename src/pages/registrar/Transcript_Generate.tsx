@@ -419,210 +419,244 @@ const handleGenerateTranscripts = async () => {
   }
 };
 
-  // ========== STUDENT COPY PDF GENERATION ==========
-  const exportStudentCopyToPDF = () => {
-    if (realReports.length === 0) {
-      alert("No data to export. Generate first.");
-      return;
+// ========== STUDENT COPY PDF GENERATION (optimized for half page, multiple students per page) ==========
+const exportStudentCopyToPDF = () => {
+  if (realReports.length === 0) {
+    alert("No data to export. Generate first.");
+    return;
+  }
+
+  const doc = new jsPDF("l", "mm", "a4"); // Landscape
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 8;
+  
+  // Calculate height for each student (half page)
+  const studentHeight = (pageHeight - 20) / 2; // Leave space for divider
+
+  realReports.forEach((report, index) => {
+    // Start new page for every 2 students (on even indices after the first)
+    if (index % 2 === 0 && index > 0) {
+      doc.addPage();
     }
 
-    const doc = new jsPDF("l", "mm", "a4"); // Landscape
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 8;
+    // Calculate y position based on whether it's first or second student on page
+    // For index 0: y = margin (top)
+    // For index 1: y = margin + studentHeight + 5 (bottom half)
+    // For index 2: new page starts, y = margin (top)
+    // For index 3: y = margin + studentHeight + 5 (bottom half)
+    let y = margin;
+    if (index % 2 === 1) {
+      y = margin + studentHeight + 5;
+    }
 
-    realReports.forEach((report, index) => {
-      if (index > 0) doc.addPage();
+    // Draw divider line between students (only for second student on page)
+    if (index % 2 === 1) {
+      doc.setDrawColor(150, 150, 150);
+      doc.setLineWidth(0.5);
+      doc.setLineDashPattern([3, 3], 0); // Dashed line
+      doc.line(margin, y - 8, pageWidth - margin, y - 8);
+      doc.setLineDashPattern([], 0); // Reset to solid line
+    }
 
-      let y = margin;
+    // Golden Yellow Header Band (smaller height for half page)
+    doc.setFillColor(255, 215, 0); // Golden yellow
+    doc.rect(0, y - 8, pageWidth, 18, "F");
 
-      // Golden Yellow Header Band (exactly like image)
-      doc.setFillColor(255, 215, 0); // Golden yellow
-      doc.rect(0, 0, pageWidth, 32, "F");
+    // Logo (smaller)
+    try {
+      doc.addImage(LOGO_BASE64, "PNG", margin + 5, y - 6, 14, 14);
+    } catch (e) {
+      console.warn("Logo failed to load in PDF", e);
+    }
 
-      // Logo
-      try {
-        doc.addImage(LOGO_BASE64, "PNG", margin + 5, 3, 26, 26);
-      } catch (e) {
-        console.warn("Logo failed to load in PDF", e);
-      }
+    doc.setFontSize(10); // Reduced from 12
+    doc.setTextColor(0, 0, 0);
+    doc.setFont("helvetica", "bold");
+    doc.text("MD1_[PC_I]", pageWidth / 2, y - 3, { align: "center" });
 
-      doc.setFontSize(16);
-      doc.setTextColor(0, 0, 0);
+    doc.setFontSize(7); // Reduced from 8
+    doc.setFont("helvetica", "normal");
+    doc.text("DEUTSCHE HOCHSCHULE FÜR MEDIZIN MEDICAL COLLEGE", pageWidth / 2, y + 1, { align: "center" });
+
+    y += 8;
+
+    // Title
+    doc.setFontSize(9); // Reduced from 10
+    doc.setFont("helvetica", "bold");
+    doc.text("STUDENT ACADEMIC RECORD", pageWidth / 2, y, { align: "center" });
+    y += 4; // Reduced from 5
+
+    // Student Info Table (smaller fonts and padding)
+    autoTable(doc, {
+      startY: y,
+      body: [
+        ["ID Number", report.idNumber || "", "Date Of Admission", report.dateEnrolledGC || ""],
+        ["Name of Student", report.fullName || "", "Enrolment Type", report.programModality?.name || "Regular"],
+        ["Sex", report.gender || "", "Department", report.department?.name || ""],
+        ["Program", report.programLevel?.name || "Degree", "Field of Study", report.department?.name || ""],
+        ["Date Of Birth", report.birthDateGC || "", "Date Issued", report.dateIssuedGC || ""],
+      ],
+      theme: "grid",
+      styles: { fontSize: 6, cellPadding: 1.2, lineWidth: 0.1, textColor: [0, 0, 0] }, // Reduced from 7, 1.5
+      columnStyles: {
+        0: { fontStyle: "bold", cellWidth: 35, fillColor: [255, 255, 200] }, // Reduced from 40
+        1: { cellWidth: 50 }, // Reduced from 55
+        2: { fontStyle: "bold", cellWidth: 35, fillColor: [255, 255, 200] }, // Reduced from 40
+        3: { cellWidth: 50 }, // Reduced from 55
+      },
+      margin: { left: margin, right: margin },
+    });
+
+    y = (doc as any).lastAutoTable.finalY + 3; // Reduced from 4
+
+    const copy = report.studentCopies[0];
+    if (copy) {
+      // Helper function to safely get academic year string
+      const getAcademicYearString = (academicYear: any): string => {
+        if (!academicYear) return "2023/24G.C/2016ec";
+        if (typeof academicYear === 'string') return academicYear;
+        if (typeof academicYear === 'object') {
+          return academicYear.yearCode || academicYear.yearGC || "2023/24G.C/2016ec";
+        }
+        return "2023/24G.C/2016ec";
+      };
+
+      const academicYearStr = getAcademicYearString(copy.academicYear);
+      
+      // Academic Year (smaller font)
+      doc.setFontSize(7); // Reduced from 8
       doc.setFont("helvetica", "bold");
-      doc.text("MD1_[PC_I]", pageWidth / 2, 13, { align: "center" });
+      doc.text(
+        `Academic Year: ${academicYearStr}   Class Year: ${copy.classyear?.name || "II"}   Semester: ${copy.semester?.name || "I"}   MRT_121`,
+        margin,
+        y
+      );
+      y += 3; // Reduced from 4
 
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.text("DEUTSCHE HOCHSCHULE FÜR MEDIZIN MEDICAL COLLEGE", pageWidth / 2, 22, { align: "center" });
+      // Courses Table (smaller fonts and padding)
+      const coursesData = copy.courses.map((c) => [
+        c.courseTitle || "",
+        c.courseCode || "",
+        c.totalCrHrs?.toFixed(2) || "0.00",
+        c.letterGrade || "",
+        c.gradePoint?.toFixed(2) || "0.00",
+      ]);
 
-      y = 38;
-
-      // Title
-      doc.setFontSize(14);
-      doc.setFont("helvetica", "bold");
-      doc.text("STUDENT ACADEMIC RECORD", pageWidth / 2, y, { align: "center" });
-      y += 8;
-
-      // Student Info Table
       autoTable(doc, {
         startY: y,
-        body: [
-          ["ID Number", report.idNumber || "", "Date Of Admission", report.dateEnrolledGC || ""],
-          ["Name of Student", report.fullName || "", "Enrolment Type", report.programModality?.name || "Regular"],
-          ["Sex", report.gender || "", "Department", report.department?.name || ""],
-          ["Program", report.programLevel?.name || "Degree", "Field of Study", report.department?.name || ""],
-          ["Date Of Birth", report.birthDateGC || "", "Date Issued", report.dateIssuedGC || ""],
-        ],
+        head: [["Course Title", "Course Code", "Cr.Hr.", "Letter Grade", "Gr.Point"]],
+        body: coursesData,
         theme: "grid",
-        styles: { fontSize: 9, cellPadding: 2.5, lineWidth: 0.2, textColor: [0, 0, 0] },
+        styles: { fontSize: 5, cellPadding: 1, lineWidth: 0.1, textColor: [0, 0, 0] }, // Reduced from 6, 1.5
+        headStyles: {
+          fillColor: [100, 149, 237],
+          textColor: [255, 255, 255],
+          fontStyle: "bold",
+          halign: "center",
+          fontSize: 6, // Reduced from 7
+        },
         columnStyles: {
-          0: { fontStyle: "bold", cellWidth: 45, fillColor: [255, 255, 200] },
-          1: { cellWidth: 65 },
-          2: { fontStyle: "bold", cellWidth: 45, fillColor: [255, 255, 200] },
-          3: { cellWidth: 65 },
+          0: { cellWidth: 55, halign: "left" }, // Reduced from 60
+          1: { cellWidth: 25, halign: "center" }, // Reduced from 30
+          2: { cellWidth: 12, halign: "center" }, // Reduced from 15
+          3: { cellWidth: 20, halign: "center" }, // Reduced from 25
+          4: { cellWidth: 18, halign: "center" }, // Reduced from 20
         },
         margin: { left: margin, right: margin },
       });
 
-      y = (doc as any).lastAutoTable.finalY + 8;
+      y = (doc as any).lastAutoTable.finalY + 2; // Reduced from 3
 
-      const copy = report.studentCopies[0];
-      if (copy) {
-        // Academic Year
-        doc.setFontSize(11);
-        doc.setFont("helvetica", "bold");
-        doc.text(
-          `Academic Year: ${copy.academicYear || "2023/24G.C/2016ec"}   Class Year: ${copy.classyear?.name || "II"}   Semester: ${copy.semester?.name || "I"}   MRT_121`,
-          margin,
-          y
-        );
-        y += 8;
+      // Total - Placed directly under the table (with your updated positioning)
+      const totalCr = copy.courses.reduce((sum, c) => sum + (c.totalCrHrs || 0), 0);
+      const totalPoint = copy.courses.reduce((sum, c) => sum + (c.gradePoint || 0), 0);
 
-        // Courses Table
-        const coursesData = copy.courses.map((c) => [
-          c.courseTitle || "",
-          c.courseCode || "",
-          c.totalCrHrs?.toFixed(2) || "0.00",
-          c.letterGrade || "",
-          c.gradePoint?.toFixed(2) || "0.00",
-        ]);
+      doc.setFontSize(6); // Reduced from 7
+      doc.setFont("helvetica", "bold");
+      doc.text(`Total: ${totalCr.toFixed(2)}`, margin + 95, y - 0, { align: "left" });
+      doc.text(`GR: ${totalPoint.toFixed(2)}`, margin + 120, y - 0, { align: "left" });
+      doc.setFontSize(5); // Reduced from 6
+      doc.setFont("helvetica", "normal");
+      y += 3; // Reduced from 4
 
-        autoTable(doc, {
-          startY: y,
-          head: [["Course Title", "Course Code", "Cr.Hr.", "Letter Grade", "Gr.Point"]],
-          body: coursesData,
-          theme: "grid",
-          styles: { fontSize: 9, cellPadding: 2.5, lineWidth: 0.2, textColor: [0, 0, 0] },
-          headStyles: {
-            fillColor: [100, 149, 237],
-            textColor: [255, 255, 255],
-            fontStyle: "bold",
-            halign: "center",
-            fontSize: 10,
-          },
-          columnStyles: {
-            0: { cellWidth: 70, halign: "left" },
-            1: { cellWidth: 35, halign: "center" },
-            2: { cellWidth: 20, halign: "center" },
-            3: { cellWidth: 30, halign: "center" },
-            4: { cellWidth: 25, halign: "center" },
-          },
-          margin: { left: margin, right: margin },
-        });
+      // Summary Table (smaller fonts and padding)
+      const prevTotalCredit = 44.00;
+      const prevTotalGP = 176.00;
+      const cumulativeCredit = prevTotalCredit + totalCr;
+      const cumulativeGP = prevTotalGP + totalPoint;
+      const cumulativeGPA = cumulativeGP / cumulativeCredit;
 
-        y = (doc as any).lastAutoTable.finalY + 5;
+      autoTable(doc, {
+        startY: y,
+        head: [["Summary", "Credit", "GP", "ANG", "ALG"]],
+        body: [
+          ["Previous TOTAL", prevTotalCredit.toFixed(2), prevTotalGP.toFixed(2), "4.00", "A"],
+          ["Semestre TOTAL", totalCr.toFixed(2), totalPoint.toFixed(2), copy.semesterGPA?.toFixed(2) || "3.80", "A"],
+          ["Cummulative", cumulativeCredit.toFixed(2), cumulativeGP.toFixed(2), cumulativeGPA.toFixed(2), "A"],
+        ],
+        theme: "grid",
+        styles: {
+          fontSize: 5, // Reduced from 6
+          cellPadding: 1, // Reduced from 1.5
+          lineWidth: 0.1,
+          fillColor: [255, 248, 220],
+          textColor: [0, 0, 0],
+        },
+        headStyles: {
+          fillColor: [100, 149, 237],
+          textColor: [255, 255, 255],
+          fontStyle: "bold",
+          fontSize: 6, // Reduced from 7
+        },
+        columnStyles: {
+          0: { cellWidth: 30, halign: "left" }, // Reduced from 35
+          1: { cellWidth: 18, halign: "center" }, // Reduced from 20
+          2: { cellWidth: 18, halign: "center" }, // Reduced from 20
+          3: { cellWidth: 18, halign: "center" }, // Reduced from 20
+          4: { cellWidth: 18, halign: "center" }, // Reduced from 20
+        },
+        margin: { left: margin, right: margin },
+      });
 
-        // Total
-        const totalCr = copy.courses.reduce((sum, c) => sum + (c.totalCrHrs || 0), 0);
-        const totalPoint = copy.courses.reduce((sum, c) => sum + (c.gradePoint || 0), 0);
+      y = (doc as any).lastAutoTable.finalY + 2; // Reduced from 3
 
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "bold");
-        doc.text(`Total: ${totalCr.toFixed(2)}`, margin + 200, y - 2, { align: "right" });
-        doc.text(`GR: ${totalPoint.toFixed(2)}`, margin + 230, y - 2, { align: "right" });
-        doc.setFontSize(9);
-        doc.setFont("helvetica", "normal");
-        doc.text("F=Below 40", margin + 260, y - 2);
-        y += 8;
+      // Status (smaller font)
+      doc.setFontSize(6); // Reduced from 8
+      doc.setFont("helvetica", "bold");
+      doc.text(`Status: Pass`, margin, y);
+      doc.text(`Status Description: Very Good`, margin + 60, y); // Reduced from +70
+      y += 3; // Reduced from 4
 
-        // Summary Table
-        const prevTotalCredit = 44.00;
-        const prevTotalGP = 176.00;
-        const cumulativeCredit = prevTotalCredit + totalCr;
-        const cumulativeGP = prevTotalGP + totalPoint;
-        const cumulativeGPA = cumulativeGP / cumulativeCredit;
+      // Grading Scale - Combined into one line
+      doc.setFontSize(4.5); // Reduced from 5
+      doc.setFont("helvetica", "normal");
+      doc.text("Grading System:", margin, y);
+      doc.text("A+,A=4, A-=3.75, B+=3.50, B=3.00, B-=2.75, C+=2.50, C=2.00, D=1.00, F=0.00, I=Incomplete | A=Excellent, B+=Good, C+=Satisfactory, C=Fair, D=Below Pass Mark, F=Fail", 
+        margin + 22, y, { maxWidth: pageWidth - margin - 25 }); // Combined into one line
+      y += 3; // Reduced from 4
 
-        autoTable(doc, {
-          startY: y,
-          head: [["Summary", "Credit", "GP", "ANG", "ALG"]],
-          body: [
-            ["Previous TOTAL", prevTotalCredit.toFixed(2), prevTotalGP.toFixed(2), "4.00", "A"],
-            ["Semestre TOTAL", totalCr.toFixed(2), totalPoint.toFixed(2), copy.semesterGPA?.toFixed(2) || "3.80", "A"],
-            ["Cummulative", cumulativeCredit.toFixed(2), cumulativeGP.toFixed(2), cumulativeGPA.toFixed(2), "A"],
-          ],
-          theme: "grid",
-          styles: {
-            fontSize: 9,
-            cellPadding: 2.5,
-            lineWidth: 0.2,
-            fillColor: [255, 248, 220],
-            textColor: [0, 0, 0],
-          },
-          headStyles: {
-            fillColor: [100, 149, 237],
-            textColor: [255, 255, 255],
-            fontStyle: "bold",
-          },
-          columnStyles: {
-            0: { cellWidth: 40, halign: "left" },
-            1: { cellWidth: 25, halign: "center" },
-            2: { cellWidth: 25, halign: "center" },
-            3: { cellWidth: 25, halign: "center" },
-            4: { cellWidth: 25, halign: "center" },
-          },
-          margin: { left: margin, right: margin },
-        });
+      // Footer Note
+      doc.setFontSize(4.5); // Reduced from 5
+      doc.setTextColor(100, 100, 100);
+      doc.text('"Course Repeated", "Courses Taken from other university/College", DATE ISSUE & [Date]', margin, y);
+      y += 4; // Space before signatures
 
-        y = (doc as any).lastAutoTable.finalY + 5;
+      // Signatures
+      doc.setFontSize(6); // Reduced from 7
+      doc.setTextColor(0, 0, 0);
+      doc.setFont("helvetica", "bold");
+      doc.text("REGISTRAR:", margin, y);
+      doc.text("DEAN/VICE DEAN:", pageWidth / 2 + 15, y); // Adjusted position
 
-        // Status
-        doc.setFontSize(11);
-        doc.setFont("helvetica", "bold");
-        doc.text(`Status: Pass`, margin, y);
-        doc.text(`Status Description: Very Good`, margin + 80, y);
-        y += 8;
+      doc.setFont("helvetica", "normal");
+      doc.text("_________________", margin + 20, y); // Shorter underline
+      doc.text("_________________", pageWidth / 2 + 40, y); // Shorter underline
+    }
+  });
 
-        // Grading Scale - Positioned above signatures
-        doc.setFontSize(8);
-        doc.setFont("helvetica", "normal");
-        doc.text("Grading System:", margin, y);
-        doc.text("A+,A=4, A-=3.75, B+=3.50, B=3.00, B-=2.75, C+=2.50, C=2.00, D=1.00, F=0.00, I=Incomplete", margin, y + 4);
-        doc.text("A=Excellent, B+=Good, C+=Satisfactory, C=Fair, D=Below Pass Mark, F=Fail", margin, y + 8);
-        y += 12;
-
-        // Footer Note
-        doc.setFontSize(7);
-        doc.setTextColor(100, 100, 100);
-        doc.text('"Course Repeated", "Courses Taken from other university/College", DATE ISSUE & [Date]', margin, y);
-        y += 6;
-
-        // Signatures - Now properly positioned at bottom
-        const signatureY = pageHeight - 15;
-        doc.setFontSize(10);
-        doc.setTextColor(0, 0, 0);
-        doc.setFont("helvetica", "bold");
-        doc.text("REGISTRAR:", margin, signatureY);
-        doc.text("DEAN/VICE DEAN:", pageWidth / 2 + 30, signatureY);
-
-        doc.setFont("helvetica", "normal");
-        doc.text("_________________________", margin + 25, signatureY);
-        doc.text("_________________________", pageWidth / 2 + 60, signatureY);
-      }
-    });
-
-    doc.save("Student_Academic_Record.pdf");
-  };
+  doc.save("Student_Academic_Record.pdf");
+};
 
   // ========== TRANSCRIPT PDF GENERATION (optimized for one page) ==========
   const exportTranscriptToPDF = () => {
@@ -1468,10 +1502,20 @@ const handleGenerateTranscripts = async () => {
   );
 }
 
-// ===== STUDENT COPY VIEW COMPONENT =====
+// ===== STUDENT COPY VIEW COMPONENT with academic year fix =====
 function StudentCopyView({ report }: { report: RealGradeReport }) {
   const copy = report.studentCopies[0];
   if (!copy) return null;
+
+  // Helper function to safely get academic year string
+  const getAcademicYearString = (academicYear: any): string => {
+    if (!academicYear) return "2023/24G.C/2016ec";
+    if (typeof academicYear === 'string') return academicYear;
+    if (typeof academicYear === 'object') {
+      return academicYear.yearCode || academicYear.yearGC || "2023/24G.C/2016ec";
+    }
+    return "2023/24G.C/2016ec";
+  };
 
   const totalCr = copy.courses.reduce((sum, c) => sum + (c.totalCrHrs || 0), 0);
   const totalPoint = copy.courses.reduce((sum, c) => sum + (c.gradePoint || 0), 0);
@@ -1479,6 +1523,7 @@ function StudentCopyView({ report }: { report: RealGradeReport }) {
   const prevTotalGP = 176.00;
   const cumulativeCredit = prevTotalCredit + totalCr;
   const cumulativeGP = prevTotalGP + totalPoint;
+  const academicYearStr = getAcademicYearString(copy.academicYear);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -1527,7 +1572,7 @@ function StudentCopyView({ report }: { report: RealGradeReport }) {
         </table>
 
         <div className="font-bold mt-4 mb-2 text-gray-900 dark:text-white">
-          Academic Year: {copy.academicYear || "2023/24G.C/2016ec"}   Class Year: {copy.classyear?.name || "II"}   Semester: {copy.semester?.name || "I"}   MRT_121
+          Academic Year: {academicYearStr}   Class Year: {copy.classyear?.name || "II"}   Semester: {copy.semester?.name || "I"}   MRT_121
         </div>
 
         <table className="w-full border-collapse mt-2">
@@ -1597,9 +1642,7 @@ function StudentCopyView({ report }: { report: RealGradeReport }) {
         </div>
 
         <div className="text-xs mt-4 text-gray-600 dark:text-gray-400">
-          Grading System: A+,A=4, A-=3.75, B+=3.50, B=3.00, B-=2.75, C+=2.50, C=2.00, D=1.00, F=0.00, I=Incomplete
-          <br />
-          A=Excellent, B+=Good, C+=Satisfactory, C=Fair, D=Below Pass Mark, F=Fail
+          Grading System: A+,A=4, A-=3.75, B+=3.50, B=3.00, B-=2.75, C+=2.50, C=2.00, D=1.00, F=0.00, I=Incomplete | A=Excellent, B+=Good, C+=Satisfactory, C=Fair, D=Below Pass Mark, F=Fail
         </div>
 
         <div className="text-xs mt-4 text-gray-500 dark:text-gray-500">
