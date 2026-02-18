@@ -1588,35 +1588,35 @@ function StudentCopyView({ report }: { report: RealGradeReport }) {
         <table className="w-full border-collapse text-xs">
           <tbody>
             <tr className="border border-gray-300 dark:border-gray-600">
-              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300 w-1/6">ID Number</td>
-              <td className="p-1 border-r border-gray-300 w-1/6">{report.idNumber}</td>
-              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300 w-1/6">Date Of Admission</td>
-              <td className="p-1 border-r border-gray-300 w-1/6">{report.dateEnrolledGC}</td>
-              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300 w-1/6">Date Of Birth</td>
+              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300 dark:border-gray-600 w-1/6">ID Number</td>
+              <td className="p-1 border-r border-gray-300 dark:border-gray-600 w-1/6">{report.idNumber}</td>
+              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300 dark:border-gray-600 w-1/6">Date Of Admission</td>
+              <td className="p-1 border-r border-gray-300 dark:border-gray-600 w-1/6">{report.dateEnrolledGC}</td>
+              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300 dark:border-gray-600 w-1/6">Date Of Birth</td>
               <td className="p-1 w-1/6">{report.birthDateGC}</td>
             </tr>
             <tr className="border border-gray-300 dark:border-gray-600">
-              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300">Name of Student</td>
-              <td className="p-1 border-r border-gray-300">{report.fullName}</td>
-              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300">Enrolment Type</td>
-              <td className="p-1 border-r border-gray-300">{report.programModality?.name || "Regular"}</td>
-              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300">Date Issued</td>
+              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300 dark:border-gray-600">Name of Student</td>
+              <td className="p-1 border-r border-gray-300 dark:border-gray-600">{report.fullName}</td>
+              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300 dark:border-gray-600">Enrolment Type</td>
+              <td className="p-1 border-r border-gray-300 dark:border-gray-600">{report.programModality?.name || "Regular"}</td>
+              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300 dark:border-gray-600">Date Issued</td>
               <td className="p-1">{report.dateIssuedGC}</td>
             </tr>
             <tr className="border border-gray-300 dark:border-gray-600">
-              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300">Sex</td>
-              <td className="p-1 border-r border-gray-300">{report.gender}</td>
-              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300">Department</td>
-              <td className="p-1 border-r border-gray-300">{report.department?.name}</td>
-              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300"></td>
+              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300 dark:border-gray-600">Sex</td>
+              <td className="p-1 border-r border-gray-300 dark:border-gray-600">{report.gender}</td>
+              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300 dark:border-gray-600">Department</td>
+              <td className="p-1 border-r border-gray-300 dark:border-gray-600">{report.department?.name}</td>
+              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300 dark:border-gray-600"></td>
               <td className="p-1"></td>
             </tr>
             <tr className="border border-gray-300 dark:border-gray-600">
-              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300">Program</td>
-              <td className="p-1 border-r border-gray-300">{report.programLevel?.name || "Degree"}</td>
-              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300">Field of Study</td>
-              <td className="p-1 border-r border-gray-300">{report.department?.name}</td>
-              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300"></td>
+              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300 dark:border-gray-600">Program</td>
+              <td className="p-1 border-r border-gray-300 dark:border-gray-600">{report.programLevel?.name || "Degree"}</td>
+              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300 dark:border-gray-600">Field of Study</td>
+              <td className="p-1 border-r border-gray-300 dark:border-gray-600">{report.department?.name}</td>
+              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300 dark:border-gray-600"></td>
               <td className="p-1"></td>
             </tr>
           </tbody>
@@ -1633,63 +1633,63 @@ function StudentCopyView({ report }: { report: RealGradeReport }) {
             <table className="w-full border-collapse text-xs">
               <thead>
                 <tr className="bg-blue-500 dark:bg-blue-600 text-white">
-                  <th className="p-1 border border-gray-300 text-left">Course Title</th>
-                  <th className="p-1 border border-gray-300 text-center">Code</th>
-                  <th className="p-1 border border-gray-300 text-center">Cr.Hr.</th>
-                  <th className="p-1 border border-gray-300 text-center">Grade</th>
-                  <th className="p-1 border border-gray-300 text-center">Point</th>
+                  <th className="p-1 border border-gray-300 dark:border-gray-600 text-left">Course Title</th>
+                  <th className="p-1 border border-gray-300 dark:border-gray-600 text-center">Code</th>
+                  <th className="p-1 border border-gray-300 dark:border-gray-600 text-center">Cr.Hr.</th>
+                  <th className="p-1 border border-gray-300 dark:border-gray-600 text-center">Grade</th>
+                  <th className="p-1 border border-gray-300 dark:border-gray-600 text-center">Point</th>
                 </tr>
               </thead>
               <tbody>
                 {copy.courses.map((c, i) => (
-                  <tr key={i} className="border border-gray-300">
-                    <td className="p-1 border-r border-gray-300">{c.courseTitle}</td>
-                    <td className="p-1 border-r border-gray-300 text-center">{c.courseCode}</td>
-                    <td className="p-1 border-r border-gray-300 text-center">{(c.totalCrHrs || 0).toFixed(2)}</td>
-                    <td className="p-1 border-r border-gray-300 text-center font-bold text-blue-600">{c.letterGrade}</td>
-                    <td className="p-1 text-center">{(c.gradePoint || 0).toFixed(2)}</td>
+                  <tr key={i} className="border border-gray-300 dark:border-gray-600">
+                    <td className="p-1 border-r border-gray-300 dark:border-gray-600">{c.courseTitle}</td>
+                    <td className="p-1 border-r border-gray-300 dark:border-gray-600 text-center">{c.courseCode}</td>
+                    <td className="p-1 border-r border-gray-300 dark:border-gray-600 text-center">{(c.totalCrHrs || 0).toFixed(2)}</td>
+                    <td className="p-1 border-r border-gray-300 dark:border-gray-600 text-center font-bold text-blue-600 dark:text-blue-400">{c.letterGrade}</td>
+                    <td className="p-1 text-center text-gray-900 dark:text-gray-300">{(c.gradePoint || 0).toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <div className="text-right font-bold text-xs mt-1">
+            <div className="text-right font-bold text-xs mt-1 text-gray-900 dark:text-white">
               Total: {totalCr.toFixed(2)} | GR: {totalPoint.toFixed(2)} | F=Below 40
             </div>
           </div>
 
-          {/* Summary Table */}
+          {/* Summary Table - FIXED DARK MODE BACKGROUND */}
           <div className="w-1/3">
             <table className="w-full border-collapse text-xs">
               <thead>
                 <tr className="bg-blue-500 dark:bg-blue-600 text-white">
-                  <th className="p-1 border border-gray-300">Summary</th>
-                  <th className="p-1 border border-gray-300 text-center">Credit</th>
-                  <th className="p-1 border border-gray-300 text-center">GP</th>
-                  <th className="p-1 border border-gray-300 text-center">ANG</th>
-                  <th className="p-1 border border-gray-300 text-center">ALG</th>
+                  <th className="p-1 border border-gray-300 dark:border-gray-600">Summary</th>
+                  <th className="p-1 border border-gray-300 dark:border-gray-600 text-center">Credit</th>
+                  <th className="p-1 border border-gray-300 dark:border-gray-600 text-center">GP</th>
+                  <th className="p-1 border border-gray-300 dark:border-gray-600 text-center">ANG</th>
+                  <th className="p-1 border border-gray-300 dark:border-gray-600 text-center">ALG</th>
                 </tr>
               </thead>
               <tbody>
-                <tr className="border border-gray-300 bg-yellow-50">
-                  <td className="p-1 border-r border-gray-300 font-bold">Previous</td>
-                  <td className="p-1 border-r border-gray-300 text-center">{prevTotalCredit.toFixed(2)}</td>
-                  <td className="p-1 border-r border-gray-300 text-center">{prevTotalGP.toFixed(2)}</td>
-                  <td className="p-1 border-r border-gray-300 text-center">4.00</td>
-                  <td className="p-1 text-center">A</td>
+                <tr className="border border-gray-300 dark:border-gray-600 bg-yellow-50 dark:bg-yellow-900/60">
+                  <td className="p-1 border-r border-gray-300 dark:border-gray-600 font-bold text-gray-900 dark:text-white">Previous</td>
+                  <td className="p-1 border-r border-gray-300 dark:border-gray-600 text-center text-gray-900 dark:text-white">{prevTotalCredit.toFixed(2)}</td>
+                  <td className="p-1 border-r border-gray-300 dark:border-gray-600 text-center text-gray-900 dark:text-white">{prevTotalGP.toFixed(2)}</td>
+                  <td className="p-1 border-r border-gray-300 dark:border-gray-600 text-center text-gray-900 dark:text-white">4.00</td>
+                  <td className="p-1 text-center text-gray-900 dark:text-white">A</td>
                 </tr>
-                <tr className="border border-gray-300 bg-yellow-50">
-                  <td className="p-1 border-r border-gray-300 font-bold">Semestre</td>
-                  <td className="p-1 border-r border-gray-300 text-center">{totalCr.toFixed(2)}</td>
-                  <td className="p-1 border-r border-gray-300 text-center">{totalPoint.toFixed(2)}</td>
-                  <td className="p-1 border-r border-gray-300 text-center">{(copy.semesterGPA || 3.80).toFixed(2)}</td>
-                  <td className="p-1 text-center">A</td>
+                <tr className="border border-gray-300 dark:border-gray-600 bg-yellow-50 dark:bg-yellow-900/60">
+                  <td className="p-1 border-r border-gray-300 dark:border-gray-600 font-bold text-gray-900 dark:text-white">Semestre</td>
+                  <td className="p-1 border-r border-gray-300 dark:border-gray-600 text-center text-gray-900 dark:text-white">{totalCr.toFixed(2)}</td>
+                  <td className="p-1 border-r border-gray-300 dark:border-gray-600 text-center text-gray-900 dark:text-white">{totalPoint.toFixed(2)}</td>
+                  <td className="p-1 border-r border-gray-300 dark:border-gray-600 text-center text-gray-900 dark:text-white">{(copy.semesterGPA || 3.80).toFixed(2)}</td>
+                  <td className="p-1 text-center text-gray-900 dark:text-white">A</td>
                 </tr>
-                <tr className="border border-gray-300 bg-yellow-50">
-                  <td className="p-1 border-r border-gray-300 font-bold">Cumulative</td>
-                  <td className="p-1 border-r border-gray-300 text-center">{cumulativeCredit.toFixed(2)}</td>
-                  <td className="p-1 border-r border-gray-300 text-center">{cumulativeGP.toFixed(2)}</td>
-                  <td className="p-1 border-r border-gray-300 text-center">{(cumulativeGP / cumulativeCredit).toFixed(2)}</td>
-                  <td className="p-1 text-center">A</td>
+                <tr className="border border-gray-300 dark:border-gray-600 bg-yellow-50 dark:bg-yellow-900/60">
+                  <td className="p-1 border-r border-gray-300 dark:border-gray-600 font-bold text-gray-900 dark:text-white">Cumulative</td>
+                  <td className="p-1 border-r border-gray-300 dark:border-gray-600 text-center text-gray-900 dark:text-white">{cumulativeCredit.toFixed(2)}</td>
+                  <td className="p-1 border-r border-gray-300 dark:border-gray-600 text-center text-gray-900 dark:text-white">{cumulativeGP.toFixed(2)}</td>
+                  <td className="p-1 border-r border-gray-300 dark:border-gray-600 text-center text-gray-900 dark:text-white">{(cumulativeGP / cumulativeCredit).toFixed(2)}</td>
+                  <td className="p-1 text-center text-gray-900 dark:text-white">A</td>
                 </tr>
               </tbody>
             </table>
