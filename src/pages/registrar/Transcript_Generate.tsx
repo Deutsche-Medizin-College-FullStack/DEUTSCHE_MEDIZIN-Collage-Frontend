@@ -484,7 +484,7 @@ const handleGenerateTranscripts = async () => {
   }
 };
 
-// ========== STUDENT COPY PDF GENERATION (optimized for multiple students) ==========
+// ========== STUDENT COPY PDF GENERATION (optimized for multiple students with side-by-side tables) ==========
 const exportStudentCopyToPDF = () => {
   if (realReports.length === 0) {
     alert("No data to export. Generate first.");
@@ -497,10 +497,10 @@ const exportStudentCopyToPDF = () => {
   const margin = 8;
   
   // Calculate height for each student (half page)
-  const studentHeight = (pageHeight - 20) / 2; // Leave space for divider
+  const studentHeight = (pageHeight - 20) / 2;
 
   realReports.forEach((report, index) => {
-    // Start new page for every 2 students (on even indices after the first)
+    // Start new page for every 2 students
     if (index % 2 === 0 && index > 0) {
       doc.addPage();
     }
@@ -508,63 +508,62 @@ const exportStudentCopyToPDF = () => {
     // Calculate y position based on whether it's first or second student on page
     let y = margin;
     if (index % 2 === 1) {
-      y = margin + studentHeight + 5;
+      y = margin + studentHeight + 4;
     }
 
-    // Draw divider line between students (only for second student on page)
+    // Draw divider line between students
     if (index % 2 === 1) {
       doc.setDrawColor(150, 150, 150);
       doc.setLineWidth(0.5);
-      doc.setLineDashPattern([3, 3], 0); // Dashed line
+      doc.setLineDashPattern([3, 3], 0);
       doc.line(margin, y - 8, pageWidth - margin, y - 8);
-      doc.setLineDashPattern([], 0); // Reset to solid line
+      doc.setLineDashPattern([], 0);
     }
 
-    // Golden Yellow Header Band (smaller height for half page)
-    doc.setFillColor(255, 215, 0); // Golden yellow
-    doc.rect(0, y - 8, pageWidth, 18, "F");
+    // Golden Yellow Header Band
+    doc.setFillColor(255, 215, 0);
+    doc.rect(0, y - 7, pageWidth, 18, "F");
 
-    // Logo (smaller)
+    // Logo
     try {
-      doc.addImage(LOGO_BASE64, "PNG", margin + 5, y - 6, 14, 14);
-    } catch (e) {
-      console.warn("Logo failed to load in PDF", e);
-    }
+      doc.addImage(LOGO_BASE64, "PNG", margin + 4, y - 5, 14, 14);
+    } catch (e) {}
 
-    doc.setFontSize(10);
+    doc.setFontSize(12); // Increased from 8
     doc.setTextColor(0, 0, 0);
     doc.setFont("helvetica", "bold");
-    doc.text("MD1_[PC_I]", pageWidth / 2, y - 3, { align: "center" });
+    doc.text("MD1_[PC_I]", pageWidth / 2, y - 2, { align: "center" });
 
-    doc.setFontSize(7);
+    doc.setFontSize(8); // Increased from 5
     doc.setFont("helvetica", "normal");
-    doc.text("DEUTSCHE HOCHSCHULE FÜR MEDIZIN MEDICAL COLLEGE", pageWidth / 2, y + 1, { align: "center" });
+    doc.text("DEUTSCHE HOCHSCHULE FÜR MEDIZIN MEDICAL COLLEGE", pageWidth / 2, y + 2, { align: "center" });
 
-    y += 8;
+    y += 6;
 
     // Title
-    doc.setFontSize(9);
+    doc.setFontSize(10); // Increased from 7
     doc.setFont("helvetica", "bold");
-    doc.text("STUDENT ACADEMIC RECORD", pageWidth / 2, y, { align: "center" });
+    doc.text("STUDENT ACADEMIC RECORD", pageWidth / 2, y + 2, { align: "center" });
     y += 4;
 
-    // Student Info Table
+    // Student Info Table - 6 columns (3 pairs) - INCREASED SIZES
     autoTable(doc, {
-      startY: y,
+      startY: y + 1,
       body: [
-        ["ID Number", report.idNumber || "", "Date Of Admission", report.dateEnrolledGC || ""],
-        ["Name of Student", report.fullName || "", "Enrolment Type", report.programModality?.name || "Regular"],
-        ["Sex", report.gender || "", "Department", report.department?.name || ""],
-        ["Program", report.programLevel?.name || "Degree", "Field of Study", report.department?.name || ""],
-        ["Date Of Birth", report.birthDateGC || "", "Date Issued", report.dateIssuedGC || ""],
+        ["ID Number", report.idNumber || "", "Date Of Admission", report.dateEnrolledGC || "", "Date Of Birth", report.birthDateGC || ""],
+        ["Name of Student", report.fullName || "", "Enrolment Type", report.programModality?.name || "Regular", "Date Issued", report.dateIssuedGC || ""],
+        ["Sex", report.gender || "", "Department", report.department?.name || "", "", ""],
+        ["Program", report.programLevel?.name || "Degree", "Field of Study", report.department?.name || "", "", ""],
       ],
       theme: "grid",
-      styles: { fontSize: 6, cellPadding: 1.2, lineWidth: 0.1, textColor: [0, 0, 0] },
+      styles: { fontSize: 7, cellPadding: 1.2, lineWidth: 0.15, textColor: [0, 0, 0] }, // Increased from 4.5
       columnStyles: {
-        0: { fontStyle: "bold", cellWidth: 35, fillColor: [255, 255, 200] },
-        1: { cellWidth: 50 },
-        2: { fontStyle: "bold", cellWidth: 35, fillColor: [255, 255, 200] },
-        3: { cellWidth: 50 },
+        0: { fontStyle: "bold", cellWidth: 30, fillColor: [255, 255, 200] }, // Increased from 25
+        1: { cellWidth: 45 }, // Increased from 35
+        2: { fontStyle: "bold", cellWidth: 30, fillColor: [255, 255, 200] }, // Increased from 25
+        3: { cellWidth: 45 }, // Increased from 35
+        4: { fontStyle: "bold", cellWidth: 25, fillColor: [255, 255, 200] }, // Increased from 20
+        5: { cellWidth: 35 }, // Increased from 30
       },
       margin: { left: margin, right: margin },
     });
@@ -574,7 +573,7 @@ const exportStudentCopyToPDF = () => {
     const copy = report.studentCopies[0];
     if (copy) {
       // Academic Year
-      doc.setFontSize(7);
+      doc.setFontSize(7); // Increased from 5
       doc.setFont("helvetica", "bold");
       doc.text(
         `Academic Year: ${copy.academicYear || "2023/24G.C/2016ec"}   Class Year: ${copy.classyear?.name || "II"}   Semester: ${copy.semester?.name || "I"}   MRT_121`,
@@ -583,7 +582,12 @@ const exportStudentCopyToPDF = () => {
       );
       y += 3;
 
-      // Courses Table
+      // Calculate positions for side-by-side tables - INCREASED WIDTHS
+      const leftTableWidth = 150; // Increased from 120
+      const rightTableWidth = 80;  // Increased from 60
+      const gap = 6; // Gap between tables
+      
+      // Left side - Courses Table
       const coursesData = copy.courses.map((c) => [
         c.courseTitle || "",
         c.courseCode || "",
@@ -594,43 +598,40 @@ const exportStudentCopyToPDF = () => {
 
       autoTable(doc, {
         startY: y,
-        head: [["Course Title", "Course Code", "Cr.Hr.", "Letter Grade", "Gr.Point"]],
+        head: [["Course Title", "Code", "Cr.Hr.", "Grade", "Point"]],
         body: coursesData,
         theme: "grid",
-        styles: { fontSize: 5, cellPadding: 1, lineWidth: 0.1, textColor: [0, 0, 0] },
+        styles: { fontSize: 6, cellPadding: 0.8, lineWidth: 0.15, textColor: [0, 0, 0] }, // Increased from 4
         headStyles: {
           fillColor: [100, 149, 237],
           textColor: [255, 255, 255],
           fontStyle: "bold",
-          halign: "center",
-          fontSize: 6,
+          fontSize: 7, // Increased from 4.5
         },
         columnStyles: {
-          0: { cellWidth: 55, halign: "left" },
-          1: { cellWidth: 25, halign: "center" },
-          2: { cellWidth: 12, halign: "center" },
-          3: { cellWidth: 20, halign: "center" },
-          4: { cellWidth: 18, halign: "center" },
+          0: { cellWidth: 65, halign: "left" }, // Increased from 50
+          1: { cellWidth: 25, halign: "center" }, // Increased from 20
+          2: { cellWidth: 15, halign: "center" }, // Increased from 10
+          3: { cellWidth: 20, halign: "center" }, // Increased from 15
+          4: { cellWidth: 18, halign: "center" }, // Increased from 12
         },
-        margin: { left: margin, right: margin },
+        margin: { left: margin, right: pageWidth - margin - leftTableWidth - gap - rightTableWidth },
       });
 
-      y = (doc as any).lastAutoTable.finalY + 2;
-
-      // Total
+      // Total under courses table
       const totalCr = copy.courses.reduce((sum, c) => sum + (c.totalCrHrs || 0), 0);
       const totalPoint = copy.courses.reduce((sum, c) => sum + (c.gradePoint || 0), 0);
-
-      doc.setFontSize(6);
+      
+      const coursesEndY = (doc as any).lastAutoTable.finalY;
+      
+      doc.setFontSize(7); // Increased from 4.5
       doc.setFont("helvetica", "bold");
-      doc.text(`Total: ${totalCr.toFixed(2)}`, margin + 95, y - 1, { align: "left" });
-      doc.text(`GR: ${totalPoint.toFixed(2)}`, margin + 120, y - 1, { align: "left" });
-      doc.setFontSize(5);
+      doc.text(`Total: ${totalCr.toFixed(2)}`, margin + 105, coursesEndY + 3);
+      doc.text(`GR: ${totalPoint.toFixed(2)}`, margin + 130, coursesEndY + 3);
+      doc.setFontSize(6); // Increased from 4
       doc.setFont("helvetica", "normal");
-      doc.text("F=Below 40", margin + 145, y - 1, { align: "left" });
-      y += 3;
 
-      // Summary Table
+      // Right side - Summary Table
       const prevTotalCredit = 44.00;
       const prevTotalGP = 176.00;
       const cumulativeCredit = prevTotalCredit + totalCr;
@@ -641,15 +642,15 @@ const exportStudentCopyToPDF = () => {
         startY: y,
         head: [["Summary", "Credit", "GP", "ANG", "ALG"]],
         body: [
-          ["Previous TOTAL", prevTotalCredit.toFixed(2), prevTotalGP.toFixed(2), "4.00", "A"],
-          ["Semestre TOTAL", totalCr.toFixed(2), totalPoint.toFixed(2), copy.semesterGPA?.toFixed(2) || "3.80", "A"],
-          ["Cummulative", cumulativeCredit.toFixed(2), cumulativeGP.toFixed(2), cumulativeGPA.toFixed(2), "A"],
+          ["Previous", prevTotalCredit.toFixed(2), prevTotalGP.toFixed(2), "4.00", "A"],
+          ["Semestre", totalCr.toFixed(2), totalPoint.toFixed(2), copy.semesterGPA?.toFixed(2) || "3.80", "A"],
+          ["Cumulative", cumulativeCredit.toFixed(2), cumulativeGP.toFixed(2), cumulativeGPA.toFixed(2), "A"],
         ],
         theme: "grid",
         styles: {
-          fontSize: 5,
-          cellPadding: 1,
-          lineWidth: 0.1,
+          fontSize: 6, // Increased from 4
+          cellPadding: 0.8, // Increased from 0.5
+          lineWidth: 0.15,
           fillColor: [255, 248, 220],
           textColor: [0, 0, 0],
         },
@@ -657,51 +658,49 @@ const exportStudentCopyToPDF = () => {
           fillColor: [100, 149, 237],
           textColor: [255, 255, 255],
           fontStyle: "bold",
-          fontSize: 6,
+          fontSize: 7, // Increased from 4.5
         },
         columnStyles: {
-          0: { cellWidth: 30, halign: "left" },
-          1: { cellWidth: 18, halign: "center" },
-          2: { cellWidth: 18, halign: "center" },
-          3: { cellWidth: 18, halign: "center" },
-          4: { cellWidth: 18, halign: "center" },
+          0: { cellWidth: 28, halign: "left" }, // Increased from 22
+          1: { cellWidth: 14, halign: "center" }, // Increased from 10
+          2: { cellWidth: 14, halign: "center" }, // Increased from 10
+          3: { cellWidth: 14, halign: "center" }, // Increased from 10
+          4: { cellWidth: 14, halign: "center" }, // Increased from 10
         },
-        margin: { left: margin, right: margin },
+        margin: { left: margin + leftTableWidth + gap, right: margin },
       });
 
-      y = (doc as any).lastAutoTable.finalY + 2;
+      y = Math.max(coursesEndY, (doc as any).lastAutoTable.finalY) + 4;
 
-      // Status
-      doc.setFontSize(6);
+      // Status line
+      doc.setFontSize(7); // Increased from 4.5
       doc.setFont("helvetica", "bold");
-      doc.text(`Status: Pass`, margin, y);
-      doc.text(`Status Description: Very Good`, margin + 55, y);
+      doc.text(`Status: Pass | Status Description: Very Good`, margin, y);
       y += 3;
 
-      // Grading Scale - Combined into one line
-      doc.setFontSize(4.5);
+      // Grading Scale - Single line
+      doc.setFontSize(5); // Increased from 3.5
       doc.setFont("helvetica", "normal");
-      doc.text("Grading System:", margin, y);
-      doc.text("A+,A=4, A-=3.75, B+=3.50, B=3.00, B-=2.75, C+=2.50, C=2.00, D=1.00, F=0.00, I=Incomplete | A=Excellent, B+=Good, C+=Satisfactory, C=Fair, D=Below Pass Mark, F=Fail", 
-        margin + 22, y, { maxWidth: pageWidth - margin - 25 });
+      doc.text("Grading: A+,A=4, A-=3.75, B+=3.50, B=3.00, B-=2.75, C+=2.50, C=2.00, D=1.00, F=0.00, I=Incomplete | A=Excellent, B+=Good, C+=Satisfactory, C=Fair, D=Below Pass, F=Fail", 
+        margin, y, { maxWidth: pageWidth - margin * 2 });
       y += 3;
 
       // Footer Note
-      doc.setFontSize(4.5);
+      doc.setFontSize(5); // Increased from 3.5
       doc.setTextColor(100, 100, 100);
       doc.text('"Course Repeated", "Courses Taken from other university/College", DATE ISSUE & [Date]', margin, y);
       y += 4;
 
       // Signatures
-      doc.setFontSize(6);
+      doc.setFontSize(7); // Increased from 4.5
       doc.setTextColor(0, 0, 0);
       doc.setFont("helvetica", "bold");
       doc.text("REGISTRAR:", margin, y);
       doc.text("DEAN/VICE DEAN:", pageWidth / 2 + 15, y);
 
       doc.setFont("helvetica", "normal");
-      doc.text("_________________", margin + 20, y);
-      doc.text("_________________", pageWidth / 2 + 40, y);
+      doc.text("__________", margin + 20, y);
+      doc.text("__________", pageWidth / 2 + 40, y);
     }
   });
 
@@ -1552,12 +1551,11 @@ const exportStudentCopyToPDF = () => {
   );
 }
 
-// ===== STUDENT COPY VIEW COMPONENT with academic year fix =====
+// ===== STUDENT COPY VIEW COMPONENT with side-by-side tables =====
 function StudentCopyView({ report }: { report: RealGradeReport }) {
   const copy = report.studentCopies[0];
   if (!copy) return null;
 
-  // Helper function to safely get academic year string
   const getAcademicYearString = (academicYear: any): string => {
     if (!academicYear) return "2023/24G.C/2016ec";
     if (typeof academicYear === 'string') return academicYear;
@@ -1577,131 +1575,142 @@ function StudentCopyView({ report }: { report: RealGradeReport }) {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div className="bg-yellow-400 dark:bg-yellow-500 p-4 relative">
+      <div className="bg-yellow-400 dark:bg-yellow-500 p-3 relative">
         <div className="text-center">
-          <div className="font-bold text-xl text-gray-900 dark:text-gray-900">MD1_[PC_I]</div>
-          <div className="text-sm text-gray-800 dark:text-gray-800">DEUTSCHE HOCHSCHULE FÜR MEDIZIN MEDICAL COLLEGE</div>
-          <div className="font-bold text-lg mt-1 text-gray-900 dark:text-gray-900">STUDENT ACADEMIC RECORD</div>
+          <div className="font-bold text-lg text-gray-900 dark:text-gray-900">MD1_[PC_I]</div>
+          <div className="text-xs text-gray-800 dark:text-gray-800">DEUTSCHE HOCHSCHULE FÜR MEDIZIN MEDICAL COLLEGE</div>
+          <div className="font-bold text-base mt-1 text-gray-900 dark:text-gray-900">STUDENT ACADEMIC RECORD</div>
         </div>
       </div>
 
-      <div className="p-4">
-        <table className="w-full border-collapse">
+      <div className="p-3">
+        {/* 6-Column Student Info Table */}
+        <table className="w-full border-collapse text-xs">
           <tbody>
             <tr className="border border-gray-300 dark:border-gray-600">
-              <td className="p-2 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-200 w-1/4">ID Number</td>
-              <td className="p-2 border-r border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 w-1/4">{report.idNumber}</td>
-              <td className="p-2 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-200 w-1/4">Date Of Admission</td>
-              <td className="p-2 text-gray-700 dark:text-gray-300 w-1/4">{report.dateEnrolledGC}</td>
+              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300 w-1/6">ID Number</td>
+              <td className="p-1 border-r border-gray-300 w-1/6">{report.idNumber}</td>
+              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300 w-1/6">Date Of Admission</td>
+              <td className="p-1 border-r border-gray-300 w-1/6">{report.dateEnrolledGC}</td>
+              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300 w-1/6">Date Of Birth</td>
+              <td className="p-1 w-1/6">{report.birthDateGC}</td>
             </tr>
             <tr className="border border-gray-300 dark:border-gray-600">
-              <td className="p-2 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-200">Name of Student</td>
-              <td className="p-2 border-r border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300">{report.fullName}</td>
-              <td className="p-2 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-200">Enrolment Type</td>
-              <td className="p-2 text-gray-700 dark:text-gray-300">{report.programModality?.name || "Regular"}</td>
+              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300">Name of Student</td>
+              <td className="p-1 border-r border-gray-300">{report.fullName}</td>
+              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300">Enrolment Type</td>
+              <td className="p-1 border-r border-gray-300">{report.programModality?.name || "Regular"}</td>
+              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300">Date Issued</td>
+              <td className="p-1">{report.dateIssuedGC}</td>
             </tr>
             <tr className="border border-gray-300 dark:border-gray-600">
-              <td className="p-2 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-200">Sex</td>
-              <td className="p-2 border-r border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300">{report.gender}</td>
-              <td className="p-2 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-200">Department</td>
-              <td className="p-2 text-gray-700 dark:text-gray-300">{report.department?.name}</td>
+              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300">Sex</td>
+              <td className="p-1 border-r border-gray-300">{report.gender}</td>
+              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300">Department</td>
+              <td className="p-1 border-r border-gray-300">{report.department?.name}</td>
+              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300"></td>
+              <td className="p-1"></td>
             </tr>
             <tr className="border border-gray-300 dark:border-gray-600">
-              <td className="p-2 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-200">Program</td>
-              <td className="p-2 border-r border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300">{report.programLevel?.name || "Degree"}</td>
-              <td className="p-2 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-200">Field of Study</td>
-              <td className="p-2 text-gray-700 dark:text-gray-300">{report.department?.name}</td>
-            </tr>
-            <tr className="border border-gray-300 dark:border-gray-600">
-              <td className="p-2 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-200">Date Of Birth</td>
-              <td className="p-2 border-r border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300">{report.birthDateGC}</td>
-              <td className="p-2 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-200">Date Issued</td>
-              <td className="p-2 text-gray-700 dark:text-gray-300">{report.dateIssuedGC}</td>
+              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300">Program</td>
+              <td className="p-1 border-r border-gray-300">{report.programLevel?.name || "Degree"}</td>
+              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300">Field of Study</td>
+              <td className="p-1 border-r border-gray-300">{report.department?.name}</td>
+              <td className="p-1 bg-yellow-100 dark:bg-yellow-900/40 font-bold border-r border-gray-300"></td>
+              <td className="p-1"></td>
             </tr>
           </tbody>
         </table>
 
-        <div className="font-bold mt-4 mb-2 text-gray-900 dark:text-white">
+        <div className="font-bold mt-2 mb-1 text-xs text-gray-900 dark:text-white">
           Academic Year: {academicYearStr}   Class Year: {copy.classyear?.name || "II"}   Semester: {copy.semester?.name || "I"}   MRT_121
         </div>
 
-        <table className="w-full border-collapse mt-2">
-          <thead>
-            <tr className="bg-blue-500 dark:bg-blue-600 text-white">
-              <th className="p-2 border border-gray-300 dark:border-gray-600 text-left">Course Title</th>
-              <th className="p-2 border border-gray-300 dark:border-gray-600 text-left">Course Code</th>
-              <th className="p-2 border border-gray-300 dark:border-gray-600 text-center">Cr.Hr.</th>
-              <th className="p-2 border border-gray-300 dark:border-gray-600 text-center">Letter Grade</th>
-              <th className="p-2 border border-gray-300 dark:border-gray-600 text-center">Gr.Point</th>
-            </tr>
-          </thead>
-          <tbody>
-            {copy.courses.map((c, i) => (
-              <tr key={i} className="border border-gray-300 dark:border-gray-600">
-                <td className="p-2 border-r border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300">{c.courseTitle}</td>
-                <td className="p-2 border-r border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300">{c.courseCode}</td>
-                <td className="p-2 border-r border-gray-300 dark:border-gray-600 text-center text-gray-700 dark:text-gray-300">{(c.totalCrHrs || 0).toFixed(2)}</td>
-                <td className="p-2 border-r border-gray-300 dark:border-gray-600 text-center font-bold text-blue-600 dark:text-blue-400">{c.letterGrade}</td>
-                <td className="p-2 text-center text-gray-700 dark:text-gray-300">{(c.gradePoint || 0).toFixed(2)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {/* Side-by-side tables */}
+        <div className="flex gap-2 mt-1">
+          {/* Courses Table */}
+          <div className="w-2/3">
+            <table className="w-full border-collapse text-xs">
+              <thead>
+                <tr className="bg-blue-500 dark:bg-blue-600 text-white">
+                  <th className="p-1 border border-gray-300 text-left">Course Title</th>
+                  <th className="p-1 border border-gray-300 text-center">Code</th>
+                  <th className="p-1 border border-gray-300 text-center">Cr.Hr.</th>
+                  <th className="p-1 border border-gray-300 text-center">Grade</th>
+                  <th className="p-1 border border-gray-300 text-center">Point</th>
+                </tr>
+              </thead>
+              <tbody>
+                {copy.courses.map((c, i) => (
+                  <tr key={i} className="border border-gray-300">
+                    <td className="p-1 border-r border-gray-300">{c.courseTitle}</td>
+                    <td className="p-1 border-r border-gray-300 text-center">{c.courseCode}</td>
+                    <td className="p-1 border-r border-gray-300 text-center">{(c.totalCrHrs || 0).toFixed(2)}</td>
+                    <td className="p-1 border-r border-gray-300 text-center font-bold text-blue-600">{c.letterGrade}</td>
+                    <td className="p-1 text-center">{(c.gradePoint || 0).toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="text-right font-bold text-xs mt-1">
+              Total: {totalCr.toFixed(2)} | GR: {totalPoint.toFixed(2)} | F=Below 40
+            </div>
+          </div>
 
-        <div className="text-right font-bold mt-2 text-gray-900 dark:text-white">
-          Total: {totalCr.toFixed(2)}   GR: {totalPoint.toFixed(2)}   F=Below 40
+          {/* Summary Table */}
+          <div className="w-1/3">
+            <table className="w-full border-collapse text-xs">
+              <thead>
+                <tr className="bg-blue-500 dark:bg-blue-600 text-white">
+                  <th className="p-1 border border-gray-300">Summary</th>
+                  <th className="p-1 border border-gray-300 text-center">Credit</th>
+                  <th className="p-1 border border-gray-300 text-center">GP</th>
+                  <th className="p-1 border border-gray-300 text-center">ANG</th>
+                  <th className="p-1 border border-gray-300 text-center">ALG</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border border-gray-300 bg-yellow-50">
+                  <td className="p-1 border-r border-gray-300 font-bold">Previous</td>
+                  <td className="p-1 border-r border-gray-300 text-center">{prevTotalCredit.toFixed(2)}</td>
+                  <td className="p-1 border-r border-gray-300 text-center">{prevTotalGP.toFixed(2)}</td>
+                  <td className="p-1 border-r border-gray-300 text-center">4.00</td>
+                  <td className="p-1 text-center">A</td>
+                </tr>
+                <tr className="border border-gray-300 bg-yellow-50">
+                  <td className="p-1 border-r border-gray-300 font-bold">Semestre</td>
+                  <td className="p-1 border-r border-gray-300 text-center">{totalCr.toFixed(2)}</td>
+                  <td className="p-1 border-r border-gray-300 text-center">{totalPoint.toFixed(2)}</td>
+                  <td className="p-1 border-r border-gray-300 text-center">{(copy.semesterGPA || 3.80).toFixed(2)}</td>
+                  <td className="p-1 text-center">A</td>
+                </tr>
+                <tr className="border border-gray-300 bg-yellow-50">
+                  <td className="p-1 border-r border-gray-300 font-bold">Cumulative</td>
+                  <td className="p-1 border-r border-gray-300 text-center">{cumulativeCredit.toFixed(2)}</td>
+                  <td className="p-1 border-r border-gray-300 text-center">{cumulativeGP.toFixed(2)}</td>
+                  <td className="p-1 border-r border-gray-300 text-center">{(cumulativeGP / cumulativeCredit).toFixed(2)}</td>
+                  <td className="p-1 text-center">A</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        <table className="w-full border-collapse mt-4">
-          <thead>
-            <tr className="bg-blue-500 dark:bg-blue-600 text-white">
-              <th className="p-2 border border-gray-300 dark:border-gray-600">Summary</th>
-              <th className="p-2 border border-gray-300 dark:border-gray-600 text-center">Credit</th>
-              <th className="p-2 border border-gray-300 dark:border-gray-600 text-center">GP</th>
-              <th className="p-2 border border-gray-300 dark:border-gray-600 text-center">ANG</th>
-              <th className="p-2 border border-gray-300 dark:border-gray-600 text-center">ALG</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr className="border border-gray-300 dark:border-gray-600 bg-yellow-50 dark:bg-yellow-900/20">
-              <td className="p-2 border-r border-gray-300 dark:border-gray-600 font-bold text-gray-900 dark:text-gray-200">Previous TOTAL</td>
-              <td className="p-2 border-r border-gray-300 dark:border-gray-600 text-center text-gray-700 dark:text-gray-300">{prevTotalCredit.toFixed(2)}</td>
-              <td className="p-2 border-r border-gray-300 dark:border-gray-600 text-center text-gray-700 dark:text-gray-300">{prevTotalGP.toFixed(2)}</td>
-              <td className="p-2 border-r border-gray-300 dark:border-gray-600 text-center text-gray-700 dark:text-gray-300">4.00</td>
-              <td className="p-2 text-center text-gray-700 dark:text-gray-300">A</td>
-            </tr>
-            <tr className="border border-gray-300 dark:border-gray-600 bg-yellow-50 dark:bg-yellow-900/20">
-              <td className="p-2 border-r border-gray-300 dark:border-gray-600 font-bold text-gray-900 dark:text-gray-200">Semestre TOTAL</td>
-              <td className="p-2 border-r border-gray-300 dark:border-gray-600 text-center text-gray-700 dark:text-gray-300">{totalCr.toFixed(2)}</td>
-              <td className="p-2 border-r border-gray-300 dark:border-gray-600 text-center text-gray-700 dark:text-gray-300">{totalPoint.toFixed(2)}</td>
-              <td className="p-2 border-r border-gray-300 dark:border-gray-600 text-center text-gray-700 dark:text-gray-300">{(copy.semesterGPA || 3.80).toFixed(2)}</td>
-              <td className="p-2 text-center text-gray-700 dark:text-gray-300">A</td>
-            </tr>
-            <tr className="border border-gray-300 dark:border-gray-600 bg-yellow-50 dark:bg-yellow-900/20">
-              <td className="p-2 border-r border-gray-300 dark:border-gray-600 font-bold text-gray-900 dark:text-gray-200">Cumulative</td>
-              <td className="p-2 border-r border-gray-300 dark:border-gray-600 text-center text-gray-700 dark:text-gray-300">{cumulativeCredit.toFixed(2)}</td>
-              <td className="p-2 border-r border-gray-300 dark:border-gray-600 text-center text-gray-700 dark:text-gray-300">{cumulativeGP.toFixed(2)}</td>
-              <td className="p-2 border-r border-gray-300 dark:border-gray-600 text-center text-gray-700 dark:text-gray-300">{(cumulativeGP / cumulativeCredit).toFixed(2)}</td>
-              <td className="p-2 text-center text-gray-700 dark:text-gray-300">A</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <div className="font-bold mt-4 text-gray-900 dark:text-white">
-          Status: Pass   Status Description: Very Good
+        <div className="font-bold mt-2 text-xs text-gray-900 dark:text-white">
+          Status: Pass | Status Description: Very Good
         </div>
 
-        <div className="text-xs mt-4 text-gray-600 dark:text-gray-400">
-          Grading System: A+,A=4, A-=3.75, B+=3.50, B=3.00, B-=2.75, C+=2.50, C=2.00, D=1.00, F=0.00, I=Incomplete | A=Excellent, B+=Good, C+=Satisfactory, C=Fair, D=Below Pass Mark, F=Fail
+        <div className="text-[10px] mt-1 text-gray-600 dark:text-gray-400 leading-tight">
+          Grading: A+,A=4, A-=3.75, B+=3.50, B=3.00, B-=2.75, C+=2.50, C=2.00, D=1.00, F=0.00, I=Incomplete | A=Excellent, B+=Good, C+=Satisfactory, C=Fair, D=Below Pass, F=Fail
         </div>
 
-        <div className="text-xs mt-4 text-gray-500 dark:text-gray-500">
+        <div className="text-[10px] mt-1 text-gray-500 dark:text-gray-500">
           "Course Repeated", "Courses Taken from other university/College", DATE ISSUE & [Date]
         </div>
 
-        <div className="flex justify-between mt-6 text-gray-900 dark:text-white">
-          <div><span className="font-bold">REGISTRAR:</span> _________________________</div>
-          <div><span className="font-bold">DEAN/VICE DEAN:</span> _________________________</div>
+        <div className="flex justify-between mt-2 text-xs text-gray-900 dark:text-white">
+          <div><span className="font-bold">REGISTRAR:</span> __________</div>
+          <div><span className="font-bold">DEAN/VICE DEAN:</span> __________</div>
         </div>
       </div>
     </div>
