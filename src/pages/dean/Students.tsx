@@ -43,6 +43,12 @@ interface Statistics {
   averageCGPA: number;
 }
 
+interface FilteredStatistics {
+  filteredCount: number;
+  filteredAverageCGPA: number;
+  filteredActiveCount: number;
+}
+
 interface LookupOption {
   name: string;
   id: string | number;
@@ -74,6 +80,11 @@ export default function DeanStudents() {
   const [error, setError] = useState<string | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
   const [statistics, setStatistics] = useState<Statistics | null>(null);
+  const [filteredStats, setFilteredStats] = useState<FilteredStatistics>({
+    filteredCount: 0,
+    filteredAverageCGPA: 0,
+    filteredActiveCount: 0,
+  });
   const [lookups, setLookups] = useState<LookupsResponse | null>(null);
 
   useEffect(() => {
@@ -81,44 +92,51 @@ export default function DeanStudents() {
     fetchLookups();
   }, []);
 
+  // New useEffect to recalculate filtered statistics when filters or students change
+  useEffect(() => {
+    calculateFilteredStatistics();
+  }, [query, selectedBcys, selectedDepartment, selectedStatus, students]);
+
   const fetchStudents = async () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       // Use the correct endpoint for Dean to get all students with CGPA
       const response = await apiClient.get(endPoints.getAllStudentsCGPA_DN);
-      
+
       console.log("API Response:", response.data); // Debug log
-      
+
       let studentData: Student[] = [];
-      
+
       // Handle the response structure
       if (Array.isArray(response.data)) {
         studentData = response.data;
       } else if (response.data?.data && Array.isArray(response.data.data)) {
         studentData = response.data.data;
-      } else if (response.data?.students && Array.isArray(response.data.students)) {
+      } else if (
+        response.data?.students &&
+        Array.isArray(response.data.students)
+      ) {
         studentData = response.data.students;
       }
-      
+
       // Ensure we have an array
       if (!Array.isArray(studentData)) {
         console.error("Student data is not an array:", studentData);
         studentData = [];
       }
-      
+
       setStudents(studentData);
-      
+
       // Calculate statistics from student data
       calculateStatistics(studentData);
-      
     } catch (err: any) {
       console.error("Failed to load students:", err);
       setError(
         err.response?.data?.error ||
-        err.message ||
-        "Failed to load students. Please try again later."
+          err.message ||
+          "Failed to load students. Please try again later.",
       );
       // Set empty arrays to prevent errors
       setStudents([]);
@@ -131,37 +149,65 @@ export default function DeanStudents() {
     if (!Array.isArray(studentList)) {
       studentList = [];
     }
-    
-    const activeCount = studentList.filter(s => 
-      s?.studentStatus?.toLowerCase() === "active"
+
+    const activeCount = studentList.filter((s) =>
+      s?.studentStatus?.toLowerCase().includes("active"),
     ).length;
-    
+
     // Note: Gender information is not provided in the API response
     // You may need to update this if gender is added to the API
     const maleCount = 0; // Placeholder - update when gender data is available
     const femaleCount = 0; // Placeholder - update when gender data is available
-    
+
     // Calculate average CGPA
-    const totalCGPA = studentList.reduce((sum, student) => sum + (student.cgpa || 0), 0);
-    const averageCGPA = studentList.length > 0 ? totalCGPA / studentList.length : 0;
-    
+    const totalCGPA = studentList.reduce(
+      (sum, student) => sum + (student.cgpa || 0),
+      0,
+    );
+    const averageCGPA =
+      studentList.length > 0 ? totalCGPA / studentList.length : 0;
+
     const stats: Statistics = {
       totalStudentsInCollege: studentList.length,
       maleCount: maleCount,
       femaleCount: femaleCount,
       activeStudentsCount: activeCount,
       inactiveStudentsCount: studentList.length - activeCount,
-      averageCGPA: parseFloat(averageCGPA.toFixed(2))
+      averageCGPA: parseFloat(averageCGPA.toFixed(2)),
     };
-    
+
     setStatistics(stats);
+  };
+
+  // New function to calculate statistics from filtered students
+  const calculateFilteredStatistics = () => {
+    const filteredList = filtered;
+
+    // Calculate filtered average CGPA
+    const totalFilteredCGPA = filteredList.reduce(
+      (sum, student) => sum + (student.cgpa || 0),
+      0,
+    );
+    const filteredAverageCGPA =
+      filteredList.length > 0 ? totalFilteredCGPA / filteredList.length : 0;
+
+    // Calculate filtered active count
+    const filteredActiveCount = filteredList.filter((s) =>
+      s?.studentStatus?.toLowerCase().includes("active"),
+    ).length;
+
+    setFilteredStats({
+      filteredCount: filteredList.length,
+      filteredAverageCGPA: parseFloat(filteredAverageCGPA.toFixed(2)),
+      filteredActiveCount: filteredActiveCount,
+    });
   };
 
   const fetchLookups = async () => {
     try {
       setLoadingLookups(true);
       const response = await apiClient.get<LookupsResponse>(
-        endPoints.lookupsDropdown
+        endPoints.lookupsDropdown,
       );
       setLookups(response.data);
     } catch (err: any) {
@@ -173,61 +219,84 @@ export default function DeanStudents() {
 
   const filtered = useMemo(() => {
     if (!students || !Array.isArray(students)) return [];
-    
+
     return students.filter((s) => {
       if (!s) return false;
-      
-      const name = s.fullName || '';
-      const idNumber = s.idNumber || '';
-      const department = s.department || '';
-      const bcys = s.batchClassYearSemester || '';
-      const status = s.studentStatus || '';
-      
+
+      const name = s.fullName || "";
+      const idNumber = s.idNumber || "";
+      const department = s.department || "";
+      const bcys = s.batchClassYearSemester || "";
+      const status = s.studentStatus || "";
+
       const matchesQuery =
         name.toLowerCase().includes(query.toLowerCase()) ||
         idNumber.toLowerCase().includes(query.toLowerCase());
-      
+
       const matchesBcys = selectedBcys === "All" || bcys === selectedBcys;
-      const matchesDepartment = selectedDepartment === "All" || department === selectedDepartment;
-      const matchesStatus = selectedStatus === "All" || status === selectedStatus;
-      
+      const matchesDepartment =
+        selectedDepartment === "All" || department === selectedDepartment;
+      const matchesStatus =
+        selectedStatus === "All" || status === selectedStatus;
+
       return matchesQuery && matchesBcys && matchesDepartment && matchesStatus;
     });
   }, [query, selectedBcys, selectedDepartment, selectedStatus, students]);
 
   const getStatusColor = (status: string) => {
-    if (!status) return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
-    
+    if (!status)
+      return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700";
+
     const statusLower = status.toLowerCase();
-    
+
     // Handle various status formats from API
-    if (statusLower.includes('active')) {
-      return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800';
-    } else if (statusLower.includes('dismissed') || statusLower.includes('withdraw') || statusLower.includes('drop')) {
-      return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800';
-    } else if (statusLower.includes('probation') || statusLower.includes('incomplete')) {
-      return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800';
-    } else if (statusLower.includes('transfer') || statusLower.includes('cancelled')) {
-      return 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800';
-    } else if (statusLower.includes('completed') || statusLower.includes('graduated')) {
-      return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800';
+    if (statusLower.includes("active")) {
+      return "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800";
+    } else if (
+      statusLower.includes("dismissed") ||
+      statusLower.includes("withdraw") ||
+      statusLower.includes("drop")
+    ) {
+      return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800";
+    } else if (
+      statusLower.includes("probation") ||
+      statusLower.includes("incomplete")
+    ) {
+      return "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800";
+    } else if (
+      statusLower.includes("transfer") ||
+      statusLower.includes("cancelled")
+    ) {
+      return "bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800";
+    } else if (
+      statusLower.includes("completed") ||
+      statusLower.includes("graduated")
+    ) {
+      return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800";
     } else {
-      return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
+      return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700";
     }
   };
 
   const getCGPAcolor = (cgpa: number) => {
-    if (cgpa >= 3.5) return 'text-green-600 dark:text-green-400';
-    if (cgpa >= 3.0) return 'text-blue-600 dark:text-blue-400';
-    if (cgpa >= 2.0) return 'text-yellow-600 dark:text-yellow-400';
-    return 'text-red-600 dark:text-red-400';
+    if (cgpa >= 3.5) return "text-green-600 dark:text-green-400";
+    if (cgpa >= 3.0) return "text-blue-600 dark:text-blue-400";
+    if (cgpa >= 2.0) return "text-yellow-600 dark:text-yellow-400";
+    return "text-red-600 dark:text-red-400";
   };
 
   // Format status for display (replace underscores with spaces)
   const formatStatus = (status: string) => {
-    if (!status) return 'Unknown';
-    return status.replace(/_/g, ' ');
+    if (!status) return "Unknown";
+    return status.replace(/_/g, " ");
   };
+
+  // Determine if filters are active
+  const hasActiveFilters =
+    query !== "" ||
+    selectedBcys !== "All" ||
+    selectedDepartment !== "All" ||
+    selectedStatus !== "All";
 
   if (loading) {
     return (
@@ -249,10 +318,7 @@ export default function DeanStudents() {
         <p className="text-lg text-red-600 dark:text-red-400 text-center px-4">
           {error}
         </p>
-        <Button
-          variant="outline"
-          onClick={fetchStudents}
-        >
+        <Button variant="outline" onClick={fetchStudents}>
           Retry
         </Button>
       </div>
@@ -262,7 +328,9 @@ export default function DeanStudents() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">College Students</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          College Students
+        </h1>
         <p className="text-gray-600 dark:text-gray-400 mt-2">
           View all students across the college with their academic performance
         </p>
@@ -275,8 +343,17 @@ export default function DeanStudents() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Total Students</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{statistics.totalStudentsInCollege}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Total Students
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {statistics.totalStudentsInCollege}
+                  </p>
+                  {hasActiveFilters && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Filtered: {filteredStats.filteredCount}
+                    </p>
+                  )}
                 </div>
                 <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900/30">
                   <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
@@ -289,15 +366,24 @@ export default function DeanStudents() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Active Students</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{statistics.activeStudentsCount}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Active Students
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {statistics.activeStudentsCount}
+                  </p>
+                  {hasActiveFilters && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Filtered: {filteredStats.filteredActiveCount}
+                    </p>
+                  )}
                 </div>
                 <div className="p-3 rounded-full bg-green-100 dark:bg-green-900/30">
                   <Activity className="h-6 w-6 text-green-600 dark:text-green-400" />
                 </div>
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                {statistics.inactiveStudentsCount} inactive
+                {statistics.inactiveStudentsCount} inactive overall
               </p>
             </CardContent>
           </Card>
@@ -306,15 +392,30 @@ export default function DeanStudents() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Average CGPA</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{statistics.averageCGPA.toFixed(2)}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Average CGPA
+                  </p>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {hasActiveFilters
+                        ? filteredStats.filteredAverageCGPA.toFixed(2)
+                        : statistics.averageCGPA.toFixed(2)}
+                    </p>
+                    {hasActiveFilters && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        (from {filteredStats.filteredCount} students)
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <div className="p-3 rounded-full bg-purple-100 dark:bg-purple-900/30">
                   <GraduationCap className="h-6 w-6 text-purple-600 dark:text-purple-400" />
                 </div>
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                College-wide average
+                {hasActiveFilters
+                  ? "Average of filtered students"
+                  : "College-wide average"}
               </p>
             </CardContent>
           </Card>
@@ -323,10 +424,18 @@ export default function DeanStudents() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Departments</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {[...new Set(students.map(s => s.department))].length}
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Departments
                   </p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {[...new Set(students.map((s) => s.department))].length}
+                  </p>
+                  {hasActiveFilters && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Filtered:{" "}
+                      {[...new Set(filtered.map((s) => s.department))].length}
+                    </p>
+                  )}
                 </div>
                 <div className="p-3 rounded-full bg-orange-100 dark:bg-orange-900/30">
                   <Filter className="h-6 w-6 text-orange-600 dark:text-orange-400" />
@@ -343,7 +452,9 @@ export default function DeanStudents() {
       {/* Main Card */}
       <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardHeader>
-          <CardTitle className="text-gray-900 dark:text-white">Student Management</CardTitle>
+          <CardTitle className="text-gray-900 dark:text-white">
+            Student Management
+          </CardTitle>
           <CardDescription className="text-gray-600 dark:text-gray-400">
             Search, filter, and view student profiles across all departments
           </CardDescription>
@@ -353,7 +464,9 @@ export default function DeanStudents() {
           {/* Filters */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Search</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Search
+              </label>
               <Input
                 placeholder="Search by name or ID number"
                 value={query}
@@ -361,11 +474,11 @@ export default function DeanStudents() {
                 className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
               />
             </div>
-            
+
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
-                Batch/Class/Year/Semester
+                Select current BCYS
               </label>
               <select
                 className="w-full border rounded-md px-3 py-2 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
@@ -373,7 +486,7 @@ export default function DeanStudents() {
                 onChange={(e) => setSelectedBcys(e.target.value)}
                 disabled={loadingLookups}
               >
-                <option value="All">All Batch/Class/Year/Semester</option>
+                <option value="All">All BCYS</option>
                 {loadingLookups ? (
                   <option disabled>Loading options...</option>
                 ) : (
@@ -385,25 +498,29 @@ export default function DeanStudents() {
                 )}
               </select>
             </div>
-            
+
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Department</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Department
+              </label>
               <select
                 className="w-full border rounded-md px-3 py-2 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
                 value={selectedDepartment}
                 onChange={(e) => setSelectedDepartment(e.target.value)}
               >
                 <option value="All">All Departments</option>
-                {[...new Set(students.map(s => s.department))].map((dept) => (
+                {[...new Set(students.map((s) => s.department))].map((dept) => (
                   <option key={dept} value={dept}>
                     {dept}
                   </option>
                 ))}
               </select>
             </div>
-            
+
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Status
+              </label>
               <select
                 className="w-full border rounded-md px-3 py-2 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
                 value={selectedStatus}
@@ -416,7 +533,7 @@ export default function DeanStudents() {
                 ) : (
                   lookups?.studentStatuses?.map((status) => (
                     <option key={status.id} value={status.name}>
-                      {status.name.replace(/_/g, ' ')}
+                      {status.name.replace(/_/g, " ")}
                     </option>
                   ))
                 )}
@@ -436,40 +553,68 @@ export default function DeanStudents() {
             <table className="min-w-full">
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr className="text-left">
-                  <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">ID Number</th>
-                  <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Full Name</th>
-                  <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Department Enrolled</th>
-                  <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Current Batch/Class/Year/Semester</th>
-                  <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">CGPA</th>
-                  <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Student Status</th>
+                  <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">
+                    ID Number
+                  </th>
+                  <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">
+                    Full Name
+                  </th>
+                  <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">
+                    Department Enrolled
+                  </th>
+                  <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">
+                    Current BCYS
+                  </th>
+                  <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">
+                    CGPA
+                  </th>
+                  <th className="py-3 px-4 font-medium text-gray-700 dark:text-gray-300">
+                    Student Status
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-gray-500 dark:text-gray-400">
-                      {students.length === 0 ? "No students found in the system" : "No students found matching your criteria"}
+                    <td
+                      colSpan={6}
+                      className="py-8 text-center text-gray-500 dark:text-gray-400"
+                    >
+                      {students.length === 0
+                        ? "No students found in the system"
+                        : "No students found matching your criteria"}
                     </td>
                   </tr>
                 ) : (
                   filtered.map((student) => (
-                    <tr key={student.studentId} className="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                    <tr
+                      key={student.studentId}
+                      className="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                    >
                       <td className="py-3 px-4">
                         <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm text-gray-800 dark:text-gray-100 font-mono">
-                          {student.idNumber || 'N/A'}
+                          {student.idNumber || "N/A"}
                         </code>
                       </td>
-                      <td className="py-3 px-4 font-medium text-gray-900 dark:text-white">{student.fullName || 'N/A'}</td>
-                      <td className="py-3 px-4 text-gray-700 dark:text-gray-300">{student.department || 'N/A'}</td>
-                      <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{student.batchClassYearSemester || 'N/A'}</td>
+                      <td className="py-3 px-4 font-medium text-gray-900 dark:text-white">
+                        {student.fullName || "N/A"}
+                      </td>
+                      <td className="py-3 px-4 text-gray-700 dark:text-gray-300">
+                        {student.department || "N/A"}
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
+                        {student.batchClassYearSemester || "N/A"}
+                      </td>
                       <td className="py-3 px-4">
-                        <div className={`font-bold ${getCGPAcolor(student.cgpa)}`}>
-                          {student.cgpa ? student.cgpa.toFixed(2) : 'N/A'}
+                        <div
+                          className={`font-bold ${getCGPAcolor(student.cgpa)}`}
+                        >
+                          {student.cgpa ? student.cgpa.toFixed(2) : "N/A"}
                         </div>
                       </td>
                       <td className="py-3 px-4">
-                        <Badge 
-                          variant="outline" 
+                        <Badge
+                          variant="outline"
                           className={`${getStatusColor(student.studentStatus)}`}
                         >
                           {formatStatus(student.studentStatus)}
@@ -485,23 +630,49 @@ export default function DeanStudents() {
           {/* Summary */}
           <div className="flex flex-col sm:flex-row items-center justify-between text-sm text-gray-600 dark:text-gray-400 gap-4">
             <div className="text-center sm:text-left">
-              Showing <span className="font-medium text-gray-900 dark:text-white">{filtered.length}</span> of{' '}
-              <span className="font-medium text-gray-900 dark:text-white">{students.length || 0}</span> students
+              Showing{" "}
+              <span className="font-medium text-gray-900 dark:text-white">
+                {filtered.length}
+              </span>{" "}
+              of{" "}
+              <span className="font-medium text-gray-900 dark:text-white">
+                {students.length || 0}
+              </span>{" "}
+              students
             </div>
             <div className="flex items-center gap-2">
-              {(selectedBcys !== "All" || selectedDepartment !== "All" || selectedStatus !== "All") && (
+              {(selectedBcys !== "All" ||
+                selectedDepartment !== "All" ||
+                selectedStatus !== "All" ||
+                query !== "") && (
                 <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-full text-xs">
                   <Filter className="h-3 w-3" />
-                  {selectedBcys !== "All" && <span>Program: {selectedBcys}</span>}
-                  {selectedDepartment !== "All" && <span>Dept: {selectedDepartment}</span>}
-                  {selectedStatus !== "All" && <span>Status: {formatStatus(selectedStatus)}</span>}
+                  {selectedBcys !== "All" && (
+                    <span>Program: {selectedBcys}</span>
+                  )}
+                  {selectedDepartment !== "All" && (
+                    <span>Dept: {selectedDepartment}</span>
+                  )}
+                  {selectedStatus !== "All" && (
+                    <span>Status: {formatStatus(selectedStatus)}</span>
+                  )}
+                  {query !== "" && <span>Search: "{query}"</span>}
                 </div>
               )}
               <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" />
-              <span>{statistics?.activeStudentsCount || 0} Active</span>
+              <span>
+                {hasActiveFilters
+                  ? `${filteredStats.filteredActiveCount} Active (filtered)`
+                  : `${statistics?.activeStudentsCount || 0} Active`}
+              </span>
               <span className="mx-2 text-gray-400">•</span>
               <GraduationCap className="h-4 w-4 text-purple-500 dark:text-purple-400" />
-              <span>Avg CGPA: {statistics?.averageCGPA.toFixed(2) || '0.00'}</span>
+              <span>
+                Avg CGPA:{" "}
+                {hasActiveFilters
+                  ? filteredStats.filteredAverageCGPA.toFixed(2)
+                  : statistics?.averageCGPA.toFixed(2) || "0.00"}
+              </span>
             </div>
           </div>
         </CardContent>

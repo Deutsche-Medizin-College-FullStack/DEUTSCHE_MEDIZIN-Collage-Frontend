@@ -27,9 +27,13 @@ import {
   Camera,
   Eye,
   EyeOff,
+  BookOpen,
+  CheckCircle,
+  Clock,
+  CreditCard,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import apiService from "@/components/api/apiService";
 import endPoints from "@/components/api/endPoints";
 import {
@@ -41,6 +45,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { AcademicProgression } from "../../components/Extra/AcademicProgression"; // Adjust path as needed
 
 export default function StudentProfile() {
   const location = useLocation();
@@ -50,6 +55,10 @@ export default function StudentProfile() {
   const [selectedPhotoFile, setSelectedPhotoFile] = useState<File | null>(null);
 
   const { toast } = useToast();
+  const [showAcademicProgression, setShowAcademicProgression] = useState(false);
+  // Add sample data for demo (replace with actual API call later)
+  const [academicProgressionData, setAcademicProgressionData] = useState(null);
+  const [loadingProgression, setLoadingProgression] = useState(false);
 
   const [editMode, setEditMode] = useState(false);
   const [passwordForm, setPasswordForm] = useState(false);
@@ -91,6 +100,108 @@ export default function StudentProfile() {
     fetchStudentData();
     fetchDropdownData();
   }, [id]);
+
+  //==========================
+  // Function to fetch academic progression data
+  const fetchAcademicProgression = async () => {
+    if (!id) return;
+
+    // Use the userId from studentData (not the route param id)
+    // The studentData.userId is the actual user account ID needed for the endpoint
+    const userId = studentData?.userId;
+
+    if (!userId) {
+      toast({
+        title: "Error",
+        description: "Student user ID not found",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setLoadingProgression(true);
+
+      // Make the API call using the userId from studentData
+      const response = await apiService.get(
+        `/registrar/students/${userId}/academic-progress`,
+      );
+
+      // Transform the response to match component props
+      const transformedData = {
+        ...response,
+        // Map takenCourses to include isReleased property
+        takenCourses:
+          response.takenCourses?.map((course: any) => ({
+            ...course,
+            isReleased: course.released, // Map 'released' from API to 'isReleased' for component
+          })) || [],
+        // Ensure remainingCourses is always an array
+        remainingCourses: response.remainingCourses || [],
+      };
+
+      // Set the transformed data
+      setAcademicProgressionData(transformedData);
+    } catch (err: any) {
+      console.error("Error fetching academic progression:", err);
+
+      // Extract error message from response
+      let errorMessage = "Failed to load academic progression data";
+
+      if (err.response) {
+        const status = err.response.status;
+        const errorData = err.response.data;
+
+        switch (status) {
+          case 404:
+            errorMessage =
+              errorData?.error || `Student not found with user ID: ${userId}`;
+            break;
+          case 400:
+            errorMessage = errorData?.error || "Invalid student user ID";
+            break;
+          case 401:
+            errorMessage = "You are not authenticated. Please login again.";
+            break;
+          case 403:
+            errorMessage =
+              "You don't have permission to view academic progression data.";
+            break;
+          case 500:
+            errorMessage =
+              errorData?.error ||
+              "An unexpected error occurred. Please try again later.";
+            break;
+          default:
+            errorMessage =
+              errorData?.error || errorData?.message || "Failed to load data";
+        }
+      } else if (err.request) {
+        errorMessage = "No response from server. Please check your connection.";
+      } else {
+        errorMessage = err.message || "An unexpected error occurred";
+      }
+
+      toast({
+        title: "Error Loading Academic Progress",
+        description: errorMessage,
+        variant: "destructive",
+      });
+
+      setAcademicProgressionData(null);
+    } finally {
+      setLoadingProgression(false);
+    }
+  };
+
+  // Handle button click
+  const handleViewProgression = async () => {
+    if (!showAcademicProgression && !academicProgressionData) {
+      await fetchAcademicProgression();
+    }
+    setShowAcademicProgression(!showAcademicProgression);
+  };
+  //==========================
 
   const fetchStudentData = async () => {
     if (!id) return;
@@ -1820,6 +1931,66 @@ export default function StudentProfile() {
               )}
             </>
           )}
+
+          {/* Academic Progression Section */}
+          <div className="mt-6">
+            <Button
+              onClick={handleViewProgression}
+              variant="outline"
+              className={`w-full flex items-center justify-center gap-2 py-6 border-2 transition-all relative ${
+                loadingProgression
+                  ? "border-blue-300 bg-blue-50 dark:bg-blue-900/20 cursor-wait"
+                  : "border-dashed hover:border-solid"
+              }`}
+              disabled={loadingProgression}
+            >
+              {loadingProgression ? (
+                // Loading state with pulsing effect
+                <>
+                  <div className="relative">
+                    <div className="animate-ping absolute inset-0 h-5 w-5 rounded-full bg-blue-400 opacity-75"></div>
+                    <div className="animate-spin h-5 w-5 border-2 border-blue-600 rounded-full border-t-transparent relative"></div>
+                  </div>
+                  <span className="font-medium animate-pulse">
+                    Fetching academic data...
+                  </span>
+                </>
+              ) : (
+                // Normal state
+                <>
+                  <GraduationCap
+                    className={`h-5 w-5 transition-transform ${showAcademicProgression ? "rotate-180" : ""}`}
+                  />
+                  <span className="font-medium">
+                    {showAcademicProgression ? "Hide" : "View"} Academic
+                    Progression
+                  </span>
+                  {academicProgressionData && (
+                    <Badge variant="secondary" className="ml-2">
+                      {academicProgressionData.totalTakenCourses || 0} Completed
+                    </Badge>
+                  )}
+                </>
+              )}
+            </Button>
+
+            <AnimatePresence>
+              {showAcademicProgression && (
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="mt-4"
+                >
+                  <AcademicProgression
+                    {...academicProgressionData}
+                    isLoading={loadingProgression}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
     </div>

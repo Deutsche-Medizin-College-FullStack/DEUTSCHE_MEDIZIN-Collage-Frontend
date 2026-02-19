@@ -1,3 +1,5 @@
+import { AcademicProgression } from "../Extra/AcademicProgression";
+
 const endPoints = {
   /* =======================     Auth & Account  ======================== */
   login: "/auth/login",
@@ -55,7 +57,7 @@ const endPoints = {
 
   teacherCourseAssignmentDeletion: (
     teacherId: string | number,
-    assignmentId: string | number
+    assignmentId: string | number,
   ) => `/teachers/${teacherId}/course-assignments/${assignmentId}`,
 
   getTeacherCourses: "/teachers/my-courses",
@@ -125,7 +127,6 @@ const endPoints = {
   programModalityByCode: "/program-modality/:id",
   generateGradeReport: "/grade-report/generate",
 
-
   /* =======================     Batches & Classes  ======================== */
   batches: "/batches",
   singleBatch: "/batches/:id",
@@ -165,19 +166,19 @@ const endPoints = {
   getAllStudentsCGPA: "/general-managers/get-all-students-cgpa",
   updateGeneralManagerProfile: "/general-managers/update",
 
-
   /* =======================     Deans  ======================== */
   getActiveDeans: "/deans/active",
   getActiveViceDeans: "/vice-deans/active",
   getDeanById: "/deans",
   fields: "/students/fields",
-  getAllStudentsCGPA_DN:"/deans/get-all-students-cgpa",
+  getAllStudentsCGPA_DN: "/deans/get-all-students-cgpa",
   /* =======================     Registrar  ======================== */
   getRegistrarDeanApprovedScores: "/registrar/dean-approved-scores",
   registrarFinalApproveAll:
     "/registrar/assignments/:teacherCourseAssignmentId/final-approve-all",
   progressionSequences: "/registrar/progression-sequences",
   formTemplates: "/registrar/form-templates",
+  registrarAcademicProgress: "/registrar/students/:userId/academic-progress",
 
   /* =======================     Vice Deans  ======================== */
   createViceDean: "/auth/register/vice-dean",
@@ -187,8 +188,9 @@ const endPoints = {
   getViceDeanDocument: "/vice-deans/get-document",
 
   /* =======================     Dean Assessment Endpoints ======================== */
-getDeanHeadApprovedScores: "/deans/head-approved-scores",  
-deanBulkApproveAll: "/deans/assignments/:teacherCourseAssignmentId/approve-all",  
+  getDeanHeadApprovedScores: "/deans/head-approved-scores",
+  deanBulkApproveAll:
+    "/deans/assignments/:teacherCourseAssignmentId/approve-all",
 };
 
 export default endPoints;
