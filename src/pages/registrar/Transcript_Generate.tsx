@@ -752,25 +752,28 @@ const exportStudentCopyToPDF = () => {
       }
 
       // Student Info Table - Full labels as requested
-      autoTable(doc, {
-        startY: y,
-        body: [
-          ["ID Number", transcript.idNumber || "", "Birth Date", transcript.birthDateGC || ""],
-          ["Full Name", transcript.fullName?.substring(0, 25) || "", "Enrolment Type", transcript.programModality?.name?.substring(0, 10) || "-"],
-          ["Sex", transcript.gender || "", "Department", transcript.department?.name?.substring(0, 15) || "-"],
-          ["Program", transcript.programLevel?.name?.substring(0, 10) || "-", "Field of Study", transcript.department?.name?.substring(0, 15) || "-"],
-          ["Date Of Admission", transcript.dateEnrolledGC || "", "Date Issued", transcript.dateIssuedGC || ""],
-        ],
-        theme: "grid",
-        styles: { fontSize: 6, cellPadding: 1, lineWidth: 0.1, textColor: [0, 0, 0], halign: "center" },
-        columnStyles: {
-          0: { fontStyle: "bold", cellWidth: 25, fillColor: [235, 245, 255], halign: "left" },
-          1: { cellWidth: 40, halign: "left" },
-          2: { fontStyle: "bold", cellWidth: 25, fillColor: [235, 245, 255], halign: "left" },
-          3: { cellWidth: 40, halign: "left" },
-        },
-        margin: { left: margin, right: margin },
-      });
+        const tableWidth = 130; 
+        const centerX = (pageWidth - tableWidth) / 2;
+
+        autoTable(doc, {
+          startY: y,
+          body: [
+            ["ID Number", transcript.idNumber || "", "Birth Date", transcript.birthDateGC || ""],
+            ["Full Name", transcript.fullName?.substring(0, 25) || "", "Enrolment Type", transcript.programModality?.name?.substring(0, 10) || "-"],
+            ["Sex", transcript.gender || "", "Department", transcript.department?.name?.substring(0, 15) || "-"],
+            ["Program", transcript.programLevel?.name?.substring(0, 10) || "-", "Field of Study", transcript.department?.name?.substring(0, 15) || "-"],
+            ["Date Of Admission", transcript.dateEnrolledGC || "", "Date Issued", transcript.dateIssuedGC || ""],
+          ],
+          theme: "grid",
+          styles: { fontSize: 6, cellPadding: 1, lineWidth: 0.1, textColor: [0, 0, 0], halign: "center" },
+          columnStyles: {
+            0: { fontStyle: "bold", cellWidth: 25, fillColor: [235, 245, 255], halign: "left" },
+            1: { cellWidth: 40, halign: "left" },
+            2: { fontStyle: "bold", cellWidth: 25, fillColor: [235, 245, 255], halign: "left" },
+            3: { cellWidth: 40, halign: "left" },
+          },
+          margin: { left: centerX },
+        });
 
       y = (doc as any).lastAutoTable.finalY + 4;
 
@@ -783,7 +786,7 @@ const exportStudentCopyToPDF = () => {
         const leftCopy = transcript.studentCopies[i];
         if (leftCopy) {
           let currentY = leftStartY;
-          const headerWidth = columnWidth * 0.7;
+          const headerWidth = columnWidth * 0.82;
           // Semester header - centered with full text
           doc.setFillColor(255, 140, 0);
           doc.rect(margin, currentY - 2, headerWidth, 4, "F");
@@ -832,7 +835,7 @@ const exportStudentCopyToPDF = () => {
 
           // Summary stats - increased font size and moved down
           doc.setFillColor(255, 140, 0);
-          doc.rect(margin, currentY, columnWidth, 3.5, "F");
+          doc.rect(margin, currentY, headerWidth, 3.5, "F");
           doc.setTextColor(255, 255, 255);
           doc.setFontSize(6); // Increased font size
           doc.setFont("helvetica", "bold");
@@ -848,7 +851,7 @@ const exportStudentCopyToPDF = () => {
         if (rightCopy) {
           let currentY = rightStartY;
           const rightX = pageWidth / 2 + margin / 2;
-          const headerWidth = columnWidth * 0.7;
+          const headerWidth = columnWidth * 0.82;
 
           // Semester header - centered with full text
           doc.setFillColor(255, 140, 0);
@@ -895,10 +898,10 @@ const exportStudentCopyToPDF = () => {
           });
 
           currentY = (doc as any).lastAutoTable.finalY + 2;
-
+        
           // Summary stats - increased font size and moved down
           doc.setFillColor(255, 140, 0);
-          doc.rect(rightX, currentY, columnWidth, 3.5, "F");
+          doc.rect(rightX, currentY, headerWidth, 3.5, "F");
           doc.setTextColor(255, 255, 255);
           doc.setFontSize(6); // Increased font size
           doc.setFont("helvetica", "bold");
@@ -910,6 +913,20 @@ const exportStudentCopyToPDF = () => {
         }
 
         y = Math.max(leftStartY, rightStartY) + 2;
+
+        // Draw horizontal separator line after each semester pair
+          doc.setDrawColor(180, 180, 180); // light gray (optional)
+          doc.setLineWidth(0.3);
+
+          doc.line(
+            margin,                 // start X (left margin)
+            y,                      // start Y
+            pageWidth - margin,     // end X (right margin)
+            y                       // end Y (same Y → horizontal line)
+          );
+
+          // add space after the line
+          y += 4;
       }
 
       // Signatures - moved down to prevent overlap
