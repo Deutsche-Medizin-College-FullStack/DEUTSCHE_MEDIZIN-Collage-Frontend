@@ -783,26 +783,26 @@ const exportStudentCopyToPDF = () => {
         const leftCopy = transcript.studentCopies[i];
         if (leftCopy) {
           let currentY = leftStartY;
-
+          const headerWidth = columnWidth * 0.7;
           // Semester header - centered with full text
           doc.setFillColor(255, 140, 0);
-          doc.rect(margin, currentY - 2, columnWidth, 4, "F");
+          doc.rect(margin, currentY - 2, headerWidth, 4, "F");
           doc.setTextColor(255, 255, 255);
           doc.setFontSize(5);
           doc.setFont("helvetica", "bold");
           const headerText = `${leftCopy.academicYear || "2024G.C/2016ec"} • Year ${leftCopy.classyear?.name || "I"} • ${leftCopy.semester?.name || "First Semester"}`;
-          doc.text(headerText, margin + columnWidth/2, currentY, { align: "center" });
+          doc.text(headerText, margin + headerWidth / 2, currentY, { align: "center" });
           currentY += 3;
           doc.setTextColor(0, 0, 0);
 
           // Courses table
           const coursesData = leftCopy.courses.map((c, j) => [
             (j + 1).toString(),
-            c.courseCode?.substring(0, 6) || "",
-            c.courseTitle?.substring(0, 18) || "",
-            c.totalCrHrs?.toFixed(1) || "0",
+            c.courseCode?.substring(0, 15) || "",
+            c.courseTitle?.substring(0, 40) || "",
+            c.totalCrHrs?.toFixed(2) || "0",
             c.letterGrade || "",
-            c.gradePoint?.toFixed(1) || "0",
+            c.gradePoint?.toFixed(2) || "0",
           ]);
 
           autoTable(doc, {
@@ -819,11 +819,11 @@ const exportStudentCopyToPDF = () => {
             },
             columnStyles: {
               0: { cellWidth: 3, halign: "center" },
-              1: { cellWidth: 10 },
-              2: { cellWidth: 30 },
-              3: { cellWidth: 4, halign: "center" },
+              1: { cellWidth: 18 },
+              2: { cellWidth: 35 },
+              3: { cellWidth: 10, halign: "center" },
               4: { cellWidth: 5, halign: "center" },
-              5: { cellWidth: 4, halign: "center" },
+              5: { cellWidth: 10, halign: "center" },
             },
             margin: { left: margin, right: pageWidth - margin - columnWidth },
           });
@@ -848,26 +848,27 @@ const exportStudentCopyToPDF = () => {
         if (rightCopy) {
           let currentY = rightStartY;
           const rightX = pageWidth / 2 + margin / 2;
+          const headerWidth = columnWidth * 0.7;
 
           // Semester header - centered with full text
           doc.setFillColor(255, 140, 0);
-          doc.rect(rightX, currentY - 2, columnWidth, 4, "F");
+          doc.rect(rightX, currentY - 2, headerWidth, 4, "F");
           doc.setTextColor(255, 255, 255);
           doc.setFontSize(5);
           doc.setFont("helvetica", "bold");
           const headerText = `${rightCopy.academicYear || "2024G.C/2016ec"} • Year ${rightCopy.classyear?.name || "I"} • ${rightCopy.semester?.name || "First Semester"}`;
-          doc.text(headerText, rightX + columnWidth/2, currentY, { align: "center" });
+          doc.text(headerText, rightX + headerWidth/2, currentY, { align: "center" });
           currentY += 3;
           doc.setTextColor(0, 0, 0);
 
           // Courses table
           const coursesData = rightCopy.courses.map((c, j) => [
             (j + 1).toString(),
-            c.courseCode?.substring(0, 6) || "",
-            c.courseTitle?.substring(0, 18) || "",
-            c.totalCrHrs?.toFixed(1) || "0",
+            c.courseCode?.substring(0, 15) || "",
+            c.courseTitle?.substring(0, 40) || "",
+            c.totalCrHrs?.toFixed(2) || "0",
             c.letterGrade || "",
-            c.gradePoint?.toFixed(1) || "0",
+            c.gradePoint?.toFixed(2) || "0",
           ]);
 
           autoTable(doc, {
@@ -884,11 +885,11 @@ const exportStudentCopyToPDF = () => {
             },
             columnStyles: {
               0: { cellWidth: 3, halign: "center" },
-              1: { cellWidth: 10 },
-              2: { cellWidth: 30 },
-              3: { cellWidth: 4, halign: "center" },
+              1: { cellWidth: 18 },
+              2: { cellWidth: 35 },
+              3: { cellWidth: 10, halign: "center" },
               4: { cellWidth: 5, halign: "center" },
-              5: { cellWidth: 4, halign: "center" },
+              5: { cellWidth: 10, halign: "center" },
             },
             margin: { left: rightX, right: margin },
           });
