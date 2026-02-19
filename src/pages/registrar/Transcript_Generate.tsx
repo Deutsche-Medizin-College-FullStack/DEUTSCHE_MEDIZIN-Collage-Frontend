@@ -98,6 +98,16 @@ type StudentForSelection = {
 
 type SearchType = "report" | "transcript";
 
+const getAcademicYearString = (academicYear: any): string => {
+  if (!academicYear) return "2024G.C/2016ec";
+  if (typeof academicYear === 'string') return academicYear;
+  if (typeof academicYear === 'object') {
+    // Try different possible property names
+    return academicYear.yearCode || academicYear.yearGC || academicYear.name || academicYear.toString() || "2024G.C/2016ec";
+  }
+  return "2024G.C/2016ec";
+};
+
 export default function Transcript_Generate() {
   const [searchType, setSearchType] = useState<SearchType | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -793,8 +803,7 @@ const exportStudentCopyToPDF = () => {
           doc.setTextColor(255, 255, 255);
           doc.setFontSize(5);
           doc.setFont("helvetica", "bold");
-          const headerText = `${leftCopy.academicYear || "2024G.C/2016ec"} • Year ${leftCopy.classyear?.name || "I"} • ${leftCopy.semester?.name || "First Semester"}`;
-          doc.text(headerText, margin + headerWidth / 2, currentY, { align: "center" });
+          const headerText = `${getAcademicYearString(leftCopy.academicYear) || "2024G.C/2016ec"} • Year ${leftCopy.classyear?.name || "I"} • ${leftCopy.semester?.name || "First Semester"}`;          doc.text(headerText, margin + headerWidth / 2, currentY, { align: "center" });
           currentY += 3;
           doc.setTextColor(0, 0, 0);
 
@@ -859,8 +868,7 @@ const exportStudentCopyToPDF = () => {
           doc.setTextColor(255, 255, 255);
           doc.setFontSize(5);
           doc.setFont("helvetica", "bold");
-          const headerText = `${rightCopy.academicYear || "2024G.C/2016ec"} • Year ${rightCopy.classyear?.name || "I"} • ${rightCopy.semester?.name || "First Semester"}`;
-          doc.text(headerText, rightX + headerWidth/2, currentY, { align: "center" });
+const headerText = `${getAcademicYearString(rightCopy.academicYear) || "2024G.C/2016ec"} • Year ${rightCopy.classyear?.name || "I"} • ${rightCopy.semester?.name || "First Semester"}`;          doc.text(headerText, rightX + headerWidth/2, currentY, { align: "center" });
           currentY += 3;
           doc.setTextColor(0, 0, 0);
 
