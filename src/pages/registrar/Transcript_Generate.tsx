@@ -939,17 +939,47 @@ const exportStudentCopyToPDF = () => {
 
       doc.setFontSize(6);
       doc.setTextColor(0, 0, 0);
-      doc.text("_________________", pageWidth * 0.25, y, { align: "center" });
-      doc.text("_________________", pageWidth * 0.75, y, { align: "center" });
-      y += 4;
+      doc.text("______________________________", pageWidth * 0.25, y, { align: "center" });
+      doc.text("______________________________", pageWidth * 0.75, y, { align: "center" });
+      y += 2;
       doc.setFontSize(5);
-      doc.text("Registrar", pageWidth * 0.25, y, { align: "center" });
-      doc.text("Dean", pageWidth * 0.75, y, { align: "center" });
-      y += 3;
-      doc.text("Date: _____", pageWidth * 0.25, y, { align: "center" });
-      doc.text("Date: _____", pageWidth * 0.75, y, { align: "center" });
-    });
+      doc.text("Registrar", pageWidth * 0.25, y + 3, { align: "center" });
+      doc.text("Dean", pageWidth * 0.75, y + 3, { align: "center" });
+      y += 10;
+      doc.text("Date: ___________________", pageWidth * 0.25, y, { align: "center" });
+      doc.text("Date: ___________________", pageWidth * 0.75, y, { align: "center" });
+ 
+      y += 10;
+          // Grading Scale - Single line
+              doc.setFontSize(6);
+              doc.setFont("helvetica", "normal");
 
+              doc.text(
+                "Grading: A+,A=4, A-=3.75, B+=3.50, B=3.00, B-=2.75, C+=2.50, C=2.00, D=1.00, F=0.00, I=Incomplete | A=Excellent, B+=Good, C+=Satisfactory, C=Fair, D=Below Pass, F=Fail",
+                pageWidth / 2,
+                y,
+                {
+                  align: "center",
+                  maxWidth: pageWidth - margin * 2
+                }
+              );
+
+              y += 5;
+
+      // Footer Note
+        doc.setFontSize(8);
+        doc.setTextColor(100, 100, 100);
+
+        doc.text(
+          '"Course Repeated", "Courses Taken from other university/College", DATE ISSUE & [Date]',
+          pageWidth / 2,
+          y,
+          { align: "center" }
+        );
+
+        y += 4;
+    });
+     
     doc.save("Student_Transcript.pdf");
   };
 
