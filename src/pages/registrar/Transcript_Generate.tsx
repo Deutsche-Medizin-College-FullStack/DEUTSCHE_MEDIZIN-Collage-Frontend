@@ -727,7 +727,7 @@ const exportStudentCopyToPDF = () => {
 
       // Header with logo
       try {
-        doc.addImage(LOGO_BASE64, "PNG", margin, y, 12, 12);
+        doc.addImage(LOGO_BASE64, "PNG", 70, y + 5, 10, 10);
       } catch (e) {
         console.warn("Logo failed to load in PDF", e);
       }
