@@ -98,6 +98,16 @@ type StudentForSelection = {
 
 type SearchType = "report" | "transcript";
 
+const getAcademicYearString = (academicYear: any): string => {
+  if (!academicYear) return "2024G.C/2016ec";
+  if (typeof academicYear === 'string') return academicYear;
+  if (typeof academicYear === 'object') {
+    // Try different possible property names
+    return academicYear.yearCode || academicYear.yearGC || academicYear.name || academicYear.toString() || "2024G.C/2016ec";
+  }
+  return "2024G.C/2016ec";
+};
+
 export default function Transcript_Generate() {
   const [searchType, setSearchType] = useState<SearchType | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -727,7 +737,7 @@ const exportStudentCopyToPDF = () => {
 
       // Header with logo
       try {
-        doc.addImage(LOGO_BASE64, "PNG", margin, y, 12, 12);
+        doc.addImage(LOGO_BASE64, "PNG", 70, y + 5, 10, 10);
       } catch (e) {
         console.warn("Logo failed to load in PDF", e);
       }
@@ -752,25 +762,28 @@ const exportStudentCopyToPDF = () => {
       }
 
       // Student Info Table - Full labels as requested
-      autoTable(doc, {
-        startY: y,
-        body: [
-          ["ID Number", transcript.idNumber || "", "Birth Date", transcript.birthDateGC || ""],
-          ["Full Name", transcript.fullName?.substring(0, 25) || "", "Enrolment Type", transcript.programModality?.name?.substring(0, 10) || "-"],
-          ["Sex", transcript.gender || "", "Department", transcript.department?.name?.substring(0, 15) || "-"],
-          ["Program", transcript.programLevel?.name?.substring(0, 10) || "-", "Field of Study", transcript.department?.name?.substring(0, 15) || "-"],
-          ["Date Of Admission", transcript.dateEnrolledGC || "", "Date Issued", transcript.dateIssuedGC || ""],
-        ],
-        theme: "grid",
-        styles: { fontSize: 6, cellPadding: 1, lineWidth: 0.1, textColor: [0, 0, 0], halign: "center" },
-        columnStyles: {
-          0: { fontStyle: "bold", cellWidth: 25, fillColor: [235, 245, 255], halign: "left" },
-          1: { cellWidth: 40, halign: "left" },
-          2: { fontStyle: "bold", cellWidth: 25, fillColor: [235, 245, 255], halign: "left" },
-          3: { cellWidth: 40, halign: "left" },
-        },
-        margin: { left: margin, right: margin },
-      });
+        const tableWidth = 130; 
+        const centerX = (pageWidth - tableWidth) / 2;
+
+        autoTable(doc, {
+          startY: y,
+          body: [
+            ["ID Number", transcript.idNumber || "", "Birth Date", transcript.birthDateGC || ""],
+            ["Full Name", transcript.fullName?.substring(0, 25) || "", "Enrolment Type", transcript.programModality?.name?.substring(0, 10) || "-"],
+            ["Sex", transcript.gender || "", "Department", transcript.department?.name?.substring(0, 15) || "-"],
+            ["Program", transcript.programLevel?.name?.substring(0, 10) || "-", "Field of Study", transcript.department?.name?.substring(0, 15) || "-"],
+            ["Date Of Admission", transcript.dateEnrolledGC || "", "Date Issued", transcript.dateIssuedGC || ""],
+          ],
+          theme: "grid",
+          styles: { fontSize: 6, cellPadding: 1, lineWidth: 0.1, textColor: [0, 0, 0], halign: "center" },
+          columnStyles: {
+            0: { fontStyle: "bold", cellWidth: 25, fillColor: [235, 245, 255], halign: "left" },
+            1: { cellWidth: 40, halign: "left" },
+            2: { fontStyle: "bold", cellWidth: 25, fillColor: [235, 245, 255], halign: "left" },
+            3: { cellWidth: 40, halign: "left" },
+          },
+          margin: { left: centerX },
+        });
 
       y = (doc as any).lastAutoTable.finalY + 4;
 
@@ -783,26 +796,25 @@ const exportStudentCopyToPDF = () => {
         const leftCopy = transcript.studentCopies[i];
         if (leftCopy) {
           let currentY = leftStartY;
-
+          const headerWidth = columnWidth * 0.82;
           // Semester header - centered with full text
           doc.setFillColor(255, 140, 0);
-          doc.rect(margin, currentY - 2, columnWidth, 4, "F");
+          doc.rect(margin, currentY - 2, headerWidth, 4, "F");
           doc.setTextColor(255, 255, 255);
           doc.setFontSize(5);
           doc.setFont("helvetica", "bold");
-          const headerText = `${leftCopy.academicYear || "2024G.C/2016ec"} • Year ${leftCopy.classyear?.name || "I"} • ${leftCopy.semester?.name || "First Semester"}`;
-          doc.text(headerText, margin + columnWidth/2, currentY, { align: "center" });
+          const headerText = `${getAcademicYearString(leftCopy.academicYear) || "2024G.C/2016ec"} • Year ${leftCopy.classyear?.name || "I"} • ${leftCopy.semester?.name || "First Semester"}`;          doc.text(headerText, margin + headerWidth / 2, currentY, { align: "center" });
           currentY += 3;
           doc.setTextColor(0, 0, 0);
 
           // Courses table
           const coursesData = leftCopy.courses.map((c, j) => [
             (j + 1).toString(),
-            c.courseCode?.substring(0, 6) || "",
-            c.courseTitle?.substring(0, 18) || "",
-            c.totalCrHrs?.toFixed(1) || "0",
+            c.courseCode?.substring(0, 15) || "",
+            c.courseTitle?.substring(0, 40) || "",
+            c.totalCrHrs?.toFixed(2) || "0",
             c.letterGrade || "",
-            c.gradePoint?.toFixed(1) || "0",
+            c.gradePoint?.toFixed(2) || "0",
           ]);
 
           autoTable(doc, {
@@ -819,11 +831,11 @@ const exportStudentCopyToPDF = () => {
             },
             columnStyles: {
               0: { cellWidth: 3, halign: "center" },
-              1: { cellWidth: 10 },
-              2: { cellWidth: 30 },
-              3: { cellWidth: 4, halign: "center" },
+              1: { cellWidth: 18 },
+              2: { cellWidth: 35 },
+              3: { cellWidth: 10, halign: "center" },
               4: { cellWidth: 5, halign: "center" },
-              5: { cellWidth: 4, halign: "center" },
+              5: { cellWidth: 10, halign: "center" },
             },
             margin: { left: margin, right: pageWidth - margin - columnWidth },
           });
@@ -832,7 +844,7 @@ const exportStudentCopyToPDF = () => {
 
           // Summary stats - increased font size and moved down
           doc.setFillColor(255, 140, 0);
-          doc.rect(margin, currentY, columnWidth, 3.5, "F");
+          doc.rect(margin, currentY, headerWidth, 3.5, "F");
           doc.setTextColor(255, 255, 255);
           doc.setFontSize(6); // Increased font size
           doc.setFont("helvetica", "bold");
@@ -848,26 +860,26 @@ const exportStudentCopyToPDF = () => {
         if (rightCopy) {
           let currentY = rightStartY;
           const rightX = pageWidth / 2 + margin / 2;
+          const headerWidth = columnWidth * 0.82;
 
           // Semester header - centered with full text
           doc.setFillColor(255, 140, 0);
-          doc.rect(rightX, currentY - 2, columnWidth, 4, "F");
+          doc.rect(rightX, currentY - 2, headerWidth, 4, "F");
           doc.setTextColor(255, 255, 255);
           doc.setFontSize(5);
           doc.setFont("helvetica", "bold");
-          const headerText = `${rightCopy.academicYear || "2024G.C/2016ec"} • Year ${rightCopy.classyear?.name || "I"} • ${rightCopy.semester?.name || "First Semester"}`;
-          doc.text(headerText, rightX + columnWidth/2, currentY, { align: "center" });
+const headerText = `${getAcademicYearString(rightCopy.academicYear) || "2024G.C/2016ec"} • Year ${rightCopy.classyear?.name || "I"} • ${rightCopy.semester?.name || "First Semester"}`;          doc.text(headerText, rightX + headerWidth/2, currentY, { align: "center" });
           currentY += 3;
           doc.setTextColor(0, 0, 0);
 
           // Courses table
           const coursesData = rightCopy.courses.map((c, j) => [
             (j + 1).toString(),
-            c.courseCode?.substring(0, 6) || "",
-            c.courseTitle?.substring(0, 18) || "",
-            c.totalCrHrs?.toFixed(1) || "0",
+            c.courseCode?.substring(0, 15) || "",
+            c.courseTitle?.substring(0, 40) || "",
+            c.totalCrHrs?.toFixed(2) || "0",
             c.letterGrade || "",
-            c.gradePoint?.toFixed(1) || "0",
+            c.gradePoint?.toFixed(2) || "0",
           ]);
 
           autoTable(doc, {
@@ -884,20 +896,20 @@ const exportStudentCopyToPDF = () => {
             },
             columnStyles: {
               0: { cellWidth: 3, halign: "center" },
-              1: { cellWidth: 10 },
-              2: { cellWidth: 30 },
-              3: { cellWidth: 4, halign: "center" },
+              1: { cellWidth: 18 },
+              2: { cellWidth: 35 },
+              3: { cellWidth: 10, halign: "center" },
               4: { cellWidth: 5, halign: "center" },
-              5: { cellWidth: 4, halign: "center" },
+              5: { cellWidth: 10, halign: "center" },
             },
             margin: { left: rightX, right: margin },
           });
 
           currentY = (doc as any).lastAutoTable.finalY + 2;
-
+        
           // Summary stats - increased font size and moved down
           doc.setFillColor(255, 140, 0);
-          doc.rect(rightX, currentY, columnWidth, 3.5, "F");
+          doc.rect(rightX, currentY, headerWidth, 3.5, "F");
           doc.setTextColor(255, 255, 255);
           doc.setFontSize(6); // Increased font size
           doc.setFont("helvetica", "bold");
@@ -909,6 +921,20 @@ const exportStudentCopyToPDF = () => {
         }
 
         y = Math.max(leftStartY, rightStartY) + 2;
+
+        // Draw horizontal separator line after each semester pair
+          doc.setDrawColor(180, 180, 180); // light gray (optional)
+          doc.setLineWidth(0.3);
+
+          doc.line(
+            margin,                 // start X (left margin)
+            y,                      // start Y
+            pageWidth - margin,     // end X (right margin)
+            y                       // end Y (same Y → horizontal line)
+          );
+
+          // add space after the line
+          y += 4;
       }
 
       // Signatures - moved down to prevent overlap
@@ -921,17 +947,47 @@ const exportStudentCopyToPDF = () => {
 
       doc.setFontSize(6);
       doc.setTextColor(0, 0, 0);
-      doc.text("_________________", pageWidth * 0.25, y, { align: "center" });
-      doc.text("_________________", pageWidth * 0.75, y, { align: "center" });
-      y += 4;
+      doc.text("______________________________", pageWidth * 0.25, y, { align: "center" });
+      doc.text("______________________________", pageWidth * 0.75, y, { align: "center" });
+      y += 2;
       doc.setFontSize(5);
-      doc.text("Registrar", pageWidth * 0.25, y, { align: "center" });
-      doc.text("Dean", pageWidth * 0.75, y, { align: "center" });
-      y += 3;
-      doc.text("Date: _____", pageWidth * 0.25, y, { align: "center" });
-      doc.text("Date: _____", pageWidth * 0.75, y, { align: "center" });
-    });
+      doc.text("Registrar", pageWidth * 0.25, y + 3, { align: "center" });
+      doc.text("Dean", pageWidth * 0.75, y + 3, { align: "center" });
+      y += 10;
+      doc.text("Date: ___________________", pageWidth * 0.25, y, { align: "center" });
+      doc.text("Date: ___________________", pageWidth * 0.75, y, { align: "center" });
+ 
+      y += 10;
+          // Grading Scale - Single line
+              doc.setFontSize(6);
+              doc.setFont("helvetica", "normal");
 
+              doc.text(
+                "Grading: A+,A=4, A-=3.75, B+=3.50, B=3.00, B-=2.75, C+=2.50, C=2.00, D=1.00, F=0.00, I=Incomplete | A=Excellent, B+=Good, C+=Satisfactory, C=Fair, D=Below Pass, F=Fail",
+                pageWidth / 2,
+                y,
+                {
+                  align: "center",
+                  maxWidth: pageWidth - margin * 2
+                }
+              );
+
+              y += 5;
+
+      // Footer Note
+        doc.setFontSize(8);
+        doc.setTextColor(100, 100, 100);
+
+        doc.text(
+          '"Course Repeated", "Courses Taken from other university/College", DATE ISSUE & [Date]',
+          pageWidth / 2,
+          y,
+          { align: "center" }
+        );
+
+        y += 4;
+    });
+     
     doc.save("Student_Transcript.pdf");
   };
 
