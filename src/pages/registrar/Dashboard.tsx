@@ -18,17 +18,23 @@ import {
   Legend,
   ArcElement,
 } from "chart.js";
-import { 
-  Users, 
-  UserPlus, 
-  FileText, 
-  AlertCircle, 
+import {
+  Users,
+  UserPlus,
+  FileText,
+  AlertCircle,
   GraduationCap,
   BookOpen,
   TrendingUp,
   CheckCircle,
   Clock,
-  XCircle
+  XCircle,
+  PieChart,
+  UsersRound,
+  User,
+  User2,
+  Mars, // Add this - male symbol
+  Venus, // Add this - female symbol
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -44,10 +50,8 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  ArcElement
+  ArcElement,
 );
-
-
 
 export default function RegistrarDashboard() {
   const [dashboardData, setDashboardData] = useState<any>(null);
@@ -67,9 +71,9 @@ export default function RegistrarDashboard() {
     } catch (err: any) {
       console.error("Error fetching dashboard data:", err);
       setError(
-        err.response?.data?.error || 
-        err.message || 
-        "Failed to load dashboard data. Please try again later."
+        err.response?.data?.error ||
+          err.message ||
+          "Failed to load dashboard data. Please try again later.",
       );
       toast.error("Failed to load dashboard data");
     } finally {
@@ -77,103 +81,126 @@ export default function RegistrarDashboard() {
     }
   };
 
-  // Prepare chart data from API response
-  const genderDistributionData = dashboardData?.applicantGenderDistribution ? {
-    labels: Object.keys(dashboardData.applicantGenderDistribution),
-    datasets: [
-      {
-        label: 'Gender Distribution',
-        data: Object.values(dashboardData.applicantGenderDistribution),
-        backgroundColor: ['#3B82F6', '#EC4899'],
-        borderColor: ['#2563EB', '#DB2777'],
-        borderWidth: 1,
-      },
-    ],
-  } : {
-    labels: ['MALE', 'FEMALE'],
-    datasets: [{
-      label: 'Gender Distribution',
-      data: [0, 0],
-      backgroundColor: ['#3B82F6', '#EC4899'],
-    }],
-  };
+  // Prepare chart data from API response - NOW USING ACTIVE STUDENTS GENDER DISTRIBUTION
+  const activeStudentsGenderData =
+    dashboardData?.activeStudentsGenderDistribution
+      ? {
+          labels: Object.keys(dashboardData.activeStudentsGenderDistribution),
+          datasets: [
+            {
+              label: "Active Students Gender Distribution",
+              data: Object.values(
+                dashboardData.activeStudentsGenderDistribution,
+              ),
+              backgroundColor: ["#3B82F6", "#EC4899"],
+              borderColor: ["#2563EB", "#DB2777"],
+              borderWidth: 1,
+            },
+          ],
+        }
+      : {
+          labels: ["MALE", "FEMALE"],
+          datasets: [
+            {
+              label: "Active Students Gender Distribution",
+              data: [0, 0],
+              backgroundColor: ["#3B82F6", "#EC4899"],
+            },
+          ],
+        };
 
-  const enrollmentByDepartmentData = dashboardData?.enrollmentByDepartment ? {
-    labels: Object.keys(dashboardData.enrollmentByDepartment),
-    datasets: [
-      {
-        label: 'Students Enrolled',
-        data: Object.values(dashboardData.enrollmentByDepartment),
-        backgroundColor: [
-          '#3B82F6',
-          '#10B981',
-          '#F59E0B',
-          '#EF4444',
-          '#8B5CF6',
-          '#06B6D4'
+  const enrollmentByDepartmentData = dashboardData?.enrollmentByDepartment
+    ? {
+        labels: Object.keys(dashboardData.enrollmentByDepartment),
+        datasets: [
+          {
+            label: "Students Enrolled",
+            data: Object.values(dashboardData.enrollmentByDepartment),
+            backgroundColor: [
+              "#3B82F6",
+              "#10B981",
+              "#F59E0B",
+              "#EF4444",
+              "#8B5CF6",
+              "#06B6D4",
+            ],
+          },
         ],
-      },
-    ],
-  } : {
-    labels: ['No Data'],
-    datasets: [{
-      label: 'Students Enrolled',
-      data: [0],
-      backgroundColor: ['#9CA3AF'],
-    }],
-  };
+      }
+    : {
+        labels: ["No Data"],
+        datasets: [
+          {
+            label: "Students Enrolled",
+            data: [0],
+            backgroundColor: ["#9CA3AF"],
+          },
+        ],
+      };
 
-  const averageScoresData = dashboardData?.averageScoresByDepartment ? {
-    labels: Object.keys(dashboardData.averageScoresByDepartment),
-    datasets: [
-      {
-        label: 'Average Score',
-        data: Object.values(dashboardData.averageScoresByDepartment),
-        borderColor: '#3B82F6',
-        backgroundColor: 'rgba(59, 130, 246, 0.2)',
-        fill: true,
-        tension: 0.4,
-      },
-    ],
-  } : {
-    labels: ['No Data'],
-    datasets: [{
-      label: 'Average Score',
-      data: [0],
-      borderColor: '#3B82F6',
-      backgroundColor: 'rgba(59, 130, 246, 0.2)',
-    }],
-  };
+  const averageScoresData = dashboardData?.averageScoresByDepartment
+    ? {
+        labels: Object.keys(dashboardData.averageScoresByDepartment),
+        datasets: [
+          {
+            label: "Average Score",
+            data: Object.values(dashboardData.averageScoresByDepartment),
+            borderColor: "#3B82F6",
+            backgroundColor: "rgba(59, 130, 246, 0.2)",
+            fill: true,
+            tension: 0.4,
+          },
+        ],
+      }
+    : {
+        labels: ["No Data"],
+        datasets: [
+          {
+            label: "Average Score",
+            data: [0],
+            borderColor: "#3B82F6",
+            backgroundColor: "rgba(59, 130, 246, 0.2)",
+          },
+        ],
+      };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
   const getApplicationStatusBadge = (status: string) => {
     switch (status) {
-      case 'PENDING':
-        return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
-          <Clock className="h-3 w-3 mr-1" />
-          Pending
-        </Badge>;
-      case 'ACCEPTED':
-        return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-          <CheckCircle className="h-3 w-3 mr-1" />
-          Accepted
-        </Badge>;
-      case 'REJECTED':
-        return <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
-          <XCircle className="h-3 w-3 mr-1" />
-          Rejected
-        </Badge>;
+      case "PENDING":
+        return (
+          <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
+            <Clock className="h-3 w-3 mr-1" />
+            Pending
+          </Badge>
+        );
+      case "ACCEPTED":
+        return (
+          <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Accepted
+          </Badge>
+        );
+      case "REJECTED":
+        return (
+          <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
+            <XCircle className="h-3 w-3 mr-1" />
+            Rejected
+          </Badge>
+        );
       default:
-        return <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300">
-          Unknown
-        </Badge>;
+        return (
+          <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300">
+            Unknown
+          </Badge>
+        );
     }
   };
 
@@ -182,7 +209,9 @@ export default function RegistrarDashboard() {
       <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
-          <p className="text-lg text-gray-600 dark:text-gray-400">Loading dashboard data...</p>
+          <p className="text-lg text-gray-600 dark:text-gray-400">
+            Loading dashboard data...
+          </p>
         </div>
       </div>
     );
@@ -205,6 +234,34 @@ export default function RegistrarDashboard() {
       </div>
     );
   }
+
+  // Calculate percentages for gender distributions
+  const totalRegistered = dashboardData?.registeredStudents || 0;
+  const registeredMale =
+    dashboardData?.registeredStudentsGenderDistribution?.MALE || 0;
+  const registeredFemale =
+    dashboardData?.registeredStudentsGenderDistribution?.FEMALE || 0;
+  const registeredMalePercent =
+    totalRegistered > 0
+      ? Math.round((registeredMale / totalRegistered) * 100)
+      : 0;
+  const registeredFemalePercent =
+    totalRegistered > 0
+      ? Math.round((registeredFemale / totalRegistered) * 100)
+      : 0;
+
+  const totalApplicants = dashboardData?.totalApplicants || 0;
+  const applicantMale = dashboardData?.applicantGenderDistribution?.MALE || 0;
+  const applicantFemale =
+    dashboardData?.applicantGenderDistribution?.FEMALE || 0;
+  const applicantMalePercent =
+    totalApplicants > 0
+      ? Math.round((applicantMale / totalApplicants) * 100)
+      : 0;
+  const applicantFemalePercent =
+    totalApplicants > 0
+      ? Math.round((applicantFemale / totalApplicants) * 100)
+      : 0;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -239,47 +296,57 @@ export default function RegistrarDashboard() {
               👋 Welcome, Registrar
             </h2>
             <p className="text-base text-gray-600 dark:text-gray-400 max-w-2xl">
-              Manage student applications, monitor academic performance, and oversee enrollment statistics across all departments.
+              Manage student applications, monitor academic performance, and
+              oversee enrollment statistics across all departments.
             </p>
           </div>
-          <Button 
+          <Button
             onClick={fetchDashboardData}
-            variant="outline" 
+            variant="outline"
             className="border-blue-600 text-blue-600 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-gray-700"
           >
             Refresh Data
           </Button>
         </motion.div>
 
-        {/* Key Metrics Cards */}
+        {/* ===================== Key Metrics Cards ============================== */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-shadow border-l-4 border-blue-500">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Applicants</p>
-                  <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">
-                    {dashboardData?.totalApplicants || 0}
-                  </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    <span className="text-yellow-600 font-medium">{dashboardData?.pendingApplicants || 0}</span> pending
-                  </p>
-                </div>
-                <UserPlus className="h-10 w-10 text-blue-500 opacity-70" />
-              </div>
-            </CardContent>
-          </Card>
-
+          {/* Registered Students */}
           <Card className="bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-shadow border-l-4 border-green-500">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Registered Students</p>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Registered Students
+                  </p>
                   <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">
                     {dashboardData?.registeredStudents || 0}
                   </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    <span className="text-green-600 font-medium">{dashboardData?.activeStudents || 0}</span> active
+
+                  {/* Gender distribution with Lucide icons */}
+                  <div className="flex items-center gap-4 mt-3">
+                    <span className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400">
+                      <span className="text-lg font-bold">♂</span>
+                      <span className="text-sm font-medium">
+                        {dashboardData?.registeredStudentsGenderDistribution
+                          ?.MALE || 0}
+                      </span>
+                    </span>
+                    <span className="text-gray-300 dark:text-gray-600">|</span>
+                    <span className="flex items-center gap-1.5 text-pink-600 dark:text-pink-400">
+                      <span className="text-lg font-bold">♀</span>
+                      <span className="text-sm font-medium">
+                        {dashboardData?.registeredStudentsGenderDistribution
+                          ?.FEMALE || 0}
+                      </span>
+                    </span>
+                  </div>
+
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
+                    <span className="text-green-600 font-medium">
+                      {dashboardData?.activeStudents || 0}
+                    </span>{" "}
+                    active
                   </p>
                 </div>
                 <Users className="h-10 w-10 text-green-500 opacity-70" />
@@ -291,7 +358,9 @@ export default function RegistrarDashboard() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Incomplete Documents</p>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Incomplete Documents
+                  </p>
                   <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-2">
                     {dashboardData?.incompleteDocuments || 0}
                   </p>
@@ -308,7 +377,9 @@ export default function RegistrarDashboard() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Departments</p>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Total Departments
+                  </p>
                   <p className="text-3xl font-bold text-purple-600 dark:text-purple-400 mt-2">
                     {dashboardData?.totalDepartments || 0}
                   </p>
@@ -317,6 +388,28 @@ export default function RegistrarDashboard() {
                   </p>
                 </div>
                 <BookOpen className="h-10 w-10 text-purple-500 opacity-70" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-shadow border-l-4 border-blue-500">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Total Applicants
+                  </p>
+                  <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">
+                    {dashboardData?.totalApplicants || 0}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    <span className="text-yellow-600 font-medium">
+                      {dashboardData?.pendingApplicants || 0}
+                    </span>{" "}
+                    pending
+                  </p>
+                </div>
+                <UserPlus className="h-10 w-10 text-blue-500 opacity-70" />
               </div>
             </CardContent>
           </Card>
@@ -356,7 +449,7 @@ export default function RegistrarDashboard() {
             </CardContent>
           </Card>
 
-          {/* Recent Applicants */}
+          {/* Recent Applicants with Gender Distribution */}
           <Card className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg">
             <CardContent className="p-6">
               <div className="flex justify-between items-center mb-4">
@@ -371,59 +464,113 @@ export default function RegistrarDashboard() {
                   View All →
                 </Link>
               </div>
+
+              {/* Applicant Gender Distribution - Simple numbers */}
+              {dashboardData?.applicantGenderDistribution && (
+                <div className="mb-4 p-2 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
+                  <div className="flex items-center justify-center gap-4 text-sm">
+                    <span className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 font-medium">
+                      <Users className="h-4 w-4" />
+                      {dashboardData.applicantGenderDistribution.MALE || 0}
+                    </span>
+                    <span className="text-gray-400 font-bold">|</span>
+                    <span className="flex items-center gap-1.5 text-pink-600 dark:text-pink-400 font-medium">
+                      <Users className="h-4 w-4" />
+                      {dashboardData.applicantGenderDistribution.FEMALE || 0}
+                    </span>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-3 max-h-60 overflow-y-auto">
                 {dashboardData?.recentApplicants?.length > 0 ? (
-                  dashboardData.recentApplicants.slice(0, 5).map((applicant: any) => (
-                    <div key={applicant.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                      <div className="flex-1">
-                        <h4 className="font-medium text-gray-900 dark:text-white">{applicant.firstNameENG}</h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">{applicant.departmentEnrolled}</p>
+                  dashboardData.recentApplicants
+                    .slice(0, 5)
+                    .map((applicant: any) => (
+                      <div
+                        key={applicant.id}
+                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900 dark:text-white">
+                            {applicant.firstNameENG}
+                          </h4>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            {applicant.departmentEnrolled}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {getApplicationStatusBadge(
+                            applicant.applicationStatus,
+                          )}
+                          <Link to={`/registrar/applications/${applicant.id}`}>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-blue-600 dark:text-blue-400"
+                            >
+                              View
+                            </Button>
+                          </Link>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {getApplicationStatusBadge(applicant.applicationStatus)}
-                        <Link to={`/registrar/applications/${applicant.id}`}>
-                          <Button size="sm" variant="ghost" className="text-blue-600 dark:text-blue-400">
-                            View
-                          </Button>
-                        </Link>
-                      </div>
-                    </div>
-                  ))
+                    ))
                 ) : (
-                  <p className="text-gray-500 dark:text-gray-400 text-center py-4">No recent applicants</p>
+                  <p className="text-gray-500 dark:text-gray-400 text-center py-4">
+                    No recent applicants
+                  </p>
                 )}
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Analytics Charts */}
+        {/* Analytics Charts - NOW SHOWING ACTIVE STUDENTS GENDER DISTRIBUTION */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Gender Distribution */}
+          {/* Active Students Gender Distribution (formerly Applicant Gender) */}
           <Card className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg">
             <CardContent className="p-6">
-              <h3 className="text-xl font-semibold text-blue-600 dark:text-blue-400 mb-4">
-                Applicant Gender Distribution
+              <h3 className="text-xl font-semibold text-blue-600 dark:text-blue-400 mb-4 flex items-center gap-2">
+                <UsersRound className="h-5 w-5" />
+                Active Students by Gender
               </h3>
               <div className="h-64">
-                <Doughnut 
-                  data={genderDistributionData}
+                <Doughnut
+                  data={activeStudentsGenderData}
                   options={{
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
                       legend: {
-                        position: 'bottom',
+                        position: "bottom",
                         labels: {
-                          color: '#6B7280',
+                          color: "#6B7280",
                           font: {
-                            size: 12
-                          }
-                        }
-                      }
-                    }
+                            size: 12,
+                          },
+                        },
+                      },
+                      tooltip: {
+                        callbacks: {
+                          label: function (context) {
+                            const label = context.label || "";
+                            const value = context.raw || 0;
+                            const total = context.dataset.data.reduce(
+                              (a: number, b: number) => a + b,
+                              0,
+                            );
+                            const percentage =
+                              total > 0 ? Math.round((value / total) * 100) : 0;
+                            return `${label}: ${value} (${percentage}%)`;
+                          },
+                        },
+                      },
+                    },
                   }}
                 />
+              </div>
+              <div className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
+                Total Active Students: {dashboardData?.activeStudents || 0}
               </div>
             </CardContent>
           </Card>
@@ -444,26 +591,26 @@ export default function RegistrarDashboard() {
                       y: {
                         beginAtZero: true,
                         ticks: {
-                          color: '#6B7280'
+                          color: "#6B7280",
                         },
                         grid: {
-                          color: 'rgba(107, 114, 128, 0.1)'
-                        }
+                          color: "rgba(107, 114, 128, 0.1)",
+                        },
                       },
                       x: {
                         ticks: {
-                          color: '#6B7280'
+                          color: "#6B7280",
                         },
                         grid: {
-                          color: 'rgba(107, 114, 128, 0.1)'
-                        }
-                      }
+                          color: "rgba(107, 114, 128, 0.1)",
+                        },
+                      },
                     },
                     plugins: {
                       legend: {
-                        display: false
-                      }
-                    }
+                        display: false,
+                      },
+                    },
                   }}
                 />
               </div>
@@ -487,29 +634,29 @@ export default function RegistrarDashboard() {
                         beginAtZero: true,
                         max: 100,
                         ticks: {
-                          color: '#6B7280'
+                          color: "#6B7280",
                         },
                         grid: {
-                          color: 'rgba(107, 114, 128, 0.1)'
-                        }
+                          color: "rgba(107, 114, 128, 0.1)",
+                        },
                       },
                       x: {
                         ticks: {
-                          color: '#6B7280'
+                          color: "#6B7280",
                         },
                         grid: {
-                          color: 'rgba(107, 114, 128, 0.1)'
-                        }
-                      }
+                          color: "rgba(107, 114, 128, 0.1)",
+                        },
+                      },
                     },
                     plugins: {
                       legend: {
-                        position: 'bottom',
+                        position: "bottom",
                         labels: {
-                          color: '#6B7280'
-                        }
-                      }
-                    }
+                          color: "#6B7280",
+                        },
+                      },
+                    },
                   }}
                 />
               </div>
@@ -526,41 +673,55 @@ export default function RegistrarDashboard() {
                   <AlertCircle className="h-5 w-5" />
                   Low Score Alerts (Students Below 50%)
                 </h2>
-                <Badge variant="outline" className="border-yellow-300 text-yellow-600 dark:border-yellow-700 dark:text-yellow-400">
+                <Badge
+                  variant="outline"
+                  className="border-yellow-300 text-yellow-600 dark:border-yellow-700 dark:text-yellow-400"
+                >
                   {dashboardData.lowScoreAlerts.length} students
                 </Badge>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {dashboardData.lowScoreAlerts.map((alert: any, index: number) => (
-                  <div key={index} className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-medium text-gray-900 dark:text-white">{alert.fullName}</h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">ID: {alert.studentId}</p>
+                {dashboardData.lowScoreAlerts.map(
+                  (alert: any, index: number) => (
+                    <div
+                      key={index}
+                      className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-medium text-gray-900 dark:text-white">
+                            {alert.fullName}
+                          </h4>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            ID: {alert.studentId}
+                          </p>
+                        </div>
+                        <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
+                          {alert.avgScore.toFixed(1)}%
+                        </Badge>
                       </div>
-                      <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
-                        {alert.avgScore.toFixed(1)}%
-                      </Badge>
+                      <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-2">
+                        Below average performance - Needs academic support
+                      </p>
                     </div>
-                    <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-2">
-                      Below average performance - Needs academic support
-                    </p>
-                  </div>
-                ))}
+                  ),
+                )}
               </div>
             </CardContent>
           </Card>
         )}
 
         {/* Empty States for Enrollment Trends if no data */}
-        {(!dashboardData?.enrollmentTrendsByAcademicYear || dashboardData.enrollmentTrendsByAcademicYear.length === 0) && (
+        {(!dashboardData?.enrollmentTrendsByAcademicYear ||
+          dashboardData.enrollmentTrendsByAcademicYear.length === 0) && (
           <Card className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg">
             <CardContent className="p-6 text-center">
               <h3 className="text-xl font-semibold text-blue-600 dark:text-blue-400 mb-2">
                 Enrollment Trends
               </h3>
               <p className="text-gray-500 dark:text-gray-400">
-                No enrollment trend data available for the current academic years.
+                No enrollment trend data available for the current academic
+                years.
               </p>
             </CardContent>
           </Card>
