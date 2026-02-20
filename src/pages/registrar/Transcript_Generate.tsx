@@ -83,6 +83,7 @@ type RealTranscript = {
   programLevel: { id: string | null; name: string | null };
   department: { id: number; name: string };
   studentCopies: TranscriptCopy[];
+  footerText?: string;
 };
 
 type StudentForSelection = {
@@ -958,34 +959,29 @@ const headerText = `${getAcademicYearString(rightCopy.academicYear) || "2024G.C/
       doc.text("Date: ___________________", pageWidth * 0.75, y, { align: "center" });
  
       y += 10;
-          // Grading Scale - Single line
-              doc.setFontSize(6);
-              doc.setFont("helvetica", "normal");
 
-              doc.text(
-                "Grading: A+,A=4, A-=3.75, B+=3.50, B=3.00, B-=2.75, C+=2.50, C=2.00, D=1.00, F=0.00, I=Incomplete | A=Excellent, B+=Good, C+=Satisfactory, C=Fair, D=Below Pass, F=Fail",
-                pageWidth / 2,
-                y,
-                {
-                  align: "center",
-                  maxWidth: pageWidth - margin * 2
-                }
-              );
 
-              y += 5;
+      // Footer section
 
-      // Footer Note
-        doc.setFontSize(8);
-        doc.setTextColor(100, 100, 100);
+      if (transcript.footerText) {
+        // Split the footer text into lines
+        const footerLines = transcript.footerText.split('\n');
+        
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(60, 60, 60);
+        
+        // Print each line of the footer
+        footerLines.forEach((line, lineIndex) => {
+          doc.text(line, pageWidth / 2, y + (lineIndex * 4), {
+            align: "center",
+            maxWidth: pageWidth - margin * 2
+          });
+        });
+        
+        y += (footerLines.length * 4) + 2;
+      }
 
-        doc.text(
-          '"Course Repeated", "Courses Taken from other university/College", DATE ISSUE & [Date]',
-          pageWidth / 2,
-          y,
-          { align: "center" }
-        );
-
-        y += 4;
     });
      
     doc.save("Student_Transcript.pdf");
@@ -1890,6 +1886,17 @@ function TranscriptView({ transcript }: { transcript: RealTranscript }) {
           <p className="text-sm text-gray-600 dark:text-gray-400">Date: ________</p>
         </div>
       </div>
+
+      {/* Footer Section */}
+      {transcript.footerText && (
+        <div className="mt-6 pt-4 border-t border-gray-300 dark:border-gray-600">
+          {transcript.footerText.split('\n').map((line, index) => (
+            <p key={index} className="text-xs text-gray-600 dark:text-gray-400 text-center mb-1">
+              {line}
+            </p>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
