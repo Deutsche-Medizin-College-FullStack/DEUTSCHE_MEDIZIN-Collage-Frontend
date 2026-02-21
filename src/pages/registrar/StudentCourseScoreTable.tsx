@@ -2,12 +2,14 @@ import React, { useState, useEffect } from "react";
 import { message, Input, Modal, InputNumber, Select } from "antd";
 import apiClient from "../../components/api/apiClient";
 import endPoints from "../../components/api/endPoints";
+import { useToast } from "@/hooks/use-toast";
 import { Pencil, Eye, EyeOff } from "lucide-react";
 import { useMemo } from "react";
 const initialData = [];
 
 export default function StudentCourseScoreTable() {
   const [data, setData] = useState(initialData);
+  const { toast } = useToast(); // ← Add this
   const [allData, setAllData] = useState(initialData);
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -19,10 +21,14 @@ export default function StudentCourseScoreTable() {
     score: "",
     courseSource: "",
     isReleased: null,
+    bcysId: "",
   });
   const [studentList, setStudentList] = useState([]);
   const [studentListLoading, setStudentListLoading] = useState(false);
   const [coursesLoading, setCoursesLoading] = useState(true);
+  const [batchUpdateLoading, setBatchUpdateLoading] = useState(false); // ← Add this
+  const [showInstructions, setShowInstructions] = useState(false); // ← Add this
+  const [scoreInputError, setScoreInputError] = useState(false);
   // const [filters, setFilters] = useState({
   //   department: "",
   //   status: "",
@@ -35,6 +41,7 @@ export default function StudentCourseScoreTable() {
     studentId: null, // better name than "search"
     isReleased: null, // null = all, true, false
     departmentId: "" as string | "", // ← new
+    studentStatusId: "" as string | "", // ← Add this
   });
 
   const [filterOptions, setFilterOptions] = useState({
@@ -47,7 +54,7 @@ export default function StudentCourseScoreTable() {
     //courses: [], // ← new or rename if you already have course list
     batchClassYearSemesters: [],
     departments: [] as Array<{ id: number; name: string }>, // ← new
-    // classYears: [],
+    studentStatuses: [] as Array<{ id: number; name: string }>,
   });
 
   const [pagination, setPagination] = useState({
@@ -72,18 +79,20 @@ export default function StudentCourseScoreTable() {
     filters.studentId,
     filters.isReleased,
     filters.departmentId,
+    filters.studentStatusId, // ← Add this
   ]);
 
   const fetchFilterOptions = async () => {
     try {
       const response = await apiClient.get(endPoints.lookupsDropdown);
-      console.log("lookupsDropdown response:", response.data); // ← look here!
+      console.log("lookupsDropdown response:", response.data);
 
       if (response.data) {
         setFilterOptions({
-          departments: response.data.departments || [], // ← hope this key exists
+          departments: response.data.departments || [],
           batchClassYearSemesters: response.data.batchClassYearSemesters || [],
           courseSources: response.data.courseSources || [],
+          studentStatuses: response.data.studentStatuses || [], // ← Add this
         });
       }
     } catch (error) {
@@ -163,7 +172,7 @@ export default function StudentCourseScoreTable() {
       const params = {
         page: pagination.current - 1,
         size: pagination.pageSize,
-        sortBy: "score", // or make dynamic later
+        sortBy: "score",
         sortDir: "desc",
 
         ...(filters.courseId && { courseId: filters.courseId }),
@@ -172,7 +181,11 @@ export default function StudentCourseScoreTable() {
         ...(filters.isReleased !== null && { isReleased: filters.isReleased }),
         ...(filters.departmentId && {
           departmentId: Number(filters.departmentId),
-        }), // ← NEW
+        }),
+        ...(filters.studentStatusId && {
+          // ← Add this
+          studentStatusId: Number(filters.studentStatusId),
+        }),
       };
 
       const response = await apiClient.get(endPoints.getAllScores, { params });
@@ -238,7 +251,7 @@ export default function StudentCourseScoreTable() {
 
   const handleRowSelection = (key) => {
     setSelectedRowKeys((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
     );
   };
 
@@ -266,17 +279,46 @@ export default function StudentCourseScoreTable() {
   const applyBatchUpdate = async () => {
     if (selectedRowKeys.length === 0) return;
 
+    // Reset any previous errors
+    setScoreInputError(false);
+
+    // Validate score if provided
+    if (batchValues.score !== "" && batchValues.score !== null) {
+      // Check if it's a valid number
+      if (isNaN(Number(batchValues.score))) {
+        toast({
+          title: "❌ Invalid Score",
+          description: "Please enter a valid number for score",
+          variant: "destructive",
+        });
+        setScoreInputError(true);
+        return;
+      }
+
+      const scoreValue = parseFloat(batchValues.score);
+      if (scoreValue < 0 || scoreValue > 100) {
+        toast({
+          title: "❌ Invalid Score",
+          description: "Score must be between 0 and 100",
+          variant: "destructive",
+        });
+        setScoreInputError(true);
+        return;
+      }
+    }
+
     const updates = selectedRowKeys
       .map((key) => {
         const row = data.find((item) => item.key === key);
         if (!row) return null;
 
         const update = { id: row.id };
-
         let hasChange = false;
 
+        // Score validation - already validated above, but double-check
         if (batchValues.score !== "" && !isNaN(Number(batchValues.score))) {
-          update.score = parseFloat(batchValues.score);
+          const scoreValue = parseFloat(batchValues.score);
+          update.score = scoreValue;
           hasChange = true;
         }
 
@@ -286,8 +328,12 @@ export default function StudentCourseScoreTable() {
         }
 
         if (batchValues.courseSource) {
-          // empty string or undefined → skip
           update.courseSourceId = batchValues.courseSource;
+          hasChange = true;
+        }
+
+        if (batchValues.bcysId) {
+          update.batchClassYearSemesterId = batchValues.bcysId;
           hasChange = true;
         }
 
@@ -296,19 +342,57 @@ export default function StudentCourseScoreTable() {
       .filter(Boolean);
 
     if (updates.length === 0) {
-      message.info("No fields were changed to apply.");
+      toast({
+        title: "ℹ️ No Changes",
+        description: "No fields were changed to apply.",
+        variant: "default",
+      });
       return;
     }
 
+    // Show loading state
+    setBatchUpdateLoading(true);
+
     try {
-      await apiClient.put(endPoints.bulkUpdateScores, { updates });
-      message.success(`Updated ${updates.length} record(s) successfully`);
+      const response = await apiClient.put(endPoints.bulkUpdateScores, {
+        updates,
+      });
+
+      // Show success toast with details
+      const updatedFields = [];
+      if (batchValues.score) updatedFields.push("scores");
+      if (batchValues.courseSource) updatedFields.push("course sources");
+      if (batchValues.bcysId) updatedFields.push("batch/year/semester");
+      if (batchValues.isReleased !== null) updatedFields.push("release status");
+
+      const fieldsUpdated = updatedFields.join(", ");
+
+      toast({
+        title: "✅ Update Successful",
+        description: `Updated ${updates.length} record(s) successfully. ${fieldsUpdated ? `Changed: ${fieldsUpdated}` : ""}`,
+        variant: "default",
+      });
+
       setSelectedRowKeys([]);
-      setBatchValues({ score: "", courseSource: "", isReleased: null });
+      setBatchValues({
+        score: "",
+        courseSource: "",
+        isReleased: null,
+        bcysId: "",
+      });
+      setScoreInputError(false); // Clear any error state
       fetchStudentCourseScores();
     } catch (err) {
       console.error(err);
-      message.error(err.response?.data?.message || "Bulk update failed");
+      const errorMessage = err.response?.data?.error || "Bulk update failed";
+
+      toast({
+        title: "❌ Update Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setBatchUpdateLoading(false);
     }
   };
 
@@ -334,7 +418,11 @@ export default function StudentCourseScoreTable() {
 
     const scoreValue = parseFloat(editScoreValue);
     if (isNaN(scoreValue) || scoreValue < 0 || scoreValue > 100) {
-      message.error("Score must be between 0 and 100");
+      toast({
+        title: "❌ Invalid Score",
+        description: "Score must be between 0 and 100",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -344,19 +432,37 @@ export default function StudentCourseScoreTable() {
     };
 
     try {
-      await apiClient.put(endPoints.bulkUpdateScores, { updates: [update] });
-      message.success("Score updated");
+      const response = await apiClient.put(endPoints.bulkUpdateScores, {
+        updates: [update],
+      });
+
+      toast({
+        title: "✅ Score Updated",
+        description: `Successfully updated score to ${scoreValue.toFixed(2)} for ${editingRecord.studentId.student?.name || editingRecord.studentId.id}`,
+        variant: "default",
+      });
+
       setEditScoreModalVisible(false);
       setEditingRecord(null);
       fetchStudentCourseScores();
     } catch (err) {
-      message.error("Failed to update score");
+      const errorMessage =
+        err.response?.data?.error || "Failed to update score";
+
+      toast({
+        title: "❌ Update Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
       console.error(err);
     }
   };
 
+  const [togglingRowId, setTogglingRowId] = useState(null);
+
   const handleToggleRelease = async (record) => {
     const newReleased = !record.isReleased;
+    setTogglingRowId(record.id);
 
     const update = {
       id: record.id,
@@ -364,26 +470,40 @@ export default function StudentCourseScoreTable() {
     };
 
     try {
-      await apiClient.put(endPoints.bulkUpdateScores, { updates: [update] });
-      message.success(`Score ${newReleased ? "released" : "unreleased"}`);
+      const response = await apiClient.put(endPoints.bulkUpdateScores, {
+        updates: [update],
+      });
+
+      toast({
+        title: newReleased ? "✅ Score Released" : "🔒 Score Unreleased",
+        description: `${record.studentId.student?.name || record.studentId.id} - ${record.course.displayName} is now ${newReleased ? "visible to students" : "hidden from students"}`,
+        variant: "default",
+      });
+
       fetchStudentCourseScores();
     } catch (err) {
-      message.error("Failed to update release status");
+      const errorMessage =
+        err.response?.data?.error || "Failed to update release status";
+
+      toast({
+        title: "❌ Update Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
       console.error(err);
+    } finally {
+      setTogglingRowId(null);
     }
   };
+
   const clearFilters = () => {
-    // setFilters({
-    //   department: "",
-    //   status: "",
-    //   batchClassYearSemester: "",
-    //   search: "",
-    // });
     setFilters({
       courseId: "",
       bcysId: "",
       studentId: null,
       isReleased: null,
+      studentStatusId: "", // ← Add this
+      departmentId: "",
     });
     setSearchText("");
     setPagination((prev) => ({ ...prev, current: 1 }));
@@ -392,7 +512,13 @@ export default function StudentCourseScoreTable() {
 
   const clearBatchUpdate = () => {
     setSelectedRowKeys([]);
-    setBatchValues({ score: "", courseSource: "", isReleased: null });
+    setBatchValues({
+      score: "",
+      courseSource: "",
+      isReleased: null,
+      bcysId: "",
+    });
+    setScoreInputError(false); // ← Clear error state
   };
 
   const handlePageChange = (page) => {
@@ -410,21 +536,210 @@ export default function StudentCourseScoreTable() {
       : (pagination.current - 1) * pagination.pageSize + 1;
   const to = Math.min(
     pagination.current * pagination.pageSize,
-    pagination.total
+    pagination.total,
   );
   const totalPages = Math.ceil(pagination.total / pagination.pageSize);
 
   return (
     <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg max-w-full mx-auto">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
-          Student Course Scores
-        </h1>
-        <p className="text-gray-600 dark:text-gray-300">
-          Manage student scores and release status
-        </p>
+      <div className="mb-6 flex justify-between items-start">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+            Student Course Scores
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300">
+            Manage student scores and release status
+          </p>
+        </div>
+
+        {/* Help/Instructions Button */}
+        <button
+          onClick={() => setShowInstructions(!showInstructions)}
+          className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors duration-200 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <span>
+            {showInstructions ? "Hide Instructions" : "Show Instructions"}
+          </span>
+        </button>
       </div>
+
+      {/* Instructions Panel - Toggle visibility */}
+      {showInstructions && (
+        <div className="mb-6 p-5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg animate-fadeIn">
+          <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-300 mb-3 flex items-center gap-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            Quick Guide & Instructions
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            {/* Left Column */}
+            <div className="space-y-3">
+              <div className="flex items-start gap-2">
+                <span className="bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-300 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold">
+                  1
+                </span>
+                <div>
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">
+                    Batch Updates:
+                  </span>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Select multiple rows using checkboxes to batch update:
+                    <span className="block mt-1 ml-2">
+                      • <strong>Score</strong> - Set new scores (0-100)
+                      <br />• <strong>Course Source</strong> - Change course
+                      source
+                      <br />• <strong>Batch/Year/Semester</strong> - Update
+                      academic period
+                      <br />• <strong>Release Status</strong> -
+                      Release/unrelease in bulk
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2">
+                <span className="bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-300 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold">
+                  2
+                </span>
+                <div>
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">
+                    Release Status (IsReleased):
+                  </span>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Controls score visibility to students and in official
+                    documents:
+                    <span className="block mt-1 ml-2">
+                      •{" "}
+                      <span className="text-green-600 dark:text-green-400">
+                        Released ✓
+                      </span>{" "}
+                      - Scores visible to students and appear on
+                      transcripts/student copies
+                      <br />•{" "}
+                      <span className="text-orange-600 dark:text-orange-400">
+                        Unreleased ✗
+                      </span>{" "}
+                      - Scores hidden from students and excluded from
+                      transcripts
+                    </span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column */}
+            <div className="space-y-3">
+              <div className="flex items-start gap-2">
+                <span className="bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-300 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold">
+                  3
+                </span>
+                <div>
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">
+                    Batch/Year/Semester (BCYS) Format:
+                  </span>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Format:{" "}
+                    <code className="bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded">
+                      [Batch]-[Year]-[Semester]
+                    </code>
+                    <span className="block mt-1 ml-2">
+                      Examples:
+                      <br />•{" "}
+                      <code className="bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded">
+                        2-5-S1
+                      </code>{" "}
+                      - Batch 2, Year 5, Semester 1<br />•{" "}
+                      <code className="bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded">
+                        1-3-S2
+                      </code>{" "}
+                      - Batch 1, Year 3, Semester 2<br />•{" "}
+                      <code className="bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded">
+                        3-1-S1
+                      </code>{" "}
+                      - Batch 3, Year 1, Semester 1
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2">
+                <span className="bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-300 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold">
+                  4
+                </span>
+                <div>
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">
+                    About This Page:
+                  </span>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    This comprehensive view displays all student scores across:
+                    <span className="block mt-1 ml-2">
+                      • All courses taken
+                      <br />
+                      • All academic periods (past and present)
+                      <br />
+                      • All departments and batches
+                      <br />• Complete score history for transcript generation
+                    </span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Additional Tips */}
+          <div className="mt-4 pt-3 border-t border-blue-200 dark:border-blue-800">
+            <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 text-blue-600 dark:text-blue-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0114 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                />
+              </svg>
+              <span>
+                <strong>Pro Tip:</strong> Use the filters above to narrow down
+                specific departments, courses, or students before performing
+                batch updates.
+              </span>
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
         {/* <div>
@@ -562,7 +877,7 @@ export default function StudentCourseScoreTable() {
 
                 // Get the selected department's NAME (because courses store department as string/name)
                 const selectedDept = filterOptions.departments.find(
-                  (d) => d.id === Number(filters.departmentId)
+                  (d) => d.id === Number(filters.departmentId),
                 );
 
                 if (!selectedDept) return false;
@@ -635,6 +950,34 @@ export default function StudentCourseScoreTable() {
           </Select>
         </div>
 
+        {/* Student Status Filter */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Student Status
+          </label>
+          <Select
+            value={filters.studentStatusId || undefined}
+            onChange={(v) => handleFilterChange("studentStatusId", v)}
+            placeholder="All Statuses"
+            allowClear
+            showSearch
+            className="w-full"
+            filterOption={(input, option) =>
+              (option?.children ?? "")
+                .toLowerCase()
+                .includes(input.toLowerCase())
+            }
+          >
+            <Select.Option value="">All Statuses</Select.Option>
+            {filterOptions.studentStatuses.map((status) => (
+              <Select.Option key={status.id} value={status.id}>
+                {status.name.replace(/_/g, " ")}{" "}
+                {/* Replace underscores with spaces for display */}
+              </Select.Option>
+            ))}
+          </Select>
+        </div>
+
         {/* Student ID search - now more precise */}
         {/* <div>
           <label className="block text-sm font-medium ...">Student ID</label>
@@ -700,15 +1043,51 @@ export default function StudentCourseScoreTable() {
       {selectedRowKeys.length > 0 && (
         <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-300 dark:border-blue-700">
           <div className="flex flex-wrap items-center gap-4">
-            <InputNumber
-              min={0}
-              max={100}
-              step={0.1}
-              value={batchValues.score}
-              onChange={(v) => setBatchValues({ ...batchValues, score: v })}
-              placeholder="Score"
-              className="w-32 [&_.ant-input-number-input]:text-gray-900 [&_.ant-input-number-input]:dark:text-gray-200 [&_.ant-input-number-input::placeholder]:text-gray-500 [&_.ant-input-number-input::placeholder]:dark:text-gray-400"
-            />
+            <div className="relative">
+              <InputNumber
+                // Remove min and max props
+                step={0.1}
+                value={batchValues.score}
+                onChange={(v) => {
+                  setBatchValues({ ...batchValues, score: v });
+                  // Clear error when user starts typing
+                  setScoreInputError(false);
+                }}
+                onBlur={() => {
+                  // Validate on blur
+                  if (batchValues.score !== "" && batchValues.score !== null) {
+                    if (isNaN(Number(batchValues.score))) {
+                      setScoreInputError(true);
+                    } else {
+                      const score = parseFloat(batchValues.score);
+                      if (score < 0 || score > 100) {
+                        setScoreInputError(true);
+                      } else {
+                        setScoreInputError(false);
+                      }
+                    }
+                  } else {
+                    setScoreInputError(false);
+                  }
+                }}
+                placeholder="Score"
+                className={`w-32 transition-colors duration-200 ${
+                  scoreInputError
+                    ? "[&_.ant-input-number]:border-red-500 [&_.ant-input-number]:dark:border-red-500 [&_.ant-input-number]:bg-red-50 dark:[&_.ant-input-number]:bg-red-900/20"
+                    : batchValues.score &&
+                        !isNaN(Number(batchValues.score)) &&
+                        parseFloat(batchValues.score) >= 0 &&
+                        parseFloat(batchValues.score) <= 100
+                      ? "[&_.ant-input-number]:border-green-500 [&_.ant-input-number]:dark:border-green-500"
+                      : ""
+                } [&_.ant-input-number-input]:text-gray-900 [&_.ant-input-number-input]:dark:text-gray-200 [&_.ant-input-number-input::placeholder]:text-gray-500 [&_.ant-input-number-input::placeholder]:dark:text-gray-400`}
+              />
+              {scoreInputError && (
+                <div className="absolute -bottom-5 left-0 text-xs text-red-500 dark:text-red-400">
+                  Must be 0-100
+                </div>
+              )}
+            </div>
             <Select
               value={batchValues.courseSource || undefined}
               onChange={(v) =>
@@ -724,6 +1103,22 @@ export default function StudentCourseScoreTable() {
                 </Select.Option>
               ))}
             </Select>
+
+            {/* NEW: Batch ClassYear Semester Dropdown */}
+            <Select
+              value={batchValues.bcysId || undefined}
+              onChange={(v) => setBatchValues({ ...batchValues, bcysId: v })}
+              placeholder="Batch/Year/Semester"
+              allowClear
+              className="w-48"
+            >
+              {filterOptions.batchClassYearSemesters.map((b) => (
+                <Select.Option key={b.id} value={b.id}>
+                  {b.name}
+                </Select.Option>
+              ))}
+            </Select>
+
             <Select
               value={
                 batchValues.isReleased !== null
@@ -748,9 +1143,40 @@ export default function StudentCourseScoreTable() {
             </Select>
             <button
               onClick={applyBatchUpdate}
-              className="px-5 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              disabled={batchUpdateLoading}
+              className={`px-5 py-2 rounded flex items-center gap-2 ${
+                batchUpdateLoading
+                  ? "bg-blue-400 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700"
+              } text-white`}
             >
-              Apply ({selectedRowKeys.length})
+              {batchUpdateLoading ? (
+                <>
+                  <svg
+                    className="animate-spin h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  <span>Applying...</span>
+                </>
+              ) : (
+                `Apply (${selectedRowKeys.length})`
+              )}
             </button>
             <button
               onClick={clearBatchUpdate}
@@ -828,7 +1254,9 @@ export default function StudentCourseScoreTable() {
                 <tr
                   key={item.key}
                   className={
-                    selectedRowKeys.includes(item.key) ? "bg-blue-50 ..." : ""
+                    selectedRowKeys.includes(item.key)
+                      ? "bg-blue-50 dark:bg-blue-900/40 text-gray-900 dark:text-gray-100" // ← Updated
+                      : "hover:bg-gray-50 dark:hover:bg-gray-700/50" // ← Optional hover effect
                   }
                 >
                   <td className="px-6 py-4">
@@ -882,14 +1310,40 @@ export default function StudentCourseScoreTable() {
                       </button>
                       <button
                         onClick={() => handleToggleRelease(item)}
-                        className={
-                          item.isReleased
-                            ? "text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-200"
-                            : "text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200"
-                        }
+                        disabled={togglingRowId === item.id}
+                        className={`
+    relative overflow-hidden transition-transform active:scale-95
+    ${
+      item.isReleased
+        ? "text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-200"
+        : "text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200"
+    }
+    ${togglingRowId === item.id ? "opacity-50 cursor-wait" : ""}
+  `}
                         title={item.isReleased ? "Unrelease" : "Release"}
                       >
-                        {item.isReleased ? (
+                        {togglingRowId === item.id ? (
+                          <svg
+                            className="animate-spin h-4 w-4"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                        ) : item.isReleased ? (
                           <EyeOff size={16} />
                         ) : (
                           <Eye size={16} />
@@ -1010,41 +1464,124 @@ export default function StudentCourseScoreTable() {
 
       {/* Global Dark Mode Fixes */}
       <style jsx global>{`
-        /* Select dropdown input */
+        /* Light mode dropdown styles (default) */
         .ant-select-selector {
-          background-color: #1f2937 !important;
-          border-color: #4b5563 !important;
-          color: #d1d5db !important;
+          background-color: #ffffff !important;
+          border-color: #d1d5db !important;
+          color: #111827 !important;
         }
         .ant-select-selection-placeholder {
           color: #9ca3af !important;
         }
         .ant-select-arrow {
+          color: #6b7280 !important;
+        }
+
+        /* Light mode InputNumber */
+        .ant-input-number {
+          background-color: #ffffff !important;
+          border-color: #d1d5db !important;
+        }
+        .ant-input-number-input {
+          background-color: #ffffff !important;
+          color: #111827 !important;
+        }
+        .ant-input-number-handler-wrap {
+          background-color: #f9fafb !important;
+        }
+
+        /* Light mode dropdown menu */
+        .ant-select-dropdown {
+          background-color: #ffffff !important;
+          border: 1px solid #e5e7eb !important;
+        }
+        .ant-select-item {
+          color: #111827 !important;
+        }
+        .ant-select-item:hover {
+          background-color: #f3f4f6 !important;
+        }
+        .ant-select-item-option-selected {
+          background-color: #e6f7ff !important;
+          color: #1890ff !important;
+        }
+
+        /* Dark mode dropdown styles - only apply when dark class is present */
+        .dark .ant-select-selector {
+          background-color: #1f2937 !important;
+          border-color: #4b5563 !important;
+          color: #d1d5db !important;
+        }
+        .dark .ant-select-selection-placeholder {
+          color: #9ca3af !important;
+        }
+        .dark .ant-select-arrow {
           color: #9ca3af !important;
         }
 
-        /* InputNumber in dark mode */
-        .ant-input-number {
+        /* Dark mode InputNumber */
+        .dark .ant-input-number {
           background-color: #1f2937 !important;
           border-color: #4b5563 !important;
         }
-        .ant-input-number-input {
+        .dark .ant-input-number-input {
           background-color: #1f2937 !important;
           color: #d1d5db !important;
         }
-        .ant-input-number-handler-wrap {
+        .dark .ant-input-number-handler-wrap {
           background-color: #1f2937 !important;
         }
 
-        /* Dropdown menu */
-        .ant-select-dropdown {
+        /* Dark mode dropdown menu */
+        .dark .ant-select-dropdown {
           background-color: #1f2937 !important;
+          border: 1px solid #4b5563 !important;
         }
-        .ant-select-item {
+        .dark .ant-select-item {
           color: #d1d5db !important;
         }
-        .ant-select-item:hover {
+        .dark .ant-select-item:hover {
           background-color: #374151 !important;
+        }
+        .dark .ant-select-item-option-selected {
+          background-color: #1e3a8a !important;
+          color: #93c5fd !important;
+        }
+
+        @keyframes pulse-success {
+          0%,
+          100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
+        }
+
+        .animate-pulse-success {
+          animation: pulse-success 0.5s ease-in-out;
+        }
+        /* Fade animation for instructions panel */
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out;
+        }
+
+        /* Improve code tag styling */
+        code {
+          font-family:
+            ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+          font-size: 0.9em;
         }
       `}</style>
     </div>
