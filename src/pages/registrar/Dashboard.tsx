@@ -481,7 +481,6 @@ export default function RegistrarDashboard() {
                   </div>
                 </div>
               )}
-
               <div className="space-y-3 max-h-60 overflow-y-auto">
                 {dashboardData?.recentApplicants?.length > 0 ? (
                   dashboardData.recentApplicants
@@ -531,7 +530,6 @@ export default function RegistrarDashboard() {
           <Card className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg">
             <CardContent className="p-6">
               <h3 className="text-xl font-semibold text-blue-600 dark:text-blue-400 mb-4 flex items-center gap-2">
-                <UsersRound className="h-5 w-5" />
                 Active Students by Gender
               </h3>
               <div className="h-64">
