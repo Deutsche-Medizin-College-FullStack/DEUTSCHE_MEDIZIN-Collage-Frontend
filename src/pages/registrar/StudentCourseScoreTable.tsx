@@ -29,12 +29,7 @@ export default function StudentCourseScoreTable() {
   const [batchUpdateLoading, setBatchUpdateLoading] = useState(false); // ← Add this
   const [showInstructions, setShowInstructions] = useState(false); // ← Add this
   const [scoreInputError, setScoreInputError] = useState(false);
-  // const [filters, setFilters] = useState({
-  //   department: "",
-  //   status: "",
-  //   batchClassYearSemester: "",
-  //   search: "",
-  // });
+  const [editScoreError, setEditScoreError] = useState(false);
   const [filters, setFilters] = useState({
     courseId: "", // ← new
     bcysId: "", // renamed from batchClassYearSemester
@@ -416,13 +411,35 @@ export default function StudentCourseScoreTable() {
   const handleEditScoreSubmit = async () => {
     if (!editingRecord) return;
 
+    // Validate score
+    if (editScoreValue === "" || editScoreValue === null) {
+      toast({
+        title: "❌ Invalid Score",
+        description: "Please enter a score",
+        variant: "destructive",
+      });
+      setEditScoreError(true);
+      return;
+    }
+
+    if (isNaN(Number(editScoreValue))) {
+      toast({
+        title: "❌ Invalid Score",
+        description: "Please enter a valid number",
+        variant: "destructive",
+      });
+      setEditScoreError(true);
+      return;
+    }
+
     const scoreValue = parseFloat(editScoreValue);
-    if (isNaN(scoreValue) || scoreValue < 0 || scoreValue > 100) {
+    if (scoreValue < 0 || scoreValue > 100) {
       toast({
         title: "❌ Invalid Score",
         description: "Score must be between 0 and 100",
         variant: "destructive",
       });
+      setEditScoreError(true);
       return;
     }
 
@@ -444,11 +461,11 @@ export default function StudentCourseScoreTable() {
 
       setEditScoreModalVisible(false);
       setEditingRecord(null);
+      setEditScoreError(false);
       fetchStudentCourseScores();
     } catch (err) {
       const errorMessage =
         err.response?.data?.error || "Failed to update score";
-
       toast({
         title: "❌ Update Failed",
         description: errorMessage,
@@ -608,6 +625,50 @@ export default function StudentCourseScoreTable() {
                 </span>
                 <div>
                   <span className="font-semibold text-gray-800 dark:text-gray-200">
+                    Adding New Records:
+                  </span>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    New student course records cannot be added directly from
+                    this page.
+                    <span className="block mt-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
+                      <span className="font-medium text-yellow-800 dark:text-yellow-300">
+                        ➡️ Need to add a course for a student?
+                      </span>
+                      <br />
+                      Go to{" "}
+                      <a
+                        href="/registrar/registration-slips"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 font-semibold text-blue-600 dark:text-blue-400 hover:underline hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+                      >
+                        Generate Registration Slip
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                          />
+                        </svg>
+                      </a>
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2">
+                <span className="bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-300 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold">
+                  2
+                </span>
+                <div>
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">
                     Batch Updates:
                   </span>
                   <p className="text-gray-600 dark:text-gray-400">
@@ -627,7 +688,7 @@ export default function StudentCourseScoreTable() {
 
               <div className="flex items-start gap-2">
                 <span className="bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-300 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold">
-                  2
+                  3
                 </span>
                 <div>
                   <span className="font-semibold text-gray-800 dark:text-gray-200">
@@ -659,7 +720,7 @@ export default function StudentCourseScoreTable() {
             <div className="space-y-3">
               <div className="flex items-start gap-2">
                 <span className="bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-300 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold">
-                  3
+                  4
                 </span>
                 <div>
                   <span className="font-semibold text-gray-800 dark:text-gray-200">
@@ -692,7 +753,7 @@ export default function StudentCourseScoreTable() {
 
               <div className="flex items-start gap-2">
                 <span className="bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-300 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold">
-                  4
+                  5
                 </span>
                 <div>
                   <span className="font-semibold text-gray-800 dark:text-gray-200">
@@ -715,7 +776,7 @@ export default function StudentCourseScoreTable() {
           </div>
 
           {/* Additional Tips */}
-          <div className="mt-4 pt-3 border-t border-blue-200 dark:border-blue-800">
+          <div className="mt-4 pt-3 border-t border-blue-200 dark:border-blue-800 space-y-2">
             <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -735,6 +796,54 @@ export default function StudentCourseScoreTable() {
                 <strong>Pro Tip:</strong> Use the filters above to narrow down
                 specific departments, courses, or students before performing
                 batch updates.
+              </span>
+            </p>
+
+            {/* New Tip: Missing Records */}
+            <p className="text-sm text-gray-600 dark:text-gray-400 flex items-start gap-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <span>
+                <strong>Can't find what you're looking for?</strong> If a
+                student, course, or any record is missing from this table, it
+                means the student hasn't been registered for those courses yet.
+                Head over to{" "}
+                <a
+                  href="/registrar/registration-slips"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 font-semibold text-blue-600 dark:text-blue-400 hover:underline hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+                >
+                  Generate Registration Slip
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    />
+                  </svg>
+                </a>{" "}
+                to register the student for the required courses. Once
+                registered, they will appear here automatically.
               </span>
             </p>
           </div>
@@ -962,17 +1071,22 @@ export default function StudentCourseScoreTable() {
             allowClear
             showSearch
             className="w-full"
-            filterOption={(input, option) =>
-              (option?.children ?? "")
-                .toLowerCase()
-                .includes(input.toLowerCase())
-            }
+            filterOption={(input, option) => {
+              const label = option?.label ?? option?.children;
+              if (typeof label === "string") {
+                return label.toLowerCase().includes(input.toLowerCase());
+              }
+              return false;
+            }}
           >
             <Select.Option value="">All Statuses</Select.Option>
             {filterOptions.studentStatuses.map((status) => (
-              <Select.Option key={status.id} value={status.id}>
-                {status.name.replace(/_/g, " ")}{" "}
-                {/* Replace underscores with spaces for display */}
+              <Select.Option
+                key={status.id}
+                value={status.id}
+                label={status.name.replace(/_/g, " ")}
+              >
+                {status.name.replace(/_/g, " ")}
               </Select.Option>
             ))}
           </Select>
@@ -1429,6 +1543,7 @@ export default function StudentCourseScoreTable() {
         onCancel={() => {
           setEditScoreModalVisible(false);
           setEditingRecord(null);
+          setEditScoreError(false); // Reset error state
         }}
         okText="Update Score"
         cancelText="Cancel"
@@ -1443,20 +1558,57 @@ export default function StudentCourseScoreTable() {
             </p>
             <p>
               <strong>Course:</strong> {editingRecord.course.displayName}
+              {editingRecord.course.code && (
+                <span className="text-gray-500 dark:text-gray-400 ml-2 text-xs">
+                  ({editingRecord.course.code})
+                </span>
+              )}
             </p>
-            <div>
+            <div className="relative">
               <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-200">
                 New Score (0-100)
               </label>
               <InputNumber
-                min={0}
-                max={100}
+                // Remove min and max to prevent auto-clamping
                 step={0.1}
                 value={editScoreValue}
-                onChange={setEditScoreValue}
-                className="w-full [&_.ant-input-number]:bg-gray-700 [&_.ant-input-number]:dark:bg-gray-700 [&_.ant-input-number-input]:text-gray-100"
+                onChange={(v) => {
+                  setEditScoreValue(v);
+                  setEditScoreError(false);
+                }}
+                onBlur={() => {
+                  if (editScoreValue !== "" && editScoreValue !== null) {
+                    if (isNaN(Number(editScoreValue))) {
+                      setEditScoreError(true);
+                    } else {
+                      const score = parseFloat(editScoreValue);
+                      if (score < 0 || score > 100) {
+                        setEditScoreError(true);
+                      } else {
+                        setEditScoreError(false);
+                      }
+                    }
+                  } else {
+                    setEditScoreError(false);
+                  }
+                }}
                 placeholder="Enter new score"
+                className={`w-full transition-colors duration-200 ${
+                  editScoreError
+                    ? "[&_.ant-input-number]:border-red-500 [&_.ant-input-number]:dark:border-red-500 [&_.ant-input-number]:bg-red-50 dark:[&_.ant-input-number]:bg-red-900/20"
+                    : editScoreValue &&
+                        !isNaN(Number(editScoreValue)) &&
+                        parseFloat(editScoreValue) >= 0 &&
+                        parseFloat(editScoreValue) <= 100
+                      ? "[&_.ant-input-number]:border-green-500 [&_.ant-input-number]:dark:border-green-500"
+                      : ""
+                }`}
               />
+              {editScoreError && (
+                <div className="absolute text-xs text-red-500 dark:text-red-400 mt-1">
+                  Score must be between 0 and 100
+                </div>
+              )}
             </div>
           </div>
         )}
