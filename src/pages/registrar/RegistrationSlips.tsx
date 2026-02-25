@@ -216,6 +216,7 @@ export default function RegistrationSlips() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
   const [selectedStudents, setSelectedStudents] = useState<Student[]>([]);
+  const [showInstructions, setShowInstructions] = useState(false); // Add this line
 
   const [searchQuery, setSearchQuery] = useState("");
   const [registrationCourses, setRegistrationCourses] = useState<
@@ -318,7 +319,7 @@ export default function RegistrationSlips() {
               course.ctitle &&
               `${course.ccode} ${course.ctitle}`
                 .toLowerCase()
-                .includes(searchTerm))
+                .includes(searchTerm)),
         );
         setFilteredCourses(filtered);
       }
@@ -390,7 +391,7 @@ export default function RegistrationSlips() {
               ? "Semester 1"
               : "Semester 2",
           accepted: false,
-        })
+        }),
       );
 
       setStudents(transformedStudents);
@@ -526,7 +527,7 @@ export default function RegistrationSlips() {
 
   const applyFiltersAndSearch = (
     searchQuery: string = "",
-    currentFilters = filters
+    currentFilters = filters,
   ) => {
     let filtered = [...students];
 
@@ -535,33 +536,33 @@ export default function RegistrationSlips() {
       filtered = filtered.filter(
         (student) =>
           (student.fullNameENG?.toLowerCase() || "").includes(
-            searchQuery.toLowerCase()
+            searchQuery.toLowerCase(),
           ) ||
           (student.fullNameAMH?.toLowerCase() || "").includes(
-            searchQuery.toLowerCase()
+            searchQuery.toLowerCase(),
           ) ||
           (student.username?.toLowerCase() || "").includes(
-            searchQuery.toLowerCase()
+            searchQuery.toLowerCase(),
           ) ||
-          student.studentId?.toString().includes(searchQuery)
+          student.studentId?.toString().includes(searchQuery),
       );
     }
 
     // Apply other filters
     if (currentFilters.departmentId) {
       const departmentName = filterData.departments.find(
-        (d) => d.id?.toString() === currentFilters.departmentId
+        (d) => d.id?.toString() === currentFilters.departmentId,
       )?.name;
       if (departmentName) {
         filtered = filtered.filter(
-          (student) => student.departmentName === departmentName
+          (student) => student.departmentName === departmentName,
         );
       }
     }
 
     if (currentFilters.batchId) {
       const batchName = filterData.batches.find(
-        (b) => b.id?.toString() === currentFilters.batchId
+        (b) => b.id?.toString() === currentFilters.batchId,
       )?.name;
       if (batchName) {
         filtered = filtered.filter((student) => student.batch === batchName);
@@ -570,47 +571,47 @@ export default function RegistrationSlips() {
 
     if (currentFilters.enrollmentTypeId) {
       const enrollmentTypeName = filterData.enrollmentTypes.find(
-        (e) => e.id === currentFilters.enrollmentTypeId
+        (e) => e.id === currentFilters.enrollmentTypeId,
       )?.name;
       if (enrollmentTypeName) {
         filtered = filtered.filter(
-          (student) => student.programModalityName === enrollmentTypeName
+          (student) => student.programModalityName === enrollmentTypeName,
         );
       }
     }
 
     if (currentFilters.classYearId) {
       const classYearName = filterData.classYears.find(
-        (c) => c.id?.toString() === currentFilters.classYearId
+        (c) => c.id?.toString() === currentFilters.classYearId,
       )?.name;
       if (classYearName) {
         filtered = filtered.filter((student) =>
-          student.yearOfStudy?.includes(classYearName)
+          student.yearOfStudy?.includes(classYearName),
         );
       }
     }
 
     if (currentFilters.semesterId) {
       const semesterName = filterData.semesters.find(
-        (s) => s.id === currentFilters.semesterId
+        (s) => s.id === currentFilters.semesterId,
       )?.name;
       if (semesterName) {
         filtered = filtered.filter((student) =>
-          student.semester?.toLowerCase().includes(semesterName.toLowerCase())
+          student.semester?.toLowerCase().includes(semesterName.toLowerCase()),
         );
       }
     }
 
     if (currentFilters.programLevelId) {
       filtered = filtered.filter(
-        (student) => student.programLevelCode === currentFilters.programLevelId
+        (student) => student.programLevelCode === currentFilters.programLevelId,
       );
     }
 
     if (currentFilters.programModalityId) {
       filtered = filtered.filter(
         (student) =>
-          student.programModalityCode === currentFilters.programModalityId
+          student.programModalityCode === currentFilters.programModalityId,
       );
     }
 
@@ -620,11 +621,11 @@ export default function RegistrationSlips() {
 
   const handleSelectStudent = (student: Student) => {
     const isSelected = selectedStudents.some(
-      (s) => s.studentId === student.studentId
+      (s) => s.studentId === student.studentId,
     );
     if (isSelected) {
       setSelectedStudents((prev) =>
-        prev.filter((s) => s.studentId !== student.studentId)
+        prev.filter((s) => s.studentId !== student.studentId),
       );
     } else {
       setSelectedStudents((prev) => [...prev, student]);
@@ -660,16 +661,16 @@ export default function RegistrationSlips() {
     if (filteredCourses.length === 0) return;
 
     const visibleCourseIds = filteredCourses.map((course) =>
-      course.id.toString()
+      course.id.toString(),
     );
     const allSelected = visibleCourseIds.every((id) =>
-      selectedCourseIds.includes(id)
+      selectedCourseIds.includes(id),
     );
 
     if (allSelected) {
       // Deselect all visible courses
       setSelectedCourseIds((prev) =>
-        prev.filter((id) => !visibleCourseIds.includes(id))
+        prev.filter((id) => !visibleCourseIds.includes(id)),
       );
     } else {
       // Select all visible courses
@@ -726,22 +727,22 @@ export default function RegistrationSlips() {
 
   const handleRemoveCourse = (id: number) => {
     setRegistrationCourses(
-      registrationCourses.filter((course) => course.id !== id)
+      registrationCourses.filter((course) => course.id !== id),
     );
   };
 
   const calculateTotals = () => {
     const lectureTotal = registrationCourses.reduce(
       (sum, course) => sum + (course.lectureHours || 0),
-      0
+      0,
     );
     const labTotal = registrationCourses.reduce(
       (sum, course) => sum + (course.labHours || 0),
-      0
+      0,
     );
     const total = registrationCourses.reduce(
       (sum, course) => sum + (course.totalHours || 0),
-      0
+      0,
     );
     return { lectureTotal, labTotal, total };
   };
@@ -833,7 +834,7 @@ export default function RegistrationSlips() {
           (student: PreviewStudent) => ({
             ...student,
             accepted: false,
-          })
+          }),
         );
         setPreviewData(previewWithAcceptance);
         setShowPreview(true);
@@ -865,32 +866,32 @@ export default function RegistrationSlips() {
 
         if (error.response.status === 403) {
           toast.error(
-            "Access denied (403). Please check your permissions or authentication."
+            "Access denied (403). Please check your permissions or authentication.",
           );
         } else if (error.response.status === 401) {
           toast.error("Unauthorized (401). Please log in again.");
         } else if (error.response.status === 404) {
           toast.error(
-            "Endpoint not found (404). Please check the API configuration."
+            "Endpoint not found (404). Please check the API configuration.",
           );
         } else if (error.response.status === 400) {
           toast.error(
             `Bad request (400): ${
               error.response.data?.error || "Invalid request data"
-            }`
+            }`,
           );
         } else if (error.response.data?.error) {
           toast.error(`Server error: ${error.response.data.error}`);
         } else {
           toast.error(
-            `Server error: ${error.response.status} ${error.response.statusText}`
+            `Server error: ${error.response.status} ${error.response.statusText}`,
           );
         }
       } else if (error.request) {
         // The request was made but no response was received
         console.error("No response received:", error.request);
         toast.error(
-          "No response from server. Please check your network connection."
+          "No response from server. Please check your network connection.",
         );
       } else {
         // Something happened in setting up the request that triggered an Error
@@ -909,22 +910,22 @@ export default function RegistrationSlips() {
       prev.map((student) =>
         student.studentId === studentId
           ? { ...student, accepted: !student.accepted }
-          : student
-      )
+          : student,
+      ),
     );
   };
 
   // Function to accept all students
   const handleAcceptAll = () => {
     setPreviewData((prev) =>
-      prev.map((student) => ({ ...student, accepted: true }))
+      prev.map((student) => ({ ...student, accepted: true })),
     );
   };
 
   // Function to reject all students
   const handleRejectAll = () => {
     setPreviewData((prev) =>
-      prev.map((student) => ({ ...student, accepted: false }))
+      prev.map((student) => ({ ...student, accepted: false })),
     );
   };
 
@@ -963,7 +964,7 @@ export default function RegistrationSlips() {
       // Call the generate slips API
       const response: GenerateSlipResponse = await apiService.post(
         endPoints.generateSlips,
-        requestData
+        requestData,
       );
 
       console.log("Generate slips response:", response);
@@ -1101,7 +1102,7 @@ export default function RegistrationSlips() {
           "Deutsche Hochschule für Medizin College",
           pageWidth / 2,
           headerY + 6,
-          { align: "center" }
+          { align: "center" },
         );
         doc.setFont("helvetica", "bold");
         doc.setFontSize(12);
@@ -1126,7 +1127,7 @@ export default function RegistrationSlips() {
           y: number,
           maxW: number,
           fontSize = 10,
-          lineHeight = 5
+          lineHeight = 5,
         ) => {
           doc.setFontSize(fontSize);
           const lines = (doc as any).splitTextToSize(text, maxW);
@@ -1138,13 +1139,13 @@ export default function RegistrationSlips() {
           `Full Name of Student: ${student.fullNameEng || ""}`,
           left,
           curY,
-          usableWidth
+          usableWidth,
         );
         curY = wrap(
           `Date of Registration: ${dateOfRegistration}`,
           left,
           curY + 2,
-          usableWidth
+          usableWidth,
         );
         curY = wrap(
           `Department: ${student.departmentName || ""}, Year Of Study: ${
@@ -1152,7 +1153,7 @@ export default function RegistrationSlips() {
           }, Semester: ${student.semesterName || ""}`,
           left,
           curY + 2,
-          usableWidth
+          usableWidth,
         );
 
         // ID / Age / Sex on one line
@@ -1165,7 +1166,7 @@ export default function RegistrationSlips() {
 
         // Payment / Batch Class Year / Enrollment on one line
         const selectedBcys = bcysList.find(
-          (b) => b.bcysId?.toString() === batchClassYear
+          (b) => b.bcysId?.toString() === batchClassYear,
         );
         const bcysName = selectedBcys ? selectedBcys.name : "________________";
         const payLine = `Payment Receipt No.: ${
@@ -1182,7 +1183,7 @@ export default function RegistrationSlips() {
         doc.text(
           "I am applying to be registered for the following courses.",
           left,
-          introTextY
+          introTextY,
         );
 
         const tableStartY = Math.max(95, introTextY + 6);
@@ -1198,15 +1199,15 @@ export default function RegistrationSlips() {
 
         const lectureTotal = (student.courses || []).reduce(
           (sum, course) => sum + (course.lectureHours || 0),
-          0
+          0,
         );
         const labTotal = (student.courses || []).reduce(
           (sum, course) => sum + (course.labHours || 0),
-          0
+          0,
         );
         const total = (student.courses || []).reduce(
           (sum, course) => sum + (course.totalHours || 0),
-          0
+          0,
         );
 
         tableData.push([
@@ -1314,7 +1315,7 @@ export default function RegistrationSlips() {
 
     acceptedStudents.forEach((student, studentIndex) => {
       const selectedBcys = bcysList.find(
-        (b) => b.bcysId?.toString() === batchClassYear
+        (b) => b.bcysId?.toString() === batchClassYear,
       );
       const bcysName = selectedBcys ? selectedBcys.name : "________________";
 
@@ -1369,15 +1370,15 @@ export default function RegistrationSlips() {
 
       const lectureTotal = (student.courses || []).reduce(
         (sum, course) => sum + (course.lectureHours || 0),
-        0
+        0,
       );
       const labTotal = (student.courses || []).reduce(
         (sum, course) => sum + (course.labHours || 0),
-        0
+        0,
       );
       const total = (student.courses || []).reduce(
         (sum, course) => sum + (course.totalHours || 0),
-        0
+        0,
       );
 
       slipData.push([
@@ -1458,20 +1459,20 @@ export default function RegistrationSlips() {
 
       acceptedStudents.forEach((student, index) => {
         const selectedBcys = bcysList.find(
-          (b) => b.bcysId?.toString() === batchClassYear
+          (b) => b.bcysId?.toString() === batchClassYear,
         );
         const bcysName = selectedBcys ? selectedBcys.name : "________________";
         const lectureTotal = (student.courses || []).reduce(
           (sum, course) => sum + (course.lectureHours || 0),
-          0
+          0,
         );
         const labTotal = (student.courses || []).reduce(
           (sum, course) => sum + (course.labHours || 0),
-          0
+          0,
         );
         const total = (student.courses || []).reduce(
           (sum, course) => sum + (course.totalHours || 0),
-          0
+          0,
         );
 
         printContent += `
@@ -1493,8 +1494,8 @@ export default function RegistrationSlips() {
               <div><strong>Department:</strong> ${
                 student.departmentName || ""
               }, <strong>Year Of Study:</strong> ${
-          student.classYearName || ""
-        }, <strong>Semester:</strong> ${student.semesterName || ""}</div>
+                student.classYearName || ""
+              }, <strong>Semester:</strong> ${student.semesterName || ""}</div>
               <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 10px;">
                 <div><strong>ID No.:</strong> ${student.username || ""}</div>
                 <div><strong>Age:</strong> ${student.age || ""}</div>
@@ -1548,7 +1549,7 @@ export default function RegistrationSlips() {
                         course.totalHours || 0
                       }</td>
                     </tr>
-                  `
+                  `,
                     )
                     .join("")}
                   <tr style="font-weight: bold; background-color: #f0f0f0;">
@@ -1631,15 +1632,15 @@ export default function RegistrationSlips() {
   const calculateStudentTotals = (student: PreviewStudent) => {
     const lectureTotal = (student.courses || []).reduce(
       (sum, course) => sum + (course.lectureHours || 0),
-      0
+      0,
     );
     const labTotal = (student.courses || []).reduce(
       (sum, course) => sum + (course.labHours || 0),
-      0
+      0,
     );
     const total = (student.courses || []).reduce(
       (sum, course) => sum + (course.totalHours || 0),
-      0
+      0,
     );
     return { lectureTotal, labTotal, total };
   };
@@ -1656,7 +1657,277 @@ export default function RegistrationSlips() {
             Generate registration slips for students in PDF or Excel format
           </p>
         </div>
+
+        {/* Help/Instructions Button */}
+        <button
+          onClick={() => setShowInstructions(!showInstructions)}
+          className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors duration-200 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <span>
+            {showInstructions ? "Hide Instructions" : "Show Instructions"}
+          </span>
+        </button>
       </div>
+
+      {/* Instructions Panel - Toggle visibility */}
+      {showInstructions && (
+        <div className="mb-6 p-5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg animate-fadeIn">
+          <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-300 mb-3 flex items-center gap-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            Quick Guide & Instructions
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            {/* Left Column */}
+            <div className="space-y-3">
+              <div className="flex items-start gap-2">
+                <span className="bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-300 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold">
+                  1
+                </span>
+                <div>
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">
+                    Select Students:
+                  </span>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Use the search bar and filters to find students who have
+                    paid their fees. Select individual students using
+                    checkboxes, or use "Select All" for bulk selection.
+                    <span className="block mt-1 text-xs bg-yellow-50 dark:bg-yellow-900/20 p-1 rounded">
+                      💡 <strong>Tip:</strong> You can filter by department,
+                      batch, or class year for easier access.
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2">
+                <span className="bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-300 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold">
+                  2
+                </span>
+                <div>
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">
+                    Choose BCYS (Batch/Class/Year/Semester):
+                  </span>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Select the academic period from the "Batch Class Year"
+                    dropdown. This determines which semester the students will
+                    be registered for.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2">
+                <span className="bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-300 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold">
+                  3
+                </span>
+                <div>
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">
+                    Select & Add Courses:
+                  </span>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Choose the courses students have paid for:
+                    <span className="block mt-1 ml-2">
+                      • Click the course dropdown to see available courses
+                      <br />• Search for specific courses by code or title
+                      <br />• Select multiple courses using checkboxes
+                      <br />• Click "Add Selected" to add them to the list
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2">
+                <span className="bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-300 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold">
+                  4
+                </span>
+                <div>
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">
+                    Payment Receipt:
+                  </span>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Enter the payment receipt number in the "Payment Receipt
+                    No." field. This helps track which payments the registration
+                    is associated with. or you can leave it blank if not
+                    applicable.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column */}
+            <div className="space-y-3">
+              <div className="flex items-start gap-2">
+                <span className="bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-300 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold">
+                  5
+                </span>
+                <div>
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">
+                    Preview Slips:
+                  </span>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Click "Slip Preview" to see how the registration slips will
+                    look:
+                    <span className="block mt-1 ml-2">
+                      • Review all student information
+                      <br />• Click the 👁️ (eye) button to see detailed preview
+                      for each student
+                      <br />• Verify courses, hours, and totals are correct
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2">
+                <span className="bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-300 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold">
+                  6
+                </span>
+                <div>
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">
+                    Accept Students:
+                  </span>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    After verification:
+                    <span className="block mt-1 ml-2">
+                      • Click the checkmark circles to accept individual
+                      students
+                      <br />• Use "Select All" to accept all students at once
+                      <br />• Only accepted students will be included in final
+                      generation
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2">
+                <span className="bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-300 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold">
+                  7
+                </span>
+                <div>
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">
+                    Generate & Download:
+                  </span>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    <span className="block mb-2">
+                      • Click "Generate Slips" to officially register students
+                      and create records
+                      <br />• Review the success/failure response
+                    </span>
+                    <span className="block p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                      ⚠️{" "}
+                      <strong className="text-red-800 dark:text-red-300">
+                        Important:
+                      </strong>{" "}
+                      After successful generation, immediately download the PDF
+                      using the "PDF" button.
+                      <span className="block mt-1">
+                        The generated slips cannot be retrieved later!
+                      </span>
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2">
+                <span className="bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-300 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold">
+                  8
+                </span>
+                <div>
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">
+                    Export Options:
+                  </span>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    After successful generation, you can:
+                    <span className="block mt-1 ml-2">
+                      • <strong>PDF</strong> - Download formatted registration
+                      slips (recommended)
+                      <br />• <strong>Excel</strong> - Export data to
+                      spreadsheet
+                      <br />• <strong>Print</strong> - Print directly
+                    </span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Additional Tips */}
+          <div className="mt-4 pt-3 border-t border-blue-200 dark:border-blue-800 space-y-2">
+            <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 text-blue-600 dark:text-blue-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0114 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                />
+              </svg>
+              <span>
+                <strong>Pro Tip:</strong> Always verify the total credit hours
+                match what students paid for. The system prevents registration
+                if hours exceed allowed limits (min 12, max 22 for regular
+                program).
+              </span>
+            </p>
+
+            <p className="text-sm text-gray-600 dark:text-gray-400 flex items-start gap-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+              <span>
+                <strong>Purpose of this page:</strong> This page handles course
+                registration after payment confirmation. Students must be
+                registered here before they can access courses or receive
+                grades. The generated slip serves as official proof of
+                registration.
+              </span>
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Top Section: Student and Course Selection Side by Side */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -2032,7 +2303,7 @@ export default function RegistrationSlips() {
                     if (courses.length === 0 && !coursesLoading) {
                       console.log("No courses loaded, retrying fetch...");
                       const studentIds = selectedStudents.map(
-                        (s) => s.studentId
+                        (s) => s.studentId,
                       );
                       fetchCourses(studentIds);
                     } else {
@@ -2050,8 +2321,8 @@ export default function RegistrationSlips() {
                           selectedCourseIds.length > 1 ? "s" : ""
                         } selected`
                       : selectedStudents.length > 0
-                      ? "Select Courses"
-                      : "Select Students First"}
+                        ? "Select Courses"
+                        : "Select Students First"}
                   </span>
                   <ChevronDown
                     className={`h-4 w-4 transition-transform ${
@@ -2117,7 +2388,9 @@ export default function RegistrationSlips() {
                               className="h-7 text-xs"
                             >
                               {filteredCourses.every((course) =>
-                                selectedCourseIds.includes(course.id.toString())
+                                selectedCourseIds.includes(
+                                  course.id.toString(),
+                                ),
                               ) ? (
                                 <>
                                   <CheckSquare className="h-3 w-3 mr-1" />
@@ -2162,7 +2435,7 @@ export default function RegistrationSlips() {
                                   key={courseId}
                                   className={`flex items-center p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${
                                     selectedCourseIds.includes(
-                                      courseId.toString()
+                                      courseId.toString(),
                                     )
                                       ? "bg-blue-50 dark:bg-blue-900/30"
                                       : ""
@@ -2170,21 +2443,21 @@ export default function RegistrationSlips() {
                                   onClick={(e) => {
                                     e.stopPropagation(); // Prevent dropdown from closing
                                     handleCourseSelectionChange(
-                                      courseId.toString()
+                                      courseId.toString(),
                                     );
                                   }}
                                 >
                                   <div
                                     className={`w-5 h-5 flex items-center justify-center rounded border mr-3 ${
                                       selectedCourseIds.includes(
-                                        courseId.toString()
+                                        courseId.toString(),
                                       )
                                         ? "bg-blue-500 border-blue-500 dark:bg-blue-600 dark:border-blue-600"
                                         : "border-gray-300 dark:border-gray-600"
                                     }`}
                                   >
                                     {selectedCourseIds.includes(
-                                      courseId.toString()
+                                      courseId.toString(),
                                     ) && (
                                       <Check className="h-3 w-3 text-white" />
                                     )}
@@ -2638,7 +2911,7 @@ export default function RegistrationSlips() {
                             <TableCell>{course.labHours}</TableCell>
                             <TableCell>{course.totalHours}</TableCell>
                           </TableRow>
-                        )
+                        ),
                       )}
                       {(selectedPreviewStudent.courses || []).length > 0 && (
                         <TableRow className="font-bold bg-gray-100">
