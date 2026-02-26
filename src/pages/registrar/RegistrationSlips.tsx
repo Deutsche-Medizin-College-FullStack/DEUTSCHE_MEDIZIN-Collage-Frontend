@@ -58,22 +58,8 @@ import endPoints from "@/components/api/endPoints";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import { toast } from "sonner";
 
-// Mock toast for now - replace with actual toast library if needed
-const toast = {
-  success: (msg: string) => {
-    if (typeof window !== "undefined") {
-      console.log("Success:", msg);
-      alert(msg);
-    }
-  },
-  error: (msg: string) => {
-    if (typeof window !== "undefined") {
-      console.error("Error:", msg);
-      alert(msg);
-    }
-  },
-};
 
 interface Student {
   studentId: number;
@@ -975,41 +961,55 @@ export default function RegistrationSlips() {
         const failedCount = response.failed || 0;
         const total = response.totalStudents || 0;
 
-        // Show detailed results
-        let message = `Successfully generated slips for ${successCount} out of ${total} students.`;
-
-        if (failedCount > 0 && response.results) {
-          const failedStudents = response.results.filter((r) => !r.success);
-          if (failedStudents.length > 0) {
-            message += `\n\nFailed for ${failedCount} student(s):`;
-            failedStudents.forEach((result, index) => {
-              if (index < 3) {
-                // Show first 3 failures
-                message += `\n• Student ${result.studentId}: ${
-                  result.message || "Unknown error"
-                }`;
+        // Check if there are any errors
+        if (response.errors && response.errors.length > 0) {
+          // Show error toast with error details
+          let errorMessage = `Failed to generate slips for ${failedCount} student(s).`;
+          
+          if (response.results) {
+            const failedStudents = response.results.filter((r) => !r.success);
+            if (failedStudents.length > 0) {
+              failedStudents.forEach((result, index) => {
+                if (index < 3) {
+                  errorMessage += `\n• Student ${result.studentId}: ${result.message || "Unknown error"}`;
+                }
+              });
+              if (failedStudents.length > 3) {
+                errorMessage += `\n• ... and ${failedStudents.length - 3} more`;
               }
-            });
-            if (failedStudents.length > 3) {
-              message += `\n• ... and ${failedStudents.length - 3} more`;
             }
           }
+          
+          toast.error(errorMessage);
+          
+          // If there were some successful registrations, show a separate success toast
+          if (successCount > 0) {
+            toast.success(`Successfully generated slips for ${successCount} out of ${total} students.`);
+          }
+        } else {
+          // No errors - show success toast
+          let successMessage = `Successfully generated slips for ${successCount} out of ${total} students.`;
+          
+          if (failedCount > 0 && response.results) {
+            const failedStudents = response.results.filter((r) => !r.success);
+            if (failedStudents.length > 0) {
+              successMessage += `\n\nFailed for ${failedCount} student(s):`;
+              failedStudents.forEach((result, index) => {
+                if (index < 3) {
+                  successMessage += `\n• Student ${result.studentId}: ${result.message || "Unknown error"}`;
+                }
+              });
+              if (failedStudents.length > 3) {
+                successMessage += `\n• ... and ${failedStudents.length - 3} more`;
+              }
+            }
+          }
+          
+          toast.success(successMessage);
         }
-
-        if (response.errors && response.errors.length > 0) {
-          message += `\n\nErrors: ${response.errors.join(", ")}`;
-        }
-
-        alert(`Slips Generated Successfully!\n\n${message}`);
 
         // Mark slips as generated so PDF/Excel/Print can be used
         setSlipsGenerated(true);
-
-        // Only proceed with PDF generation if there were successful registrations
-        if (successCount > 0) {
-          // You can automatically generate PDF here if desired:
-          // generatePDF();
-        }
       }
 
       setGeneratingSlips(false);
@@ -2015,54 +2015,6 @@ export default function RegistrationSlips() {
                   </Select>
                 </div>
 
-                {/* Enrollment Type Filter */}
-                {/* <div className="space-y-1">
-                  <Label htmlFor="enrollmentType" className="text-xs">
-                    Enrollment Type
-                  </Label>
-                  <Select
-                    value={filters.enrollmentTypeId}
-                    onValueChange={(value) =>
-                      handleFilterChange("enrollmentTypeId", value)
-                    }
-                  >
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue placeholder="All Types" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filterData.enrollmentTypes.map((type) => (
-                        <SelectItem key={type.id} value={type.id}>
-                          {type.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div> */}
-
-                {/* Program Level Filter */}
-                {/* <div className="space-y-1">
-                  <Label htmlFor="programLevel" className="text-xs">
-                    Program Level
-                  </Label>
-                  <Select
-                    value={filters.programLevelId}
-                    onValueChange={(value) =>
-                      handleFilterChange("programLevelId", value)
-                    }
-                  >
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue placeholder="All Levels" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filterData.programLevels.map((level) => (
-                        <SelectItem key={level.id} value={level.id}>
-                          {level.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div> */}
-
                 {/* Class Year Filter */}
                 <div className="space-y-1">
                   <Label htmlFor="classYear" className="text-xs">
@@ -2086,30 +2038,6 @@ export default function RegistrationSlips() {
                     </SelectContent>
                   </Select>
                 </div>
-
-                {/* Program Modality Filter */}
-                {/* <div className="space-y-1">
-                  <Label htmlFor="programModality" className="text-xs">
-                    Program Modality
-                  </Label>
-                  <Select
-                    value={filters.programModalityId}
-                    onValueChange={(value) =>
-                      handleFilterChange("programModalityId", value)
-                    }
-                  >
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue placeholder="All Modalities" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filterData.programModalities.map((modality) => (
-                        <SelectItem key={modality.id} value={modality.id}>
-                          {modality.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div> */}
               </div>
             </div>
 
