@@ -278,17 +278,6 @@ export default function RegistrationSlips() {
     fetchBcysList();
   }, []);
 
-  useEffect(() => {
-    if (selectedStudents.length > 0) {
-      const studentIds = selectedStudents.map((s) => s.studentId);
-      fetchCourses(studentIds);
-    } else {
-      // Clear courses when no students are selected
-      setCourses([]);
-      setFilteredCourses([]);
-    }
-  }, [selectedStudents]);
-
   // Filter courses based on search
   useEffect(() => {
     if (courses.length > 0) {
@@ -2041,107 +2030,147 @@ export default function RegistrationSlips() {
               </div>
             </div>
 
-            {/* Student List Header */}
-            <div className="flex items-center justify-between pt-2 border-t">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleToggleSelectAll}
-                  className="h-8"
-                >
-                  {selectAll ? (
-                    <CheckSquare className="h-4 w-4 mr-1" />
-                  ) : (
-                    <Square className="h-4 w-4 mr-1" />
-                  )}
-                  {selectAll ? "Deselect All" : "Select All"}
-                </Button>
-                <span className="text-sm text-gray-500">
-                  {filteredStudents.length} students found
-                </span>
-              </div>
-              <span className="text-sm font-medium">
-                Selected: {selectedStudents.length}
-              </span>
-            </div>
 
-            {/* Student List */}
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {loading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-                  <p className="mt-2 text-sm text-gray-500">
-                    Loading students...
-                  </p>
-                </div>
-              ) : filteredStudents.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <User className="h-12 w-12 mx-auto opacity-50 mb-2" />
-                  <p>No students found</p>
-                  <p className="text-sm">
-                    Try adjusting your filters or search
-                  </p>
-                </div>
-              ) : (
-                filteredStudents.map((student) => {
-                  const isSelected = isStudentSelected(student.studentId);
-                  return (
-                    <Card
-                      key={student.studentId}
-                      className={`cursor-pointer hover:shadow-md transition-all ${
-                        isSelected
-                          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                          : ""
-                      }`}
-                      onClick={() => handleSelectStudent(student)}
-                    >
-                      <CardContent className="p-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`w-5 h-5 flex items-center justify-center rounded border ${
-                                isSelected
-                                  ? "bg-blue-500 border-blue-500"
-                                  : "border-gray-300"
-                              }`}
-                            >
-                              {isSelected && (
-                                <Check className="h-3 w-3 text-white" />
-                              )}
+
+{/* Student List Header */}
+<div className="flex items-center justify-between pt-2 border-t">
+  <div className="flex items-center gap-2">
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={handleToggleSelectAll}
+      className="h-8"
+    >
+      {selectAll ? (
+        <CheckSquare className="h-4 w-4 mr-1" />
+      ) : (
+        <Square className="h-4 w-4 mr-1" />
+      )}
+      {selectAll ? "Deselect All" : "Select All"}
+    </Button>
+    <span className="text-sm text-gray-500">
+      {filteredStudents.length} students found
+    </span>
+  </div>
+  <span className="text-sm font-medium">
+    Selected: {selectedStudents.length}
+  </span>
+</div>
+
+          {/* Student List */}
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                <p className="mt-2 text-sm text-gray-500">
+                  Loading students...
+                </p>
+              </div>
+            ) : filteredStudents.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <User className="h-12 w-12 mx-auto opacity-50 mb-2" />
+                <p>No students found</p>
+                <p className="text-sm">
+                  Try adjusting your filters or search
+                </p>
+              </div>
+            ) : (
+              filteredStudents.map((student) => {
+                const isSelected = isStudentSelected(student.studentId);
+                return (
+                  <Card
+                    key={student.studentId}
+                    className={`cursor-pointer hover:shadow-md transition-all ${
+                      isSelected
+                        ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                        : ""
+                    }`}
+                    onClick={() => handleSelectStudent(student)}
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-5 h-5 flex items-center justify-center rounded border ${
+                              isSelected
+                                ? "bg-blue-500 border-blue-500"
+                                : "border-gray-300"
+                            }`}
+                          >
+                            {isSelected && (
+                              <Check className="h-3 w-3 text-white" />
+                            )}
+                          </div>
+                          <div>
+                            <div className="font-medium text-sm">
+                              {student.fullNameENG}
                             </div>
-                            <div>
-                              <div className="font-medium text-sm">
-                                {student.fullNameENG}
-                              </div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400">
-                                ID: {student.username} |{" "}
-                                {student.departmentName}
-                              </div>
-                              <div className="text-xs text-gray-400 dark:text-gray-500">
-                                Batch: {student.batch} | {student.yearOfStudy} |{" "}
-                                {student.programModalityName}
-                              </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              ID: {student.username} |{" "}
+                              {student.departmentName}
+                            </div>
+                            <div className="text-xs text-gray-400 dark:text-gray-500">
+                              Batch: {student.batch} | {student.yearOfStudy} |{" "}
+                              {student.programModalityName}
                             </div>
                           </div>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 text-xs"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSelectSingleStudent(student);
-                            }}
-                          >
-                            Select Only
-                          </Button>
                         </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSelectSingleStudent(student);
+                          }}
+                        >
+                          Select Only
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })
+            )}
+          </div>
+
+          {/* Load Courses Button - Bottom of Student List */}
+          {filteredStudents.length > 0 && (
+            <div className="pt-4 mt-2 border-t">
+              <Button
+                onClick={() => {
+                  if (selectedStudents.length === 0) {
+                    toast.error("Please select at least one student first");
+                    return;
+                  }
+                  const studentIds = selectedStudents.map((s) => s.studentId);
+                  fetchCourses(studentIds);
+                }}
+                className="w-full"
+                disabled={selectedStudents.length === 0 || coursesLoading}
+                variant={selectedStudents.length > 0 ? "default" : "outline"}
+              >
+                {coursesLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Loading Courses for {selectedStudents.length} Student(s)...
+                  </>
+                ) : (
+                  <>
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    Load Courses for Selected Students ({selectedStudents.length})
+                  </>
+                )}
+              </Button>
+              
+              {/* Optional: Show message when courses are already loaded */}
+              {courses.length > 0 && !coursesLoading && (
+                <p className="text-xs text-green-600 dark:text-green-400 mt-2 text-center">
+                  ✓ {courses.length} courses loaded. You can select courses below.
+                </p>
               )}
             </div>
+          )}
           </CardContent>
         </Card>
 
