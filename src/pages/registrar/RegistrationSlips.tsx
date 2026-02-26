@@ -58,22 +58,8 @@ import endPoints from "@/components/api/endPoints";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import { toast } from "sonner";
 
-// Mock toast for now - replace with actual toast library if needed
-const toast = {
-  success: (msg: string) => {
-    if (typeof window !== "undefined") {
-      console.log("Success:", msg);
-      alert(msg);
-    }
-  },
-  error: (msg: string) => {
-    if (typeof window !== "undefined") {
-      console.error("Error:", msg);
-      alert(msg);
-    }
-  },
-};
 
 interface Student {
   studentId: number;
@@ -291,17 +277,6 @@ export default function RegistrationSlips() {
     fetchFilterData();
     fetchBcysList();
   }, []);
-
-  useEffect(() => {
-    if (selectedStudents.length > 0) {
-      const studentIds = selectedStudents.map((s) => s.studentId);
-      fetchCourses(studentIds);
-    } else {
-      // Clear courses when no students are selected
-      setCourses([]);
-      setFilteredCourses([]);
-    }
-  }, [selectedStudents]);
 
   // Filter courses based on search
   useEffect(() => {
@@ -975,41 +950,55 @@ export default function RegistrationSlips() {
         const failedCount = response.failed || 0;
         const total = response.totalStudents || 0;
 
-        // Show detailed results
-        let message = `Successfully generated slips for ${successCount} out of ${total} students.`;
-
-        if (failedCount > 0 && response.results) {
-          const failedStudents = response.results.filter((r) => !r.success);
-          if (failedStudents.length > 0) {
-            message += `\n\nFailed for ${failedCount} student(s):`;
-            failedStudents.forEach((result, index) => {
-              if (index < 3) {
-                // Show first 3 failures
-                message += `\n• Student ${result.studentId}: ${
-                  result.message || "Unknown error"
-                }`;
+        // Check if there are any errors
+        if (response.errors && response.errors.length > 0) {
+          // Show error toast with error details
+          let errorMessage = `Failed to generate slips for ${failedCount} student(s).`;
+          
+          if (response.results) {
+            const failedStudents = response.results.filter((r) => !r.success);
+            if (failedStudents.length > 0) {
+              failedStudents.forEach((result, index) => {
+                if (index < 3) {
+                  errorMessage += `\n• Student ${result.studentId}: ${result.message || "Unknown error"}`;
+                }
+              });
+              if (failedStudents.length > 3) {
+                errorMessage += `\n• ... and ${failedStudents.length - 3} more`;
               }
-            });
-            if (failedStudents.length > 3) {
-              message += `\n• ... and ${failedStudents.length - 3} more`;
             }
           }
+          
+          toast.error(errorMessage);
+          
+          // If there were some successful registrations, show a separate success toast
+          if (successCount > 0) {
+            toast.success(`Successfully generated slips for ${successCount} out of ${total} students.`);
+          }
+        } else {
+          // No errors - show success toast
+          let successMessage = `Successfully generated slips for ${successCount} out of ${total} students.`;
+          
+          if (failedCount > 0 && response.results) {
+            const failedStudents = response.results.filter((r) => !r.success);
+            if (failedStudents.length > 0) {
+              successMessage += `\n\nFailed for ${failedCount} student(s):`;
+              failedStudents.forEach((result, index) => {
+                if (index < 3) {
+                  successMessage += `\n• Student ${result.studentId}: ${result.message || "Unknown error"}`;
+                }
+              });
+              if (failedStudents.length > 3) {
+                successMessage += `\n• ... and ${failedStudents.length - 3} more`;
+              }
+            }
+          }
+          
+          toast.success(successMessage);
         }
-
-        if (response.errors && response.errors.length > 0) {
-          message += `\n\nErrors: ${response.errors.join(", ")}`;
-        }
-
-        alert(`Slips Generated Successfully!\n\n${message}`);
 
         // Mark slips as generated so PDF/Excel/Print can be used
         setSlipsGenerated(true);
-
-        // Only proceed with PDF generation if there were successful registrations
-        if (successCount > 0) {
-          // You can automatically generate PDF here if desired:
-          // generatePDF();
-        }
       }
 
       setGeneratingSlips(false);
@@ -2015,54 +2004,6 @@ export default function RegistrationSlips() {
                   </Select>
                 </div>
 
-                {/* Enrollment Type Filter */}
-                {/* <div className="space-y-1">
-                  <Label htmlFor="enrollmentType" className="text-xs">
-                    Enrollment Type
-                  </Label>
-                  <Select
-                    value={filters.enrollmentTypeId}
-                    onValueChange={(value) =>
-                      handleFilterChange("enrollmentTypeId", value)
-                    }
-                  >
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue placeholder="All Types" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filterData.enrollmentTypes.map((type) => (
-                        <SelectItem key={type.id} value={type.id}>
-                          {type.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div> */}
-
-                {/* Program Level Filter */}
-                {/* <div className="space-y-1">
-                  <Label htmlFor="programLevel" className="text-xs">
-                    Program Level
-                  </Label>
-                  <Select
-                    value={filters.programLevelId}
-                    onValueChange={(value) =>
-                      handleFilterChange("programLevelId", value)
-                    }
-                  >
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue placeholder="All Levels" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filterData.programLevels.map((level) => (
-                        <SelectItem key={level.id} value={level.id}>
-                          {level.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div> */}
-
                 {/* Class Year Filter */}
                 <div className="space-y-1">
                   <Label htmlFor="classYear" className="text-xs">
@@ -2086,134 +2027,150 @@ export default function RegistrationSlips() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+            </div>
 
-                {/* Program Modality Filter */}
-                {/* <div className="space-y-1">
-                  <Label htmlFor="programModality" className="text-xs">
-                    Program Modality
-                  </Label>
-                  <Select
-                    value={filters.programModalityId}
-                    onValueChange={(value) =>
-                      handleFilterChange("programModalityId", value)
-                    }
+
+
+{/* Student List Header */}
+<div className="flex items-center justify-between pt-2 border-t">
+  <div className="flex items-center gap-2">
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={handleToggleSelectAll}
+      className="h-8"
+    >
+      {selectAll ? (
+        <CheckSquare className="h-4 w-4 mr-1" />
+      ) : (
+        <Square className="h-4 w-4 mr-1" />
+      )}
+      {selectAll ? "Deselect All" : "Select All"}
+    </Button>
+    <span className="text-sm text-gray-500">
+      {filteredStudents.length} students found
+    </span>
+  </div>
+  <span className="text-sm font-medium">
+    Selected: {selectedStudents.length}
+  </span>
+</div>
+
+          {/* Student List */}
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                <p className="mt-2 text-sm text-gray-500">
+                  Loading students...
+                </p>
+              </div>
+            ) : filteredStudents.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <User className="h-12 w-12 mx-auto opacity-50 mb-2" />
+                <p>No students found</p>
+                <p className="text-sm">
+                  Try adjusting your filters or search
+                </p>
+              </div>
+            ) : (
+              filteredStudents.map((student) => {
+                const isSelected = isStudentSelected(student.studentId);
+                return (
+                  <Card
+                    key={student.studentId}
+                    className={`cursor-pointer hover:shadow-md transition-all ${
+                      isSelected
+                        ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                        : ""
+                    }`}
+                    onClick={() => handleSelectStudent(student)}
                   >
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue placeholder="All Modalities" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filterData.programModalities.map((modality) => (
-                        <SelectItem key={modality.id} value={modality.id}>
-                          {modality.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div> */}
-              </div>
-            </div>
-
-            {/* Student List Header */}
-            <div className="flex items-center justify-between pt-2 border-t">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleToggleSelectAll}
-                  className="h-8"
-                >
-                  {selectAll ? (
-                    <CheckSquare className="h-4 w-4 mr-1" />
-                  ) : (
-                    <Square className="h-4 w-4 mr-1" />
-                  )}
-                  {selectAll ? "Deselect All" : "Select All"}
-                </Button>
-                <span className="text-sm text-gray-500">
-                  {filteredStudents.length} students found
-                </span>
-              </div>
-              <span className="text-sm font-medium">
-                Selected: {selectedStudents.length}
-              </span>
-            </div>
-
-            {/* Student List */}
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {loading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-                  <p className="mt-2 text-sm text-gray-500">
-                    Loading students...
-                  </p>
-                </div>
-              ) : filteredStudents.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <User className="h-12 w-12 mx-auto opacity-50 mb-2" />
-                  <p>No students found</p>
-                  <p className="text-sm">
-                    Try adjusting your filters or search
-                  </p>
-                </div>
-              ) : (
-                filteredStudents.map((student) => {
-                  const isSelected = isStudentSelected(student.studentId);
-                  return (
-                    <Card
-                      key={student.studentId}
-                      className={`cursor-pointer hover:shadow-md transition-all ${
-                        isSelected
-                          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                          : ""
-                      }`}
-                      onClick={() => handleSelectStudent(student)}
-                    >
-                      <CardContent className="p-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`w-5 h-5 flex items-center justify-center rounded border ${
-                                isSelected
-                                  ? "bg-blue-500 border-blue-500"
-                                  : "border-gray-300"
-                              }`}
-                            >
-                              {isSelected && (
-                                <Check className="h-3 w-3 text-white" />
-                              )}
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-5 h-5 flex items-center justify-center rounded border ${
+                              isSelected
+                                ? "bg-blue-500 border-blue-500"
+                                : "border-gray-300"
+                            }`}
+                          >
+                            {isSelected && (
+                              <Check className="h-3 w-3 text-white" />
+                            )}
+                          </div>
+                          <div>
+                            <div className="font-medium text-sm">
+                              {student.fullNameENG}
                             </div>
-                            <div>
-                              <div className="font-medium text-sm">
-                                {student.fullNameENG}
-                              </div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400">
-                                ID: {student.username} |{" "}
-                                {student.departmentName}
-                              </div>
-                              <div className="text-xs text-gray-400 dark:text-gray-500">
-                                Batch: {student.batch} | {student.yearOfStudy} |{" "}
-                                {student.programModalityName}
-                              </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              ID: {student.username} |{" "}
+                              {student.departmentName}
+                            </div>
+                            <div className="text-xs text-gray-400 dark:text-gray-500">
+                              Batch: {student.batch} | {student.yearOfStudy} |{" "}
+                              {student.programModalityName}
                             </div>
                           </div>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 text-xs"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSelectSingleStudent(student);
-                            }}
-                          >
-                            Select Only
-                          </Button>
                         </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSelectSingleStudent(student);
+                          }}
+                        >
+                          Select Only
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })
+            )}
+          </div>
+
+          {/* Load Courses Button - Bottom of Student List */}
+          {filteredStudents.length > 0 && (
+            <div className="pt-4 mt-2 border-t">
+              <Button
+                onClick={() => {
+                  if (selectedStudents.length === 0) {
+                    toast.error("Please select at least one student first");
+                    return;
+                  }
+                  const studentIds = selectedStudents.map((s) => s.studentId);
+                  fetchCourses(studentIds);
+                }}
+                className="w-full"
+                disabled={selectedStudents.length === 0 || coursesLoading}
+                variant={selectedStudents.length > 0 ? "default" : "outline"}
+              >
+                {coursesLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Loading Courses for {selectedStudents.length} Student(s)...
+                  </>
+                ) : (
+                  <>
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    Load Courses for Selected Students ({selectedStudents.length})
+                  </>
+                )}
+              </Button>
+              
+              {/* Optional: Show message when courses are already loaded */}
+              {courses.length > 0 && !coursesLoading && (
+                <p className="text-xs text-green-600 dark:text-green-400 mt-2 text-center">
+                  ✓ {courses.length} courses loaded. You can select courses below.
+                </p>
               )}
             </div>
+          )}
           </CardContent>
         </Card>
 
@@ -2815,9 +2772,6 @@ export default function RegistrationSlips() {
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span>Slip Preview - {selectedPreviewStudent?.fullNameEng}</span>
-              <Button variant="ghost" size="sm" onClick={closePreviewDialog}>
-                <X className="h-4 w-4" />
-              </Button>
             </DialogTitle>
             <DialogDescription>
               Preview of registration slip for{" "}
@@ -2826,58 +2780,58 @@ export default function RegistrationSlips() {
           </DialogHeader>
 
           {selectedPreviewStudent && (
-            <div className="border rounded-lg p-6 bg-white space-y-6">
+            <div className="border rounded-lg p-6 bg-white dark:bg-gray-800 space-y-6">
               {/* Slip Preview Header */}
-              <div className="text-center border-b pb-4">
-                <div className="font-bold text-lg">
+              <div className="text-center border-b border-gray-200 dark:border-gray-700 pb-4">
+                <div className="font-bold text-lg text-gray-900 dark:text-white">
                   DEUTSCHE HOCHSCHULE FÜR MEDIZIN
                 </div>
-                <div className="text-sm">
+                <div className="text-sm text-gray-600 dark:text-gray-300">
                   Deutsche Hochschule für Medizin College
                 </div>
-                <div className="font-bold mt-2">OFFICE OF REGISTRAR</div>
-                <div className="font-bold">COURSE REGISTRATION SLIP</div>
+                <div className="font-bold mt-2 text-gray-800 dark:text-gray-200">OFFICE OF REGISTRAR</div>
+                <div className="font-bold text-gray-800 dark:text-gray-200">COURSE REGISTRATION SLIP</div>
               </div>
 
               {/* Student Info */}
-              <div className="space-y-3 text-sm">
+              <div className="space-y-3 text-sm text-gray-700 dark:text-gray-300">
                 <div>
-                  <strong>Full Name of Student:</strong>{" "}
+                  <strong className="text-gray-900 dark:text-white">Full Name of Student:</strong>{" "}
                   {selectedPreviewStudent.fullNameEng}
                 </div>
                 <div>
-                  <strong>Date of Registration:</strong> {dateOfRegistration}
+                  <strong className="text-gray-900 dark:text-white">Date of Registration:</strong> {dateOfRegistration}
                 </div>
                 <div>
-                  <strong>Department:</strong>{" "}
+                  <strong className="text-gray-900 dark:text-white">Department:</strong>{" "}
                   {selectedPreviewStudent.departmentName},
-                  <strong> Year Of Study:</strong>{" "}
+                  <strong className="text-gray-900 dark:text-white"> Year Of Study:</strong>{" "}
                   {selectedPreviewStudent.classYearName},
-                  <strong> Semester:</strong>{" "}
+                  <strong className="text-gray-900 dark:text-white"> Semester:</strong>{" "}
                   {selectedPreviewStudent.semesterName}
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <strong>ID No.:</strong> {selectedPreviewStudent.username}
+                    <strong className="text-gray-900 dark:text-white">ID No.:</strong> {selectedPreviewStudent.username}
                   </div>
                   <div>
-                    <strong>Age:</strong> {selectedPreviewStudent.age}
+                    <strong className="text-gray-900 dark:text-white">Age:</strong> {selectedPreviewStudent.age}
                   </div>
                   <div>
-                    <strong>Sex:</strong> {selectedPreviewStudent.gender}
+                    <strong className="text-gray-900 dark:text-white">Sex:</strong> {selectedPreviewStudent.gender}
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <strong>Payment Receipt No.:</strong>{" "}
+                    <strong className="text-gray-900 dark:text-white">Payment Receipt No.:</strong>{" "}
                     {paymentReceiptNo || "________________"}
                   </div>
                   <div>
-                    <strong>Batch Class Year:</strong>{" "}
+                    <strong className="text-gray-900 dark:text-white">Batch Class Year:</strong>{" "}
                     {selectedPreviewStudent.batchDisplayName}
                   </div>
                   <div>
-                    <strong>Enrollment Type:</strong>{" "}
+                    <strong className="text-gray-900 dark:text-white">Enrollment Type:</strong>{" "}
                     {selectedPreviewStudent.enrollmentTypeName}
                   </div>
                 </div>
@@ -2885,7 +2839,7 @@ export default function RegistrationSlips() {
 
               {/* Course Table Preview */}
               <div className="text-sm">
-                <div className="font-bold mb-3">
+                <div className="font-bold mb-3 text-gray-900 dark:text-white">
                   I am applying to be registered for the following courses.
                 </div>
                 <div className="overflow-x-auto">
@@ -2904,31 +2858,31 @@ export default function RegistrationSlips() {
                       {(selectedPreviewStudent.courses || []).map(
                         (course, index) => (
                           <TableRow key={course.courseId}>
-                            <TableCell>{index + 1}</TableCell>
-                            <TableCell>{course.code}</TableCell>
-                            <TableCell>{course.title}</TableCell>
-                            <TableCell>{course.lectureHours}</TableCell>
-                            <TableCell>{course.labHours}</TableCell>
-                            <TableCell>{course.totalHours}</TableCell>
+                            <TableCell className="text-gray-700 dark:text-gray-300">{index + 1}</TableCell>
+                            <TableCell className="text-gray-700 dark:text-gray-300">{course.code}</TableCell>
+                            <TableCell className="text-gray-700 dark:text-gray-300">{course.title}</TableCell>
+                            <TableCell className="text-gray-700 dark:text-gray-300">{course.lectureHours}</TableCell>
+                            <TableCell className="text-gray-700 dark:text-gray-300">{course.labHours}</TableCell>
+                            <TableCell className="text-gray-700 dark:text-gray-300">{course.totalHours}</TableCell>
                           </TableRow>
                         ),
                       )}
                       {(selectedPreviewStudent.courses || []).length > 0 && (
-                        <TableRow className="font-bold bg-gray-100">
-                          <TableCell colSpan={3}>Total</TableCell>
-                          <TableCell>
+                        <TableRow className="font-bold bg-gray-100 dark:bg-gray-700">
+                          <TableCell colSpan={3} className="text-gray-900 dark:text-white">Total</TableCell>
+                          <TableCell className="text-gray-900 dark:text-white">
                             {
                               calculateStudentTotals(selectedPreviewStudent)
                                 .lectureTotal
                             }
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="text-gray-900 dark:text-white">
                             {
                               calculateStudentTotals(selectedPreviewStudent)
                                 .labTotal
                             }
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="text-gray-900 dark:text-white">
                             {
                               calculateStudentTotals(selectedPreviewStudent)
                                 .total
@@ -2942,12 +2896,12 @@ export default function RegistrationSlips() {
               </div>
 
               {/* Signatures Preview */}
-              <div className="text-sm space-y-4 mt-6">
+              <div className="text-sm space-y-4 mt-6 text-gray-700 dark:text-gray-300">
                 <div className="flex justify-between items-center">
                   <div>Student signature _____________________</div>
                   <div className="flex items-center gap-4">
-                    <span>Total</span>
-                    <span className="font-bold">
+                    <span className="text-gray-900 dark:text-white">Total</span>
+                    <span className="font-bold text-gray-900 dark:text-white">
                       {calculateStudentTotals(selectedPreviewStudent).total}
                     </span>
                   </div>
@@ -2963,9 +2917,9 @@ export default function RegistrationSlips() {
               </div>
 
               {/* Notes */}
-              <div className="text-xs space-y-2 mt-8 p-4 bg-gray-50 rounded">
-                <div className="font-bold">NB.</div>
-                <ol className="list-decimal pl-5 space-y-1">
+              <div className="text-xs space-y-2 mt-8 p-4 bg-gray-50 dark:bg-gray-700 rounded">
+                <div className="font-bold text-gray-900 dark:text-white">NB.</div>
+                <ol className="list-decimal pl-5 space-y-1 text-gray-700 dark:text-gray-300">
                   <li>
                     A student is not allowed to be registered for a course (s)
                     if he/has an "I" or "F" grade (s) for its prerequisites (s).

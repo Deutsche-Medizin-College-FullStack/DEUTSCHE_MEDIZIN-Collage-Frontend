@@ -669,7 +669,7 @@ export default function StudentCourseScoreTable() {
                 </span>
                 <div>
                   <span className="font-semibold text-gray-800 dark:text-gray-200">
-                    Batch Updates:
+                    Multiple Updates:
                   </span>
                   <p className="text-gray-600 dark:text-gray-400">
                     Select multiple rows using checkboxes to batch update:
