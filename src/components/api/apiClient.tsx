@@ -33,15 +33,7 @@ const apiClient = axios.create({
   },
 });
 
-//==================================================================================================
-// apiClient.interceptors.request.use((config) => {
-//   // Check if the current endpoint is in the no-auth list
-//   const requiresAuth = !noAuthEndpoints.some((endpoint) => {
-//     // Check if the config URL ends with the no-auth endpoint
-//     return config.url?.endsWith(endpoint);
-//   });
 
-//==================================================================================================
 
 apiClient.interceptors.request.use((config) => {
   // Check if current request matches any no-auth endpoint pattern
