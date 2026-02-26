@@ -2743,9 +2743,6 @@ export default function RegistrationSlips() {
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span>Slip Preview - {selectedPreviewStudent?.fullNameEng}</span>
-              <Button variant="ghost" size="sm" onClick={closePreviewDialog}>
-                <X className="h-4 w-4" />
-              </Button>
             </DialogTitle>
             <DialogDescription>
               Preview of registration slip for{" "}
@@ -2754,58 +2751,58 @@ export default function RegistrationSlips() {
           </DialogHeader>
 
           {selectedPreviewStudent && (
-            <div className="border rounded-lg p-6 bg-white space-y-6">
+            <div className="border rounded-lg p-6 bg-white dark:bg-gray-800 space-y-6">
               {/* Slip Preview Header */}
-              <div className="text-center border-b pb-4">
-                <div className="font-bold text-lg">
+              <div className="text-center border-b border-gray-200 dark:border-gray-700 pb-4">
+                <div className="font-bold text-lg text-gray-900 dark:text-white">
                   DEUTSCHE HOCHSCHULE FÜR MEDIZIN
                 </div>
-                <div className="text-sm">
+                <div className="text-sm text-gray-600 dark:text-gray-300">
                   Deutsche Hochschule für Medizin College
                 </div>
-                <div className="font-bold mt-2">OFFICE OF REGISTRAR</div>
-                <div className="font-bold">COURSE REGISTRATION SLIP</div>
+                <div className="font-bold mt-2 text-gray-800 dark:text-gray-200">OFFICE OF REGISTRAR</div>
+                <div className="font-bold text-gray-800 dark:text-gray-200">COURSE REGISTRATION SLIP</div>
               </div>
 
               {/* Student Info */}
-              <div className="space-y-3 text-sm">
+              <div className="space-y-3 text-sm text-gray-700 dark:text-gray-300">
                 <div>
-                  <strong>Full Name of Student:</strong>{" "}
+                  <strong className="text-gray-900 dark:text-white">Full Name of Student:</strong>{" "}
                   {selectedPreviewStudent.fullNameEng}
                 </div>
                 <div>
-                  <strong>Date of Registration:</strong> {dateOfRegistration}
+                  <strong className="text-gray-900 dark:text-white">Date of Registration:</strong> {dateOfRegistration}
                 </div>
                 <div>
-                  <strong>Department:</strong>{" "}
+                  <strong className="text-gray-900 dark:text-white">Department:</strong>{" "}
                   {selectedPreviewStudent.departmentName},
-                  <strong> Year Of Study:</strong>{" "}
+                  <strong className="text-gray-900 dark:text-white"> Year Of Study:</strong>{" "}
                   {selectedPreviewStudent.classYearName},
-                  <strong> Semester:</strong>{" "}
+                  <strong className="text-gray-900 dark:text-white"> Semester:</strong>{" "}
                   {selectedPreviewStudent.semesterName}
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <strong>ID No.:</strong> {selectedPreviewStudent.username}
+                    <strong className="text-gray-900 dark:text-white">ID No.:</strong> {selectedPreviewStudent.username}
                   </div>
                   <div>
-                    <strong>Age:</strong> {selectedPreviewStudent.age}
+                    <strong className="text-gray-900 dark:text-white">Age:</strong> {selectedPreviewStudent.age}
                   </div>
                   <div>
-                    <strong>Sex:</strong> {selectedPreviewStudent.gender}
+                    <strong className="text-gray-900 dark:text-white">Sex:</strong> {selectedPreviewStudent.gender}
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <strong>Payment Receipt No.:</strong>{" "}
+                    <strong className="text-gray-900 dark:text-white">Payment Receipt No.:</strong>{" "}
                     {paymentReceiptNo || "________________"}
                   </div>
                   <div>
-                    <strong>Batch Class Year:</strong>{" "}
+                    <strong className="text-gray-900 dark:text-white">Batch Class Year:</strong>{" "}
                     {selectedPreviewStudent.batchDisplayName}
                   </div>
                   <div>
-                    <strong>Enrollment Type:</strong>{" "}
+                    <strong className="text-gray-900 dark:text-white">Enrollment Type:</strong>{" "}
                     {selectedPreviewStudent.enrollmentTypeName}
                   </div>
                 </div>
@@ -2813,7 +2810,7 @@ export default function RegistrationSlips() {
 
               {/* Course Table Preview */}
               <div className="text-sm">
-                <div className="font-bold mb-3">
+                <div className="font-bold mb-3 text-gray-900 dark:text-white">
                   I am applying to be registered for the following courses.
                 </div>
                 <div className="overflow-x-auto">
@@ -2832,31 +2829,31 @@ export default function RegistrationSlips() {
                       {(selectedPreviewStudent.courses || []).map(
                         (course, index) => (
                           <TableRow key={course.courseId}>
-                            <TableCell>{index + 1}</TableCell>
-                            <TableCell>{course.code}</TableCell>
-                            <TableCell>{course.title}</TableCell>
-                            <TableCell>{course.lectureHours}</TableCell>
-                            <TableCell>{course.labHours}</TableCell>
-                            <TableCell>{course.totalHours}</TableCell>
+                            <TableCell className="text-gray-700 dark:text-gray-300">{index + 1}</TableCell>
+                            <TableCell className="text-gray-700 dark:text-gray-300">{course.code}</TableCell>
+                            <TableCell className="text-gray-700 dark:text-gray-300">{course.title}</TableCell>
+                            <TableCell className="text-gray-700 dark:text-gray-300">{course.lectureHours}</TableCell>
+                            <TableCell className="text-gray-700 dark:text-gray-300">{course.labHours}</TableCell>
+                            <TableCell className="text-gray-700 dark:text-gray-300">{course.totalHours}</TableCell>
                           </TableRow>
                         ),
                       )}
                       {(selectedPreviewStudent.courses || []).length > 0 && (
-                        <TableRow className="font-bold bg-gray-100">
-                          <TableCell colSpan={3}>Total</TableCell>
-                          <TableCell>
+                        <TableRow className="font-bold bg-gray-100 dark:bg-gray-700">
+                          <TableCell colSpan={3} className="text-gray-900 dark:text-white">Total</TableCell>
+                          <TableCell className="text-gray-900 dark:text-white">
                             {
                               calculateStudentTotals(selectedPreviewStudent)
                                 .lectureTotal
                             }
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="text-gray-900 dark:text-white">
                             {
                               calculateStudentTotals(selectedPreviewStudent)
                                 .labTotal
                             }
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="text-gray-900 dark:text-white">
                             {
                               calculateStudentTotals(selectedPreviewStudent)
                                 .total
@@ -2870,12 +2867,12 @@ export default function RegistrationSlips() {
               </div>
 
               {/* Signatures Preview */}
-              <div className="text-sm space-y-4 mt-6">
+              <div className="text-sm space-y-4 mt-6 text-gray-700 dark:text-gray-300">
                 <div className="flex justify-between items-center">
                   <div>Student signature _____________________</div>
                   <div className="flex items-center gap-4">
-                    <span>Total</span>
-                    <span className="font-bold">
+                    <span className="text-gray-900 dark:text-white">Total</span>
+                    <span className="font-bold text-gray-900 dark:text-white">
                       {calculateStudentTotals(selectedPreviewStudent).total}
                     </span>
                   </div>
@@ -2891,9 +2888,9 @@ export default function RegistrationSlips() {
               </div>
 
               {/* Notes */}
-              <div className="text-xs space-y-2 mt-8 p-4 bg-gray-50 rounded">
-                <div className="font-bold">NB.</div>
-                <ol className="list-decimal pl-5 space-y-1">
+              <div className="text-xs space-y-2 mt-8 p-4 bg-gray-50 dark:bg-gray-700 rounded">
+                <div className="font-bold text-gray-900 dark:text-white">NB.</div>
+                <ol className="list-decimal pl-5 space-y-1 text-gray-700 dark:text-gray-300">
                   <li>
                     A student is not allowed to be registered for a course (s)
                     if he/has an "I" or "F" grade (s) for its prerequisites (s).
