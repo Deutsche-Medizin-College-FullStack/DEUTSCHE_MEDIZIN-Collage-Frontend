@@ -1712,6 +1712,13 @@ export default function RegistrationSlips() {
                       💡 <strong>Tip:</strong> You can filter by department,
                       batch, or class year for easier access.
                     </span>
+                    <span className="block mt-2 text-xs bg-blue-50 dark:bg-blue-900/20 p-2 rounded border border-blue-200 dark:border-blue-800">
+                      🔵 <strong>After selecting students:</strong> Click the 
+                      <span className="font-mono mx-1 px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">
+                        Load Courses for Selected Students (X)
+                      </span> 
+                      button at the bottom of the student list.
+                    </span>
                   </p>
                 </div>
               </div>
@@ -2032,561 +2039,561 @@ export default function RegistrationSlips() {
 
 
 
-{/* Student List Header */}
-<div className="flex items-center justify-between pt-2 border-t">
-  <div className="flex items-center gap-2">
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={handleToggleSelectAll}
-      className="h-8"
-    >
-      {selectAll ? (
-        <CheckSquare className="h-4 w-4 mr-1" />
-      ) : (
-        <Square className="h-4 w-4 mr-1" />
-      )}
-      {selectAll ? "Deselect All" : "Select All"}
-    </Button>
-    <span className="text-sm text-gray-500">
-      {filteredStudents.length} students found
-    </span>
-  </div>
-  <span className="text-sm font-medium">
-    Selected: {selectedStudents.length}
-  </span>
-</div>
+  {/* Student List Header */}
+    <div className="flex items-center justify-between pt-2 border-t">
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleToggleSelectAll}
+          className="h-8"
+        >
+          {selectAll ? (
+            <CheckSquare className="h-4 w-4 mr-1" />
+          ) : (
+            <Square className="h-4 w-4 mr-1" />
+          )}
+          {selectAll ? "Deselect All" : "Select All"}
+        </Button>
+        <span className="text-sm text-gray-500">
+          {filteredStudents.length} students found
+        </span>
+      </div>
+      <span className="text-sm font-medium">
+        Selected: {selectedStudents.length}
+      </span>
+    </div>
 
-          {/* Student List */}
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {loading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-                <p className="mt-2 text-sm text-gray-500">
-                  Loading students...
-                </p>
-              </div>
-            ) : filteredStudents.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <User className="h-12 w-12 mx-auto opacity-50 mb-2" />
-                <p>No students found</p>
-                <p className="text-sm">
-                  Try adjusting your filters or search
-                </p>
-              </div>
-            ) : (
-              filteredStudents.map((student) => {
-                const isSelected = isStudentSelected(student.studentId);
-                return (
-                  <Card
-                    key={student.studentId}
-                    className={`cursor-pointer hover:shadow-md transition-all ${
-                      isSelected
-                        ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                        : ""
-                    }`}
-                    onClick={() => handleSelectStudent(student)}
-                  >
-                    <CardContent className="p-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`w-5 h-5 flex items-center justify-center rounded border ${
-                              isSelected
-                                ? "bg-blue-500 border-blue-500"
-                                : "border-gray-300"
-                            }`}
-                          >
-                            {isSelected && (
-                              <Check className="h-3 w-3 text-white" />
-                            )}
-                          </div>
-                          <div>
-                            <div className="font-medium text-sm">
-                              {student.fullNameENG}
-                            </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                              ID: {student.username} |{" "}
-                              {student.departmentName}
-                            </div>
-                            <div className="text-xs text-gray-400 dark:text-gray-500">
-                              Batch: {student.batch} | {student.yearOfStudy} |{" "}
-                              {student.programModalityName}
-                            </div>
-                          </div>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSelectSingleStudent(student);
-                          }}
-                        >
-                          Select Only
-                        </Button>
+      {/* Student List */}
+      <div className="space-y-2 max-h-96 overflow-y-auto">
+        {loading ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+            <p className="mt-2 text-sm text-gray-500">
+              Loading students...
+            </p>
+          </div>
+        ) : filteredStudents.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <User className="h-12 w-12 mx-auto opacity-50 mb-2" />
+            <p>No students found</p>
+            <p className="text-sm">
+              Try adjusting your filters or search
+            </p>
+          </div>
+        ) : (
+          filteredStudents.map((student) => {
+            const isSelected = isStudentSelected(student.studentId);
+            return (
+              <Card
+                key={student.studentId}
+                className={`cursor-pointer hover:shadow-md transition-all ${
+                  isSelected
+                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                    : ""
+                }`}
+                onClick={() => handleSelectStudent(student)}
+              >
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-5 h-5 flex items-center justify-center rounded border ${
+                          isSelected
+                            ? "bg-blue-500 border-blue-500"
+                            : "border-gray-300"
+                        }`}
+                      >
+                        {isSelected && (
+                          <Check className="h-3 w-3 text-white" />
+                        )}
                       </div>
-                    </CardContent>
-                  </Card>
-                );
-              })
+                      <div>
+                        <div className="font-medium text-sm">
+                          {student.fullNameENG}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          ID: {student.username} |{" "}
+                          {student.departmentName}
+                        </div>
+                        <div className="text-xs text-gray-400 dark:text-gray-500">
+                          Batch: {student.batch} | {student.yearOfStudy} |{" "}
+                          {student.programModalityName}
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelectSingleStudent(student);
+                      }}
+                    >
+                      Select Only
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })
+        )}
+      </div>
+
+      {/* Load Courses Button - Bottom of Student List */}
+      {filteredStudents.length > 0 && (
+        <div className="pt-4 mt-2 border-t">
+          <Button
+            onClick={() => {
+              if (selectedStudents.length === 0) {
+                toast.error("Please select at least one student first");
+                return;
+              }
+              const studentIds = selectedStudents.map((s) => s.studentId);
+              fetchCourses(studentIds);
+            }}
+            className="w-full"
+            disabled={selectedStudents.length === 0 || coursesLoading}
+            variant={selectedStudents.length > 0 ? "default" : "outline"}
+          >
+            {coursesLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Loading Courses for {selectedStudents.length} Student(s)...
+              </>
+            ) : (
+              <>
+                <BookOpen className="h-4 w-4 mr-2" />
+                Load Courses for Selected Students ({selectedStudents.length})
+              </>
             )}
+          </Button>
+          
+          {/* Optional: Show message when courses are already loaded */}
+          {courses.length > 0 && !coursesLoading && (
+            <p className="text-xs text-green-600 dark:text-green-400 mt-2 text-center">
+              ✓ {courses.length} courses loaded. You can select courses below.
+            </p>
+          )}
+        </div>
+      )}
+      </CardContent>
+    </Card>
+
+    {/* Right Column - Course Selection */}
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <BookOpen className="h-5 w-5" />
+          Course Selection
+        </CardTitle>
+        <CardDescription>
+          Select multiple courses and add them at once
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="batch-class-year">Batch Class Year</Label>
+            <Select
+              value={batchClassYear}
+              onValueChange={setBatchClassYear}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select Batch Class Year" />
+              </SelectTrigger>
+              <SelectContent>
+                {bcysList.map((bcys) => (
+                  <SelectItem
+                    key={bcys.bcysId}
+                    value={bcys.bcysId.toString()}
+                  >
+                    {bcys.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          {/* Load Courses Button - Bottom of Student List */}
-          {filteredStudents.length > 0 && (
-            <div className="pt-4 mt-2 border-t">
-              <Button
-                onClick={() => {
-                  if (selectedStudents.length === 0) {
-                    toast.error("Please select at least one student first");
-                    return;
-                  }
-                  const studentIds = selectedStudents.map((s) => s.studentId);
-                  fetchCourses(studentIds);
-                }}
-                className="w-full"
-                disabled={selectedStudents.length === 0 || coursesLoading}
-                variant={selectedStudents.length > 0 ? "default" : "outline"}
-              >
-                {coursesLoading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Loading Courses for {selectedStudents.length} Student(s)...
-                  </>
-                ) : (
-                  <>
-                    <BookOpen className="h-4 w-4 mr-2" />
-                    Load Courses for Selected Students ({selectedStudents.length})
-                  </>
-                )}
-              </Button>
-              
-              {/* Optional: Show message when courses are already loaded */}
-              {courses.length > 0 && !coursesLoading && (
-                <p className="text-xs text-green-600 dark:text-green-400 mt-2 text-center">
-                  ✓ {courses.length} courses loaded. You can select courses below.
-                </p>
+          <div className="space-y-2">
+            <Label htmlFor="payment-receipt">Payment Receipt No.</Label>
+            <Input
+              id="payment-receipt"
+              type="text"
+              placeholder="Enter payment receipt number"
+              value={paymentReceiptNo}
+              onChange={(e) => setPaymentReceiptNo(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="course">Select Courses</Label>
+              {courses.length === 0 && !coursesLoading && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    console.log("Retrying course fetch...");
+                    fetchCourses();
+                  }}
+                  className="h-6 text-xs"
+                >
+                  Retry Load (API returned{" "}
+                  {Array.isArray(courses) ? courses.length : "invalid"}{" "}
+                  courses)
+                </Button>
               )}
             </div>
-          )}
-          </CardContent>
-        </Card>
+            <span className="text-sm text-gray-500">
+              {selectedCourseIds.length} selected
+            </span>
+          </div>
 
-        {/* Right Column - Course Selection */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5" />
-              Course Selection
-            </CardTitle>
-            <CardDescription>
-              Select multiple courses and add them at once
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="batch-class-year">Batch Class Year</Label>
-                <Select
-                  value={batchClassYear}
-                  onValueChange={setBatchClassYear}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Batch Class Year" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {bcysList.map((bcys) => (
-                      <SelectItem
-                        key={bcys.bcysId}
-                        value={bcys.bcysId.toString()}
-                      >
-                        {bcys.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+          {/* Custom dropdown for course selection */}
+          <div className="relative" ref={dropdownRef}>
+            <Button
+              variant="outline"
+              className="w-full justify-between"
+              onClick={() => {
+                if (selectedStudents.length === 0) {
+                  toast.error("Please select at least one student first");
+                  return;
+                }
 
-              <div className="space-y-2">
-                <Label htmlFor="payment-receipt">Payment Receipt No.</Label>
-                <Input
-                  id="payment-receipt"
-                  type="text"
-                  placeholder="Enter payment receipt number"
-                  value={paymentReceiptNo}
-                  onChange={(e) => setPaymentReceiptNo(e.target.value)}
-                />
-              </div>
-            </div>
+                if (courses.length === 0 && !coursesLoading) {
+                  console.log("No courses loaded, retrying fetch...");
+                  const studentIds = selectedStudents.map(
+                    (s) => s.studentId,
+                  );
+                  fetchCourses(studentIds);
+                } else {
+                  setIsCourseDropdownOpen(!isCourseDropdownOpen);
+                  // Clear search when opening dropdown
+                  if (!isCourseDropdownOpen) {
+                    setCourseSearch("");
+                  }
+                }
+              }}
+            >
+              <span>
+                {selectedCourseIds.length > 0
+                  ? `${selectedCourseIds.length} course${
+                      selectedCourseIds.length > 1 ? "s" : ""
+                    } selected`
+                  : selectedStudents.length > 0
+                    ? "Select Courses"
+                    : "Select Students First"}
+              </span>
+              <ChevronDown
+                className={`h-4 w-4 transition-transform ${
+                  isCourseDropdownOpen ? "rotate-180" : ""
+                }`}
+              />
+            </Button>
 
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="course">Select Courses</Label>
-                  {courses.length === 0 && !coursesLoading && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        console.log("Retrying course fetch...");
-                        fetchCourses();
-                      }}
-                      className="h-6 text-xs"
-                    >
-                      Retry Load (API returned{" "}
-                      {Array.isArray(courses) ? courses.length : "invalid"}{" "}
-                      courses)
-                    </Button>
-                  )}
-                </div>
-                <span className="text-sm text-gray-500">
-                  {selectedCourseIds.length} selected
-                </span>
-              </div>
+            {isCourseDropdownOpen && (
+              <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg max-h-96 overflow-y-auto">
+                {coursesLoading ? (
+                  <div className="text-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
+                    <p className="mt-2 text-sm text-gray-500">
+                      Loading courses...
+                    </p>
+                  </div>
+                ) : courses.length === 0 ? (
+                  <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+                    <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>
+                      {selectedStudents.length === 0
+                        ? "Please select students first"
+                        : "No courses available for selected students"}
+                    </p>
+                    <p className="text-xs">
+                      {selectedStudents.length === 0
+                        ? "Select students from the left panel"
+                        : "Courses will appear after student selection"}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-1 p-2">
+                    {/* Course Search Bar */}
+                    <div className="relative mb-2">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 dark:text-gray-500" />
+                      <Input
+                        placeholder="Search courses by code or title..."
+                        value={courseSearch}
+                        onChange={handleCourseSearch}
+                        className="pl-10 pr-8 bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                        autoFocus
+                      />
+                      {courseSearch && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={clearCourseSearch}
+                          className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+                        >
+                          <X className="h-3 w-3 text-gray-400" />
+                        </Button>
+                      )}
+                    </div>
 
-              {/* Custom dropdown for course selection */}
-              <div className="relative" ref={dropdownRef}>
-                <Button
-                  variant="outline"
-                  className="w-full justify-between"
-                  onClick={() => {
-                    if (selectedStudents.length === 0) {
-                      toast.error("Please select at least one student first");
-                      return;
-                    }
-
-                    if (courses.length === 0 && !coursesLoading) {
-                      console.log("No courses loaded, retrying fetch...");
-                      const studentIds = selectedStudents.map(
-                        (s) => s.studentId,
-                      );
-                      fetchCourses(studentIds);
-                    } else {
-                      setIsCourseDropdownOpen(!isCourseDropdownOpen);
-                      // Clear search when opening dropdown
-                      if (!isCourseDropdownOpen) {
-                        setCourseSearch("");
-                      }
-                    }
-                  }}
-                >
-                  <span>
-                    {selectedCourseIds.length > 0
-                      ? `${selectedCourseIds.length} course${
-                          selectedCourseIds.length > 1 ? "s" : ""
-                        } selected`
-                      : selectedStudents.length > 0
-                        ? "Select Courses"
-                        : "Select Students First"}
-                  </span>
-                  <ChevronDown
-                    className={`h-4 w-4 transition-transform ${
-                      isCourseDropdownOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </Button>
-
-                {isCourseDropdownOpen && (
-                  <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg max-h-96 overflow-y-auto">
-                    {coursesLoading ? (
-                      <div className="text-center py-4">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
-                        <p className="mt-2 text-sm text-gray-500">
-                          Loading courses...
-                        </p>
-                      </div>
-                    ) : courses.length === 0 ? (
-                      <div className="text-center py-4 text-gray-500 dark:text-gray-400">
-                        <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                        <p>
-                          {selectedStudents.length === 0
-                            ? "Please select students first"
-                            : "No courses available for selected students"}
-                        </p>
-                        <p className="text-xs">
-                          {selectedStudents.length === 0
-                            ? "Select students from the left panel"
-                            : "Courses will appear after student selection"}
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-1 p-2">
-                        {/* Course Search Bar */}
-                        <div className="relative mb-2">
-                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 dark:text-gray-500" />
-                          <Input
-                            placeholder="Search courses by code or title..."
-                            value={courseSearch}
-                            onChange={handleCourseSearch}
-                            className="pl-10 pr-8 bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600"
-                            autoFocus
-                          />
-                          {courseSearch && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={clearCourseSearch}
-                              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
-                            >
-                              <X className="h-3 w-3 text-gray-400" />
-                            </Button>
-                          )}
-                        </div>
-
-                        {/* Select All Visible Courses Button */}
-                        {filteredCourses.length > 0 && (
-                          <div className="flex items-center justify-between mb-2 px-2 py-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={handleSelectAllVisibleCourses}
-                              className="h-7 text-xs"
-                            >
-                              {filteredCourses.every((course) =>
-                                selectedCourseIds.includes(
-                                  course.id.toString(),
-                                ),
-                              ) ? (
-                                <>
-                                  <CheckSquare className="h-3 w-3 mr-1" />
-                                  Deselect All Visible
-                                </>
-                              ) : (
-                                <>
-                                  <Square className="h-3 w-3 mr-1" />
-                                  Select All Visible
-                                </>
-                              )}
-                            </Button>
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                              {filteredCourses.length} course
-                              {filteredCourses.length !== 1 ? "s" : ""} found
-                            </span>
-                          </div>
-                        )}
-
-                        {/* Course List */}
-                        <div className="space-y-1 max-h-64 overflow-y-auto">
-                          {filteredCourses.length === 0 ? (
-                            <div className="text-center py-4 text-gray-500 dark:text-gray-400">
-                              <p>No courses found for "{courseSearch}"</p>
-                              <p className="text-xs mt-1">
-                                Try a different search term
-                              </p>
-                            </div>
+                    {/* Select All Visible Courses Button */}
+                    {filteredCourses.length > 0 && (
+                      <div className="flex items-center justify-between mb-2 px-2 py-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleSelectAllVisibleCourses}
+                          className="h-7 text-xs"
+                        >
+                          {filteredCourses.every((course) =>
+                            selectedCourseIds.includes(
+                              course.id.toString(),
+                            ),
+                          ) ? (
+                            <>
+                              <CheckSquare className="h-3 w-3 mr-1" />
+                              Deselect All Visible
+                            </>
                           ) : (
-                            filteredCourses.map((course) => {
-                              // Use the correct property names from the API
-                              const courseId = course?.id || 0;
-                              const courseCode = course?.ccode || "N/A";
-                              const courseTitle =
-                                course?.ctitle || "Unknown Course";
-                              const lectureHours = course?.theoryHrs || 0;
-                              const labHours = course?.labHrs || 0;
-                              const creditHours = lectureHours + labHours;
-
-                              return (
-                                <div
-                                  key={courseId}
-                                  className={`flex items-center p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                                    selectedCourseIds.includes(
-                                      courseId.toString(),
-                                    )
-                                      ? "bg-blue-50 dark:bg-blue-900/30"
-                                      : ""
-                                  }`}
-                                  onClick={(e) => {
-                                    e.stopPropagation(); // Prevent dropdown from closing
-                                    handleCourseSelectionChange(
-                                      courseId.toString(),
-                                    );
-                                  }}
-                                >
-                                  <div
-                                    className={`w-5 h-5 flex items-center justify-center rounded border mr-3 ${
-                                      selectedCourseIds.includes(
-                                        courseId.toString(),
-                                      )
-                                        ? "bg-blue-500 border-blue-500 dark:bg-blue-600 dark:border-blue-600"
-                                        : "border-gray-300 dark:border-gray-600"
-                                    }`}
-                                  >
-                                    {selectedCourseIds.includes(
-                                      courseId.toString(),
-                                    ) && (
-                                      <Check className="h-3 w-3 text-white" />
-                                    )}
-                                  </div>
-                                  <div className="flex-1">
-                                    <div className="font-medium text-sm text-gray-900 dark:text-gray-100">
-                                      <span className="font-semibold text-blue-600 dark:text-blue-400">
-                                        {courseCode}
-                                      </span>{" "}
-                                      - {courseTitle}
-                                    </div>
-                                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                                      Lecture: {lectureHours}h | Lab: {labHours}
-                                      h | Total: {creditHours} CH
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })
+                            <>
+                              <Square className="h-3 w-3 mr-1" />
+                              Select All Visible
+                            </>
                           )}
-                        </div>
+                        </Button>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {filteredCourses.length} course
+                          {filteredCourses.length !== 1 ? "s" : ""} found
+                        </span>
+                      </div>
+                    )}
 
-                        {/* Show search results summary */}
-                        {courseSearch && filteredCourses.length > 0 && (
-                          <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                            <div className="text-xs text-gray-500 dark:text-gray-400 px-2">
-                              Showing {filteredCourses.length} of{" "}
-                              {courses.length} courses
+                    {/* Course List */}
+                    <div className="space-y-1 max-h-64 overflow-y-auto">
+                      {filteredCourses.length === 0 ? (
+                        <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+                          <p>No courses found for "{courseSearch}"</p>
+                          <p className="text-xs mt-1">
+                            Try a different search term
+                          </p>
+                        </div>
+                      ) : (
+                        filteredCourses.map((course) => {
+                          // Use the correct property names from the API
+                          const courseId = course?.id || 0;
+                          const courseCode = course?.ccode || "N/A";
+                          const courseTitle =
+                            course?.ctitle || "Unknown Course";
+                          const lectureHours = course?.theoryHrs || 0;
+                          const labHours = course?.labHrs || 0;
+                          const creditHours = lectureHours + labHours;
+
+                          return (
+                            <div
+                              key={courseId}
+                              className={`flex items-center p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                                selectedCourseIds.includes(
+                                  courseId.toString(),
+                                )
+                                  ? "bg-blue-50 dark:bg-blue-900/30"
+                                  : ""
+                              }`}
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent dropdown from closing
+                                handleCourseSelectionChange(
+                                  courseId.toString(),
+                                );
+                              }}
+                            >
+                              <div
+                                className={`w-5 h-5 flex items-center justify-center rounded border mr-3 ${
+                                  selectedCourseIds.includes(
+                                    courseId.toString(),
+                                  )
+                                    ? "bg-blue-500 border-blue-500 dark:bg-blue-600 dark:border-blue-600"
+                                    : "border-gray-300 dark:border-gray-600"
+                                }`}
+                              >
+                                {selectedCourseIds.includes(
+                                  courseId.toString(),
+                                ) && (
+                                  <Check className="h-3 w-3 text-white" />
+                                )}
+                              </div>
+                              <div className="flex-1">
+                                <div className="font-medium text-sm text-gray-900 dark:text-gray-100">
+                                  <span className="font-semibold text-blue-600 dark:text-blue-400">
+                                    {courseCode}
+                                  </span>{" "}
+                                  - {courseTitle}
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                  Lecture: {lectureHours}h | Lab: {labHours}
+                                  h | Total: {creditHours} CH
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          );
+                        })
+                      )}
+                    </div>
+
+                    {/* Show search results summary */}
+                    {courseSearch && filteredCourses.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                        <div className="text-xs text-gray-500 dark:text-gray-400 px-2">
+                          Showing {filteredCourses.length} of{" "}
+                          {courses.length} courses
+                        </div>
                       </div>
                     )}
                   </div>
                 )}
               </div>
-
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleAddMultipleCourses}
-                  className="flex-1"
-                  disabled={selectedCourseIds.length === 0 || coursesLoading}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Selected ({selectedCourseIds.length})
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleClearSelectedCourses}
-                  disabled={registrationCourses.length === 0}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Clear All
-                </Button>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <Label>Selected Courses ({registrationCourses.length})</Label>
-                <span className="text-sm text-gray-500">
-                  Total: {calculateTotals().total} credit hours
-                </span>
-              </div>
-              <div className="max-h-60 overflow-y-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-16">Code</TableHead>
-                      <TableHead>Title</TableHead>
-                      <TableHead className="w-16">Lecture</TableHead>
-                      <TableHead className="w-16">Lab</TableHead>
-                      <TableHead className="w-16">Total</TableHead>
-                      <TableHead className="w-20">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {registrationCourses.map((course) => (
-                      <TableRow key={course.id}>
-                        <TableCell className="font-medium text-xs">
-                          {course.courseCode}
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          {course.courseTitle}
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          {course.lectureHours}
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          {course.labHours}
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          {course.totalHours}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveCourse(course.id)}
-                            className="h-7 w-7 p-0"
-                          >
-                            <Trash2 className="h-3 w-3 text-red-500" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {registrationCourses.length === 0 && (
-                      <TableRow>
-                        <TableCell
-                          colSpan={6}
-                          className="text-center py-4 text-gray-500"
-                        >
-                          No courses selected yet
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-
-            {/* Selected Students Summary */}
-            {selectedStudents.length > 0 && (
-              <div className="pt-4 border-t">
-                <Label className="mb-2">
-                  Selected Students ({selectedStudents.length})
-                </Label>
-                <div className="space-y-2 max-h-40 overflow-y-auto">
-                  {selectedStudents.slice(0, 5).map((student) => (
-                    <div
-                      key={student.studentId}
-                      className="flex items-center justify-between text-sm p-2 bg-gray-50 dark:bg-gray-800 rounded"
-                    >
-                      <span>{student.fullNameENG}</span>
-                      <span className="text-xs text-gray-500">
-                        {student.studentId}
-                      </span>
-                    </div>
-                  ))}
-                  {selectedStudents.length > 5 && (
-                    <div className="text-center text-sm text-gray-500 p-2">
-                      ... and {selectedStudents.length - 5} more
-                    </div>
-                  )}
-                </div>
-              </div>
             )}
+          </div>
 
-            {/* Slip Preview Button */}
-            <div className="pt-4">
-              <Button
-                onClick={handleSlipPreview}
-                className="w-full"
-                disabled={
-                  selectedStudents.length === 0 ||
-                  registrationCourses.length === 0 ||
-                  !batchClassYear ||
-                  previewLoading
-                }
-              >
-                {previewLoading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Generating Preview...
-                  </>
-                ) : (
-                  "Slip Preview"
+          <div className="flex gap-2">
+            <Button
+              onClick={handleAddMultipleCourses}
+              className="flex-1"
+              disabled={selectedCourseIds.length === 0 || coursesLoading}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Selected ({selectedCourseIds.length})
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleClearSelectedCourses}
+              disabled={registrationCourses.length === 0}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Clear All
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <Label>Selected Courses ({registrationCourses.length})</Label>
+            <span className="text-sm text-gray-500">
+              Total: {calculateTotals().total} credit hours
+            </span>
+          </div>
+          <div className="max-h-60 overflow-y-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-16">Code</TableHead>
+                  <TableHead>Title</TableHead>
+                  <TableHead className="w-16">Lecture</TableHead>
+                  <TableHead className="w-16">Lab</TableHead>
+                  <TableHead className="w-16">Total</TableHead>
+                  <TableHead className="w-20">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {registrationCourses.map((course) => (
+                  <TableRow key={course.id}>
+                    <TableCell className="font-medium text-xs">
+                      {course.courseCode}
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      {course.courseTitle}
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      {course.lectureHours}
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      {course.labHours}
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      {course.totalHours}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveCourse(course.id)}
+                        className="h-7 w-7 p-0"
+                      >
+                        <Trash2 className="h-3 w-3 text-red-500" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {registrationCourses.length === 0 && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={6}
+                      className="text-center py-4 text-gray-500"
+                    >
+                      No courses selected yet
+                    </TableCell>
+                  </TableRow>
                 )}
-              </Button>
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+
+        {/* Selected Students Summary */}
+        {selectedStudents.length > 0 && (
+          <div className="pt-4 border-t">
+            <Label className="mb-2">
+              Selected Students ({selectedStudents.length})
+            </Label>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {selectedStudents.slice(0, 5).map((student) => (
+                <div
+                  key={student.studentId}
+                  className="flex items-center justify-between text-sm p-2 bg-gray-50 dark:bg-gray-800 rounded"
+                >
+                  <span>{student.fullNameENG}</span>
+                  <span className="text-xs text-gray-500">
+                    {student.studentId}
+                  </span>
+                </div>
+              ))}
+              {selectedStudents.length > 5 && (
+                <div className="text-center text-sm text-gray-500 p-2">
+                  ... and {selectedStudents.length - 5} more
+                </div>
+              )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        )}
+
+        {/* Slip Preview Button */}
+        <div className="pt-4">
+          <Button
+            onClick={handleSlipPreview}
+            className="w-full"
+            disabled={
+              selectedStudents.length === 0 ||
+              registrationCourses.length === 0 ||
+              !batchClassYear ||
+              previewLoading
+            }
+          >
+            {previewLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Generating Preview...
+              </>
+            ) : (
+              "Slip Preview"
+            )}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
       </div>
 
       {/* Preview Section - Only shown after clicking Slip Preview */}
