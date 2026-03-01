@@ -97,7 +97,7 @@ export default function StudentGradeReport() {
         setError(
           err.response?.data?.message ||
             err.message ||
-            "Failed to load grade report. Please try again."
+            "Failed to load grade report. Please try again.",
         );
       } finally {
         setLoading(false);
@@ -112,14 +112,14 @@ export default function StudentGradeReport() {
     studentData?.studentCopies.reduce(
       (sum, copy) =>
         sum + copy.courses.reduce((acc, course) => acc + course.totalCrHrs, 0),
-      0
+      0,
     ) || 0;
 
   const totalGradePoints =
     studentData?.studentCopies.reduce(
       (sum, copy) =>
         sum + copy.courses.reduce((acc, course) => acc + course.gradePoint, 0),
-      0
+      0,
     ) || 0;
 
   const overallGPA =
@@ -203,10 +203,10 @@ export default function StudentGradeReport() {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
             Academic Grade Report
           </h1>
-          <Button className="bg-blue-600 hover:bg-blue-700">
+          {/* <Button className="bg-blue-600 hover:bg-blue-700">
             <Download className="mr-2 h-4 w-4" />
             Download Report
-          </Button>
+          </Button> */}
         </div>
 
         {/* Student Info */}
@@ -467,7 +467,7 @@ export default function StudentGradeReport() {
                                 <td className="px-4 py-3 text-sm text-center">
                                   <Badge
                                     className={getGradeColor(
-                                      course.letterGrade
+                                      course.letterGrade,
                                     )}
                                   >
                                     {course.letterGrade}
