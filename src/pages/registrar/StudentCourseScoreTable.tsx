@@ -10,18 +10,23 @@ const initialData = [];
 export default function StudentCourseScoreTable() {
   const [data, setData] = useState(initialData);
   const { toast } = useToast(); // ← Add this
-  const [allData, setAllData] = useState(initialData);
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
   const [editScoreModalVisible, setEditScoreModalVisible] = useState(false);
   const [editScoreValue, setEditScoreValue] = useState("");
   const [courseList, setCourseList] = useState([]);
+
+  const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
+  const [showBatchConfirmation, setShowBatchConfirmation] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null); // Store action to execute after confirmation
+
   const [batchValues, setBatchValues] = useState({
     score: "",
     courseSource: "",
     isReleased: null,
     bcysId: "",
+    courseId: "", // ← Add this
   });
   const [studentList, setStudentList] = useState([]);
   const [studentListLoading, setStudentListLoading] = useState(false);
@@ -30,6 +35,11 @@ export default function StudentCourseScoreTable() {
   const [showInstructions, setShowInstructions] = useState(false); // ← Add this
   const [scoreInputError, setScoreInputError] = useState(false);
   const [editScoreError, setEditScoreError] = useState(false);
+
+  const [isEditMode, setIsEditMode] = useState(false); // Toggle edit mode
+  const [editedRows, setEditedRows] = useState({}); // Store all edited values
+  const [editModeLoading, setEditModeLoading] = useState(false); // For save/cancel operations
+
   const [filters, setFilters] = useState({
     courseId: "", // ← new
     bcysId: "", // renamed from batchClassYearSemester
@@ -57,8 +67,6 @@ export default function StudentCourseScoreTable() {
     pageSize: 10,
     total: 0,
   });
-
-  const [searchText, setSearchText] = useState("");
 
   useEffect(() => {
     fetchFilterOptions();
@@ -118,27 +126,7 @@ export default function StudentCourseScoreTable() {
       setCoursesLoading(false);
     }
   };
-  // useEffect(() => {
-  //   const load = async () => {
-  //     try {
-  //       const [lookupsRes, deptsRes] = await Promise.all([
-  //         apiClient.get(endPoints.lookupsDropdown),
-  //         apiClient.get(endPoints.departments), // or /departments/list — adjust path
-  //       ]);
 
-  //       setFilterOptions((prev) => ({
-  //         ...prev,
-  //         departments: deptsRes.data || [],
-  //         batchClassYearSemesters:
-  //           lookupsRes.data.batchClassYearSemesters || [],
-  //         courseSources: lookupsRes.data.courseSources || [],
-  //       }));
-  //     } catch (err) {
-  //       message.error("Failed to load filters");
-  //     }
-  //   };
-  //   load();
-  // }, []);
   useEffect(() => {
     fetchCourseList();
   }, []);
@@ -258,19 +246,6 @@ export default function StudentCourseScoreTable() {
     }
   };
 
-  // Reusable bulk update function (used for batch, single edit, and single release)
-  const applyUpdateViaBulk = async (updates) => {
-    if (updates.length === 0) return;
-    try {
-      await apiClient.put(endPoints.bulkUpdateScores, { updates });
-      message.success("Update successful");
-      fetchStudentCourseScores();
-    } catch (error) {
-      console.error("Update failed:", error);
-      message.error(error.response?.data?.error || "Update failed");
-    }
-  };
-
   const applyBatchUpdate = async () => {
     if (selectedRowKeys.length === 0) return;
 
@@ -279,7 +254,6 @@ export default function StudentCourseScoreTable() {
 
     // Validate score if provided
     if (batchValues.score !== "" && batchValues.score !== null) {
-      // Check if it's a valid number
       if (isNaN(Number(batchValues.score))) {
         toast({
           title: "❌ Invalid Score",
@@ -302,6 +276,32 @@ export default function StudentCourseScoreTable() {
       }
     }
 
+    // Check if any fields are selected for update
+    const hasUpdates =
+      batchValues.score !== "" ||
+      batchValues.courseId ||
+      batchValues.courseSource ||
+      batchValues.bcysId ||
+      batchValues.isReleased !== null;
+
+    if (!hasUpdates) {
+      toast({
+        title: "ℹ️ No Changes",
+        description: "No fields were selected to update.",
+        variant: "default",
+      });
+      return;
+    }
+
+    // Show confirmation
+    setPendingAction(() => async () => {
+      await executeBatchUpdate();
+    });
+    setShowBatchConfirmation(true);
+  };
+
+  // Extract batch update logic
+  const executeBatchUpdate = async () => {
     const updates = selectedRowKeys
       .map((key) => {
         const row = data.find((item) => item.key === key);
@@ -310,15 +310,13 @@ export default function StudentCourseScoreTable() {
         const update = { id: row.id };
         let hasChange = false;
 
-        // Score validation - already validated above, but double-check
         if (batchValues.score !== "" && !isNaN(Number(batchValues.score))) {
-          const scoreValue = parseFloat(batchValues.score);
-          update.score = scoreValue;
+          update.score = parseFloat(batchValues.score);
           hasChange = true;
         }
 
-        if (batchValues.isReleased !== null) {
-          update.isReleased = batchValues.isReleased;
+        if (batchValues.courseId) {
+          update.courseId = batchValues.courseId;
           hasChange = true;
         }
 
@@ -332,30 +330,24 @@ export default function StudentCourseScoreTable() {
           hasChange = true;
         }
 
+        if (batchValues.isReleased !== null) {
+          update.isReleased = batchValues.isReleased;
+          hasChange = true;
+        }
+
         return hasChange ? update : null;
       })
       .filter(Boolean);
 
-    if (updates.length === 0) {
-      toast({
-        title: "ℹ️ No Changes",
-        description: "No fields were changed to apply.",
-        variant: "default",
-      });
-      return;
-    }
+    if (updates.length === 0) return;
 
-    // Show loading state
     setBatchUpdateLoading(true);
-
     try {
-      const response = await apiClient.put(endPoints.bulkUpdateScores, {
-        updates,
-      });
+      await apiClient.put(endPoints.bulkUpdateScores, { updates });
 
-      // Show success toast with details
       const updatedFields = [];
       if (batchValues.score) updatedFields.push("scores");
+      if (batchValues.courseId) updatedFields.push("courses");
       if (batchValues.courseSource) updatedFields.push("course sources");
       if (batchValues.bcysId) updatedFields.push("batch/year/semester");
       if (batchValues.isReleased !== null) updatedFields.push("release status");
@@ -364,7 +356,7 @@ export default function StudentCourseScoreTable() {
 
       toast({
         title: "✅ Update Successful",
-        description: `Updated ${updates.length} record(s) successfully. ${fieldsUpdated ? `Changed: ${fieldsUpdated}` : ""}`,
+        description: `Updated ${updates.length} record(s) successfully. Changed: ${fieldsUpdated}`,
         variant: "default",
       });
 
@@ -374,13 +366,11 @@ export default function StudentCourseScoreTable() {
         courseSource: "",
         isReleased: null,
         bcysId: "",
+        courseId: "",
       });
-      setScoreInputError(false); // Clear any error state
       fetchStudentCourseScores();
     } catch (err) {
-      console.error(err);
       const errorMessage = err.response?.data?.error || "Bulk update failed";
-
       toast({
         title: "❌ Update Failed",
         description: errorMessage,
@@ -391,11 +381,203 @@ export default function StudentCourseScoreTable() {
     }
   };
 
-  const handleSearch = (value) => {
-    setSearchText(value);
-    setFilters((prev) => ({ ...prev, search: value }));
-    setPagination((prev) => ({ ...prev, current: 1 }));
+  //----------------------------------------New FUNCTIONS------------------------------------------------------------------
+  // Initialize edit mode with current data
+  const enterEditMode = () => {
+    const initialEdits = {};
+    displayedData.forEach((item) => {
+      initialEdits[item.key] = {
+        score: item.score,
+        courseSourceId: item.courseSource?.id,
+        bcysId: item.batchClassYearSemester?.id,
+        isReleased: item.isReleased,
+        courseId: item.course?.id, // ← Add this
+        originalData: { ...item }, // Keep original for comparison
+      };
+    });
+    setEditedRows(initialEdits);
+    setIsEditMode(true);
   };
+
+  // Handle field changes in edit mode
+  const handleEditFieldChange = (rowKey, field, value) => {
+    setEditedRows((prev) => ({
+      ...prev,
+      [rowKey]: {
+        ...prev[rowKey],
+        [field]: value,
+        hasChanges: true,
+      },
+    }));
+  };
+
+  // Validate a single row's score
+  const validateRowScore = (rowKey) => {
+    const row = editedRows[rowKey];
+    if (
+      !row ||
+      row.score === undefined ||
+      row.score === null ||
+      row.score === ""
+    )
+      return true;
+
+    if (isNaN(Number(row.score))) {
+      toast({
+        title: "❌ Invalid Score",
+        description: `Row ${rowKey}: Please enter a valid number`,
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    const scoreValue = parseFloat(row.score);
+    if (scoreValue < 0 || scoreValue > 100) {
+      toast({
+        title: "❌ Invalid Score",
+        description: `Row ${rowKey}: Score must be between 0 and 100`,
+        variant: "destructive",
+      });
+      return false;
+    }
+    return true;
+  };
+
+  // Save all edits
+  const handleSaveAllEdits = () => {
+    // Validate all rows first
+    for (const rowKey of Object.keys(editedRows)) {
+      if (!validateRowScore(rowKey)) {
+        return;
+      }
+    }
+
+    // Count changes for confirmation message
+    const changes = Object.entries(editedRows).filter(([key, edits]) => {
+      const original = displayedData.find((item) => item.key === key);
+      if (!original) return false;
+
+      return (
+        (edits.score !== undefined && edits.score !== original.score) ||
+        (edits.courseId !== undefined &&
+          edits.courseId !== original.course?.id) ||
+        (edits.courseSourceId !== undefined &&
+          edits.courseSourceId !== original.courseSource?.id) ||
+        (edits.bcysId !== undefined &&
+          edits.bcysId !== original.batchClassYearSemester?.id) ||
+        (edits.isReleased !== undefined &&
+          edits.isReleased !== original.isReleased)
+      );
+    }).length;
+
+    if (changes === 0) {
+      toast({
+        title: "ℹ️ No Changes",
+        description: "No fields were modified",
+        variant: "default",
+      });
+      setIsEditMode(false);
+      return;
+    }
+
+    // Show confirmation
+    setPendingAction(() => async () => {
+      await executeSaveEdits();
+    });
+    setShowSaveConfirmation(true);
+  };
+
+  // Extract the actual save logic
+  const executeSaveEdits = async () => {
+    const updates = Object.entries(editedRows)
+      .map(([key, edits]) => {
+        const original = displayedData.find((item) => item.key === key);
+        if (!original) return null;
+
+        const update = { id: original.id };
+        let hasChanges = false;
+
+        // Check score changes
+        if (edits.score !== undefined && edits.score !== original.score) {
+          if (edits.score !== "" && !isNaN(Number(edits.score))) {
+            update.score = parseFloat(edits.score);
+            hasChanges = true;
+          }
+        }
+
+        // Check course changes
+        if (
+          edits.courseId !== undefined &&
+          edits.courseId !== original.course?.id
+        ) {
+          update.courseId = edits.courseId;
+          hasChanges = true;
+        }
+
+        // Check course source changes
+        if (
+          edits.courseSourceId !== undefined &&
+          edits.courseSourceId !== original.courseSource?.id
+        ) {
+          update.courseSourceId = edits.courseSourceId;
+          hasChanges = true;
+        }
+
+        // Check BCYS changes
+        if (
+          edits.bcysId !== undefined &&
+          edits.bcysId !== original.batchClassYearSemester?.id
+        ) {
+          update.batchClassYearSemesterId = edits.bcysId;
+          hasChanges = true;
+        }
+
+        // Check release status changes
+        if (
+          edits.isReleased !== undefined &&
+          edits.isReleased !== original.isReleased
+        ) {
+          update.isReleased = edits.isReleased;
+          hasChanges = true;
+        }
+
+        return hasChanges ? update : null;
+      })
+      .filter(Boolean);
+
+    if (updates.length === 0) return;
+
+    setEditModeLoading(true);
+    try {
+      await apiClient.put(endPoints.bulkUpdateScores, { updates });
+
+      toast({
+        title: "✅ Updates Successful",
+        description: `Updated ${updates.length} record(s) successfully`,
+        variant: "default",
+      });
+
+      setIsEditMode(false);
+      setEditedRows({});
+      fetchStudentCourseScores();
+    } catch (err) {
+      const errorMessage = err.response?.data?.error || "Bulk update failed";
+      toast({
+        title: "❌ Update Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setEditModeLoading(false);
+    }
+  };
+
+  // Cancel edit mode
+  const handleCancelEdit = () => {
+    setIsEditMode(false);
+    setEditedRows({});
+  };
+  //---------=====================================================================================----------------------------
 
   const handleFilterChange = (filterName, value) => {
     setFilters((prev) => ({ ...prev, [filterName]: value }));
@@ -534,6 +716,7 @@ export default function StudentCourseScoreTable() {
       courseSource: "",
       isReleased: null,
       bcysId: "",
+      courseId: "", // ← Add this
     });
     setScoreInputError(false); // ← Clear error state
   };
@@ -851,65 +1034,6 @@ export default function StudentCourseScoreTable() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
-        {/* <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Department
-          </label>
-          <Select
-            value={filters.departmentId || undefined}
-            onChange={(v) => handleFilterChange("departmentId", v)}
-            placeholder="All Departments"
-            y
-            allowClear
-            showSearch
-            className="w-full"
-            filterOption={(input, option) =>
-              (option?.children ?? "")
-                .toLowerCase()
-                .includes(input.toLowerCase())
-            }
-          >
-            <Select.Option value="">All Departments</Select.Option>
-
-            {filterOptions.departments.map((dept) => (
-              <Select.Option key={dept.id} value={dept.id}>
-                {dept.name}
-              </Select.Option>
-            ))}
-          </Select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Course
-          </label>
-
-          <Select
-            loading={coursesLoading}
-            value={filters.courseId || undefined}
-            onChange={(v) => handleFilterChange("courseId", v)}
-            placeholder="All Courses"
-            allowClear
-            showSearch
-            className="w-full"
-            // optional: filterOption to improve search
-            filterOption={(input, option) =>
-              (option?.children ?? "")
-                .toLowerCase()
-                .includes(input.toLowerCase())
-            }
-          >
-            {courseList.map((c) => (
-              <Select.Option key={c.id} value={c.id}>
-                {c.title ||
-                  c.cTitle ||
-                  c.name ||
-                  c.displayName ||
-                  `Course ${c.id}`}{" "}
-                {c.cCode}
-              </Select.Option>
-            ))}
-          </Select>
-        </div> */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Department
@@ -1144,7 +1268,109 @@ export default function StudentCourseScoreTable() {
       </div>
 
       {/* Clear Filters */}
-      <div className="mb-4 text-right">
+      {/* <div className="mb-4 text-right">
+        <button
+          onClick={clearFilters}
+          className="px-4 py-2 text-sm bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+        >
+          Clear All Filters
+        </button>
+      </div> */}
+
+      {/* Edit Mode Controls */}
+      <div className="mb-4 flex justify-between items-center">
+        <div className="flex gap-2">
+          {!isEditMode ? (
+            <button
+              onClick={enterEditMode}
+              className="px-4 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                />
+              </svg>
+              Edit Table
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={handleSaveAllEdits}
+                disabled={editModeLoading}
+                className="px-4 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2 disabled:bg-green-400"
+              >
+                {editModeLoading ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        fill="none"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                    Save All Changes
+                  </>
+                )}
+              </button>
+              <button
+                onClick={handleCancelEdit}
+                className="px-4 py-2 text-sm bg-gray-500 text-white rounded hover:bg-gray-600 flex items-center gap-2"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+                Cancel
+              </button>
+            </>
+          )}
+        </div>
         <button
           onClick={clearFilters}
           className="px-4 py-2 text-sm bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
@@ -1233,6 +1459,61 @@ export default function StudentCourseScoreTable() {
               ))}
             </Select>
 
+            {/* Course Dropdown for Batch Update */}
+            <Select
+              value={batchValues.courseId || undefined}
+              onChange={(v) => setBatchValues({ ...batchValues, courseId: v })}
+              placeholder="Change Course"
+              allowClear
+              className="w-48"
+              showSearch
+              filterOption={(input, option) =>
+                (option?.label ?? "")
+                  .toLowerCase()
+                  .includes(input.toLowerCase())
+              }
+              optionLabelProp="label"
+            >
+              {courseList
+                .filter((course) => {
+                  if (filters.departmentId && filters.departmentId !== "") {
+                    const selectedDept = filterOptions.departments.find(
+                      (d) => d.id === Number(filters.departmentId),
+                    );
+                    if (selectedDept) {
+                      return course.department === selectedDept.name;
+                    }
+                  }
+                  return true;
+                })
+                .map((c) => {
+                  const title =
+                    c.cTitle ||
+                    c.title ||
+                    c.name ||
+                    c.displayName ||
+                    `Course ${c.id}`;
+                  const codePart = c.cCode ? `(${c.cCode}) ` : "";
+                  const deptName = c.department || "—";
+                  const fullLabel = `${codePart}${title} — ${deptName}`;
+
+                  return (
+                    <Select.Option key={c.id} value={c.id} label={fullLabel}>
+                      <div className="flex flex-col text-xs">
+                        <span className="font-medium">
+                          {codePart}
+                          {title}
+                        </span>
+                        <span className="text-gray-500 dark:text-gray-400 text-[10px]">
+                          {deptName}
+                        </span>
+                      </div>
+                    </Select.Option>
+                  );
+                })}
+            </Select>
+
+            {/* isReleased */}
             <Select
               value={
                 batchValues.isReleased !== null
@@ -1307,20 +1588,22 @@ export default function StudentCourseScoreTable() {
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-900">
             <tr>
-              <th className="px-6 py-3 text-left">
-                <input
-                  type="checkbox"
-                  checked={
-                    data.length > 0 && selectedRowKeys.length === data.length
-                  }
-                  indeterminate={
-                    selectedRowKeys.length > 0 &&
-                    selectedRowKeys.length < data.length
-                  }
-                  onChange={handleSelectAll}
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
-                />
-              </th>
+              {!isEditMode && (
+                <th className="px-6 py-3 text-left">
+                  <input
+                    type="checkbox"
+                    checked={
+                      data.length > 0 && selectedRowKeys.length === data.length
+                    }
+                    indeterminate={
+                      selectedRowKeys.length > 0 &&
+                      selectedRowKeys.length < data.length
+                    }
+                    onChange={handleSelectAll}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                  />
+                </th>
+              )}
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                 Student ID
               </th>
@@ -1363,6 +1646,199 @@ export default function StudentCourseScoreTable() {
                   No records found
                 </td>
               </tr>
+            ) : isEditMode ? (
+              // EDIT MODE ROWS
+              displayedData.map((item) => {
+                const edits = editedRows[item.key] || {};
+                return (
+                  <tr
+                    key={item.key}
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                  >
+                    <td className="px-6 py-4 text-sm">{item.studentId.id}</td>
+                    <td className="px-6 py-4 text-sm">
+                      {item.studentId.student?.name || "N/A"}
+                    </td>
+                    <td className="px-6 py-4 text-sm">
+                      <Select
+                        value={edits.courseId ?? item.course?.id}
+                        onChange={(v) =>
+                          handleEditFieldChange(item.key, "courseId", v)
+                        }
+                        className="w-48"
+                        size="small"
+                        placeholder="Select Course"
+                        showSearch
+                        filterOption={(input, option) =>
+                          (option?.label ?? "")
+                            .toLowerCase()
+                            .includes(input.toLowerCase())
+                        }
+                        optionLabelProp="label"
+                      >
+                        {courseList
+                          .filter((course) => {
+                            // If department filter is active, filter courses by department
+                            if (
+                              filters.departmentId &&
+                              filters.departmentId !== ""
+                            ) {
+                              const selectedDept =
+                                filterOptions.departments.find(
+                                  (d) => d.id === Number(filters.departmentId),
+                                );
+                              if (selectedDept) {
+                                return course.department === selectedDept.name;
+                              }
+                            }
+                            return true;
+                          })
+                          .map((c) => {
+                            const title =
+                              c.cTitle ||
+                              c.title ||
+                              c.name ||
+                              c.displayName ||
+                              `Course ${c.id}`;
+                            const codePart = c.cCode ? `(${c.cCode}) ` : "";
+                            const deptName = c.department || "—";
+                            const fullLabel = `${codePart}${title} — ${deptName}`;
+
+                            return (
+                              <Select.Option
+                                key={c.id}
+                                value={c.id}
+                                label={fullLabel}
+                              >
+                                <div className="flex flex-col text-xs">
+                                  <span className="font-medium">
+                                    {codePart}
+                                    {title}
+                                  </span>
+                                  <span className="text-gray-500 dark:text-gray-400 text-[10px]">
+                                    {deptName}
+                                  </span>
+                                </div>
+                              </Select.Option>
+                            );
+                          })}
+                      </Select>
+                    </td>
+                    <td className="px-6 py-4 text-sm">
+                      <Select
+                        value={edits.bcysId ?? item.batchClassYearSemester?.id}
+                        onChange={(v) =>
+                          handleEditFieldChange(item.key, "bcysId", v)
+                        }
+                        className="w-40"
+                        size="small"
+                        placeholder="Select BCYS"
+                      >
+                        {filterOptions.batchClassYearSemesters.map((b) => (
+                          <Select.Option key={b.id} value={b.id}>
+                            {b.name}
+                          </Select.Option>
+                        ))}
+                      </Select>
+                    </td>
+                    <td className="px-6 py-4 text-sm">
+                      <Select
+                        value={edits.courseSourceId ?? item.courseSource?.id}
+                        onChange={(v) =>
+                          handleEditFieldChange(item.key, "courseSourceId", v)
+                        }
+                        className="w-40"
+                        size="small"
+                        placeholder="Select Source"
+                      >
+                        {filterOptions.courseSources.map((s) => (
+                          <Select.Option key={s.id} value={s.id}>
+                            {s.name}
+                          </Select.Option>
+                        ))}
+                      </Select>
+                    </td>
+                    <td className="px-6 py-4 text-sm">
+                      <div className="relative">
+                        <InputNumber
+                          step={0.1}
+                          value={edits.score ?? item.score}
+                          onChange={(v) =>
+                            handleEditFieldChange(item.key, "score", v)
+                          }
+                          onBlur={() => validateRowScore(item.key)}
+                          className={`w-24 ${
+                            edits.score !== undefined &&
+                            edits.score !== item.score
+                              ? "[&_.ant-input-number]:border-yellow-500"
+                              : ""
+                          }`}
+                          placeholder="Score"
+                          size="small"
+                        />
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm">
+                      <Select
+                        value={edits.isReleased ?? item.isReleased}
+                        onChange={(v) =>
+                          handleEditFieldChange(item.key, "isReleased", v)
+                        }
+                        className="w-28"
+                        size="small"
+                      >
+                        <Select.Option value={true}>Released</Select.Option>
+                        <Select.Option value={false}>Unreleased</Select.Option>
+                      </Select>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-4">
+                        {/* Keep eye button for quick toggle */}
+                        <button
+                          onClick={() => handleToggleRelease(item)}
+                          disabled={togglingRowId === item.id}
+                          className={`
+                  relative overflow-hidden transition-transform active:scale-95
+                  ${
+                    item.isReleased
+                      ? "text-orange-600 dark:text-orange-400"
+                      : "text-green-600 dark:text-green-400"
+                  }
+                  ${togglingRowId === item.id ? "opacity-50 cursor-wait" : ""}
+                `}
+                          title={item.isReleased ? "Unrelease" : "Release"}
+                        >
+                          {togglingRowId === item.id ? (
+                            <svg
+                              className="animate-spin h-4 w-4"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                                fill="none"
+                              />
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              />
+                            </svg>
+                          ) : item.isReleased ? (
+                            <EyeOff size={16} />
+                          ) : (
+                            <Eye size={16} />
+                          )}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             ) : (
               displayedData.map((item) => (
                 <tr
@@ -1612,6 +2088,124 @@ export default function StudentCourseScoreTable() {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Save Changes Confirmation Modal */}
+      <Modal
+        title="Confirm Changes"
+        open={showSaveConfirmation}
+        onOk={() => {
+          setShowSaveConfirmation(false);
+          if (pendingAction) pendingAction();
+        }}
+        onCancel={() => {
+          setShowSaveConfirmation(false);
+          setPendingAction(null);
+        }}
+        okText="Yes, Save Changes"
+        cancelText="Cancel"
+        okButtonProps={{ danger: true }}
+        className="dark:[&_.ant-modal-content]:bg-gray-800 dark:[&_.ant-modal-header]:bg-gray-800 dark:[&_.ant-modal-title]:text-gray-100"
+      >
+        <div className="space-y-3 text-gray-900 dark:text-gray-100">
+          <div className="flex items-start gap-3">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6 text-yellow-500 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
+            <div>
+              <p className="font-medium">Warning: Transcript Impact</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Changing scores, courses, or release status will immediately
+                affect:
+              </p>
+              <ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-400 mt-2 space-y-1">
+                <li>Student transcripts and academic records</li>
+                <li>What students can see in their portal</li>
+                <li>Official documents and grade reports</li>
+                <li>GPA calculations and academic standing</li>
+              </ul>
+              <p className="text-sm font-medium text-red-600 dark:text-red-400 mt-3">
+                Are you sure you want to proceed?
+              </p>
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Batch Update Confirmation Modal */}
+      <Modal
+        title="Confirm Batch Update"
+        open={showBatchConfirmation}
+        onOk={() => {
+          setShowBatchConfirmation(false);
+          if (pendingAction) pendingAction();
+        }}
+        onCancel={() => {
+          setShowBatchConfirmation(false);
+          setPendingAction(null);
+        }}
+        okText="Yes, Apply to All"
+        cancelText="Cancel"
+        okButtonProps={{ danger: true }}
+        className="dark:[&_.ant-modal-content]:bg-gray-800 dark:[&_.ant-modal-header]:bg-gray-800 dark:[&_.ant-modal-title]:text-gray-100"
+      >
+        <div className="space-y-3 text-gray-900 dark:text-gray-100">
+          <div className="flex items-start gap-3">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6 text-orange-500 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              />
+            </svg>
+            <div>
+              <p className="font-medium">Batch Update Warning</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                You are about to update{" "}
+                <strong>{selectedRowKeys.length}</strong> record(s) with the
+                same values:
+              </p>
+              <ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-400 mt-2 space-y-1">
+                {batchValues.score && <li>Score: {batchValues.score}</li>}
+                {batchValues.courseId && <li>Course will be changed</li>}
+                {batchValues.courseSource && (
+                  <li>Course Source will be changed</li>
+                )}
+                {batchValues.bcysId && (
+                  <li>Batch/Year/Semester will be changed</li>
+                )}
+                {batchValues.isReleased !== null && (
+                  <li>
+                    Release Status:{" "}
+                    {batchValues.isReleased ? "Released" : "Unreleased"}
+                  </li>
+                )}
+              </ul>
+              <p className="text-sm text-red-600 dark:text-red-400 mt-3">
+                This will affect transcripts and student records. This action
+                cannot be undone.
+              </p>
+            </div>
+          </div>
+        </div>
       </Modal>
 
       {/* Global Dark Mode Fixes */}
