@@ -37,6 +37,9 @@ const StudentGrades = React.lazy(() => import("./pages/student/Grades"));
 const StudentNotifications = React.lazy(
   () => import("./pages/student/Notifications")
 );
+const StudentFormsCenter = React.lazy(
+  () => import("./pages/student/FormsCenter")
+);
 
 // Teacher Pages
 const TeacherLayout = React.lazy(() => import("./layouts/TeacherLayout"));
@@ -309,6 +312,7 @@ function App() {
                 <Route path="dashboard" element={<StudentDashboard />} />
                 <Route path="profile" element={<StudentProfile />} />
                 <Route path="grades" element={<StudentGrades />} />
+                <Route path="forms-center" element={<StudentFormsCenter />} />
                 <Route
                   path="notifications"
                   element={<StudentNotifications />}

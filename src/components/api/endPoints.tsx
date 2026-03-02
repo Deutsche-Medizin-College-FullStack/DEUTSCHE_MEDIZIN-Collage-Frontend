@@ -8,14 +8,16 @@ const endPoints = {
   registerTeacher: "/auth/register/teacher",
   createTeacher: "/auth/create-teacher",
   createDepartmentHead: "/auth/create-department-head",
-  getCurrentUser: "/auth/me",
-  changePassword: "/auth/me/change-password",
   resetStudentPassword:
     "/auth/registrar/students/:studentUserId/reset-password",
   applicantAccept: "/applicants/:id/accept",
   applicantsRegister:
     "https://deutschemedizin-collage-backend-production.up.railway.app/api/applicants/register",
   registerDepartmentHead: "/auth/register/department-head",
+  getCurrentUser: "/auth/me",
+  changePassword: "/auth/me/change-password",
+  myFormTemplates: "/auth/form-templates/my-forms",
+  downloadFormTemplate: (id: number) => `/auth/form-templates/${id}/download`,
 
   /* =======================     Profiles  ======================== */
   profile: "/student/profile",
