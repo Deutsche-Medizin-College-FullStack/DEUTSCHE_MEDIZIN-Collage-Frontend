@@ -15,6 +15,7 @@ import {
   LogOut,
   ChevronDown,
   Bell,
+  FileText,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
@@ -143,6 +144,7 @@ export default function StudentLayout() {
     { name: "Notification", href: "/student/notifications", icon: Bell },
     { name: "Profile", href: "/student/profile", icon: User },
     { name: "Grades", href: "/student/grades", icon: ClipboardList },
+    { name: "Forms Center", href: "/student/forms-center", icon: FileText },
   ];
 
   // Get user initials for avatar
@@ -265,7 +267,7 @@ export default function StudentLayout() {
           {/* Right section */}
           <div className="flex items-center gap-x-4 lg:gap-x-6">
             <ThemeToggle />
-            
+
             {/* Notification Dropdown - ADDED */}
             <NotificationDropdown userRole={userData?.role} />
 

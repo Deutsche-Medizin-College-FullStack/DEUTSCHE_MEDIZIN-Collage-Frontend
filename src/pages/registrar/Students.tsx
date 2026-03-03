@@ -47,7 +47,10 @@ export default function RegistrarStudents() {
   const [loading, setLoading] = useState(true);
   const [showAmharic, setShowAmharic] = useState(false);
   const [showBatchDropdown, setShowBatchDropdown] = useState(false);
-  
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   const { openModal, closeModal } = useModal() as any;
   const navigate = useNavigate();
 
@@ -75,6 +78,26 @@ export default function RegistrarStudents() {
     async function loadStudents() {
       try {
         setLoading(true);
+
+        // Check sessionStorage first
+        const cachedData = sessionStorage.getItem("students_list");
+        const cachedTime = sessionStorage.getItem("students_list_time");
+
+        // Use cache if it exists and is less than 5 minutes old
+        if (
+          cachedData &&
+          cachedTime &&
+          Date.now() - parseInt(cachedTime) < 5 * 60 * 1000
+        ) {
+          const parsed = JSON.parse(cachedData);
+          if (!cancelled) {
+            setStudents(parsed);
+            setLoading(false);
+          }
+          return;
+        }
+
+        // Otherwise fetch from API
         const list = await apiService.get(endPoints.students);
 
         const mapped: DataTypes[] = (list || []).map((s: any) => {
@@ -112,6 +135,10 @@ export default function RegistrarStudents() {
           };
         });
 
+        // Store in sessionStorage
+        sessionStorage.setItem("students_list", JSON.stringify(mapped));
+        sessionStorage.setItem("students_list_time", String(Date.now()));
+
         if (!cancelled) setStudents(mapped);
       } catch (e) {
         console.error(e);
@@ -130,26 +157,23 @@ export default function RegistrarStudents() {
   /* ===================== Handle Status Change ===================== */
   const handleStatusChange = async (
     record: DataTypes,
-    action: "enable" | "disable"
+    action: "enable" | "disable",
   ) => {
     const url =
       action === "disable"
         ? endPoints.studentsDeactivation.replace(
             ":id",
-            String(record.studentId)
+            String(record.studentId),
           )
-        : endPoints.studentsActivation.replace(
-            ":id",
-            String(record.studentId)
-          );
+        : endPoints.studentsActivation.replace(":id", String(record.studentId));
 
     await apiService.post(url, {});
     setStudents((prev) =>
       prev.map((s) =>
         s.studentId === record.studentId
           ? { ...s, isDisabled: action === "disable" }
-          : s
-      )
+          : s,
+      ),
     );
     closeModal();
   };
@@ -158,7 +182,7 @@ export default function RegistrarStudents() {
   const handleBatchSelection = (batchName: string) => {
     setFilters((prev) => {
       const newBatch = prev.batch.includes(batchName)
-        ? prev.batch.filter(b => b !== batchName)
+        ? prev.batch.filter((b) => b !== batchName)
         : [...prev.batch, batchName];
       return { ...prev, batch: newBatch };
     });
@@ -166,10 +190,10 @@ export default function RegistrarStudents() {
 
   /* ===================== Select/Deselect All Batches ===================== */
   const handleSelectAllBatches = () => {
-    const allBatchNames = options.batchClassYearSemesters.map(b => b.name);
+    const allBatchNames = options.batchClassYearSemesters.map((b) => b.name);
     setFilters((prev) => ({
       ...prev,
-      batch: prev.batch.length === allBatchNames.length ? [] : allBatchNames
+      batch: prev.batch.length === allBatchNames.length ? [] : allBatchNames,
     }));
   };
 
@@ -182,13 +206,10 @@ export default function RegistrarStudents() {
         ? s.department === filters.department
         : true;
 
-      const matchBatch = filters.batch.length > 0
-        ? filters.batch.includes(s.batch)
-        : true;
+      const matchBatch =
+        filters.batch.length > 0 ? filters.batch.includes(s.batch) : true;
 
-      const matchStatus = filters.status
-        ? s.status === filters.status
-        : true;
+      const matchStatus = filters.status ? s.status === filters.status : true;
 
       const searchable = [s.name, s.amharicName, s.id, s.department]
         .join(" ")
@@ -203,11 +224,19 @@ export default function RegistrarStudents() {
     });
   }, [students, filters, searchText]);
 
+  // Add this line right after filteredData:
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    return filteredData.slice(start, end);
+  }, [filteredData, currentPage, pageSize]);
+
   /* ===================== Format Selected Batches Display ===================== */
   const getBatchDisplayText = () => {
     if (filters.batch.length === 0) return "All Current BCYS";
     if (filters.batch.length === 1) return filters.batch[0];
-    if (filters.batch.length === options.batchClassYearSemesters.length) return "All BCYS Selected";
+    if (filters.batch.length === options.batchClassYearSemesters.length)
+      return "All BCYS Selected";
     return `${filters.batch.length} Selected`;
   };
 
@@ -280,15 +309,15 @@ export default function RegistrarStudents() {
         </span>
       ),
     },
-    { 
-      title: "Current BCYS", 
-      dataIndex: "batch", 
-      width: 100 
+    {
+      title: "Current BCYS",
+      dataIndex: "batch",
+      width: 100,
     },
-    { 
-      title: "Department", 
-      dataIndex: "department", 
-      width: 140 
+    {
+      title: "Department",
+      dataIndex: "department",
+      width: 140,
     },
     {
       title: "Account",
@@ -318,10 +347,9 @@ export default function RegistrarStudents() {
                   Manage Student Account
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  {r.isDisabled 
+                  {r.isDisabled
                     ? `Enabling will allow ${r.name} to access the system again. The student will be able to log in and use all features.`
-                    : `Disabling will prevent ${r.name} from accessing the system. The student will not be able to log in until re-enabled.`
-                  }
+                    : `Disabling will prevent ${r.name} from accessing the system. The student will not be able to log in until re-enabled.`}
                 </p>
                 <p className="text-sm text-gray-500 dark:text-gray-500 mb-6">
                   Student ID: <span className="font-medium">{r.id}</span>
@@ -348,7 +376,7 @@ export default function RegistrarStudents() {
                     Enable
                   </button>
                 </div>
-              </div>
+              </div>,
             );
           }}
           className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800 text-xl"
@@ -371,11 +399,15 @@ export default function RegistrarStudents() {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-green-500"></div>
-              <span className="text-xs text-gray-600 dark:text-gray-400">Active</span>
+              <span className="text-xs text-gray-600 dark:text-gray-400">
+                Active
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-red-500"></div>
-              <span className="text-xs text-gray-600 dark:text-gray-400">Disabled</span>
+              <span className="text-xs text-gray-600 dark:text-gray-400">
+                Disabled
+              </span>
             </div>
           </div>
         </div>
@@ -437,22 +469,26 @@ export default function RegistrarStudents() {
                 />
               </svg>
             </button>
-            
+
             {showBatchDropdown && (
               <div className="absolute top-full left-0 mt-1 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg w-64 max-h-96 overflow-y-auto">
                 <div className="p-2 border-b border-gray-200 dark:border-gray-700">
                   <Checkbox
                     onChange={handleSelectAllBatches}
-                    checked={filters.batch.length === options.batchClassYearSemesters.length}
+                    checked={
+                      filters.batch.length ===
+                      options.batchClassYearSemesters.length
+                    }
                     indeterminate={
-                      filters.batch.length > 0 && 
-                      filters.batch.length < options.batchClassYearSemesters.length
+                      filters.batch.length > 0 &&
+                      filters.batch.length <
+                        options.batchClassYearSemesters.length
                     }
                   >
                     <span className="font-medium text-sm">Select All</span>
                   </Checkbox>
                 </div>
-                
+
                 <div className="p-2 max-h-80 overflow-y-auto">
                   {options.batchClassYearSemesters.map((batch) => (
                     <div
@@ -470,11 +506,11 @@ export default function RegistrarStudents() {
                     </div>
                   ))}
                 </div>
-                
+
                 <div className="p-2 border-t border-gray-200 dark:border-gray-700">
                   <button
                     onClick={() => {
-                      setFilters(prev => ({ ...prev, batch: [] }));
+                      setFilters((prev) => ({ ...prev, batch: [] }));
                       setShowBatchDropdown(false);
                     }}
                     className="w-full text-sm text-center text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 py-1"
@@ -497,7 +533,10 @@ export default function RegistrarStudents() {
           </div>
 
           {/* Clear Filters */}
-          {(filters.department || filters.batch.length > 0 || filters.status || searchText) && (
+          {(filters.department ||
+            filters.batch.length > 0 ||
+            filters.status ||
+            searchText) && (
             <button
               onClick={() => {
                 setFilters({ department: "", batch: [], status: "" });
@@ -513,7 +552,9 @@ export default function RegistrarStudents() {
         {/* Selected BCYS Chips */}
         {filters.batch.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2">
-            <span className="text-sm text-gray-600 dark:text-gray-400">Selected BCYS:</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              Selected BCYS:
+            </span>
             {filters.batch.map((batch) => (
               <span
                 key={batch}
@@ -534,7 +575,15 @@ export default function RegistrarStudents() {
         {/* Info Bar */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
           <div>
-            Showing <span className="font-medium text-gray-900 dark:text-gray-200">{filteredData.length}</span> of <span className="font-medium text-gray-900 dark:text-gray-200">{students.length}</span> students
+            Showing{" "}
+            <span className="font-medium text-gray-900 dark:text-gray-200">
+              {paginatedData.length}
+            </span>{" "}
+            of{" "}
+            <span className="font-medium text-gray-900 dark:text-gray-200">
+              {filteredData.length}
+            </span>{" "}
+            students
           </div>
           {loading && (
             <div className="text-blue-600 dark:text-blue-400 text-sm">
@@ -558,16 +607,30 @@ export default function RegistrarStudents() {
         ) : (
           <div className="overflow-x-auto">
             <Table<DataTypes>
-              dataSource={filteredData}
+              dataSource={paginatedData}
               columns={columns}
               rowKey="key"
-              pagination={{ 
-                pageSize: 10,
+              pagination={{
+                current: currentPage,
+                pageSize: pageSize,
+                total: filteredData.length,
                 showSizeChanger: true,
                 showQuickJumper: true,
-                showTotal: (total, range) => `${range[0]}-${range[1]} of ${total}`,
+                showTotal: (total, range) =>
+                  `${range[0]}-${range[1]} of ${total}`,
                 size: "small",
-                className: "px-3 py-2"
+                className: "px-3 py-2",
+                onChange: (page, size) => {
+                  setCurrentPage(page);
+                  if (size !== pageSize) {
+                    setPageSize(size);
+                    setCurrentPage(1); // Reset to first page when changing page size
+                  }
+                },
+                onShowSizeChange: (current, size) => {
+                  setPageSize(size);
+                  setCurrentPage(1); // Reset to first page when changing page size
+                },
               }}
               onRow={(r) => ({
                 onClick: () => navigate(`/registrar/students/${r.key}`),
@@ -576,9 +639,10 @@ export default function RegistrarStudents() {
               rowClassName={(r) =>
                 `
                 cursor-pointer
-                ${r.isDisabled
-                  ? "bg-red-50 dark:bg-red-900/10"
-                  : "bg-white dark:bg-gray-800"
+                ${
+                  r.isDisabled
+                    ? "bg-red-50 dark:bg-red-900/10"
+                    : "bg-white dark:bg-gray-800"
                 }
                 hover:!bg-gray-50 dark:hover:!bg-gray-750
                 text-gray-900 dark:text-gray-100
@@ -933,6 +997,91 @@ export default function RegistrarStudents() {
         .dark .bg-gray-750 {
           background-color: #2d3748;
         }
+
+
+
+
+
+
+
+
+        /* Page size dropdown dark mode */
+.compact-table .ant-select-dropdown {
+  background-color: white !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 0.375rem !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+.dark .compact-table .ant-select-dropdown {
+  background-color: #1f2937 !important;
+  border-color: #4b5563 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
+}
+
+.compact-table .ant-select-item {
+  color: #374151 !important;
+  font-size: 0.875rem !important;
+  padding: 0.375rem 0.75rem !important;
+}
+
+.dark .compact-table .ant-select-item {
+  color: #e5e7eb !important;
+  background-color: #1f2937 !important;
+}
+
+.compact-table .ant-select-item:hover {
+  background-color: #f3f4f6 !important;
+}
+
+.dark .compact-table .ant-select-item:hover {
+  background-color: #374151 !important;
+}
+
+.compact-table .ant-select-item-option-selected {
+  background-color: #e5e7eb !important;
+  font-weight: 500 !important;
+}
+
+.dark .compact-table .ant-select-item-option-selected {
+  background-color: #4b5563 !important;
+  color: white !important;
+}
+
+/* Quick jumper input dark mode */
+.compact-table .ant-pagination-options-quick-jumper input {
+  background-color: white !important;
+  border: 1px solid #d1d5db !important;
+  color: #374151 !important;
+}
+
+.dark .compact-table .ant-pagination-options-quick-jumper input {
+  background-color: #374151 !important;
+  border-color: #4b5563 !important;
+  color: #e5e7eb !important;
+}
+
+.dark .compact-table .ant-pagination-options-quick-jumper input:focus {
+  border-color: #60a5fa !important;
+  outline: none !important;
+  box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.1) !important;
+}
+
+/* Fix white text in dark mode for pagination options */
+.dark .compact-table .ant-pagination-options-quick-jumper {
+  color: #9ca3af !important;
+}
+
+/* Arrow icons in dark mode */
+.dark .compact-table .ant-pagination-prev .ant-pagination-item-link,
+.dark .compact-table .ant-pagination-next .ant-pagination-item-link {
+  color: #e5e7eb !important;
+}
+
+.dark .compact-table .ant-pagination-disabled .ant-pagination-item-link {
+  color: #4b5563 !important;
+  border-color: #4b5563 !important;
+}
       `}</style>
     </div>
   );
