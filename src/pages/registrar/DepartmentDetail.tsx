@@ -142,6 +142,8 @@ export default function DepartmentDetail() {
   const [allDepartments, setAllDepartments] = useState<DepartmentOption[]>([]);
   const [isLoadingDepartments, setIsLoadingDepartments] = useState(false);
   const [showDepartmentDropdown, setShowDepartmentDropdown] = useState(false);
+  const [filterOptions, setFilterOptions] = useState<any>(null);
+  const [isLoadingFilters, setIsLoadingFilters] = useState(false);
 
   // If we have passed department data, use it immediately
   useEffect(() => {
@@ -215,6 +217,23 @@ export default function DepartmentDetail() {
       fetchAllDepartments();
     }
   }, [showDepartmentDropdown]);
+
+// Fetch filter options on component mount
+useEffect(() => {
+  const fetchFilterOptions = async () => {
+    try {
+      setIsLoadingFilters(true);
+      const response = await apiService.get("/filters/options");
+      setFilterOptions(response);
+    } catch (error) {
+      console.error("Error fetching filter options:", error);
+    } finally {
+      setIsLoadingFilters(false);
+    }
+  };
+  
+  fetchFilterOptions();
+}, []);
 
   // Get level and modality names from department data
   const getProgramLevelAndModality = () => {
@@ -911,18 +930,8 @@ export default function DepartmentDetail() {
         {isFormOpen && (
           <div className="mt-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-8 rounded-2xl shadow-inner border border-gray-200 dark:border-gray-700">
             <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6 flex items-center gap-3">
-              <svg
-                className="w-6 h-6 text-blue-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                />
+              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
               Add New Course
             </h2>
@@ -931,77 +940,113 @@ export default function DepartmentDetail() {
                 type="text"
                 placeholder="Course Title *"
                 value={newCourse.cTitle}
-                onChange={(e) =>
-                  setNewCourse({ ...newCourse, cTitle: e.target.value })
-                }
+                onChange={(e) => setNewCourse({ ...newCourse, cTitle: e.target.value })}
                 className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
               />
               <input
                 type="text"
                 placeholder="Course Code *"
                 value={newCourse.cCode}
-                onChange={(e) =>
-                  setNewCourse({ ...newCourse, cCode: e.target.value })
-                }
+                onChange={(e) => setNewCourse({ ...newCourse, cCode: e.target.value })}
                 className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
               />
               <input
                 type="number"
                 placeholder="Theory Hours *"
                 value={newCourse.theoryHrs}
-                onChange={(e) =>
-                  setNewCourse({ ...newCourse, theoryHrs: e.target.value })
-                }
+                onChange={(e) => setNewCourse({ ...newCourse, theoryHrs: e.target.value })}
                 className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
               />
               <input
                 type="number"
                 placeholder="Lab Hours *"
                 value={newCourse.labHrs}
-                onChange={(e) =>
-                  setNewCourse({ ...newCourse, labHrs: e.target.value })
-                }
+                onChange={(e) => setNewCourse({ ...newCourse, labHrs: e.target.value })}
                 className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
               />
-              <input
-                type="number"
-                placeholder="Category ID *"
-                value={newCourse.courseCategoryID}
-                onChange={(e) =>
-                  setNewCourse({
-                    ...newCourse,
-                    courseCategoryID: e.target.value,
-                  })
-                }
-                className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
-              />
-              <input
-                type="number"
-                placeholder="Department ID *"
-                value={newCourse.departmentID}
-                onChange={(e) =>
-                  setNewCourse({ ...newCourse, departmentID: e.target.value })
-                }
-                className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
-              />
-              <input
-                type="number"
-                placeholder="Class Year ID *"
-                value={newCourse.classYearID}
-                onChange={(e) =>
-                  setNewCourse({ ...newCourse, classYearID: e.target.value })
-                }
-                className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
-              />
-              <input
-                type="text"
-                placeholder="Semester Code *"
-                value={newCourse.semesterCode}
-                onChange={(e) =>
-                  setNewCourse({ ...newCourse, semesterCode: e.target.value })
-                }
-                className="border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
-              />
+              
+              {/* Course Category Dropdown */}
+              <div className="relative">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Course Category *
+                </label>
+                <select
+                  value={newCourse.courseCategoryID}
+                  onChange={(e) => setNewCourse({ ...newCourse, courseCategoryID: e.target.value })}
+                  className="w-full border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+                >
+                  <option value="">Select Category</option>
+                  {filterOptions?.courseCategories?.map((cat: any) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Department Dropdown - Pre-selected with current department */}
+              <div className="relative">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Department *
+                </label>
+                <select
+                  value={newCourse.departmentID || departmentId?.toString() || ""}
+                  onChange={(e) => setNewCourse({ ...newCourse, departmentID: e.target.value })}
+                  className="w-full border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+                >
+                  <option value="">Select Department</option>
+                  {filterOptions?.departments?.map((dept: any) => (
+                    <option key={dept.id} value={dept.id} selected={dept.id === departmentId}>
+                      {dept.name} (ID: {dept.id})
+                    </option>
+                  ))}
+                </select>
+                {departmentId && (
+                  <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                    Current department ID: {departmentId} (auto-filled)
+                  </p>
+                )}
+              </div>
+
+              {/* Class Year Dropdown */}
+              <div className="relative">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Class Year *
+                </label>
+                <select
+                  value={newCourse.classYearID}
+                  onChange={(e) => setNewCourse({ ...newCourse, classYearID: e.target.value })}
+                  className="w-full border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+                >
+                  <option value="">Select Class Year</option>
+                  {filterOptions?.classYears?.map((year: any) => (
+                    <option key={year.id} value={year.id}>
+                      Year {year.name} (ID: {year.id})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Semester Dropdown */}
+              <div className="relative">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Semester *
+                </label>
+                <select
+                  value={newCourse.semesterCode}
+                  onChange={(e) => setNewCourse({ ...newCourse, semesterCode: e.target.value })}
+                  className="w-full border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+                >
+                  <option value="">Select Semester</option>
+                  {filterOptions?.semesters?.map((sem: any) => (
+                    <option key={sem.id} value={sem.id}>
+                      {sem.name} (Code: {sem.id})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Prerequisites Multi-select */}
               <div className="relative col-span-2">
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
                   Prerequisites (Hold Ctrl/Cmd to select multiple)
@@ -1018,7 +1063,7 @@ export default function DepartmentDetail() {
                       ).filter((val) => !isNaN(val)),
                     })
                   }
-                  className="w-full border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 min-h-[120px] overflow-y-auto overflow-x-auto"
+                  className="w-full border-2 border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 min-h-[120px] overflow-y-auto"
                 >
                   {departmentCoursesForPrerequisites.map((course) => (
                     <option key={course.id} value={course.id} title={`${course.ccode} - ${course.ctitle}`}>
@@ -1026,25 +1071,19 @@ export default function DepartmentDetail() {
                     </option>
                   ))}
                 </select>
+                <p className="text-xs text-gray-500 mt-2">
+                  Selected: {newCourse.prerequisiteIds.length} course(s)
+                </p>
               </div>
             </div>
+            
             <button
               onClick={handleAddCourse}
               className="mt-6 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-8 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
             >
               <span className="flex items-center gap-2">
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
                 Add Course
               </span>
@@ -1249,297 +1288,169 @@ export default function DepartmentDetail() {
                                       >
                                         {editingCourse &&
                                         editingCourse.id === course.id ? (
-                                          <>
-                                            <td className="p-4">
-                                              <input
-                                                type="text"
-                                                value={editValues.code}
-                                                onChange={(e) =>
-                                                  setEditValues({
-                                                    ...editValues,
-                                                    code: e.target.value,
-                                                  })
-                                                }
-                                                className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
-                                              />
-                                            </td>
-                                            <td className="p-4">
-                                              <input
-                                                type="text"
-                                                value={editValues.name}
-                                                onChange={(e) =>
-                                                  setEditValues({
-                                                    ...editValues,
-                                                    name: e.target.value,
-                                                  })
-                                                }
-                                                className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
-                                              />
-                                            </td>
-                                            <td className="p-4">
-                                              <input
-                                                type="number"
-                                                value={editValues.theoryHrs}
-                                                onChange={(e) =>
-                                                  setEditValues({
-                                                    ...editValues,
-                                                    theoryHrs: e.target.value,
-                                                  })
-                                                }
-                                                className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
-                                              />
-                                            </td>
-                                            <td className="p-4">
-                                              <input
-                                                type="number"
-                                                value={editValues.labHrs}
-                                                onChange={(e) =>
-                                                  setEditValues({
-                                                    ...editValues,
-                                                    labHrs: e.target.value,
-                                                  })
-                                                }
-                                                className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
-                                              />
-                                            </td>
-                                            <td className="p-4 text-center font-semibold text-gray-700 dark:text-gray-300">
-                                              {parseInt(
-                                                editValues.theoryHrs || "0"
-                                              ) +
-                                                parseInt(
-                                                  editValues.labHrs || "0"
-                                                )}
-                                            </td>
-                                            <td className="p-4">
-                                              <input
-                                                type="number"
-                                                value={
-                                                  editValues.courseCategoryID
-                                                }
-                                                onChange={(e) =>
-                                                  setEditValues({
-                                                    ...editValues,
-                                                    courseCategoryID:
-                                                      e.target.value,
-                                                  })
-                                                }
-                                                className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
-                                                placeholder="Category ID"
-                                              />
-                                            </td>
-                                            <td className="p-4 relative">
-                                              <div className="relative">
-                                                <button
-                                                  type="button"
-                                                  onClick={() =>
-                                                    setShowDepartmentDropdown(
-                                                      !showDepartmentDropdown
-                                                    )
-                                                  }
-                                                  className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 text-left flex justify-between items-center"
-                                                >
-                                                  <span>
-                                                    {getSelectedDepartmentName()}
-                                                  </span>
-                                                  <svg
-                                                    className={`w-4 h-4 transition-transform ${
-                                                      showDepartmentDropdown
-                                                        ? "rotate-180"
-                                                        : ""
-                                                    }`}
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    viewBox="0 0 24 24"
-                                                  >
-                                                    <path
-                                                      strokeLinecap="round"
-                                                      strokeLinejoin="round"
-                                                      strokeWidth={2}
-                                                      d="M19 9l-7 7-7-7"
-                                                    />
-                                                  </svg>
-                                                </button>
+                                           <>
+                                                <td className="p-4">
+                                                  <input
+                                                    type="text"
+                                                    value={editValues.code}
+                                                    onChange={(e) => setEditValues({ ...editValues, code: e.target.value })}
+                                                    className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                  />
+                                                </td>
+                                                <td className="p-4">
+                                                  <input
+                                                    type="text"
+                                                    value={editValues.name}
+                                                    onChange={(e) => setEditValues({ ...editValues, name: e.target.value })}
+                                                    className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                  />
+                                                </td>
+                                                <td className="p-4">
+                                                  <input
+                                                    type="number"
+                                                    value={editValues.theoryHrs}
+                                                    onChange={(e) => setEditValues({ ...editValues, theoryHrs: e.target.value })}
+                                                    className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                  />
+                                                </td>
+                                                <td className="p-4">
+                                                  <input
+                                                    type="number"
+                                                    value={editValues.labHrs}
+                                                    onChange={(e) => setEditValues({ ...editValues, labHrs: e.target.value })}
+                                                    className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                  />
+                                                </td>
+                                                <td className="p-4 text-center font-semibold text-gray-700 dark:text-gray-300">
+                                                  {parseInt(editValues.theoryHrs || "0") + parseInt(editValues.labHrs || "0")}
+                                                </td>
                                                 
-                                                {showDepartmentDropdown && (
-                                                  <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-xl max-h-60 overflow-y-auto">
-                                                    {isLoadingDepartments ? (
-                                                      <div className="p-4 text-center">
-                                                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
-                                                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                                                          Loading departments...
-                                                        </p>
-                                                      </div>
-                                                    ) : allDepartments.length === 0 ? (
-                                                      <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-                                                        No departments found
-                                                      </div>
-                                                    ) : (
-                                                      allDepartments.map((dept) => (
-                                                        <button
-                                                          key={dept.id}
-                                                          type="button"
-                                                          onClick={() =>
-                                                            handleSelectDepartment(
-                                                              dept.id,
-                                                              dept.name
-                                                            )
-                                                          }
-                                                          className={`w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
-                                                            editValues.departmentID ===
-                                                            dept.id.toString()
-                                                              ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                                                              : "text-gray-800 dark:text-gray-200"
-                                                          }`}
-                                                        >
-                                                          <div className="font-medium">
-                                                            {dept.name}
-                                                          </div>
-                                                          <div className="text-sm text-gray-500 dark:text-gray-400">
-                                                            Code: {dept.code}
-                                                          </div>
-                                                        </button>
-                                                      ))
-                                                    )}
-                                                  </div>
-                                                )}
-                                              </div>
-                                              
-                                              {editValues.departmentID && (
-                                                <div className="text-xs text-green-600 dark:text-green-400 mt-1">
-                                                  Selected:{" "}
-                                                  {allDepartments.find(
-                                                    (d) =>
-                                                      d.id ===
-                                                      parseInt(editValues.departmentID)
-                                                  )?.name || "Unknown"}
-                                                </div>
-                                              )}
-                                            </td>
-                                            <td className="p-4">
-                                              <select
-                                                multiple
-                                                value={editValues.prerequisiteIds.map(
-                                                  String
-                                                )}
-                                                onChange={(e) =>
-                                                  handlePrerequisiteChange(
-                                                    e.target
-                                                  )
-                                                }
-                                                className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 min-h-[80px] overflow-y-auto overflow-x-auto"
-                                              >
-                                                {departmentCoursesForPrerequisites.map(
-                                                  (prereqCourse) => (
-                                                    <option
-                                                      key={prereqCourse.id}
-                                                      value={prereqCourse.id}
-                                                      title={`${prereqCourse.ccode} - ${prereqCourse.ctitle}`}
-                                                      className={
-                                                        editValues.prerequisiteIds.includes(
-                                                          prereqCourse.id
-                                                        )
-                                                          ? "bg-blue-100 dark:bg-blue-900"
-                                                          : ""
-                                                      }
-                                                    >
-                                                      {prereqCourse.ccode} -{" "}
-                                                      {prereqCourse.ctitle}
-                                                    </option>
-                                                  )
-                                                )}
-                                              </select>
-                                              <div className="text-xs text-gray-500 mt-1">
-                                                Hold Ctrl (Cmd on Mac) to select
-                                                multiple. Currently selected:{" "}
-                                                {
-                                                  editValues.prerequisiteIds
-                                                    .length
-                                                }
-                                              </div>
-                                            </td>
-                                            <td className="p-4">
-                                              <div className="flex gap-2 justify-center">
-                                                <button
-                                                  onClick={() =>
-                                                    handleUpdateCourse(
-                                                      course.originalCourse
-                                                        ?.id || course.id
-                                                    )
-                                                  }
-                                                  disabled={
-                                                    isUpdating === course.id
-                                                  }
-                                                  className={`${
-                                                    isUpdating === course.id
-                                                      ? "bg-gray-400 cursor-not-allowed"
-                                                      : "bg-green-600 hover:bg-green-700"
-                                                  } text-white px-4 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2 min-w-[100px] justify-center`}
-                                                >
-                                                  {isUpdating === course.id ? (
-                                                    <>
-                                                      <svg
-                                                        className="animate-spin h-4 w-4 text-white"
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                        fill="none"
-                                                        viewBox="0 0 24 24"
-                                                      >
-                                                        <circle
-                                                          className="opacity-25"
-                                                          cx="12"
-                                                          cy="12"
-                                                          r="10"
-                                                          stroke="currentColor"
-                                                          strokeWidth="4"
-                                                        ></circle>
-                                                        <path
-                                                          className="opacity-75"
-                                                          fill="currentColor"
-                                                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                                        ></path>
-                                                      </svg>
-                                                      Saving...
-                                                    </>
-                                                  ) : (
-                                                    <>
-                                                      <svg
-                                                        className="w-4 h-4"
-                                                        fill="none"
-                                                        stroke="currentColor"
-                                                        viewBox="0 0 24 24"
-                                                      >
-                                                        <path
-                                                          strokeLinecap="round"
-                                                          strokeLinejoin="round"
-                                                          strokeWidth={2}
-                                                          d="M5 13l4 4L19 7"
-                                                        />
-                                                      </svg>
-                                                      Save
-                                                    </>
-                                                  )}
-                                                </button>
-                                                <button
-                                                  onClick={handleCancelEdit}
-                                                  className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2"
-                                                >
-                                                  <svg
-                                                    className="w-4 h-4"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    viewBox="0 0 24 24"
+                                                {/* Course Category Dropdown - Edit */}
+                                                <td className="p-4">
+                                                  <select
+                                                    value={editValues.courseCategoryID}
+                                                    onChange={(e) => setEditValues({ ...editValues, courseCategoryID: e.target.value })}
+                                                    className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                                   >
-                                                    <path
-                                                      strokeLinecap="round"
-                                                      strokeLinejoin="round"
-                                                      strokeWidth={2}
-                                                      d="M6 18L18 6M6 6l12 12"
-                                                    />
-                                                  </svg>
-                                                  Cancel
-                                                </button>
-                                              </div>
-                                            </td>
-                                          </>
+                                                    <option value="">Select Category</option>
+                                                    {filterOptions?.courseCategories?.map((cat: any) => (
+                                                      <option key={cat.id} value={cat.id}>
+                                                        {cat.name}
+                                                      </option>
+                                                    ))}
+                                                  </select>
+                                                </td>
+
+                                                {/* Department Dropdown - Edit */}
+                                                <td className="p-4">
+                                                  <select
+                                                    value={editValues.departmentID}
+                                                    onChange={(e) => setEditValues({ ...editValues, departmentID: e.target.value })}
+                                                    className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                  >
+                                                    <option value="">Select Department</option>
+                                                    {filterOptions?.departments?.map((dept: any) => (
+                                                      <option key={dept.id} value={dept.id}>
+                                                        {dept.name} (ID: {dept.id})
+                                                      </option>
+                                                    ))}
+                                                  </select>
+                                                </td>
+
+                                                {/* Class Year Dropdown - Edit */}
+                                                <td className="p-4">
+                                                  <select
+                                                    value={editValues.classYearID}
+                                                    onChange={(e) => setEditValues({ ...editValues, classYearID: e.target.value })}
+                                                    className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                  >
+                                                    <option value="">Select Class Year</option>
+                                                    {filterOptions?.classYears?.map((year: any) => (
+                                                      <option key={year.id} value={year.id}>
+                                                        Year {year.name} (ID: {year.id})
+                                                      </option>
+                                                    ))}
+                                                  </select>
+                                                </td>
+
+                                                {/* Semester Dropdown - Edit */}
+                                                <td className="p-4">
+                                                  <select
+                                                    value={editValues.semesterCode}
+                                                    onChange={(e) => setEditValues({ ...editValues, semesterCode: e.target.value })}
+                                                    className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                  >
+                                                    <option value="">Select Semester</option>
+                                                    {filterOptions?.semesters?.map((sem: any) => (
+                                                      <option key={sem.id} value={sem.id}>
+                                                        {sem.name} (Code: {sem.id})
+                                                      </option>
+                                                    ))}
+                                                  </select>
+                                                </td>
+
+                                                {/* Prerequisites Multi-select - Edit */}
+                                                <td className="p-4">
+                                                  <select
+                                                    multiple
+                                                    value={editValues.prerequisiteIds.map(String)}
+                                                    onChange={(e) => handlePrerequisiteChange(e.target)}
+                                                    className="w-full border-2 border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[80px]"
+                                                  >
+                                                    {departmentCoursesForPrerequisites.map((prereqCourse) => (
+                                                      <option
+                                                        key={prereqCourse.id}
+                                                        value={prereqCourse.id}
+                                                        title={`${prereqCourse.ccode} - ${prereqCourse.ctitle}`}
+                                                        className={editValues.prerequisiteIds.includes(prereqCourse.id) ? "bg-blue-100 dark:bg-blue-900" : ""}
+                                                      >
+                                                        {prereqCourse.ccode} - {prereqCourse.ctitle}
+                                                      </option>
+                                                    ))}
+                                                  </select>
+                                                  <div className="text-xs text-gray-500 mt-1">
+                                                    Selected: {editValues.prerequisiteIds.length}
+                                                  </div>
+                                                </td>
+
+                                                <td className="p-4">
+                                                  <div className="flex gap-2 justify-center">
+                                                    <button
+                                                      onClick={() => handleUpdateCourse(course.originalCourse?.id || course.id)}
+                                                      disabled={isUpdating === course.id}
+                                                      className={`${
+                                                        isUpdating === course.id ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"
+                                                      } text-white px-4 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2 min-w-[100px] justify-center`}
+                                                    >
+                                                      {isUpdating === course.id ? (
+                                                        <>
+                                                          <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                          </svg>
+                                                          Saving...
+                                                        </>
+                                                      ) : (
+                                                        <>
+                                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                          </svg>
+                                                          Save
+                                                        </>
+                                                      )}
+                                                    </button>
+                                                    <button
+                                                      onClick={handleCancelEdit}
+                                                      className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2"
+                                                    >
+                                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                      </svg>
+                                                      Cancel
+                                                    </button>
+                                                  </div>
+                                                </td>
+                                              </>
                                         ) : (
                                           <>
                                             <td className="p-4 font-mono font-bold text-blue-700 dark:text-blue-300">
