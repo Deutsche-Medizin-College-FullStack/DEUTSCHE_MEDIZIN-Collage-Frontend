@@ -23,8 +23,7 @@ const noAuthEndpoints = [
 const apiClient = axios.create({
   // baseURL: "http://localhost:8080/api",
   // baseURL: "https://concise-skunk-preferably.ngrok-free.app/api",
-  baseURL:
-    "https://deutschemedizin-collage-backend-production.up.railway.app/api",
+  baseURL:    "https://deutschemedizin-collage-backend-production.up.railway.app/api",
   headers: {
     "ngrok-skip-browser-warning": "true",
     "User-Agent":
@@ -33,6 +32,7 @@ const apiClient = axios.create({
     Accept: "application/json",
   },
 });
+
 
 apiClient.interceptors.request.use((config) => {
   // Check if current request matches any no-auth endpoint pattern
