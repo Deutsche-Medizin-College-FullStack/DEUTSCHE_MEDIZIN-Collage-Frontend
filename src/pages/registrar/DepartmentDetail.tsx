@@ -144,6 +144,15 @@ export default function DepartmentDetail() {
   const [showDepartmentDropdown, setShowDepartmentDropdown] = useState(false);
   const [filterOptions, setFilterOptions] = useState<any>(null);
   const [isLoadingFilters, setIsLoadingFilters] = useState(false);
+  const [isCreateDepartmentOpen, setIsCreateDepartmentOpen] = useState(false);
+  const [newDepartment, setNewDepartment] = useState({
+  deptName: "",
+  totalCrHr: "",
+  departmentCode: "",
+  modalityCode: "",
+  programLevelCode: "",
+});
+const [isCreatingDepartment, setIsCreatingDepartment] = useState(false);
 
   // If we have passed department data, use it immediately
   useEffect(() => {
@@ -234,6 +243,51 @@ useEffect(() => {
   
   fetchFilterOptions();
 }, []);
+
+const handleCreateDepartment = async () => {
+  if (!newDepartment.deptName || !newDepartment.departmentCode || !newDepartment.totalCrHr) {
+    alert("Please fill in all required fields");
+    return;
+  }
+
+  try {
+    setIsCreatingDepartment(true);
+    const response = await apiService.post("/departments/single", {
+      deptName: newDepartment.deptName,
+      totalCrHr: parseInt(newDepartment.totalCrHr),
+      departmentCode: newDepartment.departmentCode,
+      modalityCode: selectedModality || "",
+      programLevelCode: selectedLevel || "",
+    });
+
+    alert("Department created successfully!");
+    setIsCreateDepartmentOpen(false);
+    setNewDepartment({
+      deptName: "",
+      totalCrHr: "",
+      departmentCode: "",
+      modalityCode: "",
+      programLevelCode: "",
+    });
+    
+    // Refresh departments list
+    if (selectedModality && selectedLevel) {
+      const response = await apiService.get(endPoints.departments);
+      const filteredDepartments = response.filter((dept: any) => {
+        const matchesModality = dept.programModality?.modalityCode === selectedModality;
+        const matchesLevel = dept.programModality?.programLevel?.code === selectedLevel || 
+                            dept.programLevel?.code === selectedLevel;
+        return matchesModality && matchesLevel;
+      });
+      setDepartments(filteredDepartments);
+    }
+  } catch (error: any) {
+    alert(error.response?.data?.error || "Failed to create department");
+  } finally {
+    setIsCreatingDepartment(false);
+  }
+};
+
 
   // Get level and modality names from department data
   const getProgramLevelAndModality = () => {
