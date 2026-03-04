@@ -644,8 +644,7 @@ export default function RegistrarDepartments() {
 
           {/* Edit Department Modal */}
           {isEditDepartmentOpen && editingDepartment && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                 <div className="p-8">
                   <div className="flex justify-between items-center mb-6">
                     <h3 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-3">
@@ -811,8 +810,7 @@ export default function RegistrarDepartments() {
                 <div
                   key={dept.dptID}
                   onClick={() => handleDepartmentClick(dept)}
-                  className={`cursor-pointer rounded-2xl p-8 shadow-lg bg-gradient-to-r ${getDepartmentColor(dept.deptName)} text-white flex flex-col justify-between transform hover:-translate-y-2 hover:shadow-2xl transition-all duration-300`}
-                >
+                  className={`cursor-pointer rounded-2xl p-8 shadow-lg bg-gradient-to-r ${getDepartmentColor(dept.deptName)} text-white flex flex-col justify-between transform hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 relative`}                >
                   <div className="flex items-center gap-4">
                     {getDepartmentIcon(dept.deptName)}
                     <h3 className="text-2xl font-bold">{dept.deptName}</h3>
@@ -835,20 +833,22 @@ export default function RegistrarDepartments() {
                     )}
                   </div>
 
-                  <div className="mt-6 flex justify-between items-center">
-                    <button
-                      onClick={(e) => handleEditDepartment(dept, e)}
-                      className="p-2 bg-white/20 hover:bg-white/30 rounded-full transition-all duration-300 transform hover:scale-110"
-                      title="Edit Department"
-                    >
-                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    </button>
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
+              <div className="absolute top-4 right-4">
+                <button
+                  onClick={(e) => handleEditDepartment(dept, e)}
+                  className="p-2 bg-white/20 hover:bg-white/30 rounded-full transition-all duration-300 transform hover:scale-110"
+                  title="Edit Department"
+                >
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+              </div>
+              <div className="mt-6 flex justify-end">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
                 </div>
               ))}
             </div>
