@@ -47,11 +47,6 @@ const REQUIRED_FIELDS = {
   password: "Password",
   confirmPassword: "Confirm Password",
   
-  // Step 3: Family Background
-  motherFirstName: "Mother's First Name (English)",
-  motherLastName: "Mother's Last Name (English)",
-  motherFirstNameAMH: "Mother's First Name (Amharic)",
-  motherLastNameAMH: "Mother's Last Name (Amharic)",
   
   // Step 4: Educational Information
   schoolBackgroundId: "School Background",
@@ -86,10 +81,8 @@ const getRequiredFieldsForStep = (step) => {
     case 2:
       return ["username", "password", "confirmPassword"];
     case 3:
-      return ["motherFirstName", "motherLastName", "motherFirstNameAMH", "motherLastNameAMH"];
-    case 4:
       return ["schoolBackgroundId", "departmentEnrolledId", "programModalityCode", "studentRecentStatusId", "batchClassYearSemesterId"];
-    case 5:
+    case 4:
       return [
         "emergencyfirstName", "emergencylastName", 
         "emergencyfirstNameAMH", "emergencylastNameAMH",
@@ -949,127 +942,9 @@ const AccountCreationStep = ({
   );
 };
 
-/* ==============================================================
-   STEP 3 – FAMILY BACKGROUND
-   ============================================================== */
-const FamilyBackgroundStep = ({ 
-  formData, 
-  setFormData,
-  shouldShowError,
-  getInputClassName,
-  handleFieldBlur 
-}) => {
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="text-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
-          Family Background
-        </h2>
-        <p className="text-sm text-gray-600 dark:text-gray-300">
-          Provide information about your parents.
-        </p>
-      </div>
-
-      <section className="border-2 border-gray-200 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-          3. FAMILY BACKGROUND
-        </h3>
-
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-            Mother's Full Name (English): *
-          </label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Mother First Name (English) */}
-            <div>
-              <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                First Name *
-              </label>
-              <input
-                type="text"
-                name="motherFirstName"
-                value={formData.motherFirstName}
-                onChange={handleInputChange}
-                onBlur={() => handleFieldBlur("motherFirstName")}
-                className={getInputClassName("motherFirstName", "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2")}
-              />
-              {shouldShowError("motherFirstName") && (
-                <p className="mt-1 text-xs text-red-500">Mother's first name is required</p>
-              )}
-            </div>
-
-            {/* Mother Last Name (English) */}
-            <div>
-              <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                Last Name *
-              </label>
-              <input
-                type="text"
-                name="motherLastName"
-                value={formData.motherLastName}
-                onChange={handleInputChange}
-                onBlur={() => handleFieldBlur("motherLastName")}
-                className={getInputClassName("motherLastName", "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2")}
-              />
-              {shouldShowError("motherLastName") && (
-                <p className="mt-1 text-xs text-red-500">Mother's last name is required</p>
-              )}
-            </div>
-          </div>
-
-          <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2 mt-4">
-            Mother's Full Name (Amharic): *
-          </label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Mother First Name (Amharic) */}
-            <div>
-              <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                First Name *
-              </label>
-              <input
-                type="text"
-                name="motherFirstNameAMH"
-                value={formData.motherFirstNameAMH}
-                onChange={handleInputChange}
-                onBlur={() => handleFieldBlur("motherFirstNameAMH")}
-                className={getInputClassName("motherFirstNameAMH", "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2")}
-              />
-              {shouldShowError("motherFirstNameAMH") && (
-                <p className="mt-1 text-xs text-red-500">Mother's first name (Amharic) is required</p>
-              )}
-            </div>
-
-            {/* Mother Last Name (Amharic) */}
-            <div>
-              <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                Last Name *
-              </label>
-              <input
-                type="text"
-                name="motherLastNameAMH"
-                value={formData.motherLastNameAMH}
-                onChange={handleInputChange}
-                onBlur={() => handleFieldBlur("motherLastNameAMH")}
-                className={getInputClassName("motherLastNameAMH", "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2")}
-              />
-              {shouldShowError("motherLastNameAMH") && (
-                <p className="mt-1 text-xs text-red-500">Mother's last name (Amharic) is required</p>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
-    </div>
-  );
-};
 
 /* ==============================================================
-   STEP 4 – EDUCATIONAL INFORMATION
+   STEP 3 – EDUCATIONAL INFORMATION
    ============================================================== */
 const EducationalInformationStep = ({ 
   formData, 
@@ -1122,7 +997,7 @@ const EducationalInformationStep = ({
 
       <section className="border-2 border-gray-200 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-          4. EDUCATIONAL INFORMATION
+          3. EDUCATIONAL INFORMATION
         </h3>
 
         {/* School Background - Required */}
@@ -1359,7 +1234,7 @@ const EducationalInformationStep = ({
 };
 
 /* ==============================================================
-   STEP 5 – REVIEW & SUBMIT
+   STEP 4 – REVIEW & SUBMIT
    ============================================================== */
 const ReviewSubmitStep = ({
   formData,
@@ -1604,7 +1479,7 @@ const ProgressIndicator = ({ currentStep, totalSteps }) => {
    MAIN COMPONENT – AddStudent
    ============================================================== */
 const AddStudent = () => {
-  const totalSteps = 5;
+  const totalSteps = 4;
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -1627,15 +1502,7 @@ const AddStudent = () => {
         firstNameAMH: "",        // maps to firstNameAMH
         middleNameAMH: "",       // maps to fatherNameAMH
         lastNameAMH: "",         // maps to grandfatherNameAMH
-        
-        // Mother's Info (English)
-        motherFirstName: "",      // maps to motherNameENG
-        motherLastName: "",       // maps to motherFatherNameENG
-        
-        // Mother's Info (Amharic)
-        motherFirstNameAMH: "",   // maps to motherNameAMH
-        motherLastNameAMH: "",    // maps to motherFatherNameAMH
-        
+       
         sex: "",
         age: "",                  // Remove asterisk from UI (optional)
         impairmentCode: "",
@@ -1986,14 +1853,6 @@ const handleSubmit = async (data) => {
     fatherNameAMH: nullIfEmpty(data.middleNameAMH),
     grandfatherNameAMH: nullIfEmpty(data.lastNameAMH),
 
-    // Mother's Information - English
-    motherNameENG: nullIfEmpty(data.motherFirstName),
-    motherFatherNameENG: nullIfEmpty(data.motherLastName),
-
-    // Mother's Information - Amharic
-    motherNameAMH: nullIfEmpty(data.motherFirstNameAMH),
-    motherFatherNameAMH: nullIfEmpty(data.motherLastNameAMH),
-
     // Demographic
     gender: data.sex === "Male" ? "MALE" : data.sex === "Female" ? "FEMALE" : null,
     age: intOrNull(data.age),
@@ -2130,9 +1989,6 @@ const handleSubmit = async (data) => {
         // Personal Info (Amharic)
         firstNameAMH: "", middleNameAMH: "", lastNameAMH: "",
         // Mother's Info (English)
-        motherFirstName: "", motherLastName: "",
-        // Mother's Info (Amharic)
-        motherFirstNameAMH: "", motherLastNameAMH: "",
         sex: "", age: "", impairmentCode: "",
         studentPhoto: null, prevPhoto: null,
         // Dates
@@ -2245,18 +2101,12 @@ const handleSubmit = async (data) => {
       );
     case 3:
       return (
-        <FamilyBackgroundStep
-          {...commonProps}
-        />
-      );
-    case 4:
-      return (
         <EducationalInformationStep
           {...commonProps}
           dropdowns={dropdowns}
         />
       );
-    case 5:
+    case 4:
       return (
         <ReviewSubmitStep
           formData={formData}
