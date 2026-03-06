@@ -439,10 +439,9 @@ export default function StudentProfile() {
         fatherNameAMH: studentData.fatherNameAMH || "",
         grandfatherNameENG: studentData.grandfatherNameENG || "",
         grandfatherNameAMH: studentData.grandfatherNameAMH || "",
-        motherNameENG: studentData.motherNameENG || "",
-        motherNameAMH: studentData.motherNameAMH || "",
-        motherFatherNameENG: studentData.motherFatherNameENG || "",
-        motherFatherNameAMH: studentData.motherFatherNameAMH || "",
+        
+        // Mother's fields removed
+        
         gender: studentData.gender || "MALE",
         age: studentData.age ? parseInt(studentData.age) : null,
         phoneNumber: studentData.phoneNumber || "",
@@ -450,9 +449,11 @@ export default function StudentProfile() {
         dateOfBirthGC: studentData.dateOfBirthGC || null,
         dateOfBirthEC: studentData.dateOfBirthEC || null,
         maritalStatus: studentData.maritalStatus || "SINGLE",
-        grade12Result: studentData.grade12Result
-          ? parseFloat(studentData.grade12Result)
-          : null,
+        
+        // New Grade 12 fields
+        grade12Result: studentData.grade12Result ? parseFloat(studentData.grade12Result) : null,
+        yearOfExamG12: studentData.yearOfExamG12 || null,
+        nationalExamIdG12: studentData.nationalExamIdG12 || null,
 
         // Place of Birth
         placeOfBirthWoredaCode: studentData.placeOfBirthWoredaCode || null,
@@ -483,6 +484,12 @@ export default function StudentProfile() {
         // Enrollment Dates
         dateEnrolledGC: studentData.dateEnrolledGC || null,
         dateEnrolledEC: studentData.dateEnrolledEC || null,
+        
+        // New Date fields
+        dateClassEndGC: studentData.dateClassEndGC || null,
+        dateGraduated: studentData.dateGraduated || null,
+        entryYearGC: studentData.entryYearGC || null,
+        entryYearEC: studentData.entryYearEC || null,
 
         // Emergency Contact
         contactPersonFirstNameENG: studentData.contactPersonFirstNameENG || "",
@@ -1008,23 +1015,6 @@ export default function StudentProfile() {
                 </div>
               )}
             </div>
-            <div>
-              <Label>Grade 12 Result</Label>
-              {editMode ? (
-                <Input
-                  type="number"
-                  step="0.1"
-                  name="grade12Result"
-                  value={studentData.grade12Result || ""}
-                  onChange={handleNumberInputChange}
-                  placeholder="Enter grade 12 result"
-                />
-              ) : (
-                <div className="font-medium">
-                  {studentData.grade12Result || "N/A"}
-                </div>
-              )}
-            </div>
           </CardContent>
         </Card>
 
@@ -1054,16 +1044,7 @@ export default function StudentProfile() {
                   amh: "grandfatherNameAMH",
                   eng: "grandfatherNameENG",
                 },
-                {
-                  label: "Mother's Full Name (ENG)",
-                  amh: "motherNameAMH",
-                  eng: "motherNameENG",
-                },
-                {
-                  label: "Mother's Father Name (ENG)",
-                  amh: "motherFatherNameAMH",
-                  eng: "motherFatherNameENG",
-                },
+                // Mother's fields removed
               ].map((field) => (
                 <div key={field.eng} className="space-y-2">
                   <Label>{field.label}</Label>
@@ -1564,7 +1545,113 @@ export default function StudentProfile() {
                 <GraduationCap className="mr-2" /> Academic Information
               </CardTitle>
             </CardHeader>
-            <CardContent className="grid md:grid-cols-3 gap-4">
+            <CardContent className="grid md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <Label>Grade 12 Result</Label>
+                {editMode ? (
+                  <Input
+                    type="number"
+                    step="0.01"
+                    name="grade12Result"
+                    value={studentData.grade12Result || ""}
+                    onChange={handleNumberInputChange}
+                    placeholder="Enter grade 12 result"
+                  />
+                ) : (
+                  <div className="font-medium">
+                    {studentData.grade12Result || "N/A"}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <Label>Year of Exam (G12)</Label>
+                {editMode ? (
+                  <Input
+                    type="number"
+                    name="yearOfExamG12"
+                    value={studentData.yearOfExamG12 || ""}
+                    onChange={handleIntInputChange}
+                    placeholder="e.g., 2015"
+                  />
+                ) : (
+                  <div>{studentData.yearOfExamG12 || "N/A"}</div>
+                )}
+              </div>
+
+              <div>
+                <Label>National Exam ID (G12)</Label>
+                {editMode ? (
+                  <Input
+                    type="text"
+                    name="nationalExamIdG12"
+                    value={studentData.nationalExamIdG12 || ""}
+                    onChange={handleInputChange}
+                    placeholder="Enter national exam ID"
+                  />
+                ) : (
+                  <div>{studentData.nationalExamIdG12 || "N/A"}</div>
+                )}
+              </div>
+
+              <div>
+                <Label>Date Class End (GC)</Label>
+                {editMode ? (
+                  <Input
+                    type="date"
+                    name="dateClassEndGC"
+                    value={formatDateForInput(studentData.dateClassEndGC)}
+                    onChange={handleInputChange}
+                  />
+                ) : (
+                  <div>{formatDate(studentData.dateClassEndGC) || "N/A"}</div>
+                )}
+              </div>
+
+              <div>
+                <Label>Date Graduated</Label>
+                {editMode ? (
+                  <Input
+                    type="date"
+                    name="dateGraduated"
+                    value={formatDateForInput(studentData.dateGraduated)}
+                    onChange={handleInputChange}
+                  />
+                ) : (
+                  <div>{formatDate(studentData.dateGraduated) || "N/A"}</div>
+                )}
+              </div>
+
+              <div>
+                <Label>Entry Year (GC)</Label>
+                {editMode ? (
+                  <Input
+                    type="number"
+                    name="entryYearGC"
+                    value={studentData.entryYearGC || ""}
+                    onChange={handleIntInputChange}
+                    placeholder="e.g., 2016"
+                  />
+                ) : (
+                  <div>{studentData.entryYearGC || "N/A"}</div>
+                )}
+              </div>
+
+              <div>
+                <Label>Entry Year (EC)</Label>
+                {editMode ? (
+                  <Input
+                    type="number"
+                    name="entryYearEC"
+                    value={studentData.entryYearEC || ""}
+                    onChange={handleIntInputChange}
+                    placeholder="e.g., 2008"
+                  />
+                ) : (
+                  <div>{studentData.entryYearEC || "N/A"}</div>
+                )}
+              </div>
+
               <div>
                 <Label>Department</Label>
                 {editMode ? (
@@ -1836,6 +1923,30 @@ export default function StudentProfile() {
                   <div>{studentData.contactPersonRelation || "N/A"}</div>
                 )}
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Remarks */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <AlertCircle className="mr-2" /> Remarks
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {editMode ? (
+                <Textarea
+                  name="remark"
+                  value={studentData.remark || ""}
+                  onChange={handleInputChange}
+                  placeholder="Enter any remarks about the student"
+                  rows={4}
+                />
+              ) : (
+                <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded">
+                  {studentData.remark || "No remarks"}
+                </div>
+              )}
             </CardContent>
           </Card>
 
