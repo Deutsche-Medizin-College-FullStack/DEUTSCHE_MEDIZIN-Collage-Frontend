@@ -718,103 +718,80 @@ const PersonalInformationStep = ({
           </div>
         </div>
 
-        {/* Emergency Contact */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-            Contact Person in case of Emergency: (Optional)
-          </label>
-          <div className="space-y-4">
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-                Full Name (English):
+      {/* Emergency Contact */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
+          Contact Person in case of Emergency: (Optional)
+        </label>
+        <div className="space-y-4">
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
+              Full Name (English):
+            </label>
+            <div>
+              <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
+                Full Name
               </label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                    First Name
-                  </label>
-                  <input
-                    type="text"
-                    name="emergencyfirstName"
-                    value={formData.emergencyfirstName}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                    Last Name
-                  </label>
-                  <input
-                    type="text"
-                    name="emergencylastName"
-                    value={formData.emergencylastName}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+              <input
+                type="text"
+                name="emergencyFullName"
+                value={formData.emergencyFullName || ""}
+                onChange={handleInputChange}
+                placeholder="Enter emergency contact full name"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            
+            <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2 mt-4">
+              Full Name (Amharic):
+            </label>
+            <div>
+              <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
+                Full Name
+              </label>
+              <input
+                type="text"
+                name="emergencyFullNameAMH"
+                value={formData.emergencyFullNameAMH || ""}
+                onChange={handleInputChange}
+                placeholder="የአስቸኳይ ጊዜ አድራሻ ሙሉ ስም"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                dir="rtl"
+              />
+            </div>
+            
+            <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2 mt-4">
+              Contact Person Information
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
+                  Contact Person Relation
+                </label>
+                <input
+                  type="text"
+                  name="contactPersonRelation"
+                  value={formData.contactPersonRelation}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
               </div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-                Full Name (Amharic):
-              </label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                    First Name
-                  </label>
-                  <input
-                    type="text"
-                    name="emergencyfirstNameAMH"
-                    value={formData.emergencyfirstNameAMH}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                    Last Name
-                  </label>
-                  <input
-                    type="text"
-                    name="emergencylastNameAMH"
-                    value={formData.emergencylastNameAMH}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-                Contact Person Information
-              </label>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                    Contact Person Relation
-                  </label>
-                  <input
-                    type="text"
-                    name="contactPersonRelation"
-                    value={formData.contactPersonRelation}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                    Contact Person Phone Number
-                  </label>
-                  <input
-                    type="text"
-                    name="contactPersonPhoneNumber"
-                    value={formData.contactPersonPhoneNumber}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+              <div>
+                <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
+                  Contact Person Phone Number
+                </label>
+                <input
+                  type="text"
+                  name="contactPersonPhoneNumber"
+                  value={formData.contactPersonPhoneNumber}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
               </div>
             </div>
           </div>
         </div>
+      </div>
       </section>
     </div>
   );
@@ -1755,10 +1732,8 @@ const MultiStepRegistrationForm = () => {
 
 
           // Emergency Contact
-          emergencyfirstName: "",
-          emergencylastName: "",
-          emergencyfirstNameAMH: "",
-          emergencylastNameAMH: "",
+          emergencyFullName: "",
+          emergencyFullNameAMH: "",
         };
   });
 
@@ -2001,10 +1976,8 @@ const MultiStepRegistrationForm = () => {
       maritalStatus: safeUpper(formData.maritalStatus),
       impairmentCode: nullIfEmpty(formData.impairmentCode),
       schoolBackgroundId: intOrNull(formData.schoolBackgroundId),
-      contactPersonFirstNameAMH: nullIfEmpty(formData.emergencyfirstNameAMH),
-      contactPersonFirstNameENG: nullIfEmpty(formData.emergencyfirstName),
-      contactPersonLastNameAMH: nullIfEmpty(formData.emergencylastNameAMH),
-      contactPersonLastNameENG: nullIfEmpty(formData.emergencylastName),
+      contactPersonFullNameENG: nullIfEmpty(formData.emergencyFullName),
+      contactPersonFullNameAMH: nullIfEmpty(formData.emergencyFullNameAMH),
       contactPersonPhoneNumber: nullIfEmpty(formData.contactPersonPhoneNumber),
       contactPersonRelation: nullIfEmpty(formData.contactPersonRelation),
       departmentEnrolledId: intOrNull(formData.departmentEnrolledId),
