@@ -276,6 +276,38 @@ const PersonalInformationStep = ({
           </div>
         </div>
 
+                <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
+            User Contact Information:
+          </label>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
+                Email address
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
+                Phone No.
+              </label>
+              <input
+                type="tel"
+                name="phoneNo"
+                value={formData.phoneNo}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+        </div>
+
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
             Information about Impairment (if any): (Optional)
@@ -686,230 +718,86 @@ const PersonalInformationStep = ({
           </div>
         </div>
 
-        {/* Emergency Contact */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-            Contact Person in case of Emergency: (Optional)
-          </label>
-          <div className="space-y-4">
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-                Full Name (English):
+      {/* Emergency Contact */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
+          Contact Person in case of Emergency: (Optional)
+        </label>
+        <div className="space-y-4">
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
+              Full Name (English):
+            </label>
+            <div>
+              <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
+                Full Name
               </label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                    First Name
-                  </label>
-                  <input
-                    type="text"
-                    name="emergencyfirstName"
-                    value={formData.emergencyfirstName}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                    Last Name
-                  </label>
-                  <input
-                    type="text"
-                    name="emergencylastName"
-                    value={formData.emergencylastName}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+              <input
+                type="text"
+                name="emergencyFullName"
+                value={formData.emergencyFullName || ""}
+                onChange={handleInputChange}
+                placeholder="Enter emergency contact full name"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            
+            <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2 mt-4">
+              Full Name (Amharic):
+            </label>
+            <div>
+              <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
+                Full Name
+              </label>
+              <input
+                type="text"
+                name="emergencyFullNameAMH"
+                value={formData.emergencyFullNameAMH || ""}
+                onChange={handleInputChange}
+                placeholder="የአስቸኳይ ጊዜ አድራሻ ሙሉ ስም"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                dir="rtl"
+              />
+            </div>
+            
+            <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2 mt-4">
+              Contact Person Information
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
+                  Contact Person Relation
+                </label>
+                <input
+                  type="text"
+                  name="contactPersonRelation"
+                  value={formData.contactPersonRelation}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
               </div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-                Full Name (Amharic):
-              </label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                    First Name
-                  </label>
-                  <input
-                    type="text"
-                    name="emergencyfirstNameAMH"
-                    value={formData.emergencyfirstNameAMH}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                    Last Name
-                  </label>
-                  <input
-                    type="text"
-                    name="emergencylastNameAMH"
-                    value={formData.emergencylastNameAMH}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-                Contact Person Information
-              </label>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                    Contact Person Relation
-                  </label>
-                  <input
-                    type="text"
-                    name="contactPersonRelation"
-                    value={formData.contactPersonRelation}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                    Contact Person Phone Number
-                  </label>
-                  <input
-                    type="text"
-                    name="contactPersonPhoneNumber"
-                    value={formData.contactPersonPhoneNumber}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+              <div>
+                <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
+                  Contact Person Phone Number
+                </label>
+                <input
+                  type="text"
+                  name="contactPersonPhoneNumber"
+                  value={formData.contactPersonPhoneNumber}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
               </div>
             </div>
           </div>
         </div>
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-            User Contact Information:
-          </label>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                Email address
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                Phone No.
-              </label>
-              <input
-                type="tel"
-                name="phoneNo"
-                value={formData.phoneNo}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-    </div>
-  );
-};
-
-const FamilyBackgroundStep = ({ formData, setFormData }) => {
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  return (
-    <div className="space-y-6">
-      {/* <CHANGE> Added step title and description */}
-      <div className="text-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
-          Family Background
-        </h2>
-        <p className="text-sm text-gray-600 dark:text-gray-300">
-          Please provide information about your parents.
-        </p>
       </div>
-
-      <section className="border-2 border-gray-200 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-          3. FAMILY BACKGROUND
-        </h3>
-
-        {/* Mother Information */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-            Mothers Full Name (English): *
-          </label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                First Name *
-              </label>
-              <input
-                type="text"
-                name="motherFirstName"
-                value={formData.motherFirstName}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                Last Name *
-              </label>
-              <input
-                type="text"
-                name="motherLastName"
-                value={formData.motherLastName}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-            Mothers Full Name (AMH): *
-          </label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                First Name *
-              </label>
-              <input
-                type="text"
-                name="motherFirstNameAMH"
-                value={formData.motherFirstNameAMH}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                Last Name *
-              </label>
-              <input
-                type="text"
-                name="motherLastNameAMH"
-                value={formData.motherLastNameAMH}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-        </div>
       </section>
     </div>
   );
 };
+
+
 
 const EducationalInformationStep = ({ formData, setFormData, dropdowns }) => {
   const [showInstructions, setShowInstructions] = useState(false);
@@ -1721,33 +1609,6 @@ const ReviewSubmitStep = ({
         </form>
       </section>
 
-      {/* Office Use Only */}
-      {/* <section className="border-2 border-red-200 rounded-lg p-6 bg-red-50">
-        <div className="border-t-2 border-red-400 pt-4">
-          <h3 className="text-lg font-semibold text-red-800 mb-4">
-            DO NOT WRITE BELOW THIS LINE
-          </h3>
-          <p className="text-sm font-medium text-red-700 mb-4">
-            Office personnel accepting this form:
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs text-red-600 mb-1">Name:</label>
-              <div className="w-full h-10 border-b-2 border-red-300"></div>
-            </div>
-            <div>
-              <label className="block text-xs text-red-600 mb-1">
-                Signature:
-              </label>
-              <div className="w-full h-10 border-b-2 border-red-300"></div>
-            </div>
-            <div>
-              <label className="block text-xs text-red-600 mb-1">Date:</label>
-              <div className="w-full h-10 border-b-2 border-red-300"></div>
-            </div>
-          </div>
-        </div>
-      </section> */}
     </div>
   );
 };
@@ -1756,9 +1617,7 @@ const ReviewSubmitStep = ({
 const ProgressIndicator = ({ currentStep, totalSteps }) => {
   const steps = [
     "Personal Information",
-    "Family Background",
     "Educational Information",
-    // "Employment Information",
     "Review & Submit",
   ];
 
@@ -1805,7 +1664,7 @@ const ProgressIndicator = ({ currentStep, totalSteps }) => {
 // Main Multi-Step Form Component
 const MultiStepRegistrationForm = () => {
   const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 4;
+  const totalSteps = 3;
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -1815,8 +1674,6 @@ const MultiStepRegistrationForm = () => {
     return saved
       ? JSON.parse(saved)
       : {
-          // Application type
-          // admissionType: "",
 
           // Personal Data
           firstName: "",
@@ -1873,17 +1730,10 @@ const MultiStepRegistrationForm = () => {
           // Marital Status
           maritalStatus: "",
 
-          // Family Background
-          motherFirstName: "",
-          motherFirstNameAMH: "",
-          motherLastName: "",
-          motherLastNameAMH: "",
 
           // Emergency Contact
-          emergencyfirstName: "",
-          emergencylastName: "",
-          emergencyfirstNameAMH: "",
-          emergencylastNameAMH: "",
+          emergencyFullName: "",
+          emergencyFullNameAMH: "",
         };
   });
 
@@ -1940,40 +1790,21 @@ const MultiStepRegistrationForm = () => {
         ] = await Promise.all([
           apiService.get(
             endPoints.departments
-            //   {
-            //   headers: { requiresAuth: false },
-            // }
           ),
           apiService.get(
             endPoints.impairments
-            //   {
-            //   headers: { requiresAuth: false },
-            // }
           ),
           apiService.get(
             endPoints.semesters
-            //    {
-            //   headers: { requiresAuth: false },
-            // }
           ),
           apiService.get(
             endPoints.schoolBackgrounds
-            //   {
-            //   headers: { requiresAuth: false },
-            // }
-            ///
           ),
           apiService.get(
             endPoints.programModalities
-            //   {
-            //   headers: { requiresAuth: false },
-            // }
           ),
           apiService.get(
             endPoints.regions
-            //    {
-            //   headers: { requiresAuth: false },
-            // }
           ),
           apiService.get(endPoints.classYears),
         ]);
@@ -2122,11 +1953,6 @@ const MultiStepRegistrationForm = () => {
       // Grandfather name - using last name as grandfather name
       grandfatherNameAMH: nullIfEmpty(formData.lastNameAMH),
       grandfatherNameENG: nullIfEmpty(formData.lastName),
-      motherNameAMH: nullIfEmpty(formData.motherFirstNameAMH),
-      motherNameENG: nullIfEmpty(formData.motherFirstName),
-      // Mother's father name - using mother's last name as her father's name
-      motherFatherNameAMH: nullIfEmpty(formData.motherLastNameAMH),
-      motherFatherNameENG: nullIfEmpty(formData.motherLastName),
       gender: formData.sex
         ? formData.sex === "Male"
           ? "MALE"
@@ -2150,10 +1976,8 @@ const MultiStepRegistrationForm = () => {
       maritalStatus: safeUpper(formData.maritalStatus),
       impairmentCode: nullIfEmpty(formData.impairmentCode),
       schoolBackgroundId: intOrNull(formData.schoolBackgroundId),
-      contactPersonFirstNameAMH: nullIfEmpty(formData.emergencyfirstNameAMH),
-      contactPersonFirstNameENG: nullIfEmpty(formData.emergencyfirstName),
-      contactPersonLastNameAMH: nullIfEmpty(formData.emergencylastNameAMH),
-      contactPersonLastNameENG: nullIfEmpty(formData.emergencylastName),
+      contactPersonFullNameENG: nullIfEmpty(formData.emergencyFullName),
+      contactPersonFullNameAMH: nullIfEmpty(formData.emergencyFullNameAMH),
       contactPersonPhoneNumber: nullIfEmpty(formData.contactPersonPhoneNumber),
       contactPersonRelation: nullIfEmpty(formData.contactPersonRelation),
       departmentEnrolledId: intOrNull(formData.departmentEnrolledId),
@@ -2305,17 +2129,13 @@ const MultiStepRegistrationForm = () => {
         );
       case 2:
         return (
-          <FamilyBackgroundStep formData={formData} setFormData={setFormData} />
-        );
-      case 3:
-        return (
           <EducationalInformationStep
             formData={formData}
             setFormData={setFormData}
             dropdowns={dropdowns}
           />
         );
-      case 4:
+      case 3:
         return (
           <ReviewSubmitStep
             formData={formData}
@@ -2560,7 +2380,7 @@ const MultiStepRegistrationForm = () => {
               </div>
               <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
                 <p>
-                  &copy; 2024 Deutsche Hochschule für Medizin College. All
+                  Deutsche Hochschule für Medizin College. All
                   rights reserved.
                 </p>
               </div>

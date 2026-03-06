@@ -64,6 +64,7 @@ const endPoints = {
 
   getTeacherCourses: "/teachers/my-courses",
   getCourseStudents: "/teachers/courses/:teacherCourseAssignmentId/students",
+  updateDepartment: (id: number | string) => `/departments/${id}`,
 
   /* =======================     Students  ======================== */
   students: "/students",
