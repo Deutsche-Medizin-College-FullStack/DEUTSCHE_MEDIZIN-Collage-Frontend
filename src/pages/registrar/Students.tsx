@@ -87,7 +87,7 @@ export default function RegistrarStudents() {
         if (
           cachedData &&
           cachedTime &&
-          Date.now() - parseInt(cachedTime) < 5 * 60 * 1000
+          Date.now() - parseInt(cachedTime) < 10 * 60 * 1000
         ) {
           const parsed = JSON.parse(cachedData);
           if (!cancelled) {
