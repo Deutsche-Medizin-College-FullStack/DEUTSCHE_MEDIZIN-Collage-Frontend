@@ -226,6 +226,7 @@ export default function StudentProfile() {
         backgrounds,
         impairmentsResp,
         batchResp,
+        batchListResp,
         statusResp,
         regionsResp,
         zonesResp,
@@ -235,6 +236,7 @@ export default function StudentProfile() {
         apiService.get(endPoints.schoolBackgrounds).catch(() => []),
         apiService.get(endPoints.impairments).catch(() => []),
         apiService.get(endPoints.BatchClassYearSemesters).catch(() => []),
+        apiService.get(endPoints.batches).catch(() => []),
         apiService.get(endPoints.studentStatus).catch(() => []),
         apiService.get(endPoints.allRegion).catch(() => []),
         apiService.get(endPoints.allZones).catch(() => []),
@@ -244,6 +246,7 @@ export default function StudentProfile() {
       setDepartments(Array.isArray(depts) ? depts : []);
       setSchoolBackgrounds(Array.isArray(backgrounds) ? backgrounds : []);
       setImpairments(Array.isArray(impairmentsResp) ? impairmentsResp : []);
+      setBatches(Array.isArray(batchListResp) ? batchListResp : []);
       setBatches(Array.isArray(batchResp) ? batchResp : []);
       setStatuses(Array.isArray(statusResp) ? statusResp : []);
       setRegions(Array.isArray(regionsResp) ? regionsResp : []);
@@ -476,6 +479,9 @@ export default function StudentProfile() {
         programModalityCode: studentData.programModalityCode || "RG",
         batchClassYearSemesterId: studentData.batchClassYearSemesterId
           ? parseInt(studentData.batchClassYearSemesterId)
+          : null,
+          batchId: studentData.batchId 
+          ? parseInt(studentData.batchId)
           : null,
         studentRecentStatusId: studentData.studentRecentStatusId
           ? parseInt(studentData.studentRecentStatusId)
@@ -950,7 +956,7 @@ export default function StudentProfile() {
               )}
             </div>
             <div>
-              <Label>Batch</Label>
+              <Label>Batch Class Year</Label>
               {editMode ? (
                 <Select
                   value={getSafeSelectValue(
@@ -983,6 +989,36 @@ export default function StudentProfile() {
                 </div>
               )}
             </div>
+            <div>
+  <Label>Batch</Label>
+  {editMode ? (
+    <Select
+      value={getSafeSelectValue(studentData.batchId)}
+      onValueChange={(v) =>
+        handleSelectChange(
+          "batchId",
+          v === "_none" ? null : v ? parseInt(v) : null,
+        )
+      }
+    >
+      <SelectTrigger>
+        <SelectValue placeholder="Select batch" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="_none">Select batch</SelectItem>
+        {getValidSelectItems(batches, "id").map((b) => (
+          <SelectItem key={b.id} value={String(b.id)}>
+            Batch {b.name || b.batchName || b.id}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  ) : (
+    <div className="font-medium">
+      {studentData.batchName ? `Batch ${studentData.batchName}` : "Not Assigned"}
+    </div>
+  )}
+</div>
             <div>
               <Label>Status</Label>
               {editMode ? (

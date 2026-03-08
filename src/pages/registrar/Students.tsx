@@ -29,6 +29,7 @@ export default function RegistrarStudents() {
   const [filters, setFilters] = useState({
     department: "",
     batch: [] as string[], // Changed to array for multiple selection
+    batchFilter: [] as string[],
     status: "",
   });
 
@@ -36,10 +37,12 @@ export default function RegistrarStudents() {
     departments: FilterOption[];
     batchClassYearSemesters: FilterOption[];
     studentStatuses: FilterOption[];
+     batches: FilterOption[]; 
   }>({
     departments: [],
     batchClassYearSemesters: [],
     studentStatuses: [],
+    batches: [], 
   });
 
   const [searchText, setSearchText] = useState("");
@@ -63,6 +66,7 @@ export default function RegistrarStudents() {
           departments: res.departments || [],
           batchClassYearSemesters: res.batchClassYearSemesters || [],
           studentStatuses: res.studentStatuses || [],
+          batches: res.batches || [],
         });
       } catch (e) {
         console.error("Failed to load filters", e);
@@ -209,6 +213,7 @@ export default function RegistrarStudents() {
       const matchBatch =
         filters.batch.length > 0 ? filters.batch.includes(s.batch) : true;
 
+        const matchBatchFilter = filters.batchFilter ? s.batch?.startsWith(`Batch ${filters.batchFilter}`) ||   s.batch?.startsWith(filters.batchFilter) : true;
       const matchStatus = filters.status ? s.status === filters.status : true;
 
       const searchable = [s.name, s.amharicName, s.id, s.department]
@@ -219,6 +224,7 @@ export default function RegistrarStudents() {
         searchable.includes(search) &&
         matchDepartment &&
         matchBatch &&
+        matchBatchFilter && 
         matchStatus
       );
     });
@@ -430,6 +436,21 @@ export default function RegistrarStudents() {
             ))}
           </select>
 
+           <select
+            className="filter-select"
+            onChange={(e) =>
+              setFilters((p) => ({ ...p, batchFilter: e.target.value }))
+            }
+            value={filters.batchFilter}
+          >
+            <option value="">All Batches</option>
+            {options.batches.map((b) => (
+              <option key={b.id} value={b.name}>
+                Batch {b.name}
+              </option>
+            ))}
+          </select>
+
           {/* Student Status */}
           <select
             className="filter-select"
@@ -539,7 +560,7 @@ export default function RegistrarStudents() {
             searchText) && (
             <button
               onClick={() => {
-                setFilters({ department: "", batch: [], status: "" });
+                setFilters({ department: "", batch: [], batchFilter: "", status: "" });
                 setSearchText("");
               }}
               className="px-3 py-1.5 rounded-lg bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 text-sm text-gray-700 dark:text-gray-300"
