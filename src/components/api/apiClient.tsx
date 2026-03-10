@@ -26,7 +26,7 @@ const getBaseURL = () => {
   if (import.meta.env.VITE_API_BASE_URL) {
     console.log(
       "Using API URL from environment:",
-      import.meta.env.VITE_API_BASE_URL,
+      import.meta.env.VITE_API_BASE_URL
     );
     return import.meta.env.VITE_API_BASE_URL;
   }
@@ -90,13 +90,13 @@ apiClient.interceptors.response.use(
     } else if (error.response?.status === 403) {
       // Handle forbidden access - possibly redirect to login or show error
       console.error(
-        "Access forbidden: You do not have permission to access this resource",
+        "Access forbidden: You do not have permission to access this resource"
       );
       // You can add redirect logic here if needed
       // window.location.href = '/login';
     }
     return Promise.reject(error);
-  },
+  }
 );
 
 export default apiClient;
