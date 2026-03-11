@@ -28,7 +28,6 @@ import SigningUp from "./registeration/SigningUp";
 // const LoginPage = React.lazy(() => import("./pages/public/LoginPage"));
 // const RegisterPage = React.lazy(() => import("./pages/public/RegisterPage"));
 
-
 // Student Pages
 const StudentLayout = React.lazy(() => import("./layouts/StudentLayout"));
 const StudentDashboard = React.lazy(() => import("./pages/student/Dashboard"));
@@ -163,7 +162,6 @@ const CourseCategoriesEditor = React.lazy(
   () => import("./pages/registrar/settings/CourseCategoriesEditor")
 );
 
-
 // Finance Pages
 const FinanceLayout = React.lazy(() => import("./layouts/FinanceLayout"));
 const FinanceDashboard = React.lazy(() => import("./pages/finance/Dashboard"));
@@ -175,9 +173,13 @@ const FinanceReports = React.lazy(() => import("./pages/finance/Reports"));
 const DeanLayout = React.lazy(() => import("./layouts/DeanLayout"));
 const DeanDashboard = React.lazy(() => import("./pages/dean/Dashboard"));
 const DeanStudents = React.lazy(() => import("./pages/dean/Students"));
-const DeanNotifications = React.lazy(() => import("./pages/dean/Notifications"));
+const DeanNotifications = React.lazy(
+  () => import("./pages/dean/Notifications")
+);
 const DeanAssessment = React.lazy(() => import("./pages/dean/DeanAssessment"));
-const DeanAssessmentDetail = React.lazy(() => import("./pages/dean/DeanAssessmentDetail"));
+const DeanAssessmentDetail = React.lazy(
+  () => import("./pages/dean/DeanAssessmentDetail")
+);
 const DepartmentHeadsList = React.lazy(
   () => import("./pages/dean/DepartmentHeadsList")
 );
@@ -188,7 +190,7 @@ const CreateDepartmentHead = React.lazy(
   () => import("./pages/dean/CreateDepartmentHead")
 );
 const DeanDepartmentDetail = React.lazy(
-  () => import("./pages/dean/DeanDepartmentsDetails")
+  () => import("./pages/dean/DeanDepartmentsDetail")
 );
 const ProgramLevelsManagement = React.lazy(
   () => import("./pages/dean/ProgramLevelsManagement")
@@ -200,6 +202,9 @@ const Dean_Profile = React.lazy(() => import("./pages/dean/Dean_Profile"));
 const ViceDeansList = React.lazy(() => import("./pages/dean/ViceDeansList"));
 const ViceDeanDetail = React.lazy(() => import("./pages/dean/ViceDeanDetail"));
 const CreateViceDean = React.lazy(() => import("./pages/dean/CreateViceDean"));
+const DeanDepartments = React.lazy(
+  () => import("./pages/dean/DeanDepartments")
+);
 
 // Vice-Dean Pages
 const ViceDeanLayout = React.lazy(() => import("./layouts/ViceDeanLayout"));
@@ -427,9 +432,11 @@ function App() {
                   element={<ClassYearsEditor />}
                 />
 
-{/* NEW: Progression of ClassYears Routes */}
-    <Route path="settings/progression-class-years" element={<ProgressionOfClassYears />} />
-    
+                {/* NEW: Progression of ClassYears Routes */}
+                <Route
+                  path="settings/progression-class-years"
+                  element={<ProgressionOfClassYears />}
+                />
 
                 <Route
                   path="settings/impairments"
@@ -514,7 +521,7 @@ function App() {
                   path="program-modality"
                   element={<ProgramModalitiesManagement />}
                 />
-                 <Route path="assessments" element={<DeanAssessment />} />
+                <Route path="assessments" element={<DeanAssessment />} />
                 <Route
                   path="assessments/:assignmentId"
                   element={<DeanAssessmentDetail />}
@@ -524,6 +531,11 @@ function App() {
                 <Route
                   path="department-heads"
                   element={<DepartmentHeadsList />}
+                />
+                <Route path="department" element={<DeanDepartments />} />
+                <Route
+                  path="departments/:id"
+                  element={<DeanDepartmentDetail />}
                 />
                 <Route
                   path="department-heads/:id"
