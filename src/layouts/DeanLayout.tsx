@@ -70,10 +70,10 @@ export default function DeanLayout() {
     },
     { name: "Department Heads", href: "/dean/department-heads", icon: Users },
     { name: "Vice Deans", href: "/dean/vice-deans", icon: Users },
-    { name: "Assessments",  href: "/dean/assessments", icon: FileCheck },
+    { name: "Assessments", href: "/dean/assessments", icon: FileCheck },
     // { name: "Grades", href: "/dean/grades", icon: BookOpen },
     // { name: "Reports", href: "/dean/reports", icon: BarChart3 },
-    // { name: "Department", href: "/dean/department", icon: Layers },
+    { name: "Department", href: "/dean/department", icon: Layers },
   ];
 
   const getUserInitials = () => {

@@ -1,6 +1,7 @@
 import React from "react";
-
+import { useNavigate } from "react-router-dom";
 const NotFound = () => {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-900 transition-colors duration-200">
       <div className="text-center p-6">
@@ -13,12 +14,12 @@ const NotFound = () => {
         <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
           Sorry, we couldn't find the page you're looking for.
         </p>
-        <a
-          href="/"
+        <button
+          onClick={() => navigate(-1)}
           className="inline-block px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors duration-200"
         >
-          Return to Home
-        </a>
+          Go Back
+        </button>
       </div>
     </div>
   );
