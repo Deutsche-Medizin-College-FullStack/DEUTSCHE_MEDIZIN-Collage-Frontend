@@ -264,7 +264,7 @@ export default function RegistrarLayout() {
               className="h-12 w-12 rounded-full object-cover"
             />
             <div className="text-white">
-              <div className="text-sm font-bold">DHFM COLLEGE</div>
+              <div className="text-sm font-bold">DHMC COLLEGE</div>
               <div className="text-xs opacity-75">Registrar Portal</div>
             </div>
           </div>

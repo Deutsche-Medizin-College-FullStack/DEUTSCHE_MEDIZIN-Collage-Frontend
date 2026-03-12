@@ -77,7 +77,7 @@ const CourseCategoriesEditor = () => {
       <header className="mb-10">
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
           <h1 className="text-4xl font-extrabold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            DHFM Course Categories Editor
+            DHMC Course Categories Editor
           </h1>
           <p className="text-lg mt-2 text-gray-600 dark:text-gray-400">
             ({categories.length} course categories)
