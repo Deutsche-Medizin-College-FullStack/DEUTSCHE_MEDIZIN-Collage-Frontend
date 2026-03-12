@@ -349,7 +349,7 @@ const ProgressionOfClassYears = () => {
       <header className="mb-10">
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
           <h1 className="text-4xl font-extrabold bg-blue-500 bg-clip-text text-transparent">
-            DHFM Class Year Progression Editor
+            DHMC Class Year Progression Editor
           </h1>
           <button
             onClick={() => setShowAddModal(true)}

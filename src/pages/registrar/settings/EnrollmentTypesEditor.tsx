@@ -204,7 +204,7 @@ const EnrollmentTypesEditor = () => {
     <div className="min-h-screen p-6 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       <header className="mb-10">
         <h1 className="text-4xl font-extrabold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
-          DHFM Enrollment Types Editor
+          DHMC Enrollment Types Editor
         </h1>
         <p className="text-lg mt-2 text-gray-600 dark:text-gray-400">
           ({enrollmentTypes.length} enrollment types)

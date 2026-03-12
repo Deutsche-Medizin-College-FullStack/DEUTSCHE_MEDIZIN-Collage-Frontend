@@ -210,91 +210,7 @@ export default function HeadLayout() {
         />
       )}
 
-      {/* Sidebar */}
-      {/* <div
-        className={`fixed flex flex-col inset-y-0 left-0 z-50 w-64
-              bg-white dark:bg-gray-800 shadow-xl
-              transform transition-transform duration-300 ease-in-out
-              border-r border-gray-200 dark:border-gray-700
-              ${
-                sidebarOpen ? "translate-x-0" : "-translate-x-full"
-              } lg:translate-x-0`}
-      >
-        <div className="flex items-center justify-between h-16 px-4 bg-blue-600 shadow-md">
-          <div className="flex items-center space-x-3">
-            <img
-              src="/assets/companylogo.jpg"
-              alt="Logo"
-              className="h-12 w-12 rounded-full object-cover"
-            />
-            <div className="text-white">
-              <div className="text-sm font-bold">DHFM COLLEGE</div>
-              <div className="text-xs opacity-75">Department Head Portal</div>
-            </div>
-          </div>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="lg:hidden p-1 rounded hover:bg-blue-500 transition"
-          >
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 48 48"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="white"
-            >
-              <g>
-                <path d="M32.6,22.6a1.9,1.9,0,0,0,0,2.8l5.9,6a2.1,2.1,0,0,0,2.7.2,1.9,1.9,0,0,0,.2-3L38.8,26H44a2,2,0,0,0,0-4H38.8l2.6-2.6a1.9,1.9,0,0,0-.2-3,2.1,2.1,0,0,0-2.7.2Z" />
-                <path d="M15.4,25.4a1.9,1.9,0,0,0,0-2.8l-5.9-6a2.1,2.2,0,0,0-2.7-.2,1.9,1.9,0,0,0-.2,3L9.2,22H4a2,2,0,0,0,0,4H9.2L6.6,28.6a1.9,1.9,0,0,0,.2,3,2.1,2.1,0,0,0,2.7-.2Z" />
-                <path d="M26,6V42a2,2,0,0,0,4,0V6a2,2,0,0,0-4,0Z" />
-                <path d="M22,42V6a2,2,0,0,0-4,0V42a2,2,0,0,0,4,0Z" />
-              </g>
-            </svg>
-          </button>
-        </div>
-
-        <nav className="mt-8">
-          <div className="px-4 space-y-2">
-            {navigation.map((item) => {
-              const isActive = location.pathname === item.href;
-              const hasBadge =
-                item.badgeCount !== undefined && item.badgeCount > 0;
-
-              return (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={`relative flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                    isActive
-                      ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
-                      : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                  }`}
-                  onClick={() =>
-                    window.innerWidth <= 1024 && setSidebarOpen(false)
-                  }
-                >
-                  <item.icon className="mr-3 h-5 w-5" />
-                  {item.name}
-
-                  {hasBadge && (
-                    <span className="absolute right-3 flex items-center justify-center h-5 w-5 rounded-full bg-red-500 text-white text-xs font-bold">
-                      {item.badgeCount}
-                    </span>
-                  )}
-
-                  {item.name === "Assessments" &&
-                    loadingPendingCount &&
-                    !hasBadge && (
-                      <span className="absolute right-3 flex items-center justify-center h-5 w-5">
-                        <div className="h-2 w-2 animate-ping rounded-full bg-blue-500"></div>
-                      </span>
-                    )}
-                </Link>
-              );
-            })}
-          </div>
-        </nav>
-      </div> */}
+  
       <div
         className={`fixed flex flex-col inset-y-0 left-0 z-50 w-64
               bg-white dark:bg-gray-800 shadow-xl
@@ -310,7 +226,7 @@ export default function HeadLayout() {
               className="h-12 w-12 rounded-full object-cover"
             />
             <div className="text-white">
-              <div className="text-sm font-bold">DHFM COLLEGE</div>
+              <div className="text-sm font-bold">DHMC COLLEGE</div>
               <div className="text-xs opacity-75">Department Head Portal</div>
             </div>
           </div>

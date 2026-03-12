@@ -86,7 +86,7 @@ export default function LoginPage() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="your.email@dhfm-college.de"
+                  placeholder="your.email@dhmc-college.de"
                 />
               </div>
 

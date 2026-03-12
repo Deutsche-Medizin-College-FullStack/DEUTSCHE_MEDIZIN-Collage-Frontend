@@ -75,7 +75,7 @@ const ProgramLevelsEditor = () => {
       <header className="mb-10">
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
           <h1 className="text-4xl font-extrabold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            DHFM Program Levels Editor
+            DHMC Program Levels Editor
           </h1>
           <button
             onClick={fetchProgramLevels}

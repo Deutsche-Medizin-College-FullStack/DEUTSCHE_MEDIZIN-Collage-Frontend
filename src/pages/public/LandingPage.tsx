@@ -647,7 +647,7 @@ export default function LandingPage() {
                   </CardHeader>
                   <CardContent>
                     <CardDescription className="text-base">
-                      DHFMC places education at the core of its vision and
+                      DHMC places education at the core of its vision and
                       mission, guiding all our actions and decisions...
                     </CardDescription>
                   </CardContent>

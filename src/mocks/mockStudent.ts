@@ -34,7 +34,7 @@ export const mockStudent: Student = {
   fullName: "አበበ ከበደ",
   firstName: "አበበ",
   lastName: "ከበደ",
-  email: "abebe.kebede@dhfm-college.de",
+  email: "abebe.kebede@dhmc-college.de",
   phone: "+49 123 456 7890",
   dateOfBirth: "1998-05-15",
   nationality: "Ethiopian",
