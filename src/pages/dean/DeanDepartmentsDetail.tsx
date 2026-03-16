@@ -41,82 +41,106 @@ export default function DeanDepartmentDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [department, setDepartment] = useState<Department | null>(null);
-  const [courses, setCourses] = useState([]);
-  const [loadingCourses, setLoadingCourses] = useState(false);
   const [courseError, setCourseError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTeacher, setSelectedTeacher] = useState("");
+  interface RawCourse {
+    id: number;
+    ccode: string;
+    ctitle: string;
+    theoryHrs: number;
+    labHrs: number;
+    prerequisites: string[]; // or number[] if they are IDs
+  }
+  interface DisplayCourse {
+    id: number;
+    code: string;
+    name: string;
+    creditHours: number;
+    prerequisites: string[];
+    teacher?: string; // optional - you don't have this yet
+  }
+  const [courses, setCourses] = useState<DisplayCourse[]>([]);
+  const [loadingCourses, setLoadingCourses] = useState(false);
   useEffect(() => {
     const fetchCourses = async () => {
       setLoadingCourses(true);
       setCourseError(null);
       setCourses([]);
 
-      // For now using the values that you said work in the example
-      const params = {
-        departmentId: 1,
-        categoryId: 4,
-        classYearId: 3,
-        semesterId: 1,
-      };
-
-      // ── When this hardcoded version works → later change to:
-      // departmentId: selectedDep?.id,
-      // categoryId: selectedCat?.id,
-      // classYearId: selectedYear?.id,
-      // semesterId: selectedSem?.id,
-
-      if (
-        !params.departmentId ||
-        !params.categoryId ||
-        !params.classYearId ||
-        !params.semesterId
-      ) {
-        setCourseError(
-          "Missing one or more selection (department / category / year / semester)"
-        );
-        setLoadingCourses(false);
-        return;
-      }
-
-      const query = new URLSearchParams(params).toString();
-      const url = `/courses?${query}`;
-
-      console.log("→ Fetching:", url);
-
       try {
-        const res = await apiService.get(url);
-        //    or: const res = await fetch(url).then(r => r.json());
+        const params = {
+          departmentId: Number(id), // ← use the :id from URL (department id)
+          // categoryId: ???,                 // add later when you have UI selector
+          classYearId: 1, // ← temporary – replace with real value
+          semesterId: 1, // ← temporary – replace with real value
+        };
 
-        console.log("Response data:", res.data);
+        const query = new URLSearchParams(
+          Object.fromEntries(
+            Object.entries(params).filter(([_, v]) => v != null)
+          )
+        ).toString();
 
-        if (Array.isArray(res.data)) {
-          setCourses(res.data);
-          if (res.data.length === 0) {
-            setCourseError("No courses found for these filters");
-          }
-        } else if (res.data?.error) {
-          setCourseError(res.data.error);
+        const url = `/courses?${query}`; // adjust base path if needed
+        // or: const url = `${endPoints.courses}?${query}`;
+
+        console.log("Fetching courses from:", url);
+
+        const res = await apiService.get(endPoints.allCourses);
+        //    or if apiService returns axios-like → res.data
+        //    if it's raw fetch → await (await fetch(url)).json()
+
+        console.log("Raw response data:", res);
+        let courseArray;
+        if (Array.isArray(res)) {
+          courseArray = res; // ← raw fetch style / direct json
+        } else if (res && Array.isArray(res.data)) {
+          courseArray = res.data; // ← fallback for axios-like
+        } else if (res?.courses && Array.isArray(res.courses)) {
+          courseArray = res.courses; // rare – some APIs wrap in {courses: [...]}
         } else {
-          setCourseError("Unexpected response format");
+          throw new Error("Response is not in expected array format");
         }
-      } catch (err) {
-        console.error("Course fetch error:", err);
+
+        // ── Transform backend → frontend shape ───────────────────────
+        const mappedCourses: DisplayCourse[] = courseArray.map((raw: any) => {
+          const credit = raw.theoryHrs || 0;
+          const labCredit = raw.labHrs ? Math.floor(raw.labHrs / 2) : 0; // ← adjust formula as needed
+
+          return {
+            id: raw.id,
+            code: raw.ccode || raw.code || "—",
+            name: raw.ctitle || raw.name || "Unnamed",
+            creditHours: credit + labCredit,
+            prerequisites: Array.isArray(raw.prerequisites)
+              ? raw.prerequisites
+              : [],
+            teacher: raw.teacher || raw.instructor || "Not Assigned",
+          };
+        });
+
+        setCourses(mappedCourses);
+
+        if (mappedCourses.length === 0) {
+          setCourseError("No courses found");
+        }
+      } catch (err: any) {
+        console.error("Courses fetch failed:", err);
         const msg =
-          err.response?.data?.error || err.message || "Could not load courses";
+          err.response?.data?.message ||
+          err.message ||
+          "Failed to load courses";
         setCourseError(msg);
       } finally {
         setLoadingCourses(false);
       }
     };
-
     fetchCourses();
-
-    // For debugging: run once on mount
-    // Later you can add dependencies: [selectedDep, selectedCat, selectedYear, selectedSem]
   }, []);
+
   useEffect(() => {
     if (id) {
       fetchDepartmentDetails();
