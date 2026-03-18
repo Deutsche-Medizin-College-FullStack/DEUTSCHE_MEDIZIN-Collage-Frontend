@@ -386,151 +386,150 @@ export default function ViceDeanDetail() {
     return `${data.firstNameAMH} ${data.fatherNameAMH} ${data.grandfatherNameAMH}`;
   };
 
-  const hasChanges = () => {
-    if (!viceDean || !originalViceDean) return false;
+const hasChanges = () => {
+  if (!viceDean || !originalViceDean) return false;
+  
+  const changed = 
+    viceDean.firstNameAMH !== originalViceDean.firstNameAMH ||
+    viceDean.firstNameENG !== originalViceDean.firstNameENG ||
+    viceDean.fatherNameAMH !== originalViceDean.fatherNameAMH ||
+    viceDean.fatherNameENG !== originalViceDean.fatherNameENG ||
+    viceDean.grandfatherNameAMH !== originalViceDean.grandfatherNameAMH ||
+    viceDean.grandfatherNameENG !== originalViceDean.grandfatherNameENG ||
+    viceDean.gender !== originalViceDean.gender ||
+    viceDean.email !== originalViceDean.email ||
+    viceDean.phoneNumber !== originalViceDean.phoneNumber ||
+    viceDean.residenceRegionCode !== originalViceDean.residenceRegionCode ||
+    viceDean.residenceZoneCode !== originalViceDean.residenceZoneCode ||
+    viceDean.residenceWoredaCode !== originalViceDean.residenceWoredaCode ||
+    viceDean.hiredDateGC !== originalViceDean.hiredDateGC ||
+    viceDean.title !== originalViceDean.title ||
+    viceDean.remarks !== originalViceDean.remarks ||
+    newPassword.trim() !== "" ||
+    selectedPhoto !== null ||  // Photo change detected
+    selectedDocument !== null;  // Document change detected
+  
+  return changed;
+};
+
+const handleSave = async () => {
+  if (!viceDean || !originalViceDean || !id) {
+    setEditMode(false);
+    return;
+  }
+
+  if (!hasChanges()) {
+    setEditMode(false);
+    setSuccess("No changes detected.");
+    return;
+  }
+
+  setSaving(true);
+  setError(null);
+  setSuccess(null);
+
+  try {
+    const formData = new FormData();
+    const payload: UpdateRequest = {};
+
+    // Build payload with only changed fields
+    if (viceDean.firstNameAMH !== originalViceDean.firstNameAMH) {
+      payload.firstNameAMH = viceDean.firstNameAMH;
+    }
+    if (viceDean.firstNameENG !== originalViceDean.firstNameENG) {
+      payload.firstNameENG = viceDean.firstNameENG;
+    }
+    if (viceDean.fatherNameAMH !== originalViceDean.fatherNameAMH) {
+      payload.fatherNameAMH = viceDean.fatherNameAMH;
+    }
+    if (viceDean.fatherNameENG !== originalViceDean.fatherNameENG) {
+      payload.fatherNameENG = viceDean.fatherNameENG;
+    }
+    if (viceDean.grandfatherNameAMH !== originalViceDean.grandfatherNameAMH) {
+      payload.grandfatherNameAMH = viceDean.grandfatherNameAMH;
+    }
+    if (viceDean.grandfatherNameENG !== originalViceDean.grandfatherNameENG) {
+      payload.grandfatherNameENG = viceDean.grandfatherNameENG;
+    }
+    if (viceDean.gender !== originalViceDean.gender) {
+      payload.gender = viceDean.gender;
+    }
+    if (viceDean.email !== originalViceDean.email) {
+      payload.email = viceDean.email;
+    }
+    if (viceDean.phoneNumber !== originalViceDean.phoneNumber) {
+      payload.phoneNumber = viceDean.phoneNumber;
+    }
+    if (viceDean.residenceRegionCode !== originalViceDean.residenceRegionCode) {
+      payload.residenceRegionCode = viceDean.residenceRegionCode;
+    }
+    if (viceDean.residenceZoneCode !== originalViceDean.residenceZoneCode) {
+      payload.residenceZoneCode = viceDean.residenceZoneCode;
+    }
+    if (viceDean.residenceWoredaCode !== originalViceDean.residenceWoredaCode) {
+      payload.residenceWoredaCode = viceDean.residenceWoredaCode;
+    }
+    if (viceDean.hiredDateGC !== originalViceDean.hiredDateGC) {
+      payload.hiredDateGC = viceDean.hiredDateGC;
+    }
+    if (viceDean.title !== originalViceDean.title) {
+      payload.title = viceDean.title;
+    }
+    if (viceDean.remarks !== originalViceDean.remarks) {
+      payload.remarks = viceDean.remarks;
+    }
+    if (newPassword.trim() !== "") {
+      payload.password = newPassword;
+    }
+
+    // ALWAYS include the data field, even if payload is empty
+    // This is required by the backend
+    const jsonBlob = new Blob([JSON.stringify(payload)], {
+      type: "application/json",
+    });
+    formData.append("data", jsonBlob, "data.json");
+
+    // Add files if selected
+    if (selectedPhoto) {
+      formData.append("photograph", selectedPhoto);
+    }
+
+    if (selectedDocument) {
+      formData.append("document", selectedDocument);
+    }
+
+    // Send update request
+    const res = await apiClient.put(
+      `${endPoints.updateViceDean}/${id}`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
     
-    const changed = 
-      viceDean.firstNameAMH !== originalViceDean.firstNameAMH ||
-      viceDean.firstNameENG !== originalViceDean.firstNameENG ||
-      viceDean.fatherNameAMH !== originalViceDean.fatherNameAMH ||
-      viceDean.fatherNameENG !== originalViceDean.fatherNameENG ||
-      viceDean.grandfatherNameAMH !== originalViceDean.grandfatherNameAMH ||
-      viceDean.grandfatherNameENG !== originalViceDean.grandfatherNameENG ||
-      viceDean.gender !== originalViceDean.gender ||
-      viceDean.email !== originalViceDean.email ||
-      viceDean.phoneNumber !== originalViceDean.phoneNumber ||
-      viceDean.residenceRegionCode !== originalViceDean.residenceRegionCode ||
-      viceDean.residenceZoneCode !== originalViceDean.residenceZoneCode ||
-      viceDean.residenceWoredaCode !== originalViceDean.residenceWoredaCode ||
-      viceDean.hiredDateGC !== originalViceDean.hiredDateGC ||
-      viceDean.title !== originalViceDean.title ||
-      viceDean.remarks !== originalViceDean.remarks ||
-      newPassword.trim() !== "" ||
-      selectedPhoto !== null ||
-      selectedDocument !== null;
-    
-    return changed;
-  };
+    setSuccess("Vice dean updated successfully!");
+    await fetchViceDean();
+    setEditMode(false);
+    setNewPassword("");
+    setSelectedPhoto(null);
+    setSelectedDocument(null);
 
-  const handleSave = async () => {
-    if (!viceDean || !originalViceDean || !id) {
-      setEditMode(false);
-      return;
-    }
-
-    if (!hasChanges()) {
-      setEditMode(false);
-      setSuccess("No changes detected.");
-      return;
-    }
-
-    setSaving(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      const formData = new FormData();
-      const payload: UpdateRequest = {};
-
-      // Build payload with only changed fields
-      if (viceDean.firstNameAMH !== originalViceDean.firstNameAMH) {
-        payload.firstNameAMH = viceDean.firstNameAMH;
-      }
-      if (viceDean.firstNameENG !== originalViceDean.firstNameENG) {
-        payload.firstNameENG = viceDean.firstNameENG;
-      }
-      if (viceDean.fatherNameAMH !== originalViceDean.fatherNameAMH) {
-        payload.fatherNameAMH = viceDean.fatherNameAMH;
-      }
-      if (viceDean.fatherNameENG !== originalViceDean.fatherNameENG) {
-        payload.fatherNameENG = viceDean.fatherNameENG;
-      }
-      if (viceDean.grandfatherNameAMH !== originalViceDean.grandfatherNameAMH) {
-        payload.grandfatherNameAMH = viceDean.grandfatherNameAMH;
-      }
-      if (viceDean.grandfatherNameENG !== originalViceDean.grandfatherNameENG) {
-        payload.grandfatherNameENG = viceDean.grandfatherNameENG;
-      }
-      if (viceDean.gender !== originalViceDean.gender) {
-        payload.gender = viceDean.gender;
-      }
-      if (viceDean.email !== originalViceDean.email) {
-        payload.email = viceDean.email;
-      }
-      if (viceDean.phoneNumber !== originalViceDean.phoneNumber) {
-        payload.phoneNumber = viceDean.phoneNumber;
-      }
-      if (viceDean.residenceRegionCode !== originalViceDean.residenceRegionCode) {
-        payload.residenceRegionCode = viceDean.residenceRegionCode;
-      }
-      if (viceDean.residenceZoneCode !== originalViceDean.residenceZoneCode) {
-        payload.residenceZoneCode = viceDean.residenceZoneCode;
-      }
-      if (viceDean.residenceWoredaCode !== originalViceDean.residenceWoredaCode) {
-        payload.residenceWoredaCode = viceDean.residenceWoredaCode;
-      }
-      if (viceDean.hiredDateGC !== originalViceDean.hiredDateGC) {
-        payload.hiredDateGC = viceDean.hiredDateGC;
-      }
-      if (viceDean.title !== originalViceDean.title) {
-        payload.title = viceDean.title;
-      }
-      if (viceDean.remarks !== originalViceDean.remarks) {
-        payload.remarks = viceDean.remarks;
-      }
-      if (newPassword.trim() !== "") {
-        payload.password = newPassword;
-      }
-
-      // Add JSON payload to form data
-      if (Object.keys(payload).length > 0) {
-        const jsonBlob = new Blob([JSON.stringify(payload)], {
-          type: "application/json",
-        });
-        formData.append("data", jsonBlob, "data.json");
-      }
-
-      // Add files if selected
-      if (selectedPhoto) {
-        formData.append("photograph", selectedPhoto);
-      }
-
-      if (selectedDocument) {
-        formData.append("document", selectedDocument);
-      }
-
-      // Send update request using endpoint + /id
-      const res = await apiClient.put(
-        `${endPoints.updateViceDean}/${id}`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-      
-      setSuccess("Vice dean updated successfully!");
-      await fetchViceDean();
-      setEditMode(false);
-      setNewPassword("");
-      setSelectedPhoto(null);
-      setSelectedDocument(null);
-
-      // Reset file inputs
-      if (photoInputRef.current) photoInputRef.current.value = "";
-      if (documentInputRef.current) documentInputRef.current.value = "";
-    } catch (err: any) {
-      console.error("Update failed:", err);
-      setError(
-        err.response?.data?.error ||
-        err.response?.data?.message ||
-        "Failed to update vice dean profile."
-      );
-    } finally {
-      setSaving(false);
-    }
-  };
+    // Reset file inputs
+    if (photoInputRef.current) photoInputRef.current.value = "";
+    if (documentInputRef.current) documentInputRef.current.value = "";
+  } catch (err: any) {
+    console.error("Update failed:", err);
+    setError(
+      err.response?.data?.error ||
+      err.response?.data?.message ||
+      "Failed to update vice dean profile."
+    );
+  } finally {
+    setSaving(false);
+  }
+};
 
   const handleCancel = () => {
     if (originalViceDean) {

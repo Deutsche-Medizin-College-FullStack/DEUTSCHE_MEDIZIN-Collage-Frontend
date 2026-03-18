@@ -69,7 +69,7 @@ export default function FinanceLayout() {
           <div className="flex items-center space-x-2">
             <GraduationCap className="h-8 w-8 text-white" />
             <div className="text-white">
-              <div className="text-sm font-bold">DHFM COLLEGE</div>
+              <div className="text-sm font-bold">DHMC COLLEGE</div>
               <div className="text-xs opacity-75">Finance Portal</div>
             </div>
           </div>

@@ -160,7 +160,7 @@ const BatchesEditor = () => {
       <header className="mb-10">
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
           <h1 className="text-4xl font-extrabold bg-blue-500 bg-clip-text text-transparent">
-            DHFM Batches Editor
+            DHMC Batches Editor
           </h1>
         </div>
       </header>
