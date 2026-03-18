@@ -37,12 +37,12 @@ export default function RegistrarStudents() {
     departments: FilterOption[];
     batchClassYearSemesters: FilterOption[];
     studentStatuses: FilterOption[];
-     batches: FilterOption[]; 
+    batches: FilterOption[];
   }>({
     departments: [],
     batchClassYearSemesters: [],
     studentStatuses: [],
-    batches: [], 
+    batches: [],
   });
 
   const [searchText, setSearchText] = useState("");
@@ -87,7 +87,7 @@ export default function RegistrarStudents() {
         const cachedData = sessionStorage.getItem("students_list");
         const cachedTime = sessionStorage.getItem("students_list_time");
 
-        // Use cache if it exists and is less than 5 minutes old
+        // Use cache if it exists and is less than 10 minutes old
         if (
           cachedData &&
           cachedTime &&
@@ -182,6 +182,65 @@ export default function RegistrarStudents() {
     closeModal();
   };
 
+  /* ===================== Handle Refresh ===================== */
+  const handleRefresh = async () => {
+    try {
+      setLoading(true);
+      // Clear the sessionStorage cache
+      sessionStorage.removeItem("students_list");
+      sessionStorage.removeItem("students_list_time");
+
+      // Fetch fresh data
+      const list = await apiService.get(endPoints.students);
+
+      const mapped: DataTypes[] = (list || []).map((s: any) => {
+        const englishName = [
+          s.firstNameENG,
+          s.fatherNameENG,
+          s.grandfatherNameENG,
+        ]
+          .filter(Boolean)
+          .join(" ");
+
+        const amharicName = [
+          s.firstNameAMH,
+          s.fatherNameAMH,
+          s.grandfatherNameAMH,
+        ]
+          .filter(Boolean)
+          .join(" ");
+
+        const photoUrl = s.studentPhoto
+          ? `data:image/jpeg;base64,${s.studentPhoto}`
+          : undefined;
+
+        return {
+          key: String(s.id),
+          studentId: s.id,
+          id: s.username,
+          name: englishName || "No Name",
+          amharicName: amharicName || "ስም የለም",
+          status: s.studentRecentStatus || "Unknown",
+          department: s.departmentEnrolled || "-",
+          batch: s.batchClassYearSemester || "-",
+          photo: photoUrl,
+          isDisabled: s.accountStatus === "DISABLED",
+        };
+      });
+
+      // Store in sessionStorage with new timestamp
+      sessionStorage.setItem("students_list", JSON.stringify(mapped));
+      sessionStorage.setItem("students_list_time", String(Date.now()));
+
+      setStudents(mapped);
+    } catch (error) {
+      console.error("Refresh failed:", error);
+      // Optional: Show error toast
+    } finally {
+      setLoading(false);
+    }
+  };
+
   /* ===================== Handle Batch Selection ===================== */
   const handleBatchSelection = (batchName: string) => {
     setFilters((prev) => {
@@ -213,7 +272,10 @@ export default function RegistrarStudents() {
       const matchBatch =
         filters.batch.length > 0 ? filters.batch.includes(s.batch) : true;
 
-        const matchBatchFilter = filters.batchFilter ? s.batch?.startsWith(`Batch ${filters.batchFilter}`) ||   s.batch?.startsWith(filters.batchFilter) : true;
+      const matchBatchFilter = filters.batchFilter
+        ? s.batch?.startsWith(`Batch ${filters.batchFilter}`) ||
+          s.batch?.startsWith(filters.batchFilter)
+        : true;
       const matchStatus = filters.status ? s.status === filters.status : true;
 
       const searchable = [s.name, s.amharicName, s.id, s.department]
@@ -224,7 +286,7 @@ export default function RegistrarStudents() {
         searchable.includes(search) &&
         matchDepartment &&
         matchBatch &&
-        matchBatchFilter && 
+        matchBatchFilter &&
         matchStatus
       );
     });
@@ -436,7 +498,7 @@ export default function RegistrarStudents() {
             ))}
           </select>
 
-           <select
+          <select
             className="filter-select"
             onChange={(e) =>
               setFilters((p) => ({ ...p, batchFilter: e.target.value }))
@@ -560,7 +622,12 @@ export default function RegistrarStudents() {
             searchText) && (
             <button
               onClick={() => {
-                setFilters({ department: "", batch: [], batchFilter: "", status: "" });
+                setFilters({
+                  department: "",
+                  batch: [],
+                  batchFilter: "",
+                  status: "",
+                });
                 setSearchText("");
               }}
               className="px-3 py-1.5 rounded-lg bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 text-sm text-gray-700 dark:text-gray-300"
@@ -568,6 +635,29 @@ export default function RegistrarStudents() {
               Clear
             </button>
           )}
+
+          {/* Refresh button */}
+          <button
+            onClick={handleRefresh}
+            disabled={loading}
+            className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm flex items-center gap-1"
+            title="Refresh students data"
+          >
+            <svg
+              className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            {loading ? "Loading..." : "Refresh"}
+          </button>
         </div>
 
         {/* Selected BCYS Chips */}
@@ -657,18 +747,12 @@ export default function RegistrarStudents() {
                 onClick: () => navigate(`/registrar/students/${r.key}`),
               })}
               className="compact-table"
-              rowClassName={(r) =>
-                `
-                cursor-pointer
-                ${
-                  r.isDisabled
-                    ? "bg-red-50 dark:bg-red-900/10"
-                    : "bg-white dark:bg-gray-800"
+              rowClassName={(r) => {
+                if (r.isDisabled) {
+                  return "student-row disabled-row";
                 }
-                hover:!bg-gray-50 dark:hover:!bg-gray-750
-                text-gray-900 dark:text-gray-100
-                `
-              }
+                return "student-row active-row";
+              }}
               scroll={{ x: 800 }}
             />
           </div>
@@ -685,425 +769,343 @@ export default function RegistrarStudents() {
 
       {/* Styles */}
       <style>{`
-        .filter-select {
-          padding: 0.375rem 0.75rem;
-          border-radius: 0.375rem;
-          border: 1px solid #d1d5db;
-          background: white;
-          color: #374151;
-          font-size: 0.875rem;
-          min-width: 140px;
-          height: 36px;
-          cursor: pointer;
-        }
-        
-        .filter-select:focus {
-          outline: none;
-          border-color: #3b82f6;
-          box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1);
-        }
-        
-        .dark .filter-select {
-          background: #1f2937;
-          border-color: #4b5563;
-          color: #e5e7eb;
-        }
-        
-        .dark .filter-select:focus {
-          border-color: #60a5fa;
-          box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.1);
-        }
-        
-        .filter-input {
-          padding: 0.375rem 0.75rem;
-          border-radius: 0.375rem;
-          border: 1px solid #d1d5db;
-          background: white;
-          color: #374151;
-          font-size: 0.875rem;
-          height: 36px;
-        }
-        
-        .filter-input:focus {
-          outline: none;
-          border-color: #3b82f6;
-          box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1);
-        }
-        
-        .dark .filter-input {
-          background: #1f2937;
-          border-color: #4b5563;
-          color: #e5e7eb;
-        }
-        
-        .dark .filter-input:focus {
-          border-color: #60a5fa;
-          box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.1);
-        }
-        
-        /* Custom Checkbox Styling */
-        .ant-checkbox-wrapper {
-          display: flex;
-          align-items: center;
-        }
-        
-        .ant-checkbox-inner {
-          border-radius: 0.25rem;
-          border-color: #d1d5db;
-        }
-        
-        .dark .ant-checkbox-inner {
-          background-color: #374151;
-          border-color: #6b7280;
-        }
-        
-        .ant-checkbox-checked .ant-checkbox-inner {
-          background-color: #3b82f6;
-          border-color: #3b82f6;
-        }
-        
-        .dark .ant-checkbox-checked .ant-checkbox-inner {
-          background-color: #60a5fa;
-          border-color: #60a5fa;
-        }
-        
-        /* Compact Table Styles */
-        .compact-table .ant-table {
-          background: transparent;
-          font-size: 0.875rem;
-        }
-        
-        .compact-table .ant-table-thead > tr > th {
-          background: #f9fafb !important;
-          border-bottom: 1px solid #e5e7eb !important;
-          color: #374151 !important;
-          font-weight: 600 !important;
-          padding: 0.5rem 0.75rem !important;
-          white-space: nowrap;
-          font-size: 0.875rem;
-        }
-        
-        .dark .compact-table .ant-table-thead > tr > th {
-          background: #111827 !important;
-          border-bottom: 1px solid #374151 !important;
-          color: #e5e7eb !important;
-        }
-        
-        .compact-table .ant-table-tbody > tr > td {
-          border-bottom: 1px solid #e5e7eb !important;
-          padding: 0.5rem 0.75rem !important;
-          font-size: 0.875rem;
-        }
-        
-        .dark .compact-table .ant-table-tbody > tr > td {
-          border-bottom: 1px solid #374151 !important;
-        }
-        
-        /* Remove all scale transforms and transitions */
-        .compact-table .ant-table-tbody > tr,
-        .compact-table .ant-table-tbody > tr > td,
-        .compact-table .ant-table-tbody > tr:hover > td {
-          transform: none !important;
-          transition: none !important;
-          scale: 1 !important;
-        }
-        
-        /* Fix white flash on hover */
-        .compact-table .ant-table-tbody > tr.ant-table-row:hover > td {
-          background: inherit !important;
-        }
-
-        /* Fix white flash specifically for disabled rows */
-        .compact-table .ant-table-tbody > tr.bg-red-50:hover > td,
-        .compact-table .ant-table-tbody > tr.bg-red-900\\/10:hover > td {
-          background: inherit !important;
-        }
-        
-        /* Simple hover background without scale */
-        .compact-table .ant-table-tbody > tr:hover {
-          background: #f9fafb !important;
-        }
-        
-        .dark .compact-table .ant-table-tbody > tr:hover {
-          background: #1f2937 !important;
-        }
-        
-        /* Disabled rows hover */
-        .compact-table .ant-table-tbody > tr.bg-red-50:hover,
-        .compact-table .ant-table-tbody > tr.bg-red-50\\/10:hover {
-          background: #fef2f2 !important;
-        }
-        
-        .dark .compact-table .ant-table-tbody > tr.bg-red-900\\/10:hover {
-          background: rgba(127, 29, 29, 0.2) !important;
-        }
-        
-        /* Compact Pagination */
-        .compact-table .ant-pagination {
-          margin: 0 !important;
-          padding: 0.75rem !important;
-          background: #f9fafb;
-          border-top: 1px solid #e5e7eb;
-          font-size: 0.875rem;
-        }
-        
-        .dark .compact-table .ant-pagination {
-          background: #111827;
-          border-top: 1px solid #374151;
-          color: #e5e7eb !important;
-        }
-        
-        /* Add spacing between pagination items */
-        .compact-table .ant-pagination-item {
-          margin-right: 6px !important;
-          margin-bottom: 4px !important;
-          border-radius: 0.25rem;
-          border: 1px solid #d1d5db;
-          background: white;
-          min-width: 28px;
-          height: 28px;
-          line-height: 26px;
-          font-size: 0.875rem;
-        }
-        
-        .compact-table .ant-pagination-item:last-child {
-          margin-right: 0 !important;
-        }
-        
-        .compact-table .ant-pagination-prev,
-        .compact-table .ant-pagination-next {
-          margin-right: 6px !important;
-        }
-        
-        .compact-table .ant-pagination-jump-prev,
-        .compact-table .ant-pagination-jump-next {
-          margin-right: 6px !important;
-        }
-        
-        /* Ensure pagination items have enough space */
-        .compact-table .ant-pagination {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 4px;
-        }
-        
-        .compact-table .ant-pagination > * {
-          flex-shrink: 0;
-        }
-        
-        .dark .compact-table .ant-pagination-item {
-          background: #1f2937;
-          border-color: #4b5563;
-        }
-        
-        .compact-table .ant-pagination-item a {
-          color: #4b5563;
-          font-size: 0.875rem;
-        }
-        
-        .dark .compact-table .ant-pagination-item a {
-          color: #e5e7eb !important;
-        }
-        
-        .compact-table .ant-pagination-item-active {
-          border-color: #3b82f6;
-          background: #3b82f6;
-        }
-        
-        .compact-table .ant-pagination-item-active a {
-          color: white !important;
-          font-weight: 500;
-        }
-        
-        .dark .compact-table .ant-pagination-item-active {
-          border-color: #60a5fa;
-          background: #60a5fa;
-        }
-        
-        /* Prev/next buttons */
-        .compact-table .ant-pagination-prev,
-        .compact-table .ant-pagination-next {
-          min-width: 28px;
-          height: 28px;
-        }
-        
-        .compact-table .ant-pagination-prev .ant-pagination-item-link,
-        .compact-table .ant-pagination-next .ant-pagination-item-link {
-          border-radius: 0.25rem;
-          border: 1px solid #d1d5db;
-          background: white;
-          color: #4b5563;
-          height: 28px;
-          line-height: 26px;
-        }
-        
-        .dark .compact-table .ant-pagination-prev .ant-pagination-item-link,
-        .dark .compact-table .ant-pagination-next .ant-pagination-item-link {
-          background: #1f2937;
-          border-color: #4b5563;
-          color: #e5e7eb !important;
-        }
-        
-        /* Page size selector */
-        .compact-table .ant-select-selector {
-          border-radius: 0.25rem !important;
-          border: 1px solid #d1d5db !important;
-          background: white !important;
-          height: 28px !important;
-          min-height: 28px !important;
-          font-size: 0.875rem;
-        }
-        
-        .dark .compact-table .ant-select-selector {
-          background: #1f2937 !important;
-          border-color: #4b5563 !important;
-        }
-        
-        .compact-table .ant-select-selection-item {
-          line-height: 26px !important;
-          color: #4b5563 !important;
-          font-size: 0.875rem;
-        }
-        
-        .dark .compact-table .ant-select-selection-item {
-          color: #e5e7eb !important;
-        }
-        
-        /* Quick jumper */
-        .compact-table .ant-pagination-options-quick-jumper {
-          font-size: 0.875rem;
-          height: 28px;
-        }
-        
-        .compact-table .ant-pagination-options-quick-jumper input {
-          height: 28px;
-          padding: 0 8px;
-          font-size: 0.875rem;
-        }
-        
-        /* Responsive */
-        @media (max-width: 768px) {
-          .filter-select {
-            min-width: 120px;
-            flex: 1;
-            font-size: 0.8125rem;
-          }
-          
-          .filter-input {
-            font-size: 0.8125rem;
-          }
-          
-          .compact-table .ant-table-thead > tr > th,
-          .compact-table .ant-table-tbody > tr > td {
-            padding: 0.375rem 0.5rem !important;
-            font-size: 0.8125rem;
-          }
-          
-          .compact-table .ant-pagination {
-            padding: 0.5rem !important;
-            font-size: 0.8125rem;
-          }
-          
-          /* Multi-select dropdown responsive */
-          .relative > .filter-select {
-            width: 100%;
-          }
-          
-          .absolute {
-            width: 100%;
-          }
-        }
-        
-        /* Subtle dark mode hover */
-        .dark .bg-gray-750 {
-          background-color: #2d3748;
-        }
-
-
-
-
-
-
-
-
-        /* Page size dropdown dark mode */
-.compact-table .ant-select-dropdown {
-  background-color: white !important;
-  border: 1px solid #e5e7eb !important;
-  border-radius: 0.375rem !important;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  .filter-select {
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.375rem;
+    border: 1px solid #d1d5db;
+    background: white;
+    color: #374151;
+    font-size: 0.875rem;
+    min-width: 140px;
+    height: 36px;
+    cursor: pointer;
+  }
+  
+  .filter-select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1);
+  }
+  
+  .dark .filter-select {
+    background: #1f2937;
+    border-color: #4b5563;
+    color: #e5e7eb;
+  }
+  
+  .dark .filter-select:focus {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.1);
+  }
+  
+  .filter-input {
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.375rem;
+    border: 1px solid #d1d5db;
+    background: white;
+    color: #374151;
+    font-size: 0.875rem;
+    height: 36px;
+  }
+  
+  .filter-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1);
+  }
+  
+  .dark .filter-input {
+    background: #1f2937;
+    border-color: #4b5563;
+    color: #e5e7eb;
+  }
+  
+  .dark .filter-input:focus {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.1);
+  }
+  
+  /* Custom Checkbox Styling */
+  .ant-checkbox-wrapper {
+    display: flex;
+    align-items: center;
+  }
+  
+  .ant-checkbox-inner {
+    border-radius: 0.25rem;
+    border-color: #d1d5db;
+  }
+  
+  .dark .ant-checkbox-inner {
+    background-color: #374151;
+    border-color: #6b7280;
+  }
+  
+  .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+  }
+  
+  .dark .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: #60a5fa;
+    border-color: #60a5fa;
+  }
+  
+  /* Table Styles */
+  .compact-table .ant-table {
+    background: transparent;
+    font-size: 0.875rem;
+  }
+  
+  .compact-table .ant-table-thead > tr > th {
+    background: #f9fafb !important;
+    border-bottom: 1px solid #e5e7eb !important;
+    color: #374151 !important;
+    font-weight: 600 !important;
+    padding: 0.5rem 0.75rem !important;
+    white-space: nowrap;
+    font-size: 0.875rem;
+  }
+  
+  .dark .compact-table .ant-table-thead > tr > th {
+    background: #111827 !important;
+    border-bottom: 1px solid #374151 !important;
+    color: #e5e7eb !important;
+  }
+  
+  .compact-table .ant-table-tbody > tr > td {
+    border-bottom: 1px solid #e5e7eb !important;
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.875rem;
+  }
+  
+  .dark .compact-table .ant-table-tbody > tr > td {
+    border-bottom: 1px solid #374151 !important;
+  }
+  
+  /* Student Row Styles */
+.student-row {
+  position: relative !important;
+  border-left: 4px solid transparent !important;
+  transition: all 0.2s ease !important;
+  color: #111827 !important; /* Dark text for light mode */
 }
 
-.dark .compact-table .ant-select-dropdown {
-  background-color: #1f2937 !important;
-  border-color: #4b5563 !important;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
+.dark .student-row {
+  color: #f3f4f6 !important; /* Light text for dark mode */
 }
 
-.compact-table .ant-select-item {
-  color: #374151 !important;
-  font-size: 0.875rem !important;
-  padding: 0.375rem 0.75rem !important;
+/* Ensure cell text inherits the color */
+.student-row td {
+  color: inherit !important;
 }
-
-.dark .compact-table .ant-select-item {
-  color: #e5e7eb !important;
-  background-color: #1f2937 !important;
-}
-
-.compact-table .ant-select-item:hover {
-  background-color: #f3f4f6 !important;
-}
-
-.dark .compact-table .ant-select-item:hover {
-  background-color: #374151 !important;
-}
-
-.compact-table .ant-select-item-option-selected {
-  background-color: #e5e7eb !important;
-  font-weight: 500 !important;
-}
-
-.dark .compact-table .ant-select-item-option-selected {
-  background-color: #4b5563 !important;
-  color: white !important;
-}
-
-/* Quick jumper input dark mode */
-.compact-table .ant-pagination-options-quick-jumper input {
-  background-color: white !important;
-  border: 1px solid #d1d5db !important;
-  color: #374151 !important;
-}
-
-.dark .compact-table .ant-pagination-options-quick-jumper input {
-  background-color: #374151 !important;
-  border-color: #4b5563 !important;
-  color: #e5e7eb !important;
-}
-
-.dark .compact-table .ant-pagination-options-quick-jumper input:focus {
-  border-color: #60a5fa !important;
-  outline: none !important;
-  box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.1) !important;
-}
-
-/* Fix white text in dark mode for pagination options */
-.dark .compact-table .ant-pagination-options-quick-jumper {
-  color: #9ca3af !important;
-}
-
-/* Arrow icons in dark mode */
-.dark .compact-table .ant-pagination-prev .ant-pagination-item-link,
-.dark .compact-table .ant-pagination-next .ant-pagination-item-link {
-  color: #e5e7eb !important;
-}
-
-.dark .compact-table .ant-pagination-disabled .ant-pagination-item-link {
-  color: #4b5563 !important;
-  border-color: #4b5563 !important;
-}
-      `}</style>
+  
+  /* Active row base background */
+  .active-row {
+    background-color: white !important;
+  }
+  
+  .dark .active-row {
+    background-color: #1f2937 !important;
+  }
+  
+  /* Disabled row base background */
+  .disabled-row {
+    background-color: #fef2f2 !important;
+  }
+  
+  .dark .disabled-row {
+    background-color: rgba(127, 29, 29, 0.2) !important;
+  }
+  
+  /* Hover effects */
+  .active-row:hover {
+    background-color: #f9fafb !important;
+    border-left: 4px solid #22c55e !important;
+  }
+  
+  .dark .active-row:hover {
+    background-color: #2d3748 !important;
+    border-left: 4px solid #22c55e !important;
+  }
+  
+  .disabled-row:hover {
+    background-color: #fee2e2 !important;
+    border-left: 4px solid #ef4444 !important;
+  }
+  
+  .dark .disabled-row:hover {
+    background-color: rgba(127, 29, 29, 0.4) !important;
+    border-left: 4px solid #ef4444 !important;
+  }
+  
+  /* Remove Ant Design's default hover */
+  .compact-table .ant-table-tbody > tr.ant-table-row:hover > td {
+    background: transparent !important;
+  }
+  
+  /* Ensure rows have proper positioning */
+  .compact-table .ant-table-tbody > tr {
+    position: relative !important;
+  }
+  
+  /* Compact Pagination */
+  .compact-table .ant-pagination {
+    margin: 0 !important;
+    padding: 0.75rem !important;
+    background: #f9fafb;
+    border-top: 1px solid #e5e7eb;
+    font-size: 0.875rem;
+  }
+  
+  .dark .compact-table .ant-pagination {
+    background: #111827;
+    border-top: 1px solid #374151;
+    color: #e5e7eb !important;
+  }
+  
+  .compact-table .ant-pagination-item {
+    margin-right: 6px !important;
+    margin-bottom: 4px !important;
+    border-radius: 0.25rem;
+    border: 1px solid #d1d5db;
+    background: white;
+    min-width: 28px;
+    height: 28px;
+    line-height: 26px;
+    font-size: 0.875rem;
+  }
+  
+  .dark .compact-table .ant-pagination-item {
+    background: #1f2937;
+    border-color: #4b5563;
+  }
+  
+  .compact-table .ant-pagination-item a {
+    color: #4b5563;
+    font-size: 0.875rem;
+  }
+  
+  .dark .compact-table .ant-pagination-item a {
+    color: #e5e7eb !important;
+  }
+  
+  .compact-table .ant-pagination-item-active {
+    border-color: #3b82f6;
+    background: #3b82f6;
+  }
+  
+  .compact-table .ant-pagination-item-active a {
+    color: white !important;
+  }
+  
+  .dark .compact-table .ant-pagination-item-active {
+    border-color: #60a5fa;
+    background: #60a5fa;
+  }
+  
+  /* Page size selector */
+  .compact-table .ant-select-selector {
+    border-radius: 0.25rem !important;
+    border: 1px solid #d1d5db !important;
+    background: white !important;
+    height: 28px !important;
+    min-height: 28px !important;
+    font-size: 0.875rem;
+  }
+  
+  .dark .compact-table .ant-select-selector {
+    background: #1f2937 !important;
+    border-color: #4b5563 !important;
+  }
+  
+  .compact-table .ant-select-selection-item {
+    line-height: 26px !important;
+    color: #4b5563 !important;
+    font-size: 0.875rem;
+  }
+  
+  .dark .compact-table .ant-select-selection-item {
+    color: #e5e7eb !important;
+  }
+  
+  /* Page size dropdown */
+  .compact-table .ant-select-dropdown {
+    background-color: white !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 0.375rem !important;
+  }
+  
+  .dark .compact-table .ant-select-dropdown {
+    background-color: #1f2937 !important;
+    border-color: #4b5563 !important;
+  }
+  
+  .compact-table .ant-select-item {
+    color: #374151 !important;
+    font-size: 0.875rem !important;
+    padding: 0.375rem 0.75rem !important;
+  }
+  
+  .dark .compact-table .ant-select-item {
+    color: #e5e7eb !important;
+    background-color: #1f2937 !important;
+  }
+  
+  .compact-table .ant-select-item:hover {
+    background-color: #f3f4f6 !important;
+  }
+  
+  .dark .compact-table .ant-select-item:hover {
+    background-color: #374151 !important;
+  }
+  
+  .compact-table .ant-select-item-option-selected {
+    background-color: #e5e7eb !important;
+    font-weight: 500 !important;
+  }
+  
+  .dark .compact-table .ant-select-item-option-selected {
+    background-color: #4b5563 !important;
+    color: white !important;
+  }
+  
+  /* Quick jumper */
+  .compact-table .ant-pagination-options-quick-jumper input {
+    height: 28px;
+    padding: 0 8px;
+    font-size: 0.875rem;
+    background-color: white !important;
+    border: 1px solid #d1d5db !important;
+    color: #374151 !important;
+    border-radius: 0.25rem;
+  }
+  
+  .dark .compact-table .ant-pagination-options-quick-jumper input {
+    background-color: #374151 !important;
+    border-color: #4b5563 !important;
+    color: #e5e7eb !important;
+  }
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+    .filter-select {
+      min-width: 120px;
+      flex: 1;
+      font-size: 0.8125rem;
+    }
+    
+    .filter-input {
+      font-size: 0.8125rem;
+    }
+    
+    .compact-table .ant-table-thead > tr > th,
+    .compact-table .ant-table-tbody > tr > td {
+      padding: 0.375rem 0.5rem !important;
+      font-size: 0.8125rem;
+    }
+  }
+`}</style>
     </div>
   );
 }

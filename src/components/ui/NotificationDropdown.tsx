@@ -1,14 +1,27 @@
-import { useState, useEffect, useRef } from 'react';
-import { Bell, Check, User, GraduationCap, DollarSign, BookOpen, Shield } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import notificationService, { type Notification } from '../api/notificationService';
+import { useState, useEffect, useRef } from "react";
+import {
+  Bell,
+  Check,
+  User,
+  GraduationCap,
+  DollarSign,
+  BookOpen,
+  Shield,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import notificationService, {
+  type Notification,
+} from "../api/notificationService";
 
 interface NotificationDropdownProps {
   className?: string;
   userRole?: string; // Add this
 }
 
-export default function NotificationDropdown({ className = '',  userRole = ''  }: NotificationDropdownProps) {
+export default function NotificationDropdown({
+  className = "",
+  userRole = "",
+}: NotificationDropdownProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -16,21 +29,20 @@ export default function NotificationDropdown({ className = '',  userRole = ''  }
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-
   // Get icon for sender role
   const getSenderIcon = (senderRole: string) => {
     switch (senderRole.toUpperCase()) {
-      case 'REGISTRAR':
+      case "REGISTRAR":
         return <User className="w-3 h-3" />;
-      case 'DEAN':
-      case 'VICE_DEAN':
+      case "DEAN":
+      case "VICE_DEAN":
         return <GraduationCap className="w-3 h-3" />;
-      case 'FINANCE':
+      case "FINANCE":
         return <DollarSign className="w-3 h-3" />;
-      case 'TEACHER':
+      case "TEACHER":
         return <BookOpen className="w-3 h-3" />;
-      case 'ADMIN':
-      case 'SYSTEM':
+      case "ADMIN":
+      case "SYSTEM":
         return <Shield className="w-3 h-3" />;
       default:
         return <User className="w-3 h-3" />;
@@ -38,45 +50,48 @@ export default function NotificationDropdown({ className = '',  userRole = ''  }
   };
 
   // Get notification route based on user role
-const getNotificationRoute = () => {
-    const role = userRole?.toLowerCase() || '';
+  const getNotificationRoute = () => {
+    const role = userRole?.toLowerCase() || "";
     switch (role) {
-      case 'student':
-        return '/student/notifications';
-      case 'teacher':
-        return '/teacher/notifications';
-      case 'registrar':
-        return '/registrar/notifications';
-      case 'dean':
-        return '/dean/notifications';
-      case 'vice_dean':
-      case 'vicedean':
-        return '/vice-dean/notifications';
-      case 'department_head':
-      case 'head':
-        return '/head/notifications';
+      case "student":
+        return "/student/notifications";
+      case "teacher":
+        return "/teacher/notifications";
+      case "registrar":
+        return "/registrar/notifications";
+      case "dean":
+        return "/dean/notifications";
+      case "vice_dean":
+      case "vicedean":
+        return "/vice-dean/notifications";
+      case "department_head":
+      case "head":
+        return "/head/notifications";
       default:
         // Fallback to URL detection
         const path = window.location.pathname;
-        if (path.includes('/teacher/')) return '/teacher/notifications';
-        if (path.includes('/registrar/')) return '/registrar/notifications';
-        if (path.includes('/dean/')) return '/dean/notifications';
-        if (path.includes('/vice-dean/')) return '/vice-dean/notifications';
-        if (path.includes('/head/')) return '/head/notifications';
-        return '/student/notifications';
+        if (path.includes("/teacher/")) return "/teacher/notifications";
+        if (path.includes("/registrar/")) return "/registrar/notifications";
+        if (path.includes("/dean/")) return "/dean/notifications";
+        if (path.includes("/vice-dean/")) return "/vice-dean/notifications";
+        if (path.includes("/head/")) return "/head/notifications";
+        return "/student/notifications";
     }
   };
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setShowDropdown(false);
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
@@ -85,13 +100,15 @@ const getNotificationRoute = () => {
     try {
       setLoading(true);
       const allNotifications = await notificationService.getAllNotifications();
-      const latestNotifications = await notificationService.getLatestNotifications();
-      
-      const sortedNotifications = notificationService.sortNotificationsByPriority(latestNotifications);
+      const latestNotifications =
+        await notificationService.getLatestNotifications();
+
+      const sortedNotifications =
+        notificationService.sortNotificationsByPriority(latestNotifications);
       setNotifications(sortedNotifications.slice(0, 3));
       setUnreadCount(notificationService.getUnreadCount(allNotifications));
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      console.error("Error fetching notifications:", error);
       setNotifications([]);
       setUnreadCount(0);
     } finally {
@@ -100,28 +117,28 @@ const getNotificationRoute = () => {
   };
 
   // Initial load
-  useEffect(() => {
-    fetchLatestNotifications();
-  }, []);
+  // useEffect(() => {
+  //   fetchLatestNotifications();
+  // }, []);
 
   // Handle notification click
   const handleNotificationClick = async (notificationId: number) => {
     try {
       await notificationService.markNotificationAsRead(notificationId);
-      setNotifications(prev => 
-        prev.map(notif => 
-          notif.id === notificationId ? { ...notif, isRead: true } : notif
-        )
+      setNotifications((prev) =>
+        prev.map((notif) =>
+          notif.id === notificationId ? { ...notif, isRead: true } : notif,
+        ),
       );
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (error) {
-      console.error('Error marking notification as read:', error);
-      setNotifications(prev => 
-        prev.map(notif => 
-          notif.id === notificationId ? { ...notif, isRead: true } : notif
-        )
+      console.error("Error marking notification as read:", error);
+      setNotifications((prev) =>
+        prev.map((notif) =>
+          notif.id === notificationId ? { ...notif, isRead: true } : notif,
+        ),
       );
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
     }
   };
 
@@ -151,7 +168,7 @@ const getNotificationRoute = () => {
         <Bell className="w-6 h-6" />
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full min-w-[20px] h-5">
-            {unreadCount > 99 ? '99+' : unreadCount}
+            {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
       </button>
@@ -171,7 +188,9 @@ const getNotificationRoute = () => {
             {loading ? (
               <div className="px-4 py-6 text-center">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Loading...</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                  Loading...
+                </p>
               </div>
             ) : notifications.length === 0 ? (
               <div className="px-4 py-6 text-center">
@@ -186,21 +205,27 @@ const getNotificationRoute = () => {
                   <div
                     key={notification.id}
                     className={`px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors duration-150 ${
-                      !notification.isRead ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                    } ${index !== notifications.length - 1 ? 'border-b border-gray-100 dark:border-gray-700' : ''}`}
+                      !notification.isRead
+                        ? "bg-blue-50 dark:bg-blue-900/20"
+                        : ""
+                    } ${index !== notifications.length - 1 ? "border-b border-gray-100 dark:border-gray-700" : ""}`}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm ${
-                          !notification.isRead 
-                            ? 'font-medium text-gray-900 dark:text-white' 
-                            : 'text-gray-600 dark:text-gray-300'
-                        }`}>
+                        <p
+                          className={`text-sm ${
+                            !notification.isRead
+                              ? "font-medium text-gray-900 dark:text-white"
+                              : "text-gray-600 dark:text-gray-300"
+                          }`}
+                        >
                           {notification.message}
                         </p>
                         <div className="flex items-center justify-between mt-1">
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {notificationService.formatTimeAgo(notification.createdAt)}
+                            {notificationService.formatTimeAgo(
+                              notification.createdAt,
+                            )}
                           </p>
                           <span className="text-xs text-blue-600 dark:text-blue-400 font-medium flex items-center gap-1">
                             {getSenderIcon(notification.senderRole)}
