@@ -16,7 +16,6 @@ import { toast } from "@/hooks/use-toast";
 import { Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-
 // Validation utility to check if a field is empty
 const isFieldEmpty = (value) => {
   return value === undefined || value === null || String(value).trim() === "";
@@ -41,55 +40,73 @@ const REQUIRED_FIELDS = {
   currentAddressZoneCode: "Current Zone",
   currentAddressWoredaCode: "Current Woreda",
   maritalStatus: "Marital Status",
-  
+
   // Step 2: Account Creation
   username: "Username",
   password: "Password",
   confirmPassword: "Confirm Password",
-  
-  
+
   // Step 4: Educational Information
   schoolBackgroundId: "School Background",
   departmentEnrolledId: "Department",
   programModalityCode: "Program Modality",
   studentRecentStatusId: "Student Status",
+  batchId: "Batch", // NEW: Add batch to required fields
   batchClassYearSemesterId: "Batch/Class/Semester",
-  
+
   // Step 5: Emergency Contact (all required except relation)
   emergencyFullName: "Emergency Contact Full Name",
   emergencyFullNameAMH: "Emergency Contact Full Name (Amharic)",
   contactPersonPhoneNumber: "Emergency Contact Phone",
-  
+
   // Step 5: Enrollment Date
   dateEnrolledGC: "Enrollment Date (GC)",
 };
 
 // Get required fields for current step
 const getRequiredFieldsForStep = (step) => {
-  switch(step) {
+  switch (step) {
     case 1:
       return [
-        "firstName", "middleName", "lastName",
-        "firstNameAMH", "middleNameAMH", "lastNameAMH",
-        "sex", "phoneNo", "birthDateGC",
-        "placeOfBirthRegionCode", "placeOfBirthZoneCode", "placeOfBirthWoredaCode",
-        "currentAddressRegionCode", "currentAddressZoneCode", "currentAddressWoredaCode",
-        "maritalStatus"
+        "firstName",
+        "middleName",
+        "lastName",
+        "firstNameAMH",
+        "middleNameAMH",
+        "lastNameAMH",
+        "sex",
+        "phoneNo",
+        "birthDateGC",
+        "placeOfBirthRegionCode",
+        "placeOfBirthZoneCode",
+        "placeOfBirthWoredaCode",
+        "currentAddressRegionCode",
+        "currentAddressZoneCode",
+        "currentAddressWoredaCode",
+        "maritalStatus",
       ];
     case 2:
       return ["username", "password", "confirmPassword"];
     case 3:
-      return ["schoolBackgroundId", "departmentEnrolledId", "programModalityCode", "studentRecentStatusId", "batchClassYearSemesterId"];
+      return [
+        "schoolBackgroundId",
+        "departmentEnrolledId",
+        "programModalityCode",
+        "studentRecentStatusId",
+        "batchId",
+        "batchClassYearSemesterId",
+      ];
     case 4:
       return [
-        "emergencyFullName", "emergencyFullNameAMH",
-        "contactPersonPhoneNumber", "dateEnrolledGC"
+        "emergencyFullName",
+        "emergencyFullNameAMH",
+        "contactPersonPhoneNumber",
+        "dateEnrolledGC",
       ];
     default:
       return [];
   }
 };
-
 
 const DropdownIndicator = (props) => (
   <components.DropdownIndicator {...props}>
@@ -119,13 +136,12 @@ const PersonalInformationStep = ({
   fetchZonesByRegion,
   fetchWoredasByZone,
 
-  shouldShowError,      // new
-  getInputClassName,    // new
-  handleFieldBlur,      // new
-
+  shouldShowError, // new
+  getInputClassName, // new
+  handleFieldBlur, // new
 }) => {
   const [previews, setPreviews] = useState(
-    "https://www.shutterstock.com/image-vector/default-avatar-profile-icon-social-600nw-1677509740.jpg"
+    "https://www.shutterstock.com/image-vector/default-avatar-profile-icon-social-600nw-1677509740.jpg",
   );
 
   const handleInputChange = (e) => {
@@ -213,8 +229,8 @@ const PersonalInformationStep = ({
                   {field === "firstName"
                     ? "First Name *"
                     : field === "middleName"
-                    ? "Middle Name *"
-                    : "Last Name *"}
+                      ? "Middle Name *"
+                      : "Last Name *"}
                 </label>
                 <input
                   type="text"
@@ -222,10 +238,15 @@ const PersonalInformationStep = ({
                   value={formData[field]}
                   onChange={handleInputChange}
                   onBlur={() => handleFieldBlur(field)}
-                  className={getInputClassName(field, "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2")}
+                  className={getInputClassName(
+                    field,
+                    "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2",
+                  )}
                 />
                 {shouldShowError(field) && (
-                  <p className="mt-1 text-xs text-red-500">This field is required</p>
+                  <p className="mt-1 text-xs text-red-500">
+                    This field is required
+                  </p>
                 )}
               </div>
             ))}
@@ -241,8 +262,8 @@ const PersonalInformationStep = ({
                   {field === "firstNameAMH"
                     ? "First Name *"
                     : field === "middleNameAMH"
-                    ? "Middle Name *"
-                    : "Last Name *"}
+                      ? "Middle Name *"
+                      : "Last Name *"}
                 </label>
                 <input
                   type="text"
@@ -250,10 +271,15 @@ const PersonalInformationStep = ({
                   value={formData[field]}
                   onChange={handleInputChange}
                   onBlur={() => handleFieldBlur(field)}
-                  className={getInputClassName(field, "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2")}
+                  className={getInputClassName(
+                    field,
+                    "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2",
+                  )}
                 />
                 {shouldShowError(field) && (
-                  <p className="mt-1 text-xs text-red-500">This field is required</p>
+                  <p className="mt-1 text-xs text-red-500">
+                    This field is required
+                  </p>
                 )}
               </div>
             ))}
@@ -283,7 +309,9 @@ const PersonalInformationStep = ({
               ))}
             </div>
             {shouldShowError("sex") && (
-              <p className="mt-1 text-xs text-red-500">Please select a gender</p>
+              <p className="mt-1 text-xs text-red-500">
+                Please select a gender
+              </p>
             )}
           </div>
 
@@ -330,10 +358,15 @@ const PersonalInformationStep = ({
                 value={formData.phoneNo}
                 onChange={handleInputChange}
                 onBlur={() => handleFieldBlur("phoneNo")}
-                className={getInputClassName("phoneNo", "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2")}
+                className={getInputClassName(
+                  "phoneNo",
+                  "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2",
+                )}
               />
               {shouldShowError("phoneNo") && (
-                <p className="mt-1 text-xs text-red-500">Phone number is required</p>
+                <p className="mt-1 text-xs text-red-500">
+                  Phone number is required
+                </p>
               )}
             </div>
           </div>
@@ -403,7 +436,7 @@ const PersonalInformationStep = ({
                   type="button"
                   onClick={() => {
                     setPreviews(
-                      "https://www.shutterstock.com/image-vector/default-avatar-profile-icon-social-600nw-1677509740.jpg"
+                      "https://www.shutterstock.com/image-vector/default-avatar-profile-icon-social-600nw-1677509740.jpg",
                     );
                     setFormData((prev) => ({
                       ...prev,
@@ -435,7 +468,10 @@ const PersonalInformationStep = ({
                 value={formData.placeOfBirthRegionCode}
                 onChange={handleRegionChange}
                 onBlur={() => handleFieldBlur("placeOfBirthRegionCode")}
-                className={getInputClassName("placeOfBirthRegionCode", "w-full appearance-none bg-white dark:bg-black border rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2")}
+                className={getInputClassName(
+                  "placeOfBirthRegionCode",
+                  "w-full appearance-none bg-white dark:bg-black border rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2",
+                )}
               >
                 <option value="">Choose Region</option>
                 {dropdowns.regions.map((opt) => (
@@ -445,7 +481,9 @@ const PersonalInformationStep = ({
                 ))}
               </select>
               {shouldShowError("placeOfBirthRegionCode") && (
-                <p className="mt-1 text-xs text-red-500">Please select a region</p>
+                <p className="mt-1 text-xs text-red-500">
+                  Please select a region
+                </p>
               )}
             </div>
 
@@ -459,7 +497,10 @@ const PersonalInformationStep = ({
                 onChange={handleZoneChange}
                 onBlur={() => handleFieldBlur("placeOfBirthZoneCode")}
                 disabled={!formData.placeOfBirthRegionCode}
-                className={getInputClassName("placeOfBirthZoneCode", "w-full appearance-none bg-white dark:bg-black border rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 disabled:opacity-50")}
+                className={getInputClassName(
+                  "placeOfBirthZoneCode",
+                  "w-full appearance-none bg-white dark:bg-black border rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 disabled:opacity-50",
+                )}
               >
                 <option value="">Choose Zone</option>
                 {dropdowns.birthZones.map((opt) => (
@@ -469,7 +510,9 @@ const PersonalInformationStep = ({
                 ))}
               </select>
               {shouldShowError("placeOfBirthZoneCode") && (
-                <p className="mt-1 text-xs text-red-500">Please select a zone</p>
+                <p className="mt-1 text-xs text-red-500">
+                  Please select a zone
+                </p>
               )}
             </div>
 
@@ -483,7 +526,10 @@ const PersonalInformationStep = ({
                 onChange={handleInputChange}
                 onBlur={() => handleFieldBlur("placeOfBirthWoredaCode")}
                 disabled={!formData.placeOfBirthZoneCode}
-                className={getInputClassName("placeOfBirthWoredaCode", "w-full appearance-none bg-white dark:bg-black border rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 disabled:opacity-50")}
+                className={getInputClassName(
+                  "placeOfBirthWoredaCode",
+                  "w-full appearance-none bg-white dark:bg-black border rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 disabled:opacity-50",
+                )}
               >
                 <option value="">Choose Woreda</option>
                 {dropdowns.birthWoredas.map((opt) => (
@@ -493,7 +539,9 @@ const PersonalInformationStep = ({
                 ))}
               </select>
               {shouldShowError("placeOfBirthWoredaCode") && (
-                <p className="mt-1 text-xs text-red-500">Please select a woreda</p>
+                <p className="mt-1 text-xs text-red-500">
+                  Please select a woreda
+                </p>
               )}
             </div>
           </div>
@@ -546,10 +594,15 @@ const PersonalInformationStep = ({
                 value={formData.birthDateGC}
                 onChange={handleInputChange}
                 onBlur={() => handleFieldBlur("birthDateGC")}
-                className={getInputClassName("birthDateGC", "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2")}
+                className={getInputClassName(
+                  "birthDateGC",
+                  "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2",
+                )}
               />
               {shouldShowError("birthDateGC") && (
-                <p className="mt-1 text-xs text-red-500">Please select a date</p>
+                <p className="mt-1 text-xs text-red-500">
+                  Please select a date
+                </p>
               )}
             </div>
           </div>
@@ -570,7 +623,10 @@ const PersonalInformationStep = ({
                 value={formData.currentAddressRegionCode}
                 onChange={handleCurrentRegionChange}
                 onBlur={() => handleFieldBlur("currentAddressRegionCode")}
-                className={getInputClassName("currentAddressRegionCode", "w-full appearance-none bg-white dark:bg-black border rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2")}
+                className={getInputClassName(
+                  "currentAddressRegionCode",
+                  "w-full appearance-none bg-white dark:bg-black border rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2",
+                )}
               >
                 <option value="">Choose Region</option>
                 {dropdowns.regions.map((opt) => (
@@ -580,7 +636,9 @@ const PersonalInformationStep = ({
                 ))}
               </select>
               {shouldShowError("currentAddressRegionCode") && (
-                <p className="mt-1 text-xs text-red-500">Please select a region</p>
+                <p className="mt-1 text-xs text-red-500">
+                  Please select a region
+                </p>
               )}
             </div>
 
@@ -594,7 +652,10 @@ const PersonalInformationStep = ({
                 onChange={handleCurrentZoneChange}
                 onBlur={() => handleFieldBlur("currentAddressZoneCode")}
                 disabled={!formData.currentAddressRegionCode}
-                className={getInputClassName("currentAddressZoneCode", "w-full appearance-none bg-white dark:bg-black border rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 disabled:opacity-50")}
+                className={getInputClassName(
+                  "currentAddressZoneCode",
+                  "w-full appearance-none bg-white dark:bg-black border rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 disabled:opacity-50",
+                )}
               >
                 <option value="">Choose Zone</option>
                 {dropdowns.currentZones.map((opt) => (
@@ -604,7 +665,9 @@ const PersonalInformationStep = ({
                 ))}
               </select>
               {shouldShowError("currentAddressZoneCode") && (
-                <p className="mt-1 text-xs text-red-500">Please select a zone</p>
+                <p className="mt-1 text-xs text-red-500">
+                  Please select a zone
+                </p>
               )}
             </div>
 
@@ -618,7 +681,10 @@ const PersonalInformationStep = ({
                 onChange={handleInputChange}
                 onBlur={() => handleFieldBlur("currentAddressWoredaCode")}
                 disabled={!formData.currentAddressZoneCode}
-                className={getInputClassName("currentAddressWoredaCode", "w-full appearance-none bg-white dark:bg-black border rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 disabled:opacity-50")}
+                className={getInputClassName(
+                  "currentAddressWoredaCode",
+                  "w-full appearance-none bg-white dark:bg-black border rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 disabled:opacity-50",
+                )}
               >
                 <option value="">Choose Woreda</option>
                 {dropdowns.currentWoredas.map((opt) => (
@@ -628,7 +694,9 @@ const PersonalInformationStep = ({
                 ))}
               </select>
               {shouldShowError("currentAddressWoredaCode") && (
-                <p className="mt-1 text-xs text-red-500">Please select a woreda</p>
+                <p className="mt-1 text-xs text-red-500">
+                  Please select a woreda
+                </p>
               )}
             </div>
           </div>
@@ -656,114 +724,125 @@ const PersonalInformationStep = ({
             ))}
           </div>
           {shouldShowError("maritalStatus") && (
-            <p className="mt-1 text-xs text-red-500">Please select a marital status</p>
+            <p className="mt-1 text-xs text-red-500">
+              Please select a marital status
+            </p>
           )}
         </div>
 
         {/* EMERGENCY CONTACT */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-              Contact Person in case of Emergency: (required)
-            </label>
-            <div className="space-y-4">
-              {/* Full Name (English) */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
+            Contact Person in case of Emergency: (required)
+          </label>
+          <div className="space-y-4">
+            {/* Full Name (English) */}
+            <div>
+              <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
+                Full Name (English) *
+              </label>
+              <input
+                type="text"
+                name="emergencyFullName"
+                value={formData.emergencyFullName || ""}
+                onChange={handleInputChange}
+                onBlur={() => handleFieldBlur("emergencyFullName")}
+                placeholder="Enter full name of emergency contact"
+                className={getInputClassName(
+                  "emergencyFullName",
+                  "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2",
+                )}
+              />
+              {shouldShowError("emergencyFullName") && (
+                <p className="mt-1 text-xs text-red-500">
+                  Full name is required
+                </p>
+              )}
+            </div>
+
+            {/* Full Name (Amharic) */}
+            <div>
+              <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
+                Full Name (Amharic) *
+              </label>
+              <input
+                type="text"
+                name="emergencyFullNameAMH"
+                value={formData.emergencyFullNameAMH || ""}
+                onChange={handleInputChange}
+                onBlur={() => handleFieldBlur("emergencyFullNameAMH")}
+                placeholder="የአስቸኳይ ጊዜ አድራሻ ሙሉ ስም"
+                className={getInputClassName(
+                  "emergencyFullNameAMH",
+                  "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 text-left placeholder:text-left",
+                )}
+                dir="ltr"
+              />
+
+              {shouldShowError("emergencyFullNameAMH") && (
+                <p className="mt-1 text-xs text-red-500">
+                  Full name (Amharic) is required
+                </p>
+              )}
+            </div>
+
+            {/* Relation and Phone */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Relation (Optional) */}
               <div>
                 <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                  Full Name (English) *
+                  Relation (Optional)
                 </label>
                 <input
                   type="text"
-                  name="emergencyFullName"
-                  value={formData.emergencyFullName || ""}
+                  name="contactPersonRelation"
+                  value={formData.contactPersonRelation}
                   onChange={handleInputChange}
-                  onBlur={() => handleFieldBlur("emergencyFullName")}
-                  placeholder="Enter full name of emergency contact"
-                  className={getInputClassName("emergencyFullName", "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2")}
+                  placeholder="e.g., Parent, Spouse, Sibling"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                {shouldShowError("emergencyFullName") && (
-                  <p className="mt-1 text-xs text-red-500">Full name is required</p>
-                )}
               </div>
 
-              {/* Full Name (Amharic) */}
+              {/* Phone Number (Required) */}
               <div>
                 <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                  Full Name (Amharic) *
+                  Phone Number *
                 </label>
-                  <input
-                    type="text"
-                    name="emergencyFullNameAMH"
-                    value={formData.emergencyFullNameAMH || ""}
-                    onChange={handleInputChange}
-                    onBlur={() => handleFieldBlur("emergencyFullNameAMH")}
-                    placeholder="የአስቸኳይ ጊዜ አድራሻ ሙሉ ስም"
-                    className={getInputClassName(
-                      "emergencyFullNameAMH",
-                      "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 text-left placeholder:text-left"
-                    )}
-                    dir="ltr"
-                  />
-
-                {shouldShowError("emergencyFullNameAMH") && (
-                  <p className="mt-1 text-xs text-red-500">Full name (Amharic) is required</p>
-                )}
-              </div>
-
-              {/* Relation and Phone */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Relation (Optional) */}
-                <div>
-                  <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                    Relation (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    name="contactPersonRelation"
-                    value={formData.contactPersonRelation}
-                    onChange={handleInputChange}
-                    placeholder="e.g., Parent, Spouse, Sibling"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                {/* Phone Number (Required) */}
-                <div>
-                  <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                    Phone Number *
-                  </label>
-                  <input
-                    type="tel"
-                    name="contactPersonPhoneNumber"
-                    value={formData.contactPersonPhoneNumber}
-                    onChange={handleInputChange}
-                    onBlur={() => handleFieldBlur("contactPersonPhoneNumber")}
-                    placeholder="Enter phone number"
-                    className={getInputClassName("contactPersonPhoneNumber", "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2")}
-                  />
-                  {shouldShowError("contactPersonPhoneNumber") && (
-                    <p className="mt-1 text-xs text-red-500">Phone number is required</p>
+                <input
+                  type="tel"
+                  name="contactPersonPhoneNumber"
+                  value={formData.contactPersonPhoneNumber}
+                  onChange={handleInputChange}
+                  onBlur={() => handleFieldBlur("contactPersonPhoneNumber")}
+                  placeholder="Enter phone number"
+                  className={getInputClassName(
+                    "contactPersonPhoneNumber",
+                    "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2",
                   )}
-                </div>
+                />
+                {shouldShowError("contactPersonPhoneNumber") && (
+                  <p className="mt-1 text-xs text-red-500">
+                    Phone number is required
+                  </p>
+                )}
               </div>
             </div>
           </div>
-
-
+        </div>
       </section>
     </div>
   );
 };
 
-
 /* ==============================================================
    STEP 2 – ACCOUNT CREATION (with password visibility toggle)
    ============================================================== */
-const AccountCreationStep = ({ 
-  formData, 
+const AccountCreationStep = ({
+  formData,
   setFormData,
   shouldShowError,
   getInputClassName,
-  handleFieldBlur 
+  handleFieldBlur,
 }) => {
   const [passwordError, setPasswordError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -813,7 +892,10 @@ const AccountCreationStep = ({
               onChange={handleChange}
               onBlur={() => handleFieldBlur("username")}
               placeholder="Enter username"
-              className={getInputClassName("username", "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2")}
+              className={getInputClassName(
+                "username",
+                "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2",
+              )}
             />
             {shouldShowError("username") && (
               <p className="mt-1 text-xs text-red-500">Username is required</p>
@@ -833,7 +915,10 @@ const AccountCreationStep = ({
                 onChange={handleChange}
                 onBlur={() => handleFieldBlur("password")}
                 placeholder="Enter password"
-                className={getInputClassName("password", "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 pr-10")}
+                className={getInputClassName(
+                  "password",
+                  "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 pr-10",
+                )}
               />
               <button
                 type="button"
@@ -866,7 +951,10 @@ const AccountCreationStep = ({
                 onChange={handleChange}
                 onBlur={() => handleFieldBlur("confirmPassword")}
                 placeholder="Confirm password"
-                className={getInputClassName("confirmPassword", "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 pr-10")}
+                className={getInputClassName(
+                  "confirmPassword",
+                  "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 pr-10",
+                )}
               />
               <button
                 type="button"
@@ -889,7 +977,9 @@ const AccountCreationStep = ({
               <p className="mt-1 text-xs text-red-500">{passwordError}</p>
             )}
             {shouldShowError("confirmPassword") && !passwordError && (
-              <p className="mt-1 text-xs text-red-500">Please confirm your password</p>
+              <p className="mt-1 text-xs text-red-500">
+                Please confirm your password
+              </p>
             )}
           </div>
         </div>
@@ -908,17 +998,16 @@ const AccountCreationStep = ({
   );
 };
 
-
 /* ==============================================================
    STEP 3 – EDUCATIONAL INFORMATION
    ============================================================== */
-const EducationalInformationStep = ({ 
-  formData, 
-  setFormData, 
+const EducationalInformationStep = ({
+  formData,
+  setFormData,
   dropdowns,
   shouldShowError,
   getInputClassName,
-  handleFieldBlur 
+  handleFieldBlur,
 }) => {
   const [showInstructions, setShowInstructions] = useState(false);
 
@@ -976,7 +1065,10 @@ const EducationalInformationStep = ({
             value={formData.schoolBackgroundId}
             onChange={handleInputChange}
             onBlur={() => handleFieldBlur("schoolBackgroundId")}
-            className={getInputClassName("schoolBackgroundId", "w-full appearance-none bg-white dark:bg-black border rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2")}
+            className={getInputClassName(
+              "schoolBackgroundId",
+              "w-full appearance-none bg-white dark:bg-black border rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2",
+            )}
           >
             <option value="">Choose Background</option>
             {dropdowns.schoolBackgrounds.map((opt) => (
@@ -986,7 +1078,9 @@ const EducationalInformationStep = ({
             ))}
           </select>
           {shouldShowError("schoolBackgroundId") && (
-            <p className="mt-1 text-xs text-red-500">Please select a school background</p>
+            <p className="mt-1 text-xs text-red-500">
+              Please select a school background
+            </p>
           )}
         </div>
 
@@ -1152,21 +1246,32 @@ const EducationalInformationStep = ({
             label: "Select Department *",
             name: "departmentEnrolledId",
             options: dropdowns.departments,
+            placeholder: "Select Department", // NEW: Custom placeholder
           },
           {
-            label: "Select Students Status *",
+            label: "Select Student's Status *",
             name: "studentRecentStatusId",
             options: dropdowns.studentStatus,
+            placeholder: "Select the Student Status",
           },
           {
             label: "Select Program Modality *",
             name: "programModalityCode",
             options: dropdowns.programModalities,
+            placeholder: "Select Program Modality",
+          },
+          // NEW: Add Batch dropdown here
+          {
+            label: "Select Batch at the Time of Registration *",
+            name: "batchId",
+            options: dropdowns.batches,
+            placeholder: "Select Batch",
           },
           {
-            label: "Select Batch Class Year And Semester *",
+            label: "Select student's Recent Batch Class Year And Semester *",
             name: "batchClassYearSemesterId",
             options: dropdowns.batchClassSemsterYear,
+            placeholder: "Select Batch-ClassYear-Semester",
           },
         ].map((field) => (
           <div key={field.name} className="mb-6">
@@ -1178,9 +1283,13 @@ const EducationalInformationStep = ({
               value={formData[field.name]}
               onChange={handleInputChange}
               onBlur={() => handleFieldBlur(field.name)}
-              className={getInputClassName(field.name, "w-full appearance-none bg-white dark:bg-black border rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2")}
+              className={getInputClassName(
+                field.name,
+                "w-full appearance-none bg-white dark:bg-black border rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2",
+              )}
             >
-              <option value="">Choose {field.label.split(" ")[1]}</option>
+              <option value="">{field.placeholder}</option>{" "}
+              {/* Use custom placeholder */}
               {field.options.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
@@ -1189,7 +1298,11 @@ const EducationalInformationStep = ({
             </select>
             {shouldShowError(field.name) && (
               <p className="mt-1 text-xs text-red-500">
-                Please select {field.label.split(" ")[1].toLowerCase()}
+                Please select{" "}
+                {field.label
+                  .replace("Select ", "")
+                  .replace(" *", "")
+                  .toLowerCase()}
               </p>
             )}
           </div>
@@ -1209,13 +1322,13 @@ const ReviewSubmitStep = ({
   isSubmitting,
   shouldShowError,
   getInputClassName,
-  handleFieldBlur
+  handleFieldBlur,
 }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     await onSubmit(formData);
   };
-  
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -1306,7 +1419,7 @@ const ReviewSubmitStep = ({
                 />
               </div>
             </div>
-            
+
             {/* Gregorian Calendar - Required */}
             <div>
               <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
@@ -1318,10 +1431,15 @@ const ReviewSubmitStep = ({
                 value={formData.dateEnrolledGC}
                 onChange={handleInputChange}
                 onBlur={() => handleFieldBlur("dateEnrolledGC")}
-                className={getInputClassName("dateEnrolledGC", "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2")}
+                className={getInputClassName(
+                  "dateEnrolledGC",
+                  "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2",
+                )}
               />
               {shouldShowError("dateEnrolledGC") && (
-                <p className="mt-1 text-xs text-red-500">Enrollment date is required</p>
+                <p className="mt-1 text-xs text-red-500">
+                  Enrollment date is required
+                </p>
               )}
             </div>
           </div>
@@ -1451,94 +1569,95 @@ const AddStudent = () => {
   const [errorMessage, setErrorMessage] = useState("");
 
   const navigate = useNavigate();
-  
+
   const [touchedFields, setTouchedFields] = useState({}); // Track which fields have been touched
 
   const [formData, setFormData] = useState(() => {
-  const saved = localStorage.getItem("registrarRegistrationFormData");
-  return saved
-    ? JSON.parse(saved)
-    : {
-        // Personal Info (English)
-        firstName: "",           // maps to firstNameENG
-        middleName: "",          // maps to fatherNameENG
-        lastName: "",            // maps to grandfatherNameENG
-        
-        // Personal Info (Amharic)
-        firstNameAMH: "",        // maps to firstNameAMH
-        middleNameAMH: "",       // maps to fatherNameAMH
-        lastNameAMH: "",         // maps to grandfatherNameAMH
-       
-        sex: "",
-        age: "",                  // Remove asterisk from UI (optional)
-        impairmentCode: "",
-        studentPhoto: null,
-        prevPhoto: null,
-        
-        // Dates
-        birthDateEC: "",
-        birthMonthEC: "",
-        birthYearEC: "",
-        dateEnrolledDateEC: "",
-        dateEnrolledMonthEC: "",
-        dateEnrolledYearEC: "",
-        dateEnrolledGC: "",
-        birthDateGC: "",
-        
-        // Place of Birth (ALL required - add asterisks)
-        placeOfBirthRegionCode: "",
-        placeOfBirthZoneCode: "",
-        placeOfBirthWoredaCode: "",
-        
-        // Current Address (ALL required - add asterisks)
-        currentAddressRegionCode: "",
-        currentAddressZoneCode: "",
-        currentAddressWoredaCode: "",
-        
-        // Contact
-        email: "",                // Optional - remove any asterisk
-        phoneNo: "",              // Required - ensure asterisk
-        
-        // Account
-        username: "",
-        password: "",
-        confirmPassword: "",
-        
-        // Emergency Contact (ALL required except relation)
-        emergencyFullName: "",
-        emergencyFullNameAMH: "", 
-        contactPersonRelation: "",     // Optional
-        contactPersonPhoneNumber: "",  // Required - add asterisk
-        
-        // Academic Required
-        studentRecentStatusId: "",     // Required - add asterisk
-        batchClassYearSemesterId: "",  // Required - REMOVE HARDCODED "13"
-        schoolBackgroundId: "",        // Required
-        departmentEnrolledId: "",      // Required
-        programModalityCode: "",       // Required
-        
-        // Academic Optional
-        isTransfer: "",
-        exitExamUserID: "",
-        exitExamScore: "",
-        hasPassedExitExam: "",
-        grade12Result: "",
-        remark: "",
-        document: null,
-      };
-});
+    const saved = localStorage.getItem("registrarRegistrationFormData");
+    return saved
+      ? JSON.parse(saved)
+      : {
+          // Personal Info (English)
+          firstName: "", // maps to firstNameENG
+          middleName: "", // maps to fatherNameENG
+          lastName: "", // maps to grandfatherNameENG
+
+          // Personal Info (Amharic)
+          firstNameAMH: "", // maps to firstNameAMH
+          middleNameAMH: "", // maps to fatherNameAMH
+          lastNameAMH: "", // maps to grandfatherNameAMH
+
+          sex: "",
+          age: "", // Remove asterisk from UI (optional)
+          impairmentCode: "",
+          studentPhoto: null,
+          prevPhoto: null,
+
+          // Dates
+          birthDateEC: "",
+          birthMonthEC: "",
+          birthYearEC: "",
+          dateEnrolledDateEC: "",
+          dateEnrolledMonthEC: "",
+          dateEnrolledYearEC: "",
+          dateEnrolledGC: "",
+          birthDateGC: "",
+
+          // Place of Birth (ALL required - add asterisks)
+          placeOfBirthRegionCode: "",
+          placeOfBirthZoneCode: "",
+          placeOfBirthWoredaCode: "",
+
+          // Current Address (ALL required - add asterisks)
+          currentAddressRegionCode: "",
+          currentAddressZoneCode: "",
+          currentAddressWoredaCode: "",
+
+          // Contact
+          email: "", // Optional - remove any asterisk
+          phoneNo: "", // Required - ensure asterisk
+
+          // Account
+          username: "",
+          password: "",
+          confirmPassword: "",
+
+          // Emergency Contact (ALL required except relation)
+          emergencyFullName: "",
+          emergencyFullNameAMH: "",
+          contactPersonRelation: "", // Optional
+          contactPersonPhoneNumber: "", // Required - add asterisk
+
+          // Academic Required
+          studentRecentStatusId: "", // Required - add asterisk
+          batchClassYearSemesterId: "", // Required - REMOVE HARDCODED "13"
+          batchId: "", // NEW: Batch ID
+          schoolBackgroundId: "", // Required
+          departmentEnrolledId: "", // Required
+          programModalityCode: "", // Required
+
+          // Academic Optional
+          isTransfer: "",
+          exitExamUserID: "",
+          exitExamScore: "",
+          hasPassedExitExam: "",
+          grade12Result: "",
+          remark: "",
+          document: null,
+        };
+  });
 
   useEffect(() => {
     localStorage.setItem(
       "registrarRegistrationFormData",
-      JSON.stringify(formData)
+      JSON.stringify(formData),
     );
   }, [formData]);
 
   useEffect(() => {
     localStorage.setItem(
       "registrarRegistrationCurrentStep",
-      currentStep.toString()
+      currentStep.toString(),
     );
   }, [currentStep]);
 
@@ -1561,6 +1680,7 @@ const AddStudent = () => {
     currentZones: [],
     currentWoredas: [],
     batchClassSemsterYear: [],
+    batches: [], // NEW: Add batches array
   });
 
   useEffect(() => {
@@ -1575,17 +1695,21 @@ const AddStudent = () => {
           programModalities,
           regions,
           batchClassSemsterYear,
+          lookupsData, // NEW: Add this to get batches
+
           // classYears,
         ] = await Promise.all([
           apiService.get(endPoints.departments),
           apiService.get(endPoints.impairments),
 
           apiService.get(endPoints.studentStatus),
-          // apiService.get(endPoints.semesters), 
+          // apiService.get(endPoints.semesters),
           apiService.get(endPoints.schoolBackgrounds),
           apiService.get(endPoints.programModalities),
           apiService.get(endPoints.regions),
           apiService.get(endPoints.batchClassSemsterYear),
+          apiService.get(endPoints.lookupsDropdown), // NEW: Fetch lookups data
+
           // apiService.get(endPoints.classYears),
         ]);
 
@@ -1597,6 +1721,11 @@ const AddStudent = () => {
           batchClassSemsterYear: (batchClassSemsterYear || []).map((i) => ({
             value: i.bcsyId,
             label: i.name,
+          })),
+          batches: (lookupsData?.batches || []).map((batch) => ({
+            // NEW: Map batches
+            value: batch.id,
+            label: batch.name,
           })),
           impairments: (impairments || [])
             .map((i) => ({
@@ -1641,56 +1770,61 @@ const AddStudent = () => {
   }, []);
 
   // Check if current step has all required fields filled
-const isStepValid = () => {
-  const requiredFields = getRequiredFieldsForStep(currentStep);
-  
-  for (const field of requiredFields) {
-    // Special handling for confirmPassword - check if it matches password
-    if (field === "confirmPassword") {
-      if (formData.password !== formData.confirmPassword || isFieldEmpty(formData.confirmPassword)) {
+  const isStepValid = () => {
+    const requiredFields = getRequiredFieldsForStep(currentStep);
+
+    for (const field of requiredFields) {
+      // Special handling for confirmPassword - check if it matches password
+      if (field === "confirmPassword") {
+        if (
+          formData.password !== formData.confirmPassword ||
+          isFieldEmpty(formData.confirmPassword)
+        ) {
+          return false;
+        }
+        continue;
+      }
+
+      if (isFieldEmpty(formData[field])) {
         return false;
       }
-      continue;
     }
-    
-    if (isFieldEmpty(formData[field])) {
-      return false;
+
+    // Additional validation for Step 2: password length
+    if (currentStep === 2) {
+      if (formData.password && formData.password.length < 6) {
+        return false;
+      }
     }
-  }
-  
-  // Additional validation for Step 2: password length
-  if (currentStep === 2) {
-    if (formData.password && formData.password.length < 6) {
-      return false;
-    }
-  }
-  
-  return true;
-};
 
-// Handle field blur to mark as touched
-const handleFieldBlur = (fieldName) => {
-  setTouchedFields(prev => ({ ...prev, [fieldName]: true }));
-};
+    return true;
+  };
 
-// Check if a field should show error (required, touched, and empty)
-const shouldShowError = (fieldName) => {
-  const requiredFields = getRequiredFieldsForStep(currentStep);
-  return requiredFields.includes(fieldName) && 
-         touchedFields[fieldName] && 
-         isFieldEmpty(formData[fieldName]);
-};
+  // Handle field blur to mark as touched
+  const handleFieldBlur = (fieldName) => {
+    setTouchedFields((prev) => ({ ...prev, [fieldName]: true }));
+  };
 
-// Get input className based on validation state
-const getInputClassName = (fieldName, baseClasses = "") => {
-  const isError = shouldShowError(fieldName);
-  return `${baseClasses} ${isError ? 'border-red-500 focus:ring-red-500 dark:border-red-500' : 'border-gray-300 focus:ring-blue-500'}`;
-};
+  // Check if a field should show error (required, touched, and empty)
+  const shouldShowError = (fieldName) => {
+    const requiredFields = getRequiredFieldsForStep(currentStep);
+    return (
+      requiredFields.includes(fieldName) &&
+      touchedFields[fieldName] &&
+      isFieldEmpty(formData[fieldName])
+    );
+  };
+
+  // Get input className based on validation state
+  const getInputClassName = (fieldName, baseClasses = "") => {
+    const isError = shouldShowError(fieldName);
+    return `${baseClasses} ${isError ? "border-red-500 focus:ring-red-500 dark:border-red-500" : "border-gray-300 focus:ring-blue-500"}`;
+  };
 
   const fetchZonesByRegion = async (regionCode, target) => {
     try {
       const zones = await apiService.get(
-        `${endPoints.zonesByRegion}/${regionCode}`
+        `${endPoints.zonesByRegion}/${regionCode}`,
       );
       setDropdowns((prev) => ({
         ...prev,
@@ -1723,7 +1857,7 @@ const getInputClassName = (fieldName, baseClasses = "") => {
   const fetchWoredasByZone = async (zoneCode, target) => {
     try {
       const woredas = await apiService.get(
-        `${endPoints.woredasByZone}/${zoneCode}`
+        `${endPoints.woredasByZone}/${zoneCode}`,
       );
       setDropdowns((prev) => ({
         ...prev,
@@ -1756,333 +1890,376 @@ const getInputClassName = (fieldName, baseClasses = "") => {
     if (currentStep > 1) setCurrentStep((s) => s - 1);
   };
 
-const handleSubmit = async (data) => {
-  setIsSubmitting(true);
-  setErrorMessage("");
+  const handleSubmit = async (data) => {
+    setIsSubmitting(true);
+    setErrorMessage("");
 
-  const form = new FormData();
+    const form = new FormData();
 
-  const nullIfEmpty = (v) =>
-    v === undefined || v === null || String(v).trim() === "" ? null : v;
-  
-  const intOrNull = (v) =>
-    Number.isFinite(parseInt(v, 10)) ? parseInt(v, 10) : null;
-  
-  const floatOrNull = (v) =>
-    !isNaN(parseFloat(v)) && isFinite(v) ? parseFloat(v) : null;
-  
-  const boolOrNull = (v) => {
-    if (v === "true") return true;
-    if (v === "false") return false;
-    return null;
-  };
+    const nullIfEmpty = (v) =>
+      v === undefined || v === null || String(v).trim() === "" ? null : v;
 
-  const dateOrNull = (y, m, d) => {
-    if (y && m && d) {
-      // Format as YYYY-MM-DD
-      const year = String(y).padStart(4, '0');
-      const month = String(m).padStart(2, '0');
-      const day = String(d).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    }
-    return null;
-  };
+    const intOrNull = (v) =>
+      Number.isFinite(parseInt(v, 10)) ? parseInt(v, 10) : null;
 
-  // Map marital status from frontend display to backend enum
-  const mapMaritalStatus = (status) => {
-    const statusMap = {
-      "Single": "SINGLE",
-      "Married": "MARRIED", 
-      "Divorced": "DIVORCED",
-      "Separated": "WIDOWED"  // Map "Separated" to "WIDOWED" as per backend
+    const floatOrNull = (v) =>
+      !isNaN(parseFloat(v)) && isFinite(v) ? parseFloat(v) : null;
+
+    const boolOrNull = (v) => {
+      if (v === "true") return true;
+      if (v === "false") return false;
+      return null;
     };
-    return statusMap[status] || null;
-  };
 
-  // Determine document status based on whether document is uploaded
-  const documentStatus = data.document ? "COMPLETE" : "INCOMPLETE";
-
-  const jsonBody = {
-    // User Credentials
-    username: nullIfEmpty(data.username),
-    password: nullIfEmpty(data.password),
-
-    // Personal Information - English
-    firstNameENG: nullIfEmpty(data.firstName),
-    fatherNameENG: nullIfEmpty(data.middleName),
-    grandfatherNameENG: nullIfEmpty(data.lastName),
-
-    // Personal Information - Amharic
-    firstNameAMH: nullIfEmpty(data.firstNameAMH),
-    fatherNameAMH: nullIfEmpty(data.middleNameAMH),
-    grandfatherNameAMH: nullIfEmpty(data.lastNameAMH),
-
-    // Demographic
-    gender: data.sex === "Male" ? "MALE" : data.sex === "Female" ? "FEMALE" : null,
-    age: intOrNull(data.age),
-    phoneNumber: nullIfEmpty(data.phoneNo),
-
-    // Date of Birth
-    dateOfBirthEC: dateOrNull(data.birthYearEC, data.birthMonthEC, data.birthDateEC),
-    dateOfBirthGC: nullIfEmpty(data.birthDateGC),
-
-    // Place of Birth
-    placeOfBirthWoredaCode: nullIfEmpty(data.placeOfBirthWoredaCode),
-    placeOfBirthZoneCode: nullIfEmpty(data.placeOfBirthZoneCode),
-    placeOfBirthRegionCode: nullIfEmpty(data.placeOfBirthRegionCode),
-
-    // Current Address
-    currentAddressWoredaCode: nullIfEmpty(data.currentAddressWoredaCode),
-    currentAddressZoneCode: nullIfEmpty(data.currentAddressZoneCode),
-    currentAddressRegionCode: nullIfEmpty(data.currentAddressRegionCode),
-
-    // Contact
-    email: nullIfEmpty(data.email),
-
-    // Marital & Background
-    maritalStatus: mapMaritalStatus(data.maritalStatus),
-    impairmentCode: nullIfEmpty(data.impairmentCode),
-    schoolBackgroundId: intOrNull(data.schoolBackgroundId),
-
-    // Emergency Contact
-    contactPersonFullNameENG: data.emergencyFullName ,
-    contactPersonFullNameAMH: data.emergencyFullNameAMH ,
-    contactPersonPhoneNumber: nullIfEmpty(data.contactPersonPhoneNumber),
-    contactPersonRelation: nullIfEmpty(data.contactPersonRelation),
-
-    // Academic Dates
-    dateEnrolledEC: dateOrNull(data.dateEnrolledYearEC, data.dateEnrolledMonthEC, data.dateEnrolledDateEC),
-    dateEnrolledGC: nullIfEmpty(data.dateEnrolledGC),
-
-    // Academic Required
-    batchClassYearSemesterId: intOrNull(data.batchClassYearSemesterId),
-    studentRecentStatusId: intOrNull(data.studentRecentStatusId),
-    departmentEnrolledId: intOrNull(data.departmentEnrolledId),
-    programModalityCode: nullIfEmpty(data.programModalityCode),
-
-    // Academic Optional
-    isTransfer: boolOrNull(data.isTransfer),
-    exitExamUserID: nullIfEmpty(data.exitExamUserID),
-    exitExamScore: floatOrNull(data.exitExamScore),
-    isStudentPassExitExam: boolOrNull(data.hasPassedExitExam),
-    grade12Result: floatOrNull(data.grade12Result),
-    remark: nullIfEmpty(data.remark),
-
-    // Document Status
-    documentStatus: documentStatus
-  };
-
-  // Remove null values
-  const cleaned = Object.fromEntries(
-    Object.entries(jsonBody).filter(([_, v]) => v !== null && v !== undefined)
-  );
-
-  // Add the JSON data to form
-  form.append(
-    "data",
-    new Blob([JSON.stringify(cleaned)], { type: "application/json" })
-  );
-
-  // Add files if they exist
-  if (data.studentPhoto && data.studentPhoto instanceof File) {
-    // Check file size (2MB limit)
-    if (data.studentPhoto.size > 2 * 1024 * 1024) {
-      toast({
-        title: "Error",
-        description: "Student photo must be less than 2MB",
-        variant: "destructive",
-      });
-      setIsSubmitting(false);
-      return;
-    }
-    form.append("studentPhoto", data.studentPhoto);
-  }
-
-  if (data.document && data.document instanceof File) {
-    // Check file size (10MB limit)
-    if (data.document.size > 10 * 1024 * 1024) {
-      toast({
-        title: "Error",
-        description: "Document must be less than 10MB",
-        variant: "destructive",
-      });
-      setIsSubmitting(false);
-      return;
-    }
-    form.append("document", data.document);
-  }
-
-  try {
-    console.log("Submitting form data:", cleaned);
-    
-    const resp = await apiService.post(
-      endPoints.registrarApplicantRegister,
-      form,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          requiresAuth: true,
-        },
+    const dateOrNull = (y, m, d) => {
+      if (y && m && d) {
+        // Format as YYYY-MM-DD
+        const year = String(y).padStart(4, "0");
+        const month = String(m).padStart(2, "0");
+        const day = String(d).padStart(2, "0");
+        return `${year}-${month}-${day}`;
       }
+      return null;
+    };
+
+    // Map marital status from frontend display to backend enum
+    const mapMaritalStatus = (status) => {
+      const statusMap = {
+        Single: "SINGLE",
+        Married: "MARRIED",
+        Divorced: "DIVORCED",
+        Separated: "WIDOWED", // Map "Separated" to "WIDOWED" as per backend
+      };
+      return statusMap[status] || null;
+    };
+
+    // Determine document status based on whether document is uploaded
+    const documentStatus = data.document ? "COMPLETE" : "INCOMPLETE";
+
+    const jsonBody = {
+      // User Credentials
+      username: nullIfEmpty(data.username),
+      password: nullIfEmpty(data.password),
+
+      // Personal Information - English
+      firstNameENG: nullIfEmpty(data.firstName),
+      fatherNameENG: nullIfEmpty(data.middleName),
+      grandfatherNameENG: nullIfEmpty(data.lastName),
+
+      // Personal Information - Amharic
+      firstNameAMH: nullIfEmpty(data.firstNameAMH),
+      fatherNameAMH: nullIfEmpty(data.middleNameAMH),
+      grandfatherNameAMH: nullIfEmpty(data.lastNameAMH),
+
+      // Demographic
+      gender:
+        data.sex === "Male" ? "MALE" : data.sex === "Female" ? "FEMALE" : null,
+      age: intOrNull(data.age),
+      phoneNumber: nullIfEmpty(data.phoneNo),
+
+      // Date of Birth
+      dateOfBirthEC: dateOrNull(
+        data.birthYearEC,
+        data.birthMonthEC,
+        data.birthDateEC,
+      ),
+      dateOfBirthGC: nullIfEmpty(data.birthDateGC),
+
+      // Place of Birth
+      placeOfBirthWoredaCode: nullIfEmpty(data.placeOfBirthWoredaCode),
+      placeOfBirthZoneCode: nullIfEmpty(data.placeOfBirthZoneCode),
+      placeOfBirthRegionCode: nullIfEmpty(data.placeOfBirthRegionCode),
+
+      // Current Address
+      currentAddressWoredaCode: nullIfEmpty(data.currentAddressWoredaCode),
+      currentAddressZoneCode: nullIfEmpty(data.currentAddressZoneCode),
+      currentAddressRegionCode: nullIfEmpty(data.currentAddressRegionCode),
+
+      // Contact
+      email: nullIfEmpty(data.email),
+
+      // Marital & Background
+      maritalStatus: mapMaritalStatus(data.maritalStatus),
+      impairmentCode: nullIfEmpty(data.impairmentCode),
+      schoolBackgroundId: intOrNull(data.schoolBackgroundId),
+
+      // Emergency Contact
+      contactPersonFullNameENG: data.emergencyFullName,
+      contactPersonFullNameAMH: data.emergencyFullNameAMH,
+      contactPersonPhoneNumber: nullIfEmpty(data.contactPersonPhoneNumber),
+      contactPersonRelation: nullIfEmpty(data.contactPersonRelation),
+
+      // Academic Dates
+      dateEnrolledEC: dateOrNull(
+        data.dateEnrolledYearEC,
+        data.dateEnrolledMonthEC,
+        data.dateEnrolledDateEC,
+      ),
+      dateEnrolledGC: nullIfEmpty(data.dateEnrolledGC),
+
+      // Academic Required
+      batchId: intOrNull(data.batchId), // NEW: Add batchId
+      batchClassYearSemesterId: intOrNull(data.batchClassYearSemesterId),
+      studentRecentStatusId: intOrNull(data.studentRecentStatusId),
+      departmentEnrolledId: intOrNull(data.departmentEnrolledId),
+      programModalityCode: nullIfEmpty(data.programModalityCode),
+
+      // Academic Optional
+      isTransfer: boolOrNull(data.isTransfer),
+      exitExamUserID: nullIfEmpty(data.exitExamUserID),
+      exitExamScore: floatOrNull(data.exitExamScore),
+      isStudentPassExitExam: boolOrNull(data.hasPassedExitExam),
+      grade12Result: floatOrNull(data.grade12Result),
+      remark: nullIfEmpty(data.remark),
+
+      // Document Status
+      documentStatus: documentStatus,
+    };
+
+    // Remove null values
+    const cleaned = Object.fromEntries(
+      Object.entries(jsonBody).filter(
+        ([_, v]) => v !== null && v !== undefined,
+      ),
     );
 
-    // Handle successful response
-    if (resp) {
-      // Show success message with student details
-      toast({
-        title: "✅ Success!",
-        description: (
-          <div className="mt-2">
-            <p className="font-semibold">{resp.message + " with ID: " + resp.username || "Student registered successfully."}</p>
-          </div>
-        ),
-        variant: "default",
-        duration: 5000,
-      });
-      
-      // Clear ALL localStorage items
-      localStorage.removeItem("registrarRegistrationFormData");
-      localStorage.removeItem("registrarRegistrationCurrentStep");
-      
-      // Reset form state for fresh start
-      setFormData({
-        // Personal Info (English)
-        firstName: "", middleName: "", lastName: "",
-        // Personal Info (Amharic)
-        firstNameAMH: "", middleNameAMH: "", lastNameAMH: "",
-        // Mother's Info (English)
-        sex: "", age: "", impairmentCode: "",
-        studentPhoto: null, prevPhoto: null,
-        // Dates
-        birthDateEC: "", birthMonthEC: "", birthYearEC: "",
-        dateEnrolledDateEC: "", dateEnrolledMonthEC: "", dateEnrolledYearEC: "",
-        dateEnrolledGC: "", birthDateGC: "",
-        // Place of Birth
-        placeOfBirthRegionCode: "", placeOfBirthZoneCode: "", placeOfBirthWoredaCode: "",
-        // Current Address
-        currentAddressRegionCode: "", currentAddressZoneCode: "", currentAddressWoredaCode: "",
-        // Contact
-        email: "", phoneNo: "",
-        // Account
-        username: "", password: "", confirmPassword: "",
-        // Emergency Contact
-        emergencyFullName: "", emergencyFullNameAMH: "",
-        contactPersonRelation: "", contactPersonPhoneNumber: "",
-        // Academic Required
-        studentRecentStatusId: "", batchClassYearSemesterId: "",
-        schoolBackgroundId: "", departmentEnrolledId: "", programModalityCode: "",
-        // Academic Optional
-        isTransfer: "", exitExamUserID: "", exitExamScore: "",
-        hasPassedExitExam: "", grade12Result: "", remark: "", document: null,
-      });
-      
-      // Reset touched fields
-      setTouchedFields({});
-      
-      // Redirect to step 1 after a short delay to show the success message
-      setTimeout(() => {
-        setCurrentStep(1);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 1500);
-    }
-  } catch (err) {
-    console.error("Registration error:", err);
-    
-    // Handle different error responses
-    let errorMessage = "An error occurred during registration.";
-    
-    if (err.response) {
-      const status = err.response.status;
-      const errorData = err.response.data;
-      
-      // Handle different status codes
-      switch (status) {
-        case 400:
-          errorMessage = errorData.error || "Bad request. Please check all required fields.";
-          break;
-        case 409:
-          if (errorData.error?.includes("phone")) {
-            errorMessage = "Phone number already exists. Please use a different phone number.";
-          } else if (errorData.error?.includes("exit exam")) {
-            errorMessage = "Exit exam ID already exists. Please check and try again.";
-          } else {
-            errorMessage = errorData.error || "Duplicate entry found.";
-          }
-          break;
-        case 500:
-          errorMessage = "Server error. Please try again later.";
-          break;
-        default:
-          errorMessage = errorData.error || `Error ${status}: ${err.response.statusText}`;
+    // Add the JSON data to form
+    form.append(
+      "data",
+      new Blob([JSON.stringify(cleaned)], { type: "application/json" }),
+    );
+
+    // Add files if they exist
+    if (data.studentPhoto && data.studentPhoto instanceof File) {
+      // Check file size (2MB limit)
+      if (data.studentPhoto.size > 2 * 1024 * 1024) {
+        toast({
+          title: "Error",
+          description: "Student photo must be less than 2MB",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
       }
-    } else if (err.request) {
-      errorMessage = "No response from server. Please check your connection.";
-    } else {
-      errorMessage = err.message || "An unexpected error occurred.";
+      form.append("studentPhoto", data.studentPhoto);
     }
-    
-    setErrorMessage(errorMessage);
-    toast({
-      title: "Error",
-      description: errorMessage,
-      variant: "destructive",
-    });
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+
+    if (data.document && data.document instanceof File) {
+      // Check file size (10MB limit)
+      if (data.document.size > 10 * 1024 * 1024) {
+        toast({
+          title: "Error",
+          description: "Document must be less than 10MB",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      form.append("document", data.document);
+    }
+
+    try {
+      console.log("Submitting form data:", cleaned);
+
+      const resp = await apiService.post(
+        endPoints.registrarApplicantRegister,
+        form,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            requiresAuth: true,
+          },
+        },
+      );
+
+      // Handle successful response
+      if (resp) {
+        // Show success message with student details
+        toast({
+          title: "✅ Success!",
+          description: (
+            <div className="mt-2">
+              <p className="font-semibold">
+                {resp.message + " with ID: " + resp.username ||
+                  "Student registered successfully."}
+              </p>
+            </div>
+          ),
+          variant: "default",
+          duration: 5000,
+        });
+
+        // Clear ALL localStorage items
+        localStorage.removeItem("registrarRegistrationFormData");
+        localStorage.removeItem("registrarRegistrationCurrentStep");
+
+        // Reset form state for fresh start
+        setFormData({
+          // Personal Info (English)
+          firstName: "",
+          middleName: "",
+          lastName: "",
+          // Personal Info (Amharic)
+          firstNameAMH: "",
+          middleNameAMH: "",
+          lastNameAMH: "",
+          // Mother's Info (English)
+          sex: "",
+          age: "",
+          impairmentCode: "",
+          studentPhoto: null,
+          prevPhoto: null,
+          // Dates
+          birthDateEC: "",
+          birthMonthEC: "",
+          birthYearEC: "",
+          dateEnrolledDateEC: "",
+          dateEnrolledMonthEC: "",
+          dateEnrolledYearEC: "",
+          dateEnrolledGC: "",
+          birthDateGC: "",
+          // Place of Birth
+          placeOfBirthRegionCode: "",
+          placeOfBirthZoneCode: "",
+          placeOfBirthWoredaCode: "",
+          // Current Address
+          currentAddressRegionCode: "",
+          currentAddressZoneCode: "",
+          currentAddressWoredaCode: "",
+          // Contact
+          email: "",
+          phoneNo: "",
+          // Account
+          username: "",
+          password: "",
+          confirmPassword: "",
+          // Emergency Contact
+          emergencyFullName: "",
+          emergencyFullNameAMH: "",
+          contactPersonRelation: "",
+          contactPersonPhoneNumber: "",
+          // Academic Required
+          studentRecentStatusId: "",
+          batchClassYearSemesterId: "",
+          batchId: "", // NEW: Reset batchId
+          schoolBackgroundId: "",
+          departmentEnrolledId: "",
+          programModalityCode: "",
+          // Academic Optional
+          isTransfer: "",
+          exitExamUserID: "",
+          exitExamScore: "",
+          hasPassedExitExam: "",
+          grade12Result: "",
+          remark: "",
+          document: null,
+        });
+
+        // Reset touched fields
+        setTouchedFields({});
+
+        // Redirect to step 1 after a short delay to show the success message
+        setTimeout(() => {
+          setCurrentStep(1);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 1500);
+      }
+    } catch (err) {
+      console.error("Registration error:", err);
+
+      // Handle different error responses
+      let errorMessage = "An error occurred during registration.";
+
+      if (err.response) {
+        const status = err.response.status;
+        const errorData = err.response.data;
+
+        // Handle different status codes
+        switch (status) {
+          case 400:
+            errorMessage =
+              errorData.error ||
+              "Bad request. Please check all required fields.";
+            break;
+          case 409:
+            if (errorData.error?.includes("phone")) {
+              errorMessage =
+                "Phone number already exists. Please use a different phone number.";
+            } else if (errorData.error?.includes("exit exam")) {
+              errorMessage =
+                "Exit exam ID already exists. Please check and try again.";
+            } else {
+              errorMessage = errorData.error || "Duplicate entry found.";
+            }
+            break;
+          case 500:
+            errorMessage = "Server error. Please try again later.";
+            break;
+          default:
+            errorMessage =
+              errorData.error || `Error ${status}: ${err.response.statusText}`;
+        }
+      } else if (err.request) {
+        errorMessage = "No response from server. Please check your connection.";
+      } else {
+        errorMessage = err.message || "An unexpected error occurred.";
+      }
+
+      setErrorMessage(errorMessage);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   // THIS IS THE ONLY CHANGE: ALWAYS ALLOW NEXT
   // const isStepValid = () => true;
 
   const renderStep = () => {
-  const commonProps = {
-    formData,
-    setFormData,
-    shouldShowError,
-    getInputClassName,
-    handleFieldBlur,
-  };
+    const commonProps = {
+      formData,
+      setFormData,
+      shouldShowError,
+      getInputClassName,
+      handleFieldBlur,
+    };
 
-  switch (currentStep) {
-    case 1:
-      return (
-        <PersonalInformationStep
-          {...commonProps}
-          dropdowns={dropdowns}
-          fetchZonesByRegion={fetchZonesByRegion}
-          fetchWoredasByZone={fetchWoredasByZone}
-        />
-      );
-    case 2:
-      return (
-        <AccountCreationStep
-          {...commonProps}
-        />
-      );
-    case 3:
-      return (
-        <EducationalInformationStep
-          {...commonProps}
-          dropdowns={dropdowns}
-        />
-      );
-    case 4:
-      return (
-        <ReviewSubmitStep
-          formData={formData}
-          setFormData={setFormData}
-          onSubmit={handleSubmit}
-          isSubmitting={isSubmitting}
-          shouldShowError={shouldShowError}
-          getInputClassName={getInputClassName}
-          handleFieldBlur={handleFieldBlur}
-        />
-      );
-    default:
-      return null;
-  }
-};
+    switch (currentStep) {
+      case 1:
+        return (
+          <PersonalInformationStep
+            {...commonProps}
+            dropdowns={dropdowns}
+            fetchZonesByRegion={fetchZonesByRegion}
+            fetchWoredasByZone={fetchWoredasByZone}
+          />
+        );
+      case 2:
+        return <AccountCreationStep {...commonProps} />;
+      case 3:
+        return (
+          <EducationalInformationStep {...commonProps} dropdowns={dropdowns} />
+        );
+      case 4:
+        return (
+          <ReviewSubmitStep
+            formData={formData}
+            setFormData={setFormData}
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+            shouldShowError={shouldShowError}
+            getInputClassName={getInputClassName}
+            handleFieldBlur={handleFieldBlur}
+          />
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="relative min-h-screen bg-gray-50 dark:bg-gray-900 px-6 md:px-16 lg:px-16 ">
@@ -2128,7 +2305,7 @@ const handleSubmit = async (data) => {
                 onClick={() => {
                   localStorage.setItem(
                     "registrarRegistrationFormData",
-                    JSON.stringify(formData)
+                    JSON.stringify(formData),
                   );
                   toast({
                     title: "Saved",
