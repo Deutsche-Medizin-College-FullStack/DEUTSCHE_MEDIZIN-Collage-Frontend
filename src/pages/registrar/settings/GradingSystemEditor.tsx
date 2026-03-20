@@ -11,6 +11,7 @@ import {
 } from "react-icons/fa";
 import apiService from "@/components/api/apiService"; // Adjust import path as needed
 import endPoints from "@/components/api/endPoints"; // Adjust import path as needed
+import { useToast } from "@/hooks/use-toast"; // Adjust path as needed
 
 type Interval = {
   id: number | null;
@@ -48,7 +49,7 @@ const GradingSystemEditor = () => {
       console.error("Failed to fetch grading systems:", e);
       setError(
         e.response?.data?.message ||
-          "Failed to load grading systems. Please try again."
+          "Failed to load grading systems. Please try again.",
       );
     } finally {
       setLoading(false);
@@ -229,6 +230,7 @@ const CrudSection = ({
   saving: boolean;
   setSaving: (val: boolean) => void;
 }) => {
+  const { toast } = useToast(); // Add this line
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState<GradingSystem | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -240,7 +242,7 @@ const CrudSection = ({
   const preparePayloadForBackend = () => {
     // We sort again just to be extra safe
     const sortedIntervals = [...formData.intervals].sort(
-      (a, b) => a.min - b.min
+      (a, b) => a.min - b.min,
     );
 
     const adjusted = sortedIntervals.map((interval, index) => {
@@ -295,13 +297,13 @@ const CrudSection = ({
       item.versionName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (item.remark ?? "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       (item.departmentId !== null &&
-        `${item.departmentId}`.includes(searchTerm))
+        `${item.departmentId}`.includes(searchTerm)),
   );
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const paginatedData = filteredData.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
   const fetchDepartments = async () => {
     try {
@@ -311,7 +313,7 @@ const CrudSection = ({
       console.error("Failed to fetch grading systems:", e);
       setError(
         e.response?.data?.message ||
-          "Failed to load grading systems. Please try again."
+          "Failed to load grading systems. Please try again.",
       );
     }
   };
@@ -326,7 +328,7 @@ const CrudSection = ({
       console.error("Failed to fetch grading systems:", e);
       setError(
         e.response?.data?.message ||
-          "Failed to load grading systems. Please try again."
+          "Failed to load grading systems. Please try again.",
       );
     } finally {
       setLoading(false);
@@ -353,7 +355,7 @@ const CrudSection = ({
       try {
         // Fetch latest data for editing
         const response = await apiService.get(
-          `${endPoints.gradingSystem}/${item.id}`
+          `${endPoints.gradingSystem}/${item.id}`,
         );
         setEditingItem(response);
         setFormData(JSON.parse(JSON.stringify(response)));
@@ -387,7 +389,7 @@ const CrudSection = ({
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     if (name === "departmentId") {
@@ -403,7 +405,7 @@ const CrudSection = ({
   const handleIntervalChange = (
     index: number,
     field: keyof Interval,
-    value: string
+    value: string,
   ) => {
     setFormData((prev) => {
       const copy = { ...prev };
@@ -436,58 +438,22 @@ const CrudSection = ({
     }));
   };
 
-  // const validateForm = () => {
-  //   if (!formData.versionName.trim()) {
-  //     setFormError("Version name is required.");
-  //     return false;
-  //   }
-  //   if (!formData.intervals.length) {
-  //     setFormError("At least one interval is required.");
-  //     return false;
-  //   }
-
-  //   for (const interval of formData.intervals) {
-  //     if (!interval.description.trim() || !interval.gradeLetter.trim()) {
-  //       setFormError("Each interval must have a description and grade letter.");
-  //       return false;
-  //     }
-  //     if (interval.min > interval.max) {
-  //       setFormError("Interval min cannot be greater than max.");
-  //       return false;
-  //     }
-  //   }
-
-  //   // Check overlapping intervals
-  //   const sorted = [...formData.intervals].sort((a, b) => a.min - b.min);
-  //   for (let i = 1; i < sorted.length; i++) {
-  //     if (sorted[i].min <= sorted[i - 1].max) {
-  //       setFormError(
-  //         "Intervals must not overlap. Please adjust min/max values."
-  //       );
-  //       return false;
-  //     }
-  //   }
-
-  //   // Check if intervals cover full range (0-100)
-  //   const totalCoverage = sorted.reduce(
-  //     (sum, int) => sum + (int.max - int.min),
-  //     0
-  //   );
-  //   if (Math.abs(totalCoverage - 99) > 0.0) {
-  //     setFormError("Intervals should cover the full range (0-100).");
-  //     return false;
-  //   }
-
-  //   return true;
-  // };
   const validateForm = () => {
     if (!formData.versionName.trim()) {
-      setFormError("Version name is required.");
+      toast({
+        title: "Validation Error",
+        description: "Version name is required.",
+        variant: "destructive",
+      });
       return false;
     }
 
     if (formData.intervals.length === 0) {
-      setFormError("At least one interval is required.");
+      toast({
+        title: "Validation Error",
+        description: "At least one interval is required.",
+        variant: "destructive",
+      });
       return false;
     }
 
@@ -496,123 +462,76 @@ const CrudSection = ({
     // Basic checks for each interval
     for (const int of sorted) {
       if (!int.description.trim()) {
-        setFormError("Every interval must have a description.");
+        toast({
+          title: "Validation Error",
+          description: "Every interval must have a description.",
+          variant: "destructive",
+        });
         return false;
       }
       if (!int.gradeLetter.trim()) {
-        setFormError("Every interval must have a grade letter.");
+        toast({
+          title: "Validation Error",
+          description: "Every interval must have a grade letter.",
+          variant: "destructive",
+        });
         return false;
       }
       if (int.min > int.max) {
-        setFormError(`Invalid range: min (${int.min}) > max (${int.max})`);
+        toast({
+          title: "Validation Error",
+          description: `Invalid range: min (${int.min}) > max (${int.max})`,
+          variant: "destructive",
+        });
         return false;
       }
     }
 
     // Must start at 0
     if (sorted[0].min !== 0) {
-      setFormError("The first interval must start from 0.");
+      toast({
+        title: "Validation Error",
+        description: "The first interval must start from 0.",
+        variant: "destructive",
+      });
       return false;
     }
 
     // Must end at 100
     if (sorted[sorted.length - 1].max !== 100) {
-      setFormError("The last interval must end at 100.");
+      toast({
+        title: "Validation Error",
+        description: "The last interval must end at 100.",
+        variant: "destructive",
+      });
       return false;
     }
 
-    // Check for overlaps AND gaps
+    // Check for overlaps only (gap check removed)
     for (let i = 1; i < sorted.length; i++) {
       const prev = sorted[i - 1];
       const curr = sorted[i];
 
+      // Only check for overlaps, not gaps
       if (curr.min < prev.max) {
-        setFormError(
-          `Overlap detected: ${prev.min}–${prev.max} overlaps with ${curr.min}–${curr.max}`
-        );
+        toast({
+          title: "Validation Error",
+          description: `Overlap detected: ${prev.min}–${prev.max} overlaps with ${curr.min}–${curr.max}`,
+          variant: "destructive",
+        });
         return false;
       }
-
-      if (curr.min > prev.max) {
-        setFormError(
-          `Gap between intervals: ${prev.max} to ${curr.min} is not covered`
-        );
-        return false;
-      }
-      // If curr.min === prev.max → perfect, allowed
     }
 
     return true;
   };
 
   // Submit handler
-  // const handleSubmit = async () => {
-  //   if (!validateForm()) return;
-
-  //   setSaving(true);
-  //   try {
-  //     let updatedData: GradingSystem[] = [...data];
-
-  //     if (editingItem) {
-  //       // Update main data
-  //       if (!window.confirm("Update this grading system?")) return;
-
-  //       const response = await apiService.put(
-  //         `${endPoints.gradingSystem}/${editingItem.id}`,
-  //         formData
-  //       );
-
-  //       // Update active status separately
-  //       if (isActive !== editingItem.active) {
-  //         await apiService.put(
-  //           `${endPoints.gradingSystem}/${editingItem.id}/active-status`,
-  //           { isActive }
-  //         );
-  //       }
-
-  //       updatedData = data.map((d) =>
-  //         d.id === editingItem.id ? { ...response, active: isActive } : d
-  //       );
-  //       setData(updatedData);
-  //     } else {
-  //       // Create new (new ones are inactive by default unless you change logic)
-  //       if (!window.confirm("Add this new grading system?")) return;
-
-  //       const response = await apiService.post(
-  //         endPoints.gradingSystem,
-  //         formData
-  //       );
-
-  //       // If user wants it active immediately, toggle it after creation
-  //       if (isActive) {
-  //         await apiService.post(
-  //           `${endPoints.gradingSystem}/${response.id}/active-status`,
-  //           { isActive: true }
-  //         );
-  //       }
-
-  //       updatedData = [...data, { ...response, active: isActive }];
-  //       setData(updatedData);
-  //     }
-
-  //     handleCloseModal();
-  //     refetch(); // Refresh full list from server
-  //   } catch (e: any) {
-  //     console.error("Save error:", e);
-  //     setFormError(
-  //       e.response?.data?.message ||
-  //         `Failed to ${editingItem ? "update" : "create"} grading system.`
-  //     );
-  //   } finally {
-  //     setSaving(false);
-  //   }
-  // };
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
     setSaving(true);
     try {
-      // Prepare payload with adjusted max values
       const payload = preparePayloadForBackend();
 
       let response;
@@ -623,18 +542,23 @@ const CrudSection = ({
 
         response = await apiService.put(
           `${endPoints.gradingSystem}/${editingItem.id}`,
-          payload
+          payload,
         );
 
-        // Handle active status change separately
         if (isActive !== editingItem.active) {
           await apiService.put(
             `${endPoints.gradingSystem}/${editingItem.id}/active-status`,
-            { isActive }
+            { isActive },
           );
         }
 
         updatedItem = { ...response, active: isActive };
+
+        toast({
+          title: "Success",
+          description: "Grading system updated successfully!",
+          variant: "default",
+        });
       } else {
         if (!window.confirm("Add this new grading system?")) return;
 
@@ -643,14 +567,19 @@ const CrudSection = ({
         if (isActive) {
           await apiService.post(
             `${endPoints.gradingSystem}/${response.id}/active-status`,
-            { isActive: true }
+            { isActive: true },
           );
         }
 
         updatedItem = { ...response, active: isActive };
+
+        toast({
+          title: "Success",
+          description: "Grading system created successfully!",
+          variant: "default",
+        });
       }
 
-      // Update local state
       const updatedData = editingItem
         ? data.map((d) => (d.id === editingItem.id ? updatedItem : d))
         : [...data, updatedItem];
@@ -665,19 +594,38 @@ const CrudSection = ({
         e.response?.data?.error ||
         e.response?.data?.message ||
         `Failed to ${editingItem ? "update" : "create"} grading system.`;
+
+      toast({
+        title: "Error",
+        description: msg,
+        variant: "destructive",
+      });
       setFormError(msg);
     } finally {
       setSaving(false);
     }
   };
+
   const handleDelete = async (id: number) => {
     if (!window.confirm("Delete this grading system permanently?")) return;
 
     try {
       await apiService.delete(`${endPoints.gradingSystem}/${id}`);
       setData((prev) => prev.filter((d) => d.id !== id));
+      toast({
+        title: "Success",
+        description: "Grading system deleted successfully!",
+        variant: "default",
+      });
     } catch (e: any) {
-      alert(e.response?.data?.message || "Failed to delete grading system.");
+      const msg =
+        e.response?.data?.message || "Failed to delete grading system.";
+      toast({
+        title: "Error",
+        description: msg,
+        variant: "destructive",
+      });
+      alert(msg);
     }
   };
 
@@ -847,16 +795,6 @@ const CrudSection = ({
                   </td>
                   <td className="px-6 py-4">{item.departmentId ?? "Global"}</td>
                   <td className="px-6 py-4">{item.remark}</td>
-                  {/* <td className="px-6 py-4">
-                    <ul className="text-sm space-y-1">
-                      {item.intervals.map((int) => (
-                        <li key={int.id ?? `${int.description}-${int.min}`}>
-                          <span className="font-mono">{int.gradeLetter}</span> -{" "}
-                          {int.description} ({int.min}–{int.max})
-                        </li>
-                      ))}
-                    </ul>
-                  </td> */}
                   <td className="px-6 py-4">
                     <HoverableIntervalDisplay
                       intervals={item.intervals}
