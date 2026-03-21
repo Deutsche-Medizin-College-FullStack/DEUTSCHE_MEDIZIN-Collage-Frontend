@@ -71,12 +71,20 @@ export default function StudentProfile() {
   const [studentData, setStudentData] = useState<any>({});
   const [originalData, setOriginalData] = useState<any>({});
 
-  // Dropdown data
+  // Dropdown data - Combined from lookups endpoint
   const [departments, setDepartments] = useState<any[]>([]);
   const [schoolBackgrounds, setSchoolBackgrounds] = useState<any[]>([]);
   const [impairments, setImpairments] = useState<any[]>([]);
   const [batches, setBatches] = useState<any[]>([]);
+  const [bcysList, setBcysList] = useState<any[]>([]); // Renamed from batches to avoid confusion
   const [statuses, setStatuses] = useState<any[]>([]);
+  const [programModalities, setProgramModalities] = useState<any[]>([]);
+  const [documentStatuses, setDocumentStatuses] = useState<any[]>([]);
+  const [maritalStatuses, setMaritalStatuses] = useState<any[]>([]);
+  const [genders, setGenders] = useState<any[]>([]);
+  const [exitExamStatuses, setExitExamStatuses] = useState<any[]>([]);
+
+  // Keep these separate - they still need their own requests
   const [woredas, setWoredas] = useState<any[]>([]);
   const [zones, setZones] = useState<any[]>([]);
   const [regions, setRegions] = useState<any[]>([]);
@@ -220,40 +228,68 @@ export default function StudentProfile() {
 
   const fetchDropdownData = async () => {
     try {
-      // Fetch all dropdown data
-      const [
-        depts,
-        backgrounds,
-        impairmentsResp,
-        batchResp,
-        batchListResp,
-        statusResp,
-        regionsResp,
-        zonesResp,
-        woredasResp,
-      ] = await Promise.all([
-        apiService.get(endPoints.departments).catch(() => []),
-        apiService.get(endPoints.schoolBackgrounds).catch(() => []),
-        apiService.get(endPoints.impairments).catch(() => []),
-        apiService.get(endPoints.BatchClassYearSemesters).catch(() => []),
-        apiService.get(endPoints.batches).catch(() => []),
-        apiService.get(endPoints.studentStatus).catch(() => []),
+      // Fetch all dropdown data from single endpoint
+      const response = await apiService.get(endPoints.lookupsDropdown);
+
+      // Populate dropdowns from the response
+      setDepartments(
+        Array.isArray(response.departments) ? response.departments : [],
+      );
+      setSchoolBackgrounds(
+        Array.isArray(response.schoolBackgrounds)
+          ? response.schoolBackgrounds
+          : [],
+      );
+      setImpairments(
+        Array.isArray(response.impairments) ? response.impairments : [],
+      );
+      setBatches(Array.isArray(response.batches) ? response.batches : []);
+      setBcysList(
+        Array.isArray(response.batchClassYearSemesters)
+          ? response.batchClassYearSemesters
+          : [],
+      );
+      setStatuses(
+        Array.isArray(response.studentStatuses) ? response.studentStatuses : [],
+      );
+      setProgramModalities(
+        Array.isArray(response.programModalities)
+          ? response.programModalities
+          : [],
+      );
+      setDocumentStatuses(
+        Array.isArray(response.documentStatuses)
+          ? response.documentStatuses
+          : [],
+      );
+      setMaritalStatuses(
+        Array.isArray(response.maritalStatuses) ? response.maritalStatuses : [],
+      );
+      setGenders(Array.isArray(response.genders) ? response.genders : []);
+      setExitExamStatuses(
+        Array.isArray(response.exitExamPassStatuses)
+          ? response.exitExamPassStatuses
+          : [],
+      );
+
+      // Also fetch location data separately (keep as is)
+      const [regionsResp, zonesResp, woredasResp] = await Promise.all([
         apiService.get(endPoints.allRegion).catch(() => []),
         apiService.get(endPoints.allZones).catch(() => []),
         apiService.get(endPoints.allWoreda).catch(() => []),
       ]);
 
-      setDepartments(Array.isArray(depts) ? depts : []);
-      setSchoolBackgrounds(Array.isArray(backgrounds) ? backgrounds : []);
-      setImpairments(Array.isArray(impairmentsResp) ? impairmentsResp : []);
-      setBatches(Array.isArray(batchListResp) ? batchListResp : []);
-      setBatches(Array.isArray(batchResp) ? batchResp : []);
-      setStatuses(Array.isArray(statusResp) ? statusResp : []);
       setRegions(Array.isArray(regionsResp) ? regionsResp : []);
       setZones(Array.isArray(zonesResp) ? zonesResp : []);
       setWoredas(Array.isArray(woredasResp) ? woredasResp : []);
     } catch (err: any) {
       console.error("Error fetching dropdown data:", err);
+      toast({
+        title: "Error Loading Data",
+        description:
+          "Failed to load dropdown options. Please refresh the page.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -442,9 +478,9 @@ export default function StudentProfile() {
         fatherNameAMH: studentData.fatherNameAMH || "",
         grandfatherNameENG: studentData.grandfatherNameENG || "",
         grandfatherNameAMH: studentData.grandfatherNameAMH || "",
-        
+
         // Mother's fields removed
-        
+
         gender: studentData.gender || "MALE",
         age: studentData.age ? parseInt(studentData.age) : null,
         phoneNumber: studentData.phoneNumber || "",
@@ -452,9 +488,11 @@ export default function StudentProfile() {
         dateOfBirthGC: studentData.dateOfBirthGC || null,
         dateOfBirthEC: studentData.dateOfBirthEC || null,
         maritalStatus: studentData.maritalStatus || "SINGLE",
-        
+
         // New Grade 12 fields
-        grade12Result: studentData.grade12Result ? parseFloat(studentData.grade12Result) : null,
+        grade12Result: studentData.grade12Result
+          ? parseFloat(studentData.grade12Result)
+          : null,
         yearOfExamG12: studentData.yearOfExamG12 || null,
         nationalExamIdG12: studentData.nationalExamIdG12 || null,
 
@@ -480,9 +518,7 @@ export default function StudentProfile() {
         batchClassYearSemesterId: studentData.batchClassYearSemesterId
           ? parseInt(studentData.batchClassYearSemesterId)
           : null,
-          batchId: studentData.batchId 
-          ? parseInt(studentData.batchId)
-          : null,
+        batchId: studentData.batchId ? parseInt(studentData.batchId) : null,
         studentRecentStatusId: studentData.studentRecentStatusId
           ? parseInt(studentData.studentRecentStatusId)
           : null,
@@ -490,12 +526,21 @@ export default function StudentProfile() {
         // Enrollment Dates
         dateEnrolledGC: studentData.dateEnrolledGC || null,
         dateEnrolledEC: studentData.dateEnrolledEC || null,
-        
+
         // New Date fields
         dateClassEndGC: studentData.dateClassEndGC || null,
         dateGraduated: studentData.dateGraduated || null,
         entryYearGC: studentData.entryYearGC || null,
         entryYearEC: studentData.entryYearEC || null,
+
+        // Exit exam Feilds
+        exitExamUserID: studentData.exitExamUserID || "",
+        exitExamScore:
+          studentData.exitExamScore !== null &&
+          studentData.exitExamScore !== undefined
+            ? parseFloat(studentData.exitExamScore)
+            : null,
+        isStudentPassExitExam: studentData.isStudentPassExitExam || "Not_Taken",
 
         // Emergency Contact
         contactPersonFirstNameENG: studentData.contactPersonFirstNameENG || "",
@@ -510,6 +555,8 @@ export default function StudentProfile() {
 
         // Transfer status
         isTransfer: studentData.isTransfer || false,
+        // Document status
+        documentStatus: studentData.documentStatus || "INCOMPLETE",
       };
 
       console.log("Saving payload:", JSON.stringify(payload, null, 2));
@@ -882,15 +929,42 @@ export default function StudentProfile() {
               {fullNameAmh || "Unknown"}
             </CardDescription>
             <div className="flex flex-wrap justify-center gap-2 mt-3">
-              <Badge
-                variant={
-                  studentData.documentStatus === "COMPLETE"
-                    ? "default"
-                    : "secondary"
-                }
-              >
-                {studentData.documentStatus || "PENDING"}
-              </Badge>
+              {/* Document Status */}
+              {editMode ? (
+                <Select
+                  value={getSafeSelectValue(studentData.documentStatus)}
+                  onValueChange={(v) =>
+                    handleSelectChange(
+                      "documentStatus",
+                      v === "_none" ? null : v,
+                    )
+                  }
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none">Select status</SelectItem>
+                    {getValidSelectItems(documentStatuses, "id").map(
+                      (status) => (
+                        <SelectItem key={status.id} value={String(status.id)}>
+                          {status.name || status.id}
+                        </SelectItem>
+                      ),
+                    )}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Badge
+                  variant={
+                    studentData.documentStatus === "COMPLETE"
+                      ? "default"
+                      : "secondary"
+                  }
+                >
+                  {studentData.documentStatus || "PENDING"}
+                </Badge>
+              )}
               <Badge>
                 {getDisplayName(
                   [
@@ -956,8 +1030,9 @@ export default function StudentProfile() {
               )}
             </div>
             <div>
-              <Label>Batch Class Year</Label>
+              <Label>Batch Class Year Semester</Label>
               {editMode ? (
+                // Replace the batchClassYearSemesterId Select options with:
                 <Select
                   value={getSafeSelectValue(
                     studentData.batchClassYearSemesterId,
@@ -974,11 +1049,9 @@ export default function StudentProfile() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="_none">Select batch</SelectItem>
-                    {getValidSelectItems(batches, "bcysId").map((b) => (
-                      <SelectItem key={b.bcysId} value={String(b.bcysId)}>
-                        {b.batchClassYearSemesterName ||
-                          b.name ||
-                          `Batch ${b.bcysId}`}
+                    {getValidSelectItems(bcysList, "id").map((b) => (
+                      <SelectItem key={b.id} value={String(b.id)}>
+                        {b.name || `Batch ${b.id}`}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -990,38 +1063,42 @@ export default function StudentProfile() {
               )}
             </div>
             <div>
-  <Label>Batch</Label>
-  {editMode ? (
-    <Select
-      value={getSafeSelectValue(studentData.batchId)}
-      onValueChange={(v) =>
-        handleSelectChange(
-          "batchId",
-          v === "_none" ? null : v ? parseInt(v) : null,
-        )
-      }
-    >
-      <SelectTrigger>
-        <SelectValue placeholder="Select batch" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="_none">Select batch</SelectItem>
-        {getValidSelectItems(batches, "id").map((b) => (
-          <SelectItem key={b.id} value={String(b.id)}>
-            Batch {b.name || b.batchName || b.id}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  ) : (
-    <div className="font-medium">
-      {studentData.batchName ? `Batch ${studentData.batchName}` : "Not Assigned"}
-    </div>
-  )}
-</div>
+              <Label>Batch</Label>
+              {editMode ? (
+                // Replace the batch Select options with:
+                <Select
+                  value={getSafeSelectValue(studentData.batchId)}
+                  onValueChange={(v) =>
+                    handleSelectChange(
+                      "batchId",
+                      v === "_none" ? null : v ? parseInt(v) : null,
+                    )
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select batch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none">Select batch</SelectItem>
+                    {getValidSelectItems(batches, "id").map((b) => (
+                      <SelectItem key={b.id} value={String(b.id)}>
+                        {b.name || `Batch ${b.id}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="font-medium">
+                  {studentData.batchName
+                    ? `Batch ${studentData.batchName}`
+                    : "Not Assigned"}
+                </div>
+              )}
+            </div>
             <div>
               <Label>Status</Label>
               {editMode ? (
+                // Replace the status Select options with:
                 <Select
                   value={getSafeSelectValue(studentData.studentRecentStatusId)}
                   onValueChange={(v) =>
@@ -1038,9 +1115,7 @@ export default function StudentProfile() {
                     <SelectItem value="_none">Select status</SelectItem>
                     {getValidSelectItems(statuses, "id").map((s) => (
                       <SelectItem key={s.id} value={String(s.id)}>
-                        {s.studentRecentStatusName ||
-                          s.statusName ||
-                          `Status ${s.id}`}
+                        {s.name || `Status ${s.id}`}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1115,6 +1190,7 @@ export default function StudentProfile() {
               <div>
                 <Label>Gender</Label>
                 {editMode ? (
+                  // Replace the gender Select options with:
                   <Select
                     value={getSafeSelectValue(studentData.gender)}
                     onValueChange={(v) =>
@@ -1125,8 +1201,12 @@ export default function StudentProfile() {
                       <SelectValue placeholder="Select gender" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="MALE">Male</SelectItem>
-                      <SelectItem value="FEMALE">Female</SelectItem>
+                      <SelectItem value="_none">Select gender</SelectItem>
+                      {getValidSelectItems(genders, "id").map((gender) => (
+                        <SelectItem key={gender.id} value={String(gender.id)}>
+                          {gender.name || gender.id}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 ) : (
@@ -1139,6 +1219,7 @@ export default function StudentProfile() {
               <div>
                 <Label>Marital Status</Label>
                 {editMode ? (
+                  // Replace the marital status Select options with:
                   <Select
                     value={getSafeSelectValue(studentData.maritalStatus)}
                     onValueChange={(v) =>
@@ -1152,8 +1233,16 @@ export default function StudentProfile() {
                       <SelectValue placeholder="Select marital status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="SINGLE">Single</SelectItem>
-                      <SelectItem value="MARRIED">Married</SelectItem>
+                      <SelectItem value="_none">
+                        Select marital status
+                      </SelectItem>
+                      {getValidSelectItems(maritalStatuses, "id").map(
+                        (status) => (
+                          <SelectItem key={status.id} value={String(status.id)}>
+                            {status.name || status.id}
+                          </SelectItem>
+                        ),
+                      )}
                     </SelectContent>
                   </Select>
                 ) : (
@@ -1209,6 +1298,7 @@ export default function StudentProfile() {
               <div>
                 <Label>Impairment</Label>
                 {editMode ? (
+                  // Replace the impairment Select options with:
                   <Select
                     value={getSafeSelectValue(studentData.impairmentCode)}
                     onValueChange={(v) =>
@@ -1224,24 +1314,19 @@ export default function StudentProfile() {
                           ? getDisplayName(
                               impairments,
                               studentData.impairmentCode,
-                              "disabilityCode",
-                              "disability",
+                              "id",
+                              "name",
                             )
                           : "Select impairment"}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="_none">None</SelectItem>
-                      {getValidSelectItems(impairments, "disabilityCode").map(
-                        (i) => (
-                          <SelectItem
-                            key={i.disabilityCode}
-                            value={String(i.disabilityCode)}
-                          >
-                            {i.disability || `Impairment ${i.disabilityCode}`}
-                          </SelectItem>
-                        ),
-                      )}
+                      {getValidSelectItems(impairments, "id").map((i) => (
+                        <SelectItem key={i.id} value={String(i.id)}>
+                          {i.name || `Impairment ${i.id}`}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 ) : (
@@ -1691,6 +1776,7 @@ export default function StudentProfile() {
               <div>
                 <Label>Department</Label>
                 {editMode ? (
+                  // Replace the department Select options with:
                   <Select
                     value={getSafeSelectValue(studentData.departmentEnrolledId)}
                     onValueChange={(v) =>
@@ -1706,17 +1792,17 @@ export default function StudentProfile() {
                           ? getDisplayName(
                               departments,
                               studentData.departmentEnrolledId,
-                              "dptID",
-                              "deptName",
+                              "id",
+                              "name",
                             )
                           : "Select department"}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="_none">Select department</SelectItem>
-                      {getValidSelectItems(departments, "dptID").map((d) => (
-                        <SelectItem key={d.dptID} value={String(d.dptID)}>
-                          {d.deptName || `Department ${d.dptID}`}
+                      {getValidSelectItems(departments, "id").map((d) => (
+                        <SelectItem key={d.id} value={String(d.id)}>
+                          {d.name || `Department ${d.id}`}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1736,6 +1822,7 @@ export default function StudentProfile() {
               <div>
                 <Label>School Background</Label>
                 {editMode ? (
+                  // Replace the school background Select options with:
                   <Select
                     value={getSafeSelectValue(studentData.schoolBackgroundId)}
                     onValueChange={(v) =>
@@ -1752,7 +1839,7 @@ export default function StudentProfile() {
                               schoolBackgrounds,
                               studentData.schoolBackgroundId,
                               "id",
-                              "background",
+                              "name",
                             )
                           : "Select school background"}
                       </SelectValue>
@@ -1764,7 +1851,7 @@ export default function StudentProfile() {
                       {getValidSelectItems(schoolBackgrounds, "id").map(
                         (sb) => (
                           <SelectItem key={sb.id} value={String(sb.id)}>
-                            {sb.background || `Background ${sb.id}`}
+                            {sb.name || `Background ${sb.id}`}
                           </SelectItem>
                         ),
                       )}
@@ -1785,6 +1872,7 @@ export default function StudentProfile() {
               <div>
                 <Label>Program Modality</Label>
                 {editMode ? (
+                  // Replace the program modality Select options with:
                   <Select
                     value={getSafeSelectValue(studentData.programModalityCode)}
                     onValueChange={(v) =>
@@ -1798,27 +1886,26 @@ export default function StudentProfile() {
                       <SelectValue placeholder="Select modality">
                         {studentData.programModalityCode
                           ? getDisplayName(
-                              [
-                                { modalityCode: "RG", modality: "Regular" },
-                                { modalityCode: "EV", modality: "Evening" },
-                                { modalityCode: "WE", modality: "Weekend" },
-                                {
-                                  modalityCode: "DL",
-                                  modality: "Distance Learning",
-                                },
-                              ],
+                              programModalities,
                               studentData.programModalityCode,
-                              "modalityCode",
-                              "modality",
+                              "id",
+                              "name",
                             )
                           : "Select modality"}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="RG">Regular</SelectItem>
-                      <SelectItem value="EV">Evening</SelectItem>
-                      <SelectItem value="WE">Weekend</SelectItem>
-                      <SelectItem value="DL">Distance Learning</SelectItem>
+                      <SelectItem value="_none">Select modality</SelectItem>
+                      {getValidSelectItems(programModalities, "id").map(
+                        (modality) => (
+                          <SelectItem
+                            key={modality.id}
+                            value={String(modality.id)}
+                          >
+                            {modality.name || modality.id}
+                          </SelectItem>
+                        ),
+                      )}
                     </SelectContent>
                   </Select>
                 ) : (
@@ -1880,6 +1967,97 @@ export default function StudentProfile() {
                   />
                 ) : (
                   <div>{studentData.isTransfer ? "Yes" : "No"}</div>
+                )}
+              </div>
+
+              {/* Exit Exam Information Section */}
+              <div className="md:col-span-2 border-t pt-4 mt-2">
+                <Label className="text-base font-semibold text-gray-700 dark:text-gray-300">
+                  Exit Exam Information
+                </Label>
+              </div>
+
+              <div>
+                <Label>Exit Exam User ID</Label>
+                {editMode ? (
+                  <Input
+                    type="text"
+                    name="exitExamUserID"
+                    value={studentData.exitExamUserID || ""}
+                    onChange={handleInputChange}
+                    placeholder="Enter exit exam user ID"
+                  />
+                ) : (
+                  <div className="font-medium">
+                    {studentData.exitExamUserID || "N/A"}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <Label>Exit Exam Score</Label>
+                {editMode ? (
+                  <Input
+                    type="number"
+                    step="0.01"
+                    name="exitExamScore"
+                    value={studentData.exitExamScore || ""}
+                    onChange={handleNumberInputChange}
+                    placeholder="Enter exit exam score (0-100)"
+                    min="0"
+                    max="100"
+                  />
+                ) : (
+                  <div className="font-medium">
+                    {studentData.exitExamScore !== null &&
+                    studentData.exitExamScore !== undefined
+                      ? studentData.exitExamScore
+                      : "N/A"}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <Label>Exit Exam Pass Status</Label>
+                {editMode ? (
+                  <Select
+                    value={getSafeSelectValue(
+                      studentData.isStudentPassExitExam,
+                    )}
+                    onValueChange={(v) =>
+                      handleSelectChange(
+                        "isStudentPassExitExam",
+                        v === "_none" ? null : v,
+                      )
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status">
+                        {studentData.isStudentPassExitExam
+                          ? getDisplayName(
+                              exitExamStatuses,
+                              studentData.isStudentPassExitExam,
+                              "id",
+                              "name",
+                            )
+                          : "Select status"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_none">Select status</SelectItem>
+                      {getValidSelectItems(exitExamStatuses, "id").map(
+                        (status) => (
+                          <SelectItem key={status.id} value={String(status.id)}>
+                            {status.name || status.id}
+                          </SelectItem>
+                        ),
+                      )}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="font-medium">
+                    {studentData.isStudentPassExitExam || "N/A"}
+                  </div>
                 )}
               </div>
             </CardContent>

@@ -53,6 +53,7 @@ const REQUIRED_FIELDS = {
   studentRecentStatusId: "Student Status",
   batchId: "Batch", // NEW: Add batch to required fields
   batchClassYearSemesterId: "Batch/Class/Semester",
+  documentStatusId: "Document Status", // NEW
 
   // Step 5: Emergency Contact (all required except relation)
   emergencyFullName: "Emergency Contact Full Name",
@@ -95,6 +96,7 @@ const getRequiredFieldsForStep = (step) => {
         "studentRecentStatusId",
         "batchId",
         "batchClassYearSemesterId",
+        "documentStatusId", // NEW
       ];
     case 4:
       return [
@@ -463,6 +465,7 @@ const PersonalInformationStep = ({
               <label className="block text-sm font-semibold text-gray-800 dark:text-white mb-2">
                 Region *
               </label>
+              {/* Regions Dropdown - Place of Birth */}
               <select
                 name="placeOfBirthRegionCode"
                 value={formData.placeOfBirthRegionCode}
@@ -476,7 +479,7 @@ const PersonalInformationStep = ({
                 <option value="">Choose Region</option>
                 {dropdowns.regions.map((opt) => (
                   <option key={opt.value} value={opt.value}>
-                    {opt.label}
+                    {opt.label} ({opt.code}) {/* Show name and code */}
                   </option>
                 ))}
               </select>
@@ -491,6 +494,7 @@ const PersonalInformationStep = ({
               <label className="block text-sm font-semibold text-gray-800 dark:text-white mb-2">
                 Zone *
               </label>
+              {/* Zones Dropdown - Place of Birth */}
               <select
                 name="placeOfBirthZoneCode"
                 value={formData.placeOfBirthZoneCode}
@@ -505,7 +509,7 @@ const PersonalInformationStep = ({
                 <option value="">Choose Zone</option>
                 {dropdowns.birthZones.map((opt) => (
                   <option key={opt.value} value={opt.value}>
-                    {opt.label}
+                    {opt.label} ({opt.code}) {/* Show name and code */}
                   </option>
                 ))}
               </select>
@@ -520,6 +524,7 @@ const PersonalInformationStep = ({
               <label className="block text-sm font-semibold text-gray-800 dark:text-white mb-2">
                 Woreda (Town) *
               </label>
+              {/* Woredas Dropdown - Place of Birth */}
               <select
                 name="placeOfBirthWoredaCode"
                 value={formData.placeOfBirthWoredaCode}
@@ -534,7 +539,7 @@ const PersonalInformationStep = ({
                 <option value="">Choose Woreda</option>
                 {dropdowns.birthWoredas.map((opt) => (
                   <option key={opt.value} value={opt.value}>
-                    {opt.label}
+                    {opt.label} ({opt.code}) {/* Show name and code */}
                   </option>
                 ))}
               </select>
@@ -629,9 +634,10 @@ const PersonalInformationStep = ({
                 )}
               >
                 <option value="">Choose Region</option>
+                {/* Current Address Region */}
                 {dropdowns.regions.map((opt) => (
                   <option key={opt.value} value={opt.value}>
-                    {opt.label}
+                    {opt.label} ({opt.code})
                   </option>
                 ))}
               </select>
@@ -658,9 +664,10 @@ const PersonalInformationStep = ({
                 )}
               >
                 <option value="">Choose Zone</option>
+                {/* Current Address Zone */}
                 {dropdowns.currentZones.map((opt) => (
                   <option key={opt.value} value={opt.value}>
-                    {opt.label}
+                    {opt.label} ({opt.code})
                   </option>
                 ))}
               </select>
@@ -687,9 +694,10 @@ const PersonalInformationStep = ({
                 )}
               >
                 <option value="">Choose Woreda</option>
+                {/* Current Address Woreda */}
                 {dropdowns.currentWoredas.map((opt) => (
                   <option key={opt.value} value={opt.value}>
-                    {opt.label}
+                    {opt.label} ({opt.code})
                   </option>
                 ))}
               </select>
@@ -707,22 +715,23 @@ const PersonalInformationStep = ({
           <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
             Marital Status: *
           </label>
-          <div className="flex flex-wrap gap-4">
-            {["Single", "Married", "Divorced", "Separated"].map((s) => (
-              <label key={s} className="flex items-center">
-                <input
-                  type="radio"
-                  name="maritalStatus"
-                  value={s}
-                  checked={formData.maritalStatus === s}
-                  onChange={handleInputChange}
-                  onBlur={() => handleFieldBlur("maritalStatus")}
-                  className="mr-2"
-                />
-                {s}
-              </label>
+          <select
+            name="maritalStatus"
+            value={formData.maritalStatus}
+            onChange={handleInputChange}
+            onBlur={() => handleFieldBlur("maritalStatus")}
+            className={getInputClassName(
+              "maritalStatus",
+              "w-full appearance-none bg-white dark:bg-black border rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2",
+            )}
+          >
+            <option value="">Select Marital Status</option>
+            {dropdowns.maritalStatuses.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
             ))}
-          </div>
+          </select>
           {shouldShowError("maritalStatus") && (
             <p className="mt-1 text-xs text-red-500">
               Please select a marital status
@@ -1114,22 +1123,31 @@ const EducationalInformationStep = ({
                 type="radio"
                 name="isTransfer"
                 value="true"
-                checked={formData.isTransfer === true}
+                checked={
+                  formData.isTransfer === "true" || formData.isTransfer === true
+                }
                 onChange={handleInputChange}
-                className="mr-2 accent-blue-600"
+                className="mr-2 accent-blue-600 w-4 h-4"
               />
-              Yes
+              <span className="text-sm text-gray-700 dark:text-gray-300">
+                Yes
+              </span>
             </label>
             <label className="flex items-center cursor-pointer">
               <input
                 type="radio"
                 name="isTransfer"
                 value="false"
-                checked={formData.isTransfer === false}
+                checked={
+                  formData.isTransfer === "false" ||
+                  formData.isTransfer === false
+                }
                 onChange={handleInputChange}
-                className="mr-2 accent-blue-600"
+                className="mr-2 accent-blue-600 w-4 h-4"
               />
-              No
+              <span className="text-sm text-gray-700 dark:text-gray-300">
+                No
+              </span>
             </label>
           </div>
         </div>
@@ -1240,38 +1258,75 @@ const EducationalInformationStep = ({
           </div>
         </section>
 
+        {/* Document Status - Required */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
+            Document Status *
+          </label>
+          <div className="flex flex-wrap gap-6">
+            {dropdowns.documentStatuses?.map((status) => (
+              <label
+                key={status.value}
+                className="flex items-center cursor-pointer"
+              >
+                <input
+                  type="radio"
+                  name="documentStatusId"
+                  value={status.value}
+                  checked={formData.documentStatusId === status.value}
+                  onChange={handleInputChange}
+                  onBlur={() => handleFieldBlur("documentStatusId")}
+                  className="mr-2 accent-blue-600 w-4 h-4"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  {status.label}
+                </span>
+              </label>
+            ))}
+          </div>
+          {shouldShowError("documentStatusId") && (
+            <p className="mt-1 text-xs text-red-500">
+              Please select document status
+            </p>
+          )}
+        </div>
+
         {/* Required Dropdowns */}
         {[
           {
             label: "Select Department *",
             name: "departmentEnrolledId",
             options: dropdowns.departments,
-            placeholder: "Select Department", // NEW: Custom placeholder
+            placeholder: "Select Department",
+            errorMessage: "Please select a department",
           },
           {
             label: "Select Student's Status *",
             name: "studentRecentStatusId",
-            options: dropdowns.studentStatus,
-            placeholder: "Select the Student Status",
+            options: dropdowns.studentStatuses, // Changed from studentStatus
+            placeholder: "Select Student Status",
+            errorMessage: "Please select a student status",
           },
           {
             label: "Select Program Modality *",
             name: "programModalityCode",
             options: dropdowns.programModalities,
             placeholder: "Select Program Modality",
+            errorMessage: "Please select a program modality",
           },
-          // NEW: Add Batch dropdown here
           {
             label: "Select Batch at the Time of Registration *",
             name: "batchId",
             options: dropdowns.batches,
             placeholder: "Select Batch",
+            errorMessage: "Please select a batch",
           },
           {
             label: "Select student's Recent Batch Class Year And Semester *",
             name: "batchClassYearSemesterId",
-            options: dropdowns.batchClassSemsterYear,
-            placeholder: "Select Batch-ClassYear-Semester",
+            options: dropdowns.batchClassYearSemesters, // Changed from batchClassSemsterYear
+            placeholder: "Select Batch Class Year and Semester",
+            errorMessage: "Please select a batch class year and semester",
           },
         ].map((field) => (
           <div key={field.name} className="mb-6">
@@ -1288,8 +1343,7 @@ const EducationalInformationStep = ({
                 "w-full appearance-none bg-white dark:bg-black border rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2",
               )}
             >
-              <option value="">{field.placeholder}</option>{" "}
-              {/* Use custom placeholder */}
+              <option value="">{field.placeholder}</option>
               {field.options.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
@@ -1297,13 +1351,7 @@ const EducationalInformationStep = ({
               ))}
             </select>
             {shouldShowError(field.name) && (
-              <p className="mt-1 text-xs text-red-500">
-                Please select{" "}
-                {field.label
-                  .replace("Select ", "")
-                  .replace(" *", "")
-                  .toLowerCase()}
-              </p>
+              <p className="mt-1 text-xs text-red-500">{field.errorMessage}</p>
             )}
           </div>
         ))}
@@ -1644,6 +1692,7 @@ const AddStudent = () => {
           grade12Result: "",
           remark: "",
           document: null,
+          documentStatusId: "", // NEW: Document status ID
         };
   });
 
@@ -1667,106 +1716,137 @@ const AddStudent = () => {
   }, []);
 
   const [dropdowns, setDropdowns] = useState({
+    // From lookups endpoint
     departments: [],
     impairments: [],
-    studentStatus: [],
-    // semesters: [],
+    studentStatuses: [], // Changed from studentStatus
     schoolBackgrounds: [],
     programModalities: [],
-    // classYears: [],
+    batches: [],
+    batchClassYearSemesters: [], // Changed from batchClassSemsterYear
+    maritalStatuses: [], // NEW
+    genders: [], // NEW
+    semesters: [], // NEW (if needed)
+    classYears: [], // NEW (if needed)
+    academicYears: [], // NEW (if needed)
+    documentStatuses: [], // NEW: Add document statuses
+
+    // Location dropdowns (remain separate)
     regions: [],
     birthZones: [],
     birthWoredas: [],
     currentZones: [],
     currentWoredas: [],
-    batchClassSemsterYear: [],
-    batches: [], // NEW: Add batches array
   });
 
   useEffect(() => {
-    const load = async () => {
+    const loadDropdowns = async () => {
       try {
-        const [
-          departments,
-          impairments,
-          studentStatus,
-          // semesters,
-          schoolBackgrounds,
-          programModalities,
-          regions,
-          batchClassSemsterYear,
-          lookupsData, // NEW: Add this to get batches
+        // Fetch all dropdown data from single endpoint
+        const lookupsData = await apiService.get(endPoints.lookupsDropdown);
 
-          // classYears,
-        ] = await Promise.all([
-          apiService.get(endPoints.departments),
-          apiService.get(endPoints.impairments),
+        console.log("Lookups data loaded:", lookupsData); // For debugging
 
-          apiService.get(endPoints.studentStatus),
-          // apiService.get(endPoints.semesters),
-          apiService.get(endPoints.schoolBackgrounds),
-          apiService.get(endPoints.programModalities),
-          apiService.get(endPoints.regions),
-          apiService.get(endPoints.batchClassSemsterYear),
-          apiService.get(endPoints.lookupsDropdown), // NEW: Fetch lookups data
-
-          // apiService.get(endPoints.classYears),
-        ]);
+        // Also fetch regions separately (keep as is)
+        const regionsData = await apiService.get(endPoints.regions);
 
         setDropdowns({
-          departments: (departments || []).map((d) => ({
-            value: d.dptID,
-            label: d.deptName,
+          // Map data from lookups endpoint
+          departments: (lookupsData?.departments || []).map((d) => ({
+            value: d.id,
+            label: d.name,
           })),
-          batchClassSemsterYear: (batchClassSemsterYear || []).map((i) => ({
-            value: i.bcsyId,
+
+          impairments: (lookupsData?.impairments || []).map((i) => ({
+            value: i.id,
             label: i.name,
           })),
+
+          studentStatuses: (lookupsData?.studentStatuses || []).map((s) => ({
+            value: s.id,
+            label: s.name,
+          })),
+
+          schoolBackgrounds: (lookupsData?.schoolBackgrounds || []).map(
+            (b) => ({
+              value: b.id,
+              label: b.name,
+            }),
+          ),
+
+          programModalities: (lookupsData?.programModalities || []).map(
+            (m) => ({
+              value: m.id,
+              label: m.name,
+            }),
+          ),
+
           batches: (lookupsData?.batches || []).map((batch) => ({
-            // NEW: Map batches
             value: batch.id,
             label: batch.name,
           })),
-          impairments: (impairments || [])
-            .map((i) => ({
-              value: i?.impairmentCode ?? i?.disabilityCode,
-              label: i?.impairment ?? i?.disability,
-            }))
-            .filter((o) => o.value && o.label),
-          studentStatus: (studentStatus || []).map((s) => ({
-            value: s.id,
-            label: s.statusName,
-          })),
-          // semesters: (semesters || []).map((s) => ({
-          //   value: s.academicPeriodCode,
-          //   label: s.academicPeriod,
-          // })),
-          schoolBackgrounds: (schoolBackgrounds || []).map((b) => ({
+
+          batchClassYearSemesters: (
+            lookupsData?.batchClassYearSemesters || []
+          ).map((b) => ({
             value: b.id,
-            label: b.background,
+            label: b.name,
           })),
-          programModalities: (programModalities || []).map((m) => ({
-            value: m.modalityCode,
-            label: m.modality,
+
+          maritalStatuses: (lookupsData?.maritalStatuses || []).map((m) => ({
+            value: m.id,
+            label: m.name,
           })),
-          // classYears: (classYears || []).map((y) => ({
-          //   value: y.id,
-          //   label: y.classYear,
-          // })),
-          regions: (regions || []).map((r) => ({
+
+          genders: (lookupsData?.genders || []).map((g) => ({
+            value: g.id,
+            label: g.name,
+          })),
+
+          semesters: (lookupsData?.semesters || []).map((s) => ({
+            value: s.id,
+            label: s.name,
+          })),
+
+          classYears: (lookupsData?.classYears || []).map((y) => ({
+            value: y.id,
+            label: y.name,
+          })),
+
+          academicYears: (lookupsData?.academicYears || []).map((y) => ({
+            value: y.id,
+            label: y.name,
+          })),
+
+          documentStatuses: (lookupsData?.documentStatuses || []).map((d) => ({
+            value: d.id,
+            label: d.name,
+          })),
+
+          // Location dropdowns (keep as is)
+          regions: (regionsData || []).map((r) => ({
             value: r.regionCode,
             label: r.region,
+            code: r.regionCode, // Add the code for display
           })),
+
+          // Initialize empty arrays for cascading dropdowns
           birthZones: [],
           birthWoredas: [],
           currentZones: [],
           currentWoredas: [],
         });
-      } catch (e) {
-        console.error(e);
+      } catch (error) {
+        console.error("Error loading dropdowns:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load dropdown data",
+          variant: "destructive",
+        });
       }
     };
-    load();
+
+    loadDropdowns();
   }, []);
 
   // Check if current step has all required fields filled
@@ -1833,6 +1913,7 @@ const AddStudent = () => {
               birthZones: (zones || []).map((z) => ({
                 value: z.zoneCode,
                 label: z.zone,
+                code: z.zoneCode, // Add the code for display
               })),
               birthWoredas: [],
             }
@@ -1840,6 +1921,7 @@ const AddStudent = () => {
               currentZones: (zones || []).map((z) => ({
                 value: z.zoneCode,
                 label: z.zone,
+                code: z.zoneCode, // Add the code for display
               })),
               currentWoredas: [],
             }),
@@ -1866,12 +1948,14 @@ const AddStudent = () => {
               birthWoredas: (woredas || []).map((w) => ({
                 value: w.woredaCode,
                 label: w.woreda,
+                code: w.woredaCode, // Add the code for display
               })),
             }
           : {
               currentWoredas: (woredas || []).map((w) => ({
                 value: w.woredaCode,
                 label: w.woreda,
+                code: w.woredaCode, // Add the code for display
               })),
             }),
       }));
@@ -1923,15 +2007,15 @@ const AddStudent = () => {
     };
 
     // Map marital status from frontend display to backend enum
-    const mapMaritalStatus = (status) => {
-      const statusMap = {
-        Single: "SINGLE",
-        Married: "MARRIED",
-        Divorced: "DIVORCED",
-        Separated: "WIDOWED", // Map "Separated" to "WIDOWED" as per backend
-      };
-      return statusMap[status] || null;
-    };
+    // const mapMaritalStatus = (status) => {
+    //   const statusMap = {
+    //     Single: "SINGLE",
+    //     Married: "MARRIED",
+    //     Divorced: "DIVORCED",
+    //     Separated: "WIDOWED", // Map "Separated" to "WIDOWED" as per backend
+    //   };
+    //   return statusMap[status] || null;
+    // };
 
     // Determine document status based on whether document is uploaded
     const documentStatus = data.document ? "COMPLETE" : "INCOMPLETE";
@@ -1979,7 +2063,7 @@ const AddStudent = () => {
       email: nullIfEmpty(data.email),
 
       // Marital & Background
-      maritalStatus: mapMaritalStatus(data.maritalStatus),
+      maritalStatus: nullIfEmpty(data.maritalStatus), // Send directly from dropdown
       impairmentCode: nullIfEmpty(data.impairmentCode),
       schoolBackgroundId: intOrNull(data.schoolBackgroundId),
 
@@ -2003,6 +2087,7 @@ const AddStudent = () => {
       studentRecentStatusId: intOrNull(data.studentRecentStatusId),
       departmentEnrolledId: intOrNull(data.departmentEnrolledId),
       programModalityCode: nullIfEmpty(data.programModalityCode),
+      documentStatus: nullIfEmpty(data.documentStatusId),
 
       // Academic Optional
       isTransfer: boolOrNull(data.isTransfer),
@@ -2011,9 +2096,6 @@ const AddStudent = () => {
       isStudentPassExitExam: boolOrNull(data.hasPassedExitExam),
       grade12Result: floatOrNull(data.grade12Result),
       remark: nullIfEmpty(data.remark),
-
-      // Document Status
-      documentStatus: documentStatus,
     };
 
     // Remove null values
@@ -2103,9 +2185,10 @@ const AddStudent = () => {
           firstNameAMH: "",
           middleNameAMH: "",
           lastNameAMH: "",
-          // Mother's Info (English)
           sex: "",
           age: "",
+          maritalStatus: "",
+
           impairmentCode: "",
           studentPhoto: null,
           prevPhoto: null,
@@ -2145,6 +2228,7 @@ const AddStudent = () => {
           schoolBackgroundId: "",
           departmentEnrolledId: "",
           programModalityCode: "",
+          documentStatusId: "", // NEW: Document status ID
           // Academic Optional
           isTransfer: "",
           exitExamUserID: "",
@@ -2301,21 +2385,41 @@ const AddStudent = () => {
             </button>
 
             <div className="flex gap-4">
-              <button
-                onClick={() => {
-                  localStorage.setItem(
-                    "registrarRegistrationFormData",
-                    JSON.stringify(formData),
-                  );
-                  toast({
-                    title: "Saved",
-                    description: "Progress saved locally.",
-                  });
-                }}
-                className="px-6 py-2 bg-yellow-600 text-white rounded-lg font-medium hover:bg-yellow-700 transition"
-              >
-                Save Progress
-              </button>
+              <div className="relative inline-block">
+                <button
+                  onClick={() => {
+                    // Create a copy without the photo and document
+                    const saveData = {
+                      ...formData,
+                      studentPhoto: null,
+                      studentPhotoDataURL: null,
+                      document: null,
+                      prevPhoto: null,
+                    };
+                    localStorage.setItem(
+                      "registrarRegistrationFormData",
+                      JSON.stringify(saveData),
+                    );
+                    toast({
+                      title: "Saved",
+                      description:
+                        "Progress saved locally. Note: Uploaded images will need to be re-uploaded after refresh.",
+                      duration: 4000,
+                    });
+                  }}
+                  className="px-6 py-2 bg-yellow-600 text-white rounded-lg font-medium hover:bg-yellow-700 transition group relative"
+                >
+                  Save Progress
+                  {/* Tooltip */}
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                    ⚠️ After refreshing, uploaded photos and documents will be
+                    cleared.
+                    <br />
+                    You'll need to upload them again.
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900"></div>
+                  </div>
+                </button>
+              </div>
 
               {currentStep < totalSteps && (
                 <button
