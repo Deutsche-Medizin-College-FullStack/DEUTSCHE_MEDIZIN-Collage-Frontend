@@ -316,6 +316,16 @@ export const generateGradeReportPDF = async ({
   const headers = buildTableHeaders();
   const subHeaders = buildSubHeaders();
   const body = buildTableBody();
+  const tableStartY = 31;
+  const footerReserve = 28;
+  const estimatedHeaderHeight = 12;
+  const minimumTableHeight = pageHeight - tableStartY - footerReserve;
+  const minimumBodyRowHeight = students.length
+    ? Math.max(
+        0,
+        (minimumTableHeight - estimatedHeaderHeight) / students.length,
+      )
+    : 0;
 
   // Draw initial header on first page
   drawHeader(true);
@@ -323,7 +333,7 @@ export const generateGradeReportPDF = async ({
   autoTable(doc, {
     head: [headers, subHeaders],
     body: body,
-    startY: 31, // Reduced from 42 to remove extra space
+    startY: tableStartY,
     margin: { left: marginLeft, right: marginRight },
     styles: {
       fontSize: 8,
@@ -332,6 +342,9 @@ export const generateGradeReportPDF = async ({
       valign: "middle",
       lineColor: [200, 200, 200],
       lineWidth: 0.1,
+    },
+    bodyStyles: {
+      minCellHeight: minimumBodyRowHeight,
     },
     headStyles: {
       fillColor: [245, 158, 11],
