@@ -132,7 +132,6 @@ export const generateGradeReportExcel = async ({
     header: 0.2,
     footer: 0.2,
   };
-  worksheet.views = [{ state: "frozen", xSplit: 1, ySplit: 6 }];
   worksheet.pageSetup.printTitlesRow = "5:6";
 
   for (let column = 1; column <= columnCount; column += 1) {
@@ -141,13 +140,13 @@ export const generateGradeReportExcel = async ({
 
   worksheet.mergeCells(1, 1, 1, columnCount);
   worksheet.getCell(1, 1).value = summary.header.departmentBcysDisplay || "-";
-  worksheet.getRow(1).height = 24;
+  worksheet.getRow(1).height = 35;
   for (let column = 1; column <= columnCount; column += 1) {
     setCellStyle(worksheet.getCell(1, column), {
       fill: COLORS.amberDark,
       bold: true,
-      color: COLORS.white,
-      size: 10,
+      color: COLORS.black,
+      size: 15,
       border: thinBorder(),
     });
   }
@@ -155,11 +154,11 @@ export const generateGradeReportExcel = async ({
   worksheet.mergeCells(2, 1, 2, columnCount);
   worksheet.getCell(2, 1).value =
     "DEUTSCHE HOCHSCHULE FÜR MEDIZIN MEDICAL COLLEGE";
-  worksheet.getRow(2).height = 22;
+  worksheet.getRow(2).height = 33;
   for (let column = 1; column <= columnCount; column += 1) {
     setCellStyle(worksheet.getCell(2, column), {
       bold: true,
-      size: 9,
+      size: 13,
       border: thinBorder(),
     });
   }
@@ -167,26 +166,28 @@ export const generateGradeReportExcel = async ({
   worksheet.mergeCells(3, 1, 3, columnCount);
   worksheet.getCell(3, 1).value =
     `SUMMARY OF GRADE REPORT FOR ${summary.header.batchName || ""} Batch ${summary.header.departmentName || ""} Students`;
-  worksheet.getRow(3).height = 20;
+  worksheet.getRow(3).height = 27;
   for (let column = 1; column <= columnCount; column += 1) {
     setCellStyle(worksheet.getCell(3, column), {
-      size: 8,
+      size: 10,
       border: thinBorder(),
     });
   }
 
   worksheet.getCell(4, 1).value =
     `Academic Year: ${summary.header.academicYear?.yearGC || "-"} (${summary.header.academicYear?.yearCode || "-"})`;
-  worksheet.getCell(4, 2).value =
-    `Class Year: ${summary.header.classYearName || "-"}`;
   worksheet.getCell(4, 3).value =
+    `Class Year: ${summary.header.classYearName || "-"}`;
+  worksheet.getCell(4, 5).value =
     `Semester: ${summary.header.semesterName || "-"}`;
-  worksheet.mergeCells(4, 4, 4, columnCount);
+  worksheet.mergeCells(4, 1, 4, 2);
+  worksheet.mergeCells(4, 3, 4, 4);
+  worksheet.mergeCells(4, 5, 4, 8);
   worksheet.getRow(4).height = 20;
   for (let column = 1; column <= columnCount; column += 1) {
     setCellStyle(worksheet.getCell(4, column), {
       bold: true,
-      size: 8,
+      size: 10,
       horizontal: "left",
       border: thinBorder(),
     });
@@ -244,6 +245,8 @@ export const generateGradeReportExcel = async ({
       fill: rowFill,
       horizontal: "left",
       border: thinBorder(),
+      bold: true,
+      size: 9,
     });
 
     currentColumn = 2;
