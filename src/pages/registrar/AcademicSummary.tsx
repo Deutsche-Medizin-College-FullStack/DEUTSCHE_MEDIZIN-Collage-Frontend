@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { FileText, Download, AlertCircle, Loader2 } from "lucide-react";
+import {
+  FileText,
+  Download,
+  FileSpreadsheet,
+  AlertCircle,
+  Loader2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import apiClient from "@/components/api/apiClient"; // Used if fallback needed
 import apiService from "@/components/api/apiService";
@@ -9,6 +15,7 @@ import GradeReport from "./components/AcademicSummary/GradeReport";
 import ErrorCard from "./components/AcademicSummary/ErrorCard";
 import type { AcademicSummaryResult } from "./components/AcademicSummary/types";
 import { generateGradeReportPDF } from "./components/AcademicSummary/PDFGenerator";
+import { generateGradeReportExcel } from "./components/AcademicSummary/ExcelGenerator";
 
 interface DepartmentLookup {
   id: number;
@@ -64,6 +71,16 @@ const AcademicSummary = () => {
       // Optionally show an error toast or notification
       console.error("No valid summary to download");
       setErrorMsg("Cannot download PDF: No valid summary data available.");
+    }
+  };
+
+  const handleDownloadExcel = async () => {
+    const currentResult = results[activeTab];
+    if (currentResult && currentResult.success && currentResult.summary) {
+      await generateGradeReportExcel({ summary: currentResult.summary });
+    } else {
+      console.error("No valid summary to download");
+      setErrorMsg("Cannot download Excel: No valid summary data available.");
     }
   };
 
@@ -283,19 +300,34 @@ const AcademicSummary = () => {
             <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
               Generated Reports
             </h2>
-            <Button
-              variant="outline"
-              className="flex items-center gap-2"
-              onClick={handleDownloadPDF}
-              disabled={
-                !results[activeTab] ||
-                !results[activeTab].success ||
-                !results[activeTab].summary
-              }
-            >
-              <Download className="h-4 w-4" />
-              PDF
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                className="flex items-center gap-2"
+                onClick={handleDownloadPDF}
+                disabled={
+                  !results[activeTab] ||
+                  !results[activeTab].success ||
+                  !results[activeTab].summary
+                }
+              >
+                <Download className="h-4 w-4" />
+                PDF
+              </Button>
+              <Button
+                variant="outline"
+                className="flex items-center gap-2"
+                onClick={handleDownloadExcel}
+                disabled={
+                  !results[activeTab] ||
+                  !results[activeTab].success ||
+                  !results[activeTab].summary
+                }
+              >
+                <FileSpreadsheet className="h-4 w-4" />
+                Excel
+              </Button>
+            </div>
           </div>
 
           {/* Tabs Navigation */}

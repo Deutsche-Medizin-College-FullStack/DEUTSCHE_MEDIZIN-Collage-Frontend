@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -588,7 +588,7 @@ export default function CustomizableStudentTable() {
       if (
         batchClassYearSemesterFilter !== "all" &&
         getEntityId(student.batchClassYearSemester) !==
-        batchClassYearSemesterFilter
+          batchClassYearSemesterFilter
       ) {
         return false;
       }
@@ -952,16 +952,95 @@ export default function CustomizableStudentTable() {
     return String(value);
   };
 
-  const exportExcel = () => {
-    const exportData = filteredStudents.map((s) =>
-      Object.fromEntries(
-        visibleColumns.map((col) => [col, getDisplayValue(s, col)]),
+  const exportExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = "Deutsche Hochschule für Medizin";
+    workbook.created = new Date();
+
+    const worksheet = workbook.addWorksheet("Students", {
+      properties: { defaultRowHeight: 20 },
+    });
+    worksheet.views = [{ state: "frozen", ySplit: 1 }];
+
+    const headerFill = "FFC800";
+    const borderColor = "BFBFBF";
+    const thinBorder = {
+      top: { style: "thin" as const, color: { argb: borderColor } },
+      bottom: { style: "thin" as const, color: { argb: borderColor } },
+      left: { style: "thin" as const, color: { argb: borderColor } },
+      right: { style: "thin" as const, color: { argb: borderColor } },
+    };
+
+    worksheet.columns = visibleColumns.map((column) => ({
+      header: column,
+      key: column,
+      width: Math.max(
+        16,
+        Math.min(
+          45,
+          Math.max(
+            column.length + 2,
+            ...filteredStudents.map(
+              (student) => getDisplayValue(student, column).length + 2,
+            ),
+          ),
+        ),
       ),
-    );
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Students");
-    XLSX.writeFile(wb, "students_export.xlsx");
+    }));
+
+    const headerRow = worksheet.getRow(1);
+    headerRow.height = 30;
+    headerRow.eachCell((cell) => {
+      cell.font = {
+        name: "Arial",
+        size: 11,
+        bold: true,
+        color: { argb: "000000" },
+      };
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: headerFill },
+      };
+      cell.alignment = {
+        horizontal: "center",
+        vertical: "middle",
+        wrapText: true,
+      };
+      cell.border = thinBorder;
+    });
+
+    filteredStudents.forEach((student) => {
+      const row = worksheet.addRow(
+        visibleColumns.map((column) => getDisplayValue(student, column)),
+      );
+      row.eachCell((cell) => {
+        cell.font = { name: "Arial", size: 10, color: { argb: "000000" } };
+        cell.alignment = {
+          horizontal: "left",
+          vertical: "middle",
+          wrapText: true,
+        };
+        cell.border = thinBorder;
+      });
+      const longestValue = row.values
+        .slice(1)
+        .reduce((max, value) => Math.max(max, String(value ?? "").length), 0);
+      row.height = Math.max(20, 18 + Math.ceil(longestValue / 45) * 10);
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "students_export.xlsx";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
   };
 
   const exportPDF = () => {
@@ -1094,10 +1173,11 @@ export default function CustomizableStudentTable() {
                 {fields.map((field) => (
                   <div
                     key={field}
-                    className={`flex items-center gap-2 p-1.5 rounded-md transition-colors ${visibleColumns.includes(field)
+                    className={`flex items-center gap-2 p-1.5 rounded-md transition-colors ${
+                      visibleColumns.includes(field)
                         ? "bg-primary/10"
                         : "hover:bg-muted/50"
-                      }`}
+                    }`}
                   >
                     <Checkbox
                       id={`col-${field}`}
@@ -1112,10 +1192,11 @@ export default function CustomizableStudentTable() {
                     />
                     <Label
                       htmlFor={`col-${field}`}
-                      className={`cursor-pointer text-sm font-normal capitalize ${visibleColumns.includes(field)
+                      className={`cursor-pointer text-sm font-normal capitalize ${
+                        visibleColumns.includes(field)
                           ? "text-primary font-medium"
                           : ""
-                        }`}
+                      }`}
                     >
                       {field.replace(/([A-Z])/g, " $1")}
                     </Label>
@@ -1171,16 +1252,19 @@ export default function CustomizableStudentTable() {
                   }}
                 >
                   <ChevronDown
-                    className={`h-4 w-4 transition-transform duration-200 ${showPersonalFilters ? "rotate-0" : "-rotate-90"
-                      }`}
+                    className={`h-4 w-4 transition-transform duration-200 ${
+                      showPersonalFilters ? "rotate-0" : "-rotate-90"
+                    }`}
                   />
                 </Button>
               </div>
 
               <div
-                className={`transition-all duration-300 ease-out overflow-hidden ${showPersonalFilters
-                    ? "max-h-[2000px] opacity-100 mt-3" : "max-h-0 opacity-0"
-                  }`}
+                className={`transition-all duration-300 ease-out overflow-hidden ${
+                  showPersonalFilters
+                    ? "max-h-[2000px] opacity-100 mt-3"
+                    : "max-h-0 opacity-0"
+                }`}
               >
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                   {" "}
@@ -1330,16 +1414,19 @@ export default function CustomizableStudentTable() {
                   }}
                 >
                   <ChevronDown
-                    className={`h-4 w-4 transition-transform duration-200 ${showAcademicFilters ? "rotate-0" : "-rotate-90"
-                      }`}
+                    className={`h-4 w-4 transition-transform duration-200 ${
+                      showAcademicFilters ? "rotate-0" : "-rotate-90"
+                    }`}
                   />
                 </Button>
               </div>
 
               <div
-                className={`transition-all duration-300 ease-out overflow-hidden ${showAcademicFilters
-                    ? "max-h-[2000px] opacity-100 mt-3" : "max-h-0 opacity-0"
-                  }`}
+                className={`transition-all duration-300 ease-out overflow-hidden ${
+                  showAcademicFilters
+                    ? "max-h-[2000px] opacity-100 mt-3"
+                    : "max-h-0 opacity-0"
+                }`}
               >
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                   {" "}
@@ -1545,17 +1632,19 @@ export default function CustomizableStudentTable() {
                   }}
                 >
                   <ChevronDown
-                    className={`h-4 w-4 transition-transform duration-200 ${showPerformanceFilters ? "rotate-0" : "-rotate-90"
-                      }`}
+                    className={`h-4 w-4 transition-transform duration-200 ${
+                      showPerformanceFilters ? "rotate-0" : "-rotate-90"
+                    }`}
                   />
                 </Button>
               </div>
 
               <div
-                className={`transition-all duration-300 ease-out overflow-hidden ${showPerformanceFilters
+                className={`transition-all duration-300 ease-out overflow-hidden ${
+                  showPerformanceFilters
                     ? "max-h-[500px] opacity-100 mt-3"
                     : "max-h-0 opacity-0"
-                  }`}
+                }`}
               >
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                   {" "}
@@ -1830,17 +1919,19 @@ export default function CustomizableStudentTable() {
                   }}
                 >
                   <ChevronDown
-                    className={`h-4 w-4 transition-transform duration-200 ${showAdministrativeFilters ? "rotate-0" : "-rotate-90"
-                      }`}
+                    className={`h-4 w-4 transition-transform duration-200 ${
+                      showAdministrativeFilters ? "rotate-0" : "-rotate-90"
+                    }`}
                   />
                 </Button>
               </div>
 
               <div
-                className={`transition-all duration-300 ease-out overflow-hidden ${showAdministrativeFilters
+                className={`transition-all duration-300 ease-out overflow-hidden ${
+                  showAdministrativeFilters
                     ? "max-h-[500px] opacity-100 mt-3"
                     : "max-h-0 opacity-0"
-                  }`}
+                }`}
               >
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                   {" "}
