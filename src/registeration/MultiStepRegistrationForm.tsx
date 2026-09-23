@@ -13,7 +13,49 @@ import endPoints from "@/components/api/endPoints";
 import DarkVeil from "@/designs/DarkVeil";
 import apiService from "@/components/api/apiService";
 import { toast } from "@/hooks/use-toast";
-const DropdownIndicator = (props) => (
+
+type DropdownOption = {
+  value: string | number;
+  label: string;
+};
+
+type FormState = Record<string, any>;
+
+type DropdownState = {
+  departments: DropdownOption[];
+  impairments: DropdownOption[];
+  semesters: DropdownOption[];
+  schoolBackgrounds: DropdownOption[];
+  programModalities: DropdownOption[];
+  classYears: DropdownOption[];
+  regions: DropdownOption[];
+  birthZones: DropdownOption[];
+  birthWoredas: DropdownOption[];
+  currentZones: DropdownOption[];
+  currentWoredas: DropdownOption[];
+};
+
+type PersonalInfoStepProps = {
+  formData: FormState;
+  setFormData: React.Dispatch<React.SetStateAction<FormState>>;
+  dropdowns: DropdownState;
+  fetchZonesByRegion: (
+    regionCode: string,
+    target: "birth" | "current",
+  ) => Promise<void>;
+  fetchWoredasByZone: (
+    zoneCode: string,
+    target: "birth" | "current",
+  ) => Promise<void>;
+};
+
+type EducationalInfoStepProps = {
+  formData: FormState;
+  setFormData: React.Dispatch<React.SetStateAction<FormState>>;
+  dropdowns: DropdownState;
+};
+
+const DropdownIndicator = (props: any) => (
   <components.DropdownIndicator {...props}>
     <svg
       className="w-4 h-4 text-gray-500 dark:text-gray-300"
@@ -30,13 +72,42 @@ const DropdownIndicator = (props) => (
     </svg>
   </components.DropdownIndicator>
 );
+
+const Group = ({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) => (
+  <section className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden mb-6">
+    <div className="bg-blue-50 dark:bg-blue-900/20 border-b border-gray-200 dark:border-gray-700 px-6 py-3">
+      <h3 className="text-base font-semibold text-blue-800 dark:text-blue-200">
+        {title}
+      </h3>
+    </div>
+    <div className="p-6">{children}</div>
+  </section>
+);
+
+const Row = ({ label, value }: { label: string; value: React.ReactNode }) => (
+  <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4 py-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
+    <span className="text-base font-bold text-gray-900 dark:text-white sm:w-48 shrink-0">
+      {label}
+    </span>
+    <span className="text-sm text-gray-700 dark:text-gray-300 break-words">
+      {value || "—"}
+    </span>
+  </div>
+);
+
 const PersonalInformationStep = ({
   formData,
   setFormData,
   dropdowns,
   fetchZonesByRegion,
   fetchWoredasByZone,
-}) => {
+}: PersonalInfoStepProps) => {
   const countries = [
     { value: "US", label: "United States" },
     { value: "CA", label: "Canada" },
@@ -56,20 +127,24 @@ const PersonalInformationStep = ({
   ];
 
   const [previews, setPreviews] = useState(
-    "https://www.shutterstock.com/image-vector/default-avatar-profile-icon-social-600nw-1677509740.jpg"
+    "https://www.shutterstock.com/image-vector/default-avatar-profile-icon-social-600nw-1677509740.jpg",
   );
-  const handleInputChange = (e) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
+    setFormData((prev: FormState) => ({
       ...prev,
       [name]: value,
     }));
   };
 
   // Cascading dropdown handlers
-  const handleRegionChange = async (e) => {
+  const handleRegionChange = async (
+    e: React.ChangeEvent<HTMLSelectElement>,
+  ) => {
     const { value } = e.target;
-    setFormData((prev) => ({
+    setFormData((prev: FormState) => ({
       ...prev,
       placeOfBirthRegionCode: value,
       placeOfBirthZoneCode: "",
@@ -80,9 +155,9 @@ const PersonalInformationStep = ({
     }
   };
 
-  const handleZoneChange = async (e) => {
+  const handleZoneChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { value } = e.target;
-    setFormData((prev) => ({
+    setFormData((prev: FormState) => ({
       ...prev,
       placeOfBirthZoneCode: value,
       placeOfBirthWoredaCode: "",
@@ -92,9 +167,11 @@ const PersonalInformationStep = ({
     }
   };
 
-  const handleCurrentRegionChange = async (e) => {
+  const handleCurrentRegionChange = async (
+    e: React.ChangeEvent<HTMLSelectElement>,
+  ) => {
     const { value } = e.target;
-    setFormData((prev) => ({
+    setFormData((prev: FormState) => ({
       ...prev,
       currentAddressRegionCode: value,
       currentAddressZoneCode: "",
@@ -105,9 +182,11 @@ const PersonalInformationStep = ({
     }
   };
 
-  const handleCurrentZoneChange = async (e) => {
+  const handleCurrentZoneChange = async (
+    e: React.ChangeEvent<HTMLSelectElement>,
+  ) => {
     const { value } = e.target;
-    setFormData((prev) => ({
+    setFormData((prev: FormState) => ({
       ...prev,
       currentAddressZoneCode: value,
       currentAddressWoredaCode: "",
@@ -116,7 +195,7 @@ const PersonalInformationStep = ({
       await fetchWoredasByZone(value, "current");
     }
   };
-  function handleFileChange(event) {
+  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files[0];
     if (file) {
       const imageURL = URL.createObjectURL(file);
@@ -128,18 +207,41 @@ const PersonalInformationStep = ({
   }
   const [selected, setSelected] = useState(null);
   const [query, setQuery] = useState("");
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  const fieldHasValue = (name: string) => {
+    const value = formData[name];
+    if (value === null || value === undefined) return false;
+    if (typeof value === "string") return value.trim() !== "";
+    return true;
+  };
+
+  const getRequiredError = (name: string, label: string) => {
+    if (!touched[name]) return "";
+    return fieldHasValue(name) ? "" : `${label} is required.`;
+  };
+
+  const setFieldTouched = (name: string) => {
+    setTouched((prev) => ({ ...prev, [name]: true }));
+  };
+
+  const inputClass = (name: string, label: string, baseClass = "") => {
+    const hasError = !!getRequiredError(name, label);
+    return `${baseClass} ${hasError ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-blue-500"}`;
+  };
 
   const filtered =
     query === ""
       ? countries
       : countries.filter((c) =>
-          c.label.toLowerCase().includes(query.toLowerCase())
+          c.label.toLowerCase().includes(query.toLowerCase()),
         );
+
   return (
-    <div className="space-y-6 ">
-      {/* <CHANGE> Added step title and description */}
+    <div className="space-y-6">
+      {/* Step title and description */}
       <div className="text-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2 ">
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
           Personal Information
         </h2>
         <p className="text-sm text-gray-600 dark:text-gray-300">
@@ -147,13 +249,9 @@ const PersonalInformationStep = ({
         </p>
       </div>
 
-      {/* 2. PERSONAL DATA */}
-      <section className="border-2 border-gray-200 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-          1. PERSONAL DATA
-        </h3>
-
-        {/* Full Name */}
+      {/* GROUP 1: Personal Data */}
+      <Group title="1. Personal Data">
+        {/* Full Name (English) */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
             Full Name (English): *
@@ -167,9 +265,19 @@ const PersonalInformationStep = ({
                 type="text"
                 name="firstName"
                 value={formData.firstName}
+                onBlur={() => setFieldTouched("firstName")}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={inputClass(
+                  "firstName",
+                  "First name",
+                  "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2",
+                )}
               />
+              {getRequiredError("firstName", "First name") && (
+                <p className="mt-1 text-xs text-red-500">
+                  {getRequiredError("firstName", "First name")}
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-xs text-gray-500 dark:text-white mb-1">
@@ -179,9 +287,19 @@ const PersonalInformationStep = ({
                 type="text"
                 name="middleName"
                 value={formData.middleName}
+                onBlur={() => setFieldTouched("middleName")}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={inputClass(
+                  "middleName",
+                  "Middle name",
+                  "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2",
+                )}
               />
+              {getRequiredError("middleName", "Middle name") && (
+                <p className="mt-1 text-xs text-red-500">
+                  {getRequiredError("middleName", "Middle name")}
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-xs text-gray-500 dark:text-white mb-1">
@@ -191,11 +309,25 @@ const PersonalInformationStep = ({
                 type="text"
                 name="lastName"
                 value={formData.lastName}
+                onBlur={() => setFieldTouched("lastName")}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={inputClass(
+                  "lastName",
+                  "Last name",
+                  "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2",
+                )}
               />
+              {getRequiredError("lastName", "Last name") && (
+                <p className="mt-1 text-xs text-red-500">
+                  {getRequiredError("lastName", "Last name")}
+                </p>
+              )}
             </div>
           </div>
+        </div>
+
+        {/* Full Name (Amharic) */}
+        <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
             Full Name (Amharic): *
           </label>
@@ -208,9 +340,19 @@ const PersonalInformationStep = ({
                 type="text"
                 name="firstNameAMH"
                 value={formData.firstNameAMH}
+                onBlur={() => setFieldTouched("firstNameAMH")}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={inputClass(
+                  "firstNameAMH",
+                  "Amharic first name",
+                  "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2",
+                )}
               />
+              {getRequiredError("firstNameAMH", "Amharic first name") && (
+                <p className="mt-1 text-xs text-red-500">
+                  {getRequiredError("firstNameAMH", "Amharic first name")}
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-xs text-gray-500 dark:text-gray-200 mb-1">
@@ -220,9 +362,19 @@ const PersonalInformationStep = ({
                 type="text"
                 name="middleNameAMH"
                 value={formData.middleNameAMH}
+                onBlur={() => setFieldTouched("middleNameAMH")}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={inputClass(
+                  "middleNameAMH",
+                  "Amharic middle name",
+                  "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2",
+                )}
               />
+              {getRequiredError("middleNameAMH", "Amharic middle name") && (
+                <p className="mt-1 text-xs text-red-500">
+                  {getRequiredError("middleNameAMH", "Amharic middle name")}
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-xs text-gray-500 dark:text-gray-200 mb-1">
@@ -232,9 +384,19 @@ const PersonalInformationStep = ({
                 type="text"
                 name="lastNameAMH"
                 value={formData.lastNameAMH}
+                onBlur={() => setFieldTouched("lastNameAMH")}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={inputClass(
+                  "lastNameAMH",
+                  "Amharic last name",
+                  "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2",
+                )}
               />
+              {getRequiredError("lastNameAMH", "Amharic last name") && (
+                <p className="mt-1 text-xs text-red-500">
+                  {getRequiredError("lastNameAMH", "Amharic last name")}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -270,13 +432,24 @@ const PersonalInformationStep = ({
               name="age"
               min="16"
               value={formData.age}
+              onBlur={() => setFieldTouched("age")}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputClass(
+                "age",
+                "Age",
+                "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2",
+              )}
             />
+            {getRequiredError("age", "Age") && (
+              <p className="mt-1 text-xs text-red-500">
+                {getRequiredError("age", "Age")}
+              </p>
+            )}
           </div>
         </div>
 
-                <div className="mb-6">
+        {/* Contact Info */}
+        <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
             User Contact Information:
           </label>
@@ -295,19 +468,30 @@ const PersonalInformationStep = ({
             </div>
             <div>
               <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                Phone No.
+                Phone No. *
               </label>
               <input
                 type="tel"
                 name="phoneNo"
                 value={formData.phoneNo}
+                onBlur={() => setFieldTouched("phoneNo")}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={inputClass(
+                  "phoneNo",
+                  "Phone number",
+                  "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2",
+                )}
               />
+              {getRequiredError("phoneNo", "Phone number") && (
+                <p className="mt-1 text-xs text-red-500">
+                  {getRequiredError("phoneNo", "Phone number")}
+                </p>
+              )}
             </div>
           </div>
         </div>
 
+        {/* Impairment */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
             Information about Impairment (if any): (Optional)
@@ -326,101 +510,95 @@ const PersonalInformationStep = ({
             ))}
           </select>
         </div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-          Student Photo (Optional)
-        </label>
-        <section className="border-2 border-blue-200 rounded-lg p-6 bg-white dark:bg-gray-800 dark:border-gray-700">
-          <div className="border-t-2 border-blue-400 dark:border-gray-600 pt-4 flex flex-col items-center">
-            {/* Certificate Icon/Image */}
-            <img
-              src={previews || "/default-avatar.png"} // fallback default
-              alt="Student Photo"
-              className="w-24 h-24 rounded-full mb-4 border-2 border-blue-300 dark:border-gray-500 object-cover"
-            />
 
-            <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-300 mb-2 text-center">
-              Please upload your student photo
-            </h3>
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-4 text-center">
-              Upload a clear portrait image (JPG or PNG)
-            </p>
-
-            {/* Certificate uploader */}
-            <div className="flex flex-col sm:flex-row items-center gap-3 w-full justify-center">
-              {/* Hidden input */}
-              <input
-                id="upload-studentphoto"
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    setFormData((prev) => ({
-                      ...prev,
-                      studentPhoto: file,
-                      prevPhoto: URL.createObjectURL(file),
-                    }));
-                  }
-                }}
-                className="hidden"
+        {/* Student Photo */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
+            Student Photo (Optional)
+          </label>
+          <section className="border-2 border-blue-200 rounded-lg p-6 bg-white dark:bg-gray-800 dark:border-gray-700">
+            <div className="border-t-2 border-blue-400 dark:border-gray-600 pt-4 flex flex-col items-center">
+              <img
+                src={previews || "/default-avatar.png"}
+                alt="Student Photo"
+                className="w-24 h-24 rounded-full mb-4 border-2 border-blue-300 dark:border-gray-500 object-cover"
               />
 
-              {/* Custom upload button */}
-              <label
-                htmlFor="upload-studentphoto"
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg shadow cursor-pointer hover:from-blue-700 hover:to-blue-800 transition"
-              >
-                <ImageIcon className="w-5 h-5" />
-                <span>Upload Student Photo</span>
-              </label>
+              <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-300 mb-2 text-center">
+                Please upload your student photo
+              </h3>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-4 text-center">
+                Upload a clear portrait image (JPG or PNG)
+              </p>
 
-              {/* File name */}
-              <span className="text-gray-600 dark:text-gray-300 text-sm mt-2 sm:mt-0">
-                {formData.studentPhoto
-                  ? formData.studentPhoto.name
-                  : "No file chosen"}
-              </span>
-            </div>
-
-            {/* Preview (optional for images only) */}
-            {formData.studentPhoto &&
-              formData.studentPhoto instanceof File &&
-              formData.studentPhoto.type.startsWith("image/") && (
-                <div className="mt-4 relative inline-block">
-                  <img
-                    src={URL.createObjectURL(formData.studentPhoto)}
-                    alt="Certificate Preview"
-                    className="w-32 h-32 object-cover rounded-md border border-gray-300 dark:border-gray-600"
-                  />
-                  {/* Close/Remove button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPreviews(
-                        "https://www.shutterstock.com/image-vector/default-avatar-profile-icon-social-600nw-1677509740.jpg"
-                      );
+              <div className="flex flex-col sm:flex-row items-center gap-3 w-full justify-center">
+                <input
+                  id="upload-studentphoto"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
                       setFormData((prev) => ({
                         ...prev,
-                        studentPhoto: null,
+                        studentPhoto: file,
+                        prevPhoto: URL.createObjectURL(file),
                       }));
-                    }}
-                    className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 hover:bg-black/80 dark:hover:bg-black/90"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-          </div>
-        </section>
+                    }
+                  }}
+                  className="hidden"
+                />
 
-        {/* Place of Birth */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-            Place of Birth:
-          </label>
+                <label
+                  htmlFor="upload-studentphoto"
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg shadow cursor-pointer hover:from-blue-700 hover:to-blue-800 transition"
+                >
+                  <ImageIcon className="w-5 h-5" />
+                  <span>Upload Student Photo</span>
+                </label>
+
+                <span className="text-gray-600 dark:text-gray-300 text-sm mt-2 sm:mt-0">
+                  {formData.studentPhoto
+                    ? formData.studentPhoto.name
+                    : "No file chosen"}
+                </span>
+              </div>
+
+              {formData.studentPhoto &&
+                formData.studentPhoto instanceof File &&
+                formData.studentPhoto.type.startsWith("image/") && (
+                  <div className="mt-4 relative inline-block">
+                    <img
+                      src={URL.createObjectURL(formData.studentPhoto)}
+                      alt="Certificate Preview"
+                      className="w-32 h-32 object-cover rounded-md border border-gray-300 dark:border-gray-600"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPreviews(
+                          "https://www.shutterstock.com/image-vector/default-avatar-profile-icon-social-600nw-1677509740.jpg",
+                        );
+                        setFormData((prev) => ({
+                          ...prev,
+                          studentPhoto: null,
+                        }));
+                      }}
+                      className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 hover:bg-black/80 dark:hover:bg-black/90"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+            </div>
+          </section>
         </div>
-        <div className="flex justify-between">
-          <div className="mb-6">
+      </Group>
+
+      {/* GROUP 2: Place of Birth */}
+      <Group title="2. Place of Birth">
+        <div className="flex flex-col md:flex-row md:justify-between gap-4 md:gap-6">
+          <div className="w-full md:flex-1">
             <label className="block text-sm font-semibold text-gray-800 dark:text-white mb-2">
               Select Your Region
             </label>
@@ -455,7 +633,7 @@ const PersonalInformationStep = ({
               </div>
             </div>
           </div>
-          <div className="mb-6">
+          <div className="w-full md:flex-1">
             <label className="block text-sm font-semibold text-gray-800 dark:text-white mb-2">
               Select Your Zone
             </label>
@@ -491,7 +669,7 @@ const PersonalInformationStep = ({
               </div>
             </div>
           </div>
-          <div className="mb-6">
+          <div className="w-full md:flex-1">
             <label className="block text-sm font-semibold text-gray-800 dark:text-white mb-2">
               Select Your Woreda{" (Town)"}
             </label>
@@ -528,285 +706,295 @@ const PersonalInformationStep = ({
             </div>
           </div>
         </div>
-        {/* Date of Birth */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-            Date of Birth:
-          </label>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                Ethiopian Calendar (E.C)
-              </label>
-              <div className="grid grid-cols-3 gap-4">
-                <input
-                  type="text"
-                  name="birthDateEC"
-                  placeholder="Date"
-                  value={formData.birthDateEC}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <input
-                  type="text"
-                  name="birthMonthEC"
-                  placeholder="Month"
-                  value={formData.birthMonthEC}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <input
-                  type="text"
-                  name="birthYearEC"
-                  placeholder="Year"
-                  value={formData.birthYearEC}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                Gregorian Calendar (G.C) *
-              </label>
-              <input
-                type="date"
-                name="birthDateGC"
-                value={formData.birthDateGC}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-        </div>
+      </Group>
 
-        {/* Current Residential Address */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-            Current Residential Address:
-          </label>
-          <div className="flex justify-between">
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-800 dark:text-white mb-2">
-                Select Your Region
-              </label>
-              <div className="relative">
-                <select
-                  name="currentAddressRegionCode"
-                  value={formData.currentAddressRegionCode}
-                  onChange={handleCurrentRegionChange}
-                  className="appearance-none w-full bg-white dark:bg-black border border-gray-300 rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                >
-                  <option value="">Choose Region</option>
-                  {dropdowns.regions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 dark:text-gray-200">
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
-              </div>
-            </div>
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-800 dark:text-white mb-2">
-                Select Your Zone
-              </label>
-              <div className="relative">
-                <select
-                  name="currentAddressZoneCode"
-                  value={formData.currentAddressZoneCode}
-                  onChange={handleCurrentZoneChange}
-                  disabled={!formData.currentAddressRegionCode}
-                  className="appearance-none w-full bg-white dark:bg-black border border-gray-300 rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition disabled:opacity-50"
-                >
-                  <option value="">Choose Zone</option>
-                  {dropdowns.currentZones.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 dark:text-gray-200">
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
-              </div>
-            </div>
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-800 dark:text-white mb-2">
-                Select Your Woreda{" (Town)"}
-              </label>
-              <div className="relative">
-                <select
-                  name="currentAddressWoredaCode"
-                  value={formData.currentAddressWoredaCode}
-                  onChange={handleInputChange}
-                  disabled={!formData.currentAddressZoneCode}
-                  className="appearance-none w-full bg-white dark:bg-black border border-gray-300 rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition disabled:opacity-50"
-                >
-                  <option value="">Choose Woreda</option>
-                  {dropdowns.currentWoredas.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 dark:text-gray-200">
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Marital Status */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-            Marital Status:
-          </label>
-          <div className="flex flex-wrap gap-4">
-            {["Single", "Married", "Divorced", "Separated"].map((status) => (
-              <label key={status} className="flex items-center">
-                <input
-                  type="radio"
-                  name="maritalStatus"
-                  value={status}
-                  checked={formData.maritalStatus === status}
-                  onChange={handleInputChange}
-                  className="mr-2"
-                />
-                {status}
-              </label>
-            ))}
-          </div>
-        </div>
-
-      {/* Emergency Contact */}
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-          Contact Person in case of Emergency: (Optional)
-        </label>
+      {/* GROUP 3: Date of Birth */}
+      <Group title="3. Date of Birth">
         <div className="space-y-4">
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-              Full Name (English):
+          <div>
+            <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
+              Ethiopian Calendar (E.C)
             </label>
-            <div>
-              <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                Full Name
-              </label>
+            <div className="grid grid-cols-3 gap-4">
               <input
                 type="text"
-                name="emergencyFullName"
-                value={formData.emergencyFullName || ""}
+                name="birthDateEC"
+                placeholder="Date"
+                value={formData.birthDateEC}
                 onChange={handleInputChange}
-                placeholder="Enter emergency contact full name"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                type="text"
+                name="birthMonthEC"
+                placeholder="Month"
+                value={formData.birthMonthEC}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                type="text"
+                name="birthYearEC"
+                placeholder="Year"
+                value={formData.birthYearEC}
+                onChange={handleInputChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            
-            <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2 mt-4">
-              Full Name (Amharic):
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
+              Gregorian Calendar (G.C) *
             </label>
-            <div>
-              <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                Full Name
-              </label>
-              <input
-                type="text"
-                name="emergencyFullNameAMH"
-                value={formData.emergencyFullNameAMH || ""}
-                onChange={handleInputChange}
-                placeholder="የአስቸኳይ ጊዜ አድራሻ ሙሉ ስም"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                dir="rtl"
-              />
-            </div>
-            
-            <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2 mt-4">
-              Contact Person Information
+            <input
+              type="date"
+              name="birthDateGC"
+              value={formData.birthDateGC}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+      </Group>
+
+      {/* GROUP 4: Current Residential Address */}
+      <Group title="4. Current Residential Address">
+        <div className="flex flex-col md:flex-row md:justify-between gap-4 md:gap-6">
+          <div className="w-full md:flex-1">
+            <label className="block text-sm font-semibold text-gray-800 dark:text-white mb-2">
+              Select Your Region
             </label>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                  Contact Person Relation
-                </label>
-                <input
-                  type="text"
-                  name="contactPersonRelation"
-                  value={formData.contactPersonRelation}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+            <div className="relative">
+              <select
+                name="currentAddressRegionCode"
+                value={formData.currentAddressRegionCode}
+                onChange={handleCurrentRegionChange}
+                className="appearance-none w-full bg-white dark:bg-black border border-gray-300 rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              >
+                <option value="">Choose Region</option>
+                {dropdowns.regions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 dark:text-gray-200">
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
               </div>
-              <div>
-                <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                  Contact Person Phone Number
-                </label>
-                <input
-                  type="text"
-                  name="contactPersonPhoneNumber"
-                  value={formData.contactPersonPhoneNumber}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+            </div>
+          </div>
+          <div className="w-full md:flex-1">
+            <label className="block text-sm font-semibold text-gray-800 dark:text-white mb-2">
+              Select Your Zone
+            </label>
+            <div className="relative">
+              <select
+                name="currentAddressZoneCode"
+                value={formData.currentAddressZoneCode}
+                onChange={handleCurrentZoneChange}
+                disabled={!formData.currentAddressRegionCode}
+                className="appearance-none w-full bg-white dark:bg-black border border-gray-300 rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition disabled:opacity-50"
+              >
+                <option value="">Choose Zone</option>
+                {dropdowns.currentZones.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 dark:text-gray-200">
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div className="w-full md:flex-1">
+            <label className="block text-sm font-semibold text-gray-800 dark:text-white mb-2">
+              Select Your Woreda{" (Town)"}
+            </label>
+            <div className="relative">
+              <select
+                name="currentAddressWoredaCode"
+                value={formData.currentAddressWoredaCode}
+                onChange={handleInputChange}
+                disabled={!formData.currentAddressZoneCode}
+                className="appearance-none w-full bg-white dark:bg-black border border-gray-300 rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition disabled:opacity-50"
+              >
+                <option value="">Choose Woreda</option>
+                {dropdowns.currentWoredas.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 dark:text-gray-200">
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
               </div>
             </div>
           </div>
         </div>
-      </div>
-      </section>
+      </Group>
+
+      {/* GROUP 5: Marital Status */}
+      <Group title="5. Marital Status">
+        <div className="flex flex-wrap gap-4">
+          {["Single", "Married", "Divorced", "Separated"].map((status) => (
+            <label key={status} className="flex items-center">
+              <input
+                type="radio"
+                name="maritalStatus"
+                value={status}
+                checked={formData.maritalStatus === status}
+                onChange={handleInputChange}
+                className="mr-2"
+              />
+              {status}
+            </label>
+          ))}
+        </div>
+      </Group>
+
+      {/* GROUP 6: Emergency Contact */}
+      <Group title="6. Emergency Contact">
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
+            Full Name (English):
+          </label>
+          <div>
+            <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
+              Full Name
+            </label>
+            <input
+              type="text"
+              name="emergencyFullName"
+              value={formData.emergencyFullName || ""}
+              onChange={handleInputChange}
+              placeholder="Enter emergency contact full name"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2 mt-4">
+            Full Name (Amharic):
+          </label>
+          <div>
+            <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
+              Full Name
+            </label>
+            <input
+              type="text"
+              name="emergencyFullNameAMH"
+              value={formData.emergencyFullNameAMH || ""}
+              onChange={handleInputChange}
+              placeholder="የአስቸኳይ ጊዜ አድራሻ ሙሉ ስም"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2 mt-4">
+            Contact Person Information
+          </label>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
+                Contact Person Relation
+              </label>
+              <input
+                type="text"
+                name="contactPersonRelation"
+                value={formData.contactPersonRelation}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
+                Contact Person Phone Number
+              </label>
+              <input
+                type="text"
+                name="contactPersonPhoneNumber"
+                value={formData.contactPersonPhoneNumber}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+        </div>
+      </Group>
     </div>
   );
 };
 
-
-
-const EducationalInformationStep = ({ formData, setFormData, dropdowns }) => {
+const EducationalInformationStep = ({
+  formData,
+  setFormData,
+  dropdowns,
+}: EducationalInfoStepProps) => {
   const [showInstructions, setShowInstructions] = useState(false);
   const [previews, setPreviews] = useState(
-    "https://www.shutterstock.com/image-vector/default-avatar-profile-icon-social-600nw-1677509740.jpg"
+    "https://www.shutterstock.com/image-vector/default-avatar-profile-icon-social-600nw-1677509740.jpg",
   );
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  const fieldHasValue = (name: string) => {
+    const value = formData[name];
+    if (value === null || value === undefined) return false;
+    if (typeof value === "string") return value.trim() !== "";
+    return true;
+  };
+
+  const getRequiredError = (name: string, label: string) => {
+    if (!touched[name]) return "";
+    return fieldHasValue(name) ? "" : `${label} is required.`;
+  };
+
+  const setFieldTouched = (name: string) => {
+    setTouched((prev) => ({ ...prev, [name]: true }));
+  };
+
+  const selectClass = (name: string, label: string, baseClass = "") => {
+    const hasError = !!getRequiredError(name, label);
+    return `${baseClass} ${hasError ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-blue-500"}`;
+  };
 
   // Instruction mapping based on school background
-  const getInstructions = (schoolBackgroundId) => {
+  const getInstructions = (schoolBackgroundId: string) => {
     const instructions = {
       "1": {
         // High School Graduate
@@ -861,36 +1049,44 @@ const EducationalInformationStep = ({ formData, setFormData, dropdowns }) => {
 
   const currentInstructions = getInstructions(formData.schoolBackgroundId);
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
+    setFormData((prev: FormState) => ({
       ...prev,
       [name]: value,
     }));
   };
-  const handleNestedChange = (section, index, field, value) => {
-    setFormData((prev) => ({
+  const handleNestedChange = (
+    section: string,
+    index: number,
+    field: string,
+    value: string,
+  ) => {
+    setFormData((prev: FormState) => ({
       ...prev,
       [section]: prev[section].map((item, i) =>
-        i === index ? { ...item, [field]: value } : item
+        i === index ? { ...item, [field]: value } : item,
       ),
     }));
   };
 
-  const handleGradeChange = (schoolIndex, grade, checked) => {
-    const [previews, setPreviews] = useState(
-      "https://www.shutterstock.com/image-vector/default-avatar-profile-icon-social-600nw-1677509740.jpg"
-    );
-    setFormData((prev) => ({
+  const handleGradeChange = (
+    schoolIndex: number,
+    grade: string,
+    checked: boolean,
+  ) => {
+    setFormData((prev: FormState) => ({
       ...prev,
       schools: prev.schools.map((school, i) =>
         i === schoolIndex
           ? { ...school, grades: { ...school.grades, [grade]: checked } }
-          : school
+          : school,
       ),
     }));
   };
-  function handleFileChange(event) {
+  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files[0];
     if (file) {
       const imageURL = URL.createObjectURL(file);
@@ -925,8 +1121,13 @@ const EducationalInformationStep = ({ formData, setFormData, dropdowns }) => {
             <select
               name="schoolBackgroundId"
               value={formData.schoolBackgroundId}
+              onBlur={() => setFieldTouched("schoolBackgroundId")}
               onChange={handleInputChange}
-              className="appearance-none w-full bg-white dark:bg-black border border-gray-300 rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              className={selectClass(
+                "schoolBackgroundId",
+                "School background",
+                "appearance-none w-full bg-white dark:bg-black border rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 focus:border-blue-500 transition",
+              )}
             >
               <option value="">Choose Background</option>
               {dropdowns.schoolBackgrounds.map((opt) => (
@@ -935,6 +1136,11 @@ const EducationalInformationStep = ({ formData, setFormData, dropdowns }) => {
                 </option>
               ))}
             </select>
+            {getRequiredError("schoolBackgroundId", "School background") && (
+              <p className="mt-1 text-xs text-red-500">
+                {getRequiredError("schoolBackgroundId", "School background")}
+              </p>
+            )}
 
             {/* Dropdown arrow */}
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 dark:text-gray-100">
@@ -1097,8 +1303,13 @@ const EducationalInformationStep = ({ formData, setFormData, dropdowns }) => {
             <select
               name="departmentEnrolledId"
               value={formData.departmentEnrolledId}
+              onBlur={() => setFieldTouched("departmentEnrolledId")}
               onChange={handleInputChange}
-              className="appearance-none w-full bg-white dark:bg-black border border-gray-300 rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              className={selectClass(
+                "departmentEnrolledId",
+                "Department",
+                "appearance-none w-full bg-white dark:bg-black border rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 focus:border-blue-500 transition",
+              )}
             >
               <option value="">Choose Department</option>
               {dropdowns.departments.map((opt) => (
@@ -1107,6 +1318,11 @@ const EducationalInformationStep = ({ formData, setFormData, dropdowns }) => {
                 </option>
               ))}
             </select>
+            {getRequiredError("departmentEnrolledId", "Department") && (
+              <p className="mt-1 text-xs text-red-500">
+                {getRequiredError("departmentEnrolledId", "Department")}
+              </p>
+            )}
 
             {/* Dropdown arrow */}
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 dark:text-gray-100">
@@ -1134,8 +1350,13 @@ const EducationalInformationStep = ({ formData, setFormData, dropdowns }) => {
             <select
               name="programModalityCode"
               value={formData.programModalityCode}
+              onBlur={() => setFieldTouched("programModalityCode")}
               onChange={handleInputChange}
-              className="appearance-none w-full bg-white dark:bg-black border border-gray-300 rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              className={selectClass(
+                "programModalityCode",
+                "Program modality",
+                "appearance-none w-full bg-white dark:bg-black border rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 focus:border-blue-500 transition",
+              )}
             >
               <option value="">Choose Modality</option>
               {dropdowns.programModalities.map((opt) => (
@@ -1144,6 +1365,11 @@ const EducationalInformationStep = ({ formData, setFormData, dropdowns }) => {
                 </option>
               ))}
             </select>
+            {getRequiredError("programModalityCode", "Program modality") && (
+              <p className="mt-1 text-xs text-red-500">
+                {getRequiredError("programModalityCode", "Program modality")}
+              </p>
+            )}
 
             {/* Dropdown arrow */}
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 dark:text-gray-100">
@@ -1172,8 +1398,13 @@ const EducationalInformationStep = ({ formData, setFormData, dropdowns }) => {
             <select
               name="classYearId"
               value={formData.classYearId}
+              onBlur={() => setFieldTouched("classYearId")}
               onChange={handleInputChange}
-              className="appearance-none w-full bg-white dark:bg-black border border-gray-300 rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              className={selectClass(
+                "classYearId",
+                "Class year",
+                "appearance-none w-full bg-white dark:bg-black border rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 focus:border-blue-500 transition",
+              )}
             >
               <option value="">Choose Class Year</option>
               {dropdowns.classYears.map((opt) => (
@@ -1182,6 +1413,11 @@ const EducationalInformationStep = ({ formData, setFormData, dropdowns }) => {
                 </option>
               ))}
             </select>
+            {getRequiredError("classYearId", "Class year") && (
+              <p className="mt-1 text-xs text-red-500">
+                {getRequiredError("classYearId", "Class year")}
+              </p>
+            )}
 
             {/* Dropdown arrow */}
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 dark:text-gray-100">
@@ -1210,8 +1446,13 @@ const EducationalInformationStep = ({ formData, setFormData, dropdowns }) => {
             <select
               name="semesterCode"
               value={formData.semesterCode}
+              onBlur={() => setFieldTouched("semesterCode")}
               onChange={handleInputChange}
-              className="appearance-none w-full bg-white dark:bg-black border border-gray-300 rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              className={selectClass(
+                "semesterCode",
+                "Semester",
+                "appearance-none w-full bg-white dark:bg-black border rounded-lg px-4 py-3 pr-10 text-gray-800 dark:text-white font-medium shadow-sm focus:outline-none focus:ring-2 focus:border-blue-500 transition",
+              )}
             >
               <option value="">Choose Semester</option>
               {dropdowns.semesters.map((opt) => (
@@ -1220,6 +1461,11 @@ const EducationalInformationStep = ({ formData, setFormData, dropdowns }) => {
                 </option>
               ))}
             </select>
+            {getRequiredError("semesterCode", "Semester") && (
+              <p className="mt-1 text-xs text-red-500">
+                {getRequiredError("semesterCode", "Semester")}
+              </p>
+            )}
 
             {/* Dropdown arrow */}
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 dark:text-gray-100">
@@ -1257,7 +1503,7 @@ const EmploymentInformationStep = ({ formData, setFormData }) => {
     setFormData((prev) => ({
       ...prev,
       [section]: prev[section].map((item, i) =>
-        i === index ? { ...item, [field]: value } : item
+        i === index ? { ...item, [field]: value } : item,
       ),
     }));
   };
@@ -1360,121 +1606,133 @@ const EmploymentInformationStep = ({ formData, setFormData }) => {
             List at least three employments:
           </label>
           <div className="space-y-4">
-            {formData.employmentHistory.map((employment, index) => (
-              <div
-                key={index}
-                className="grid grid-cols-1 md:grid-cols-6 gap-4 p-4 border border-gray-200 rounded-md"
-              >
-                <div>
-                  <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                    Type of work
-                  </label>
-                  <input
-                    type="text"
-                    value={employment.type}
-                    onChange={(e) =>
-                      handleNestedChange(
-                        "employmentHistory",
-                        index,
-                        "type",
-                        e.target.value
-                      )
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                    Employer
-                  </label>
-                  <input
-                    type="text"
-                    value={employment.employer}
-                    onChange={(e) =>
-                      handleNestedChange(
-                        "employmentHistory",
-                        index,
-                        "employer",
-                        e.target.value
-                      )
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                    P.O Box
-                  </label>
-                  <input
-                    type="text"
-                    value={employment.poBox}
-                    onChange={(e) =>
-                      handleNestedChange(
-                        "employmentHistory",
-                        index,
-                        "poBox",
-                        e.target.value
-                      )
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  {" "}
-                  <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                    Telephone
-                  </label>
-                  <input
-                    type="tel"
-                    value={employment.telephone}
-                    onChange={(e) =>
-                      handleNestedChange(
-                        "employmentHistory",
-                        index,
-                        "telephone",
-                        e.target.value
-                      )
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                    Service Year
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
+            {formData.employmentHistory.map(
+              (
+                employment: {
+                  type: string | number | readonly string[] | undefined;
+                  employer: string | number | readonly string[] | undefined;
+                  poBox: string | number | readonly string[] | undefined;
+                  telephone: string | number | readonly string[] | undefined;
+                  yearFrom: string | number | readonly string[] | undefined;
+                  yearTo: string | number | readonly string[] | undefined;
+                },
+                index: React.Key | null | undefined,
+              ) => (
+                <div
+                  key={index}
+                  className="grid grid-cols-1 md:grid-cols-6 gap-4 p-4 border border-gray-200 rounded-md"
+                >
+                  <div>
+                    <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
+                      Type of work
+                    </label>
                     <input
                       type="text"
-                      placeholder="From"
-                      value={employment.yearFrom}
+                      value={employment.type}
                       onChange={(e) =>
                         handleNestedChange(
                           "employmentHistory",
                           index,
-                          "yearFrom",
-                          e.target.value
+                          "type",
+                          e.target.value,
                         )
                       }
-                      className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <input
-                      type="text"
-                      placeholder="To"
-                      value={employment.yearTo}
-                      onChange={(e) =>
-                        handleNestedChange(
-                          "employmentHistory",
-                          index,
-                          "yearTo",
-                          e.target.value
-                        )
-                      }
-                      className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
+                      Employer
+                    </label>
+                    <input
+                      type="text"
+                      value={employment.employer}
+                      onChange={(e) =>
+                        handleNestedChange(
+                          "employmentHistory",
+                          index,
+                          "employer",
+                          e.target.value,
+                        )
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
+                      P.O Box
+                    </label>
+                    <input
+                      type="text"
+                      value={employment.poBox}
+                      onChange={(e) =>
+                        handleNestedChange(
+                          "employmentHistory",
+                          index,
+                          "poBox",
+                          e.target.value,
+                        )
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    {" "}
+                    <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
+                      Telephone
+                    </label>
+                    <input
+                      type="tel"
+                      value={employment.telephone}
+                      onChange={(e) =>
+                        handleNestedChange(
+                          "employmentHistory",
+                          index,
+                          "telephone",
+                          e.target.value,
+                        )
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
+                      Service Year
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="text"
+                        placeholder="From"
+                        value={employment.yearFrom}
+                        onChange={(e) =>
+                          handleNestedChange(
+                            "employmentHistory",
+                            index,
+                            "yearFrom",
+                            e.target.value,
+                          )
+                        }
+                        className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <input
+                        type="text"
+                        placeholder="To"
+                        value={employment.yearTo}
+                        onChange={(e) =>
+                          handleNestedChange(
+                            "employmentHistory",
+                            index,
+                            "yearTo",
+                            e.target.value,
+                          )
+                        }
+                        className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ),
+            )}
           </div>
         </div>
       </section>
@@ -1487,12 +1745,40 @@ const ReviewSubmitStep = ({
   setFormData,
   onSubmit,
   isSubmitting,
+  dropdowns,
 }) => {
   const [applicantName, setApplicantName] = useState("");
   const [applicantSignature, setApplicantSignature] = useState("");
   const [submissionDate, setSubmissionDate] = useState(
-    new Date().toISOString().split("T")[0]
+    new Date().toISOString().split("T")[0],
   );
+
+  // Resolve labels from dropdowns
+  const departmentLabel =
+    dropdowns?.departments?.find(
+      (d) => String(d.value) === String(formData.departmentEnrolledId),
+    )?.label || "—";
+
+  const modalityLabel =
+    dropdowns?.programModalities?.find(
+      (m) => String(m.value) === String(formData.programModalityCode),
+    )?.label || "—";
+
+  const fullNameEng = [
+    formData.firstName,
+    formData.middleName,
+    formData.lastName,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const fullNameAmh = [
+    formData.firstNameAMH,
+    formData.middleNameAMH,
+    formData.lastNameAMH,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   const handleSubmit = async (e) => {
     try {
@@ -1509,7 +1795,7 @@ const ReviewSubmitStep = ({
 
   return (
     <div className="space-y-6">
-      {/* <CHANGE> Added step title and description */}
+      {/* Step title and description */}
       <div className="text-center mb-6">
         <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
           Review & Submit
@@ -1520,46 +1806,67 @@ const ReviewSubmitStep = ({
       </div>
 
       {/* Summary Section */}
-      <section className="border-2 border-gray-200 rounded-lg p-6">
-        <h3 className="text-lg text-center font-semibold text-gray-800 dark:text-white mb-4">
+      <section className="border-2 border-gray-200 dark:border-gray-700 rounded-lg p-6">
+        <h3 className="text-lg text-center font-semibold text-gray-800 dark:text-white mb-6">
           Application Summary
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-          <div className="flex flex-col justify-around">
-            <span className="font-medium">
-              Name: {formData.firstName}
-              {formData.middleName} {formData.lastName}
-            </span>
-            <div>
-              <span className="font-medium">Study Choice:</span>{" "}
-              {formData.studyChoice}
-            </div>
-          </div>
-          <div>
-            <div className="flex items-center gap-6">
-              <span className="font-medium">Photo:</span>
-              <img
-                className="w-24 h-24 rounded-full mb-4"
-                src={formData.prevPhoto}
-              />
-            </div>
-            {/* <span className="font-medium">Email:</span> {formData.email} */}
-          </div>
-          <div>
-            <span className="font-medium">Email:</span> {formData.email}
-          </div>
-          <div>
-            <span className="font-medium">Phone:</span> {formData.phoneNo}
-          </div>
+
+        {/* Photo on top, centered */}
+        <div className="flex justify-center mb-6">
+          <img
+            className="w-28 h-28 rounded-full object-cover border-4 border-blue-200 dark:border-blue-800 shadow"
+            src={
+              formData.prevPhoto ||
+              "https://www.shutterstock.com/image-vector/default-avatar-profile-icon-social-600nw-1677509740.jpg"
+            }
+            alt="Applicant"
+          />
+        </div>
+
+        {/* Parameter : Value rows */}
+        <div className="max-w-2xl mx-auto">
+          <Row
+            label="Name"
+            value={
+              <>
+                {fullNameEng}
+                {fullNameAmh && (
+                  <span className="text-gray-500 dark:text-gray-400">
+                    {" "}
+                    ({fullNameAmh})
+                  </span>
+                )}
+              </>
+            }
+          />
+          <Row
+            label="Gender"
+            value={
+              formData.sex
+                ? `${formData.sex}, ${formData.age || "—"} years old`
+                : "—"
+            }
+          />
+          <Row label="Phone" value={formData.phoneNo} />
+          <Row label="Email" value={formData.email} />
+          <Row label="Date of Birth" value={formData.birthDateGC} />
+        </div>
+
+        {/* Application message */}
+        <div className="mt-8 max-w-2xl mx-auto text-center bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+          <p className="text-sm sm:text-base text-blue-800 dark:text-blue-200 leading-relaxed">
+            You applied for <span className="font-bold">{departmentLabel}</span>{" "}
+            on <span className="font-bold">{modalityLabel}</span>.
+          </p>
         </div>
       </section>
 
       {/* Statement by Applicant */}
-      <section className="border-2 border-gray-200  rounded-lg p-6">
+      <section className="border-2 border-gray-200 dark:border-gray-700 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
           6. STATEMENT BY THE APPLICANT
         </h3>
-        <div className=" p-4 rounded-md mb-6">
+        <div className="p-4 rounded-md mb-6">
           <p className="text-sm text-gray-800 dark:text-white leading-relaxed">
             Are you sure you want to submit this form? Please confirm that all
             information provided is correct.
@@ -1608,7 +1915,6 @@ const ReviewSubmitStep = ({
           </div>
         </form>
       </section>
-
     </div>
   );
 };
@@ -1668,6 +1974,7 @@ const MultiStepRegistrationForm = () => {
   const totalSteps = 3;
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   // <CHANGE> Added initial form data structure with localStorage persistence
   const [formData, setFormData] = useState(() => {
@@ -1675,7 +1982,6 @@ const MultiStepRegistrationForm = () => {
     return saved
       ? JSON.parse(saved)
       : {
-
           // Personal Data
           firstName: "",
           firstNameAMH: "",
@@ -1731,7 +2037,6 @@ const MultiStepRegistrationForm = () => {
           // Marital Status
           maritalStatus: "",
 
-
           // Emergency Contact
           emergencyFullName: "",
           emergencyFullNameAMH: "",
@@ -1757,7 +2062,17 @@ const MultiStepRegistrationForm = () => {
   }, []);
 
   const nextStep = () => {
-    // Allow advancing unless we're already at the final step
+    if (!isStepValid(currentStep, formData)) {
+      setErrorMessage("Please complete all required fields before continuing.");
+      toast({
+        title: "Missing required information",
+        description:
+          "Please fill in the highlighted fields before moving to the next step.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (currentStep < totalSteps) {
       setCurrentStep((s) => s + 1);
     }
@@ -1789,24 +2104,12 @@ const MultiStepRegistrationForm = () => {
           regions,
           classYears,
         ] = await Promise.all([
-          apiService.get(
-            endPoints.departments
-          ),
-          apiService.get(
-            endPoints.impairments
-          ),
-          apiService.get(
-            endPoints.semesters
-          ),
-          apiService.get(
-            endPoints.schoolBackgrounds
-          ),
-          apiService.get(
-            endPoints.programModalities
-          ),
-          apiService.get(
-            endPoints.regions
-          ),
+          apiService.get(endPoints.departments),
+          apiService.get(endPoints.impairments),
+          apiService.get(endPoints.semesters),
+          apiService.get(endPoints.schoolBackgrounds),
+          apiService.get(endPoints.programModalities),
+          apiService.get(endPoints.regions),
           apiService.get(endPoints.classYears),
         ]);
 
@@ -1866,7 +2169,7 @@ const MultiStepRegistrationForm = () => {
   const fetchZonesByRegion = async (regionCode, target) => {
     try {
       const zones = await apiService.get(
-        `${endPoints.zonesByRegion}/${regionCode}`
+        `${endPoints.zonesByRegion}/${regionCode}`,
       );
       setDropdowns((prev) => ({
         ...prev,
@@ -1896,10 +2199,10 @@ const MultiStepRegistrationForm = () => {
     }
   };
 
-  const fetchWoredasByZone = async (zoneCode, target) => {
+  const fetchWoredasByZone = async (zoneCode: any, target: string) => {
     try {
       const woredas = await apiService.get(
-        `${endPoints.woredasByZone}/${zoneCode}`
+        `${endPoints.woredasByZone}/${zoneCode}`,
       );
       setDropdowns((prev) => ({
         ...prev,
@@ -1954,6 +2257,12 @@ const MultiStepRegistrationForm = () => {
       // Grandfather name - using last name as grandfather name
       grandfatherNameAMH: nullIfEmpty(formData.lastNameAMH),
       grandfatherNameENG: nullIfEmpty(formData.lastName),
+
+      motherNameAMH: " ",
+      motherNameENG: " ",
+      motherFatherNameAMH: " ",
+      motherFatherNameENG: " ",
+
       gender: formData.sex
         ? formData.sex === "Male"
           ? "MALE"
@@ -1964,7 +2273,7 @@ const MultiStepRegistrationForm = () => {
       dateOfBirthEC: dateOrNull(
         formData.birthYearEC,
         formData.birthMonthEC,
-        formData.birthDateEC
+        formData.birthDateEC,
       ),
       dateOfBirthGC: formData.birthDateGC || null,
       placeOfBirthWoredaCode: nullIfEmpty(formData.placeOfBirthWoredaCode),
@@ -1977,8 +2286,10 @@ const MultiStepRegistrationForm = () => {
       maritalStatus: safeUpper(formData.maritalStatus),
       impairmentCode: nullIfEmpty(formData.impairmentCode),
       schoolBackgroundId: intOrNull(formData.schoolBackgroundId),
-      contactPersonFullNameENG: nullIfEmpty(formData.emergencyFullName),
-      contactPersonFullNameAMH: nullIfEmpty(formData.emergencyFullNameAMH),
+      contactPersonFirstNameENG: nullIfEmpty(formData.emergencyFullName),
+      contactPersonFirstNameAMH: nullIfEmpty(formData.emergencyFullNameAMH),
+      contactPersonLastNameAMH: " ",
+      contactPersonLastNameENG: " ",
       contactPersonPhoneNumber: nullIfEmpty(formData.contactPersonPhoneNumber),
       contactPersonRelation: nullIfEmpty(formData.contactPersonRelation),
       departmentEnrolledId: intOrNull(formData.departmentEnrolledId),
@@ -1988,14 +2299,14 @@ const MultiStepRegistrationForm = () => {
     };
     // Remove null fields to avoid backend complaints for missing/optional values
     const body = Object.fromEntries(
-      Object.entries(rawBody).filter(([_, v]) => v !== null)
+      Object.entries(rawBody).filter(([_, v]) => v !== null),
     );
 
     try {
       // Append the JSON string as the 'data' part
       formDataObj.append(
         "data",
-        new Blob([JSON.stringify(body)], { type: "application/json" })
+        new Blob([JSON.stringify(body)], { type: "application/json" }),
       );
 
       // Append file uploads if they exist
@@ -2012,13 +2323,13 @@ const MultiStepRegistrationForm = () => {
         formDataObj,
         {
           // headers: { requiresAuth: false }
-        }
+        },
       );
 
       console.log(
         "%cRegistration success",
         "color: green; font-weight: bold",
-        response.data
+        response.data,
       );
       toast({
         title: "Registration submitted",
@@ -2029,14 +2340,15 @@ const MultiStepRegistrationForm = () => {
       localStorage.removeItem("registrationFormData");
       localStorage.removeItem("registrationCurrentStep");
       setErrorMessage("");
-      // alert removed in favor of toast
+      // Show success modal — don't reset yet, do it on Finish
+      setIsSubmitted(true);
 
       return response.data;
     } catch (error) {
       console.error(
         "%cSubmission error:",
         "color: red; font-weight: bold",
-        error
+        error,
       );
 
       // Extract error message from different possible error structures
@@ -2096,22 +2408,34 @@ const MultiStepRegistrationForm = () => {
   const isStepValid = (step, formData) => {
     switch (step) {
       case 1:
-        // Be lenient on Step 1 so users can proceed after core personal info
         return (
           !!formData.firstName &&
           !!formData.middleName &&
           !!formData.lastName &&
+          !!formData.firstNameAMH &&
+          !!formData.middleNameAMH &&
+          !!formData.lastNameAMH &&
           !!formData.sex &&
-          !!formData.phoneNo
+          !!formData.age &&
+          !!formData.phoneNo &&
+          !!formData.placeOfBirthRegionCode &&
+          !!formData.placeOfBirthZoneCode &&
+          !!formData.placeOfBirthWoredaCode &&
+          !!formData.birthDateGC &&
+          !!formData.currentAddressRegionCode &&
+          !!formData.currentAddressZoneCode &&
+          !!formData.currentAddressWoredaCode
         );
       case 2:
-        return true;
+        return (
+          !!formData.schoolBackgroundId &&
+          !!formData.departmentEnrolledId &&
+          !!formData.programModalityCode &&
+          !!formData.classYearId &&
+          !!formData.semesterCode
+        );
       case 3:
         return true;
-      // return formData.schools && formData.studyChoice;
-      case 4:
-        return true;
-      // return formData.currentlyEmployed;
       default:
         return true;
     }
@@ -2143,6 +2467,7 @@ const MultiStepRegistrationForm = () => {
             setFormData={setFormData}
             onSubmit={handleSubmit}
             isSubmitting={isSubmitting}
+            dropdowns={dropdowns}
           />
         );
 
@@ -2172,7 +2497,7 @@ const MultiStepRegistrationForm = () => {
               DEUTSCHE HOCHSCHULE
             </h1>
             <p className="text-sm text-gray-600  dark:text-gray-300">
-              medicin college
+              FÜR MEDIZIN COLLEGE
             </p>
           </div>
         </div>
@@ -2233,7 +2558,7 @@ const MultiStepRegistrationForm = () => {
                   onClick={() => {
                     localStorage.setItem(
                       "registrationFormData",
-                      JSON.stringify(formData)
+                      JSON.stringify(formData),
                     );
                     alert("Progress saved!");
                   }}
@@ -2258,112 +2583,199 @@ const MultiStepRegistrationForm = () => {
           id="contact"
           className="relative w-full mt-5 flex items-center justify-center overflow-hidden"
         >
-        <div className="absolute inset-0 z-0 pointer-events-none">
-                  <LightRays
-                    raysOrigin="top-center"
-                    raysColor="#ffffff"
-                    raysSpeed={1}
-                    lightSpread={1}
-                    rayLength={2}
-                    pulsating={true}
-                    fadeDistance={1}
-                    saturation={1}
-                    followMouse={true}
-                    mouseInfluence={0.1}
-                    noiseAmount={0}
-                    distortion={0}
-                    className="w-full h-full"
-                  />
-                </div>
-    
-                <footer className="text-white py-1">
-                  <div className="container mx-auto px-4">
-                    <div className="grid md:grid-cols-4 gap-8">
-                      <div>
-                        <div className="flex items-center space-x-3 mb-4">
-                          <div className="w-12 rounded-full rounded-lg flex items-center justify-center">
-                            <img
-                              src="/assets/companylogo.jpg"
-                              className="h-[50px] w-full rounded-full"
-                            />
-                          </div>
-                          <div>
-                            <h3 className="text-gray-500 hover:text-gray-400 dark:text-white font-bold">
-                              DEUTSCHE HOCHSCHULE
-                            </h3>
-                            <p className="text-gray-500 hover:text-gray-400 dark:text-white text-sm text-">
-                              FÜR MEDIZIN COLLEGE
-                            </p>
-                          </div>
-                        </div>
-                        <p className="text-blue-600 hover:text-gray-400">
-                          Excellence in medical education since 2020.
-                        </p>
-                      </div>
-                      <div>
-                        <h4 className=" text-gray-500 hover:text-gray-400 dark:text-white font-semibold mb-4">Quick Links</h4>
-                        <ul className="space-y-2 text-black">
-                          <li>
-                            <Link
-                              to="/register"
-                              className="text-blue-600 hover:text-gray-400 dark:text-white dark:hover:text-gray-400"
-                            >
-                              Apply Now
-                            </Link>
-                          </li>
-                          <li>
-                            <Link
-                              to="/login"
-                              className="text-blue-600 hover:text-gray-400 dark:text-white dark:hover:text-gray-400"
-                            >
-                              Student Portal
-                            </Link>
-                          </li>
-                          <li>
-                            <a
-                              href="#programs"
-                              className="text-blue-600 hover:text-gray-400 dark:text-white dark:hover:text-gray-400"
-                            >
-                              Programs
-                            </a>
-                          </li>
-                          <li>
-                            <a
-                              href="#"
-                              className="text-blue-600 hover:text-gray-400 dark:text-white dark:hover:text-gray-400"
-                            >
-                              Research
-                            </a>
-                          </li>
-                        </ul>
-                      </div>
-                      <div>
-                        <h4 className="font-semibold mb-4">{t("contact")}</h4>
-                        <ul className="space-y-2 ">
-                          <li className="text-blue-600 hover:text-gray-400 dark:text-white dark:hover:text-gray-400">
-                            Kebele 14, In front of NOC, Tofik Real Estate, Bahir Dar
-                          </li>
-                          <li className="text-blue-600 hover:text-gray-400 dark:text-white dark:hover:text-gray-400">
-                            +251 90 039 2346/+251583207659
-                          </li>
-                          <li className="text-blue-600 hover:text-gray-400 dark:text-white dark:hover:text-gray-400">
-                            info@deutsche-hochschule-fuer-medizin.com
-                          </li>
-                          <li className="text-blue-600 hover:text-gray-400 dark:text-white dark:hover:text-gray-400">
-                            P.O.Box: 364
-                          </li>
-                        </ul>
-                      </div>
+          <div className="absolute inset-0 z-0 pointer-events-none">
+            <LightRays
+              raysOrigin="top-center"
+              raysColor="#ffffff"
+              raysSpeed={1}
+              lightSpread={1}
+              rayLength={2}
+              pulsating={true}
+              fadeDistance={1}
+              saturation={1}
+              followMouse={true}
+              mouseInfluence={0.1}
+              noiseAmount={0}
+              distortion={0}
+              className="w-full h-full"
+            />
+          </div>
+
+          <footer className="text-white py-1">
+            <div className="container mx-auto px-4">
+              <div className="grid md:grid-cols-4 gap-8">
+                <div>
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-12 rounded-full rounded-lg flex items-center justify-center">
+                      <img
+                        src="/assets/companylogo.jpg"
+                        className="h-[50px] w-full rounded-full"
+                      />
                     </div>
-                    <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-                      <p>
-                        Deutsche Hochschule für Medizin College Bahirdar Website.
+                    <div>
+                      <h3 className="text-gray-500 hover:text-gray-400 dark:text-white font-bold">
+                        DEUTSCHE HOCHSCHULE
+                      </h3>
+                      <p className="text-gray-500 hover:text-gray-400 dark:text-white text-sm text-">
+                        FÜR MEDIZIN COLLEGE
                       </p>
                     </div>
                   </div>
-                </footer>
+                  <p className="text-blue-600 hover:text-gray-400">
+                    Excellence in medical education since 2020.
+                  </p>
+                </div>
+                <div>
+                  <h4 className=" text-gray-500 hover:text-gray-400 dark:text-white font-semibold mb-4">
+                    Quick Links
+                  </h4>
+                  <ul className="space-y-2 text-black">
+                    <li>
+                      <Link
+                        to="/register"
+                        className="text-blue-600 hover:text-gray-400 dark:text-white dark:hover:text-gray-400"
+                      >
+                        Apply Now
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        to="/login"
+                        className="text-blue-600 hover:text-gray-400 dark:text-white dark:hover:text-gray-400"
+                      >
+                        Student Portal
+                      </Link>
+                    </li>
+                    <li>
+                      <a
+                        href="#programs"
+                        className="text-blue-600 hover:text-gray-400 dark:text-white dark:hover:text-gray-400"
+                      >
+                        Programs
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        href="#"
+                        className="text-blue-600 hover:text-gray-400 dark:text-white dark:hover:text-gray-400"
+                      >
+                        Research
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-4">{t("contact")}</h4>
+                  <ul className="space-y-2 ">
+                    <li className="text-blue-600 hover:text-gray-400 dark:text-white dark:hover:text-gray-400">
+                      Kebele 14, In front of NOC, Tofik Real Estate, Bahir Dar
+                    </li>
+                    <li className="text-blue-600 hover:text-gray-400 dark:text-white dark:hover:text-gray-400">
+                      +251 90 039 2346/+251583207659
+                    </li>
+                    <li className="text-blue-600 hover:text-gray-400 dark:text-white dark:hover:text-gray-400">
+                      info@deutsche-hochschule-fuer-medizin.com
+                    </li>
+                    <li className="text-blue-600 hover:text-gray-400 dark:text-white dark:hover:text-gray-400">
+                      P.O.Box: 364
+                    </li>
+                  </ul>
+                </div>
               </div>
+              <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+                <p>Deutsche Hochschule für Medizin College Bahirdar Website.</p>
+              </div>
+            </div>
+          </footer>
+        </div>
       </div>
+      {isSubmitted && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full p-8 text-center animate-in fade-in zoom-in duration-200">
+            {/* Success icon */}
+            <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+              <svg
+                className="w-8 h-8 text-green-600 dark:text-green-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="3"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </div>
+
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+              Registration Successful
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
+              Your application has been submitted successfully. The Registrar's
+              Office will contact you shortly. Please keep your phone reachable.
+            </p>
+
+            <button
+              onClick={() => {
+                setFormData({
+                  firstName: "",
+                  firstNameAMH: "",
+                  middleName: "",
+                  middleNameAMH: "",
+                  lastName: "",
+                  lastNameAMH: "",
+                  sex: "",
+                  age: "",
+                  visionImpairment: "",
+                  hearingImpairment: "",
+                  otherImpairment: "",
+                  birthTown: "",
+                  birthWoreda: "",
+                  birthZone: "",
+                  birthRegion: "",
+                  birthDateEC: "",
+                  birthMonthEC: "",
+                  birthYearEC: "",
+                  birthDateGC: "",
+                  birthMonthGC: "",
+                  birthYearGC: "",
+                  currentRegion: "",
+                  currentZone: "",
+                  currentWoreda: "",
+                  currentSubCity: "",
+                  currentKebele: "",
+                  currentHouseNo: "",
+                  email: "",
+                  phoneNo: "",
+                  impairmentCode: "",
+                  departmentEnrolledId: "",
+                  programModalityCode: "",
+                  schoolBackgroundId: "",
+                  classYearId: "",
+                  semesterCode: "",
+                  placeOfBirthRegionCode: "",
+                  placeOfBirthZoneCode: "",
+                  placeOfBirthWoredaCode: "",
+                  currentAddressRegionCode: "",
+                  currentAddressZoneCode: "",
+                  currentAddressWoredaCode: "",
+                  maritalStatus: "",
+                  emergencyFullName: "",
+                  emergencyFullNameAMH: "",
+                });
+                setCurrentStep(1);
+                setIsSubmitted(false);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className="w-full px-6 py-3 rounded-lg bg-green-600 hover:bg-green-700 text-white font-semibold transition focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+            >
+              Finish
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
