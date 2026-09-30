@@ -18,19 +18,150 @@ import {
   Phone,
   MapPin,
   GraduationCap,
-  Edit,
   Camera,
   Download,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useParams } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useModal } from "@/hooks/Modal";
 import apiService from "@/components/api/apiService";
 import endPoints from "@/components/api/endPoints";
 import LoadingSpinner from "@/designs/LoadingSpinner";
 import UserNotFound from "@/designs/UserNotFound";
+
+// Searchable dropdown — defined at module scope
+const SearchableSelect = ({
+  value,
+  onChange,
+  options,
+  placeholder = "Select...",
+  disabled = false,
+  hasError = false,
+}: {
+  value: number;
+  onChange: (id: number) => void;
+  options: Array<{ id: number; name: string }>;
+  placeholder?: string;
+  disabled?: boolean;
+  hasError?: boolean;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Close on outside click
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(e.target as Node)
+      ) {
+        setIsOpen(false);
+        setQuery("");
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  // Auto-focus the search input when opening
+  useEffect(() => {
+    if (isOpen) inputRef.current?.focus();
+  }, [isOpen]);
+
+  const selected = options.find((o) => o.id === value);
+
+  const filtered = query.trim()
+    ? options.filter((o) => o.name.toLowerCase().includes(query.toLowerCase()))
+    : options;
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setIsOpen((v) => !v)}
+        className={`flex h-10 w-full items-center justify-between rounded-md border bg-background px-3 py-2 text-sm text-left ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+          hasError ? "border-red-500" : "border-input"
+        }`}
+      >
+        <span
+          className={
+            selected ? "text-foreground" : "text-muted-foreground truncate"
+          }
+        >
+          {selected ? selected.name : placeholder}
+        </span>
+        <svg
+          className={`w-4 h-4 ml-2 shrink-0 text-muted-foreground transition-transform ${
+            isOpen ? "rotate-180" : ""
+          }`}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-50 mt-1 w-full rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg">
+          {/* Search input */}
+          <div className="p-2 border-b border-gray-100 dark:border-gray-800">
+            <input
+              ref={inputRef}
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Type to search..."
+              className="w-full px-2 py-1.5 text-sm rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Options list */}
+          <ul className="max-h-56 overflow-y-auto py-1">
+            {filtered.length === 0 ? (
+              <li className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+                No matches found
+              </li>
+            ) : (
+              filtered.map((opt) => {
+                const isSelected = opt.id === value;
+                return (
+                  <li key={opt.id}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onChange(opt.id);
+                        setIsOpen(false);
+                        setQuery("");
+                      }}
+                      className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                        isSelected
+                          ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium"
+                          : "text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      }`}
+                    >
+                      {opt.name}
+                    </button>
+                  </li>
+                );
+              })
+            )}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default function ApplicantDetail() {
   const navigate = useNavigate();
@@ -60,85 +191,13 @@ export default function ApplicantDetail() {
   const { id } = useParams();
   const { openModal, closeModal } = useModal() as any;
   const [actionBusy, setActionBusy] = useState(false);
+  const sectionBorderClass =
+    status === "accepted"
+      ? "border-2 border-green-500"
+      : status === "rejected"
+        ? "border-2 border-red-500"
+        : "";
 
-  // Fetch dropdown data for mapping IDs to names
-  // async function acceptApplication(data: {
-  //   username: string;
-  //   password: string;
-  //   dateEnrolledGC: string; // ← add UI field(s)
-  //   academicYearCode: string; // ← add UI field or take from dropdown
-  //   batchClassYearSemesterId: number; // ← add UI field or mapping
-  //   isTransfer: boolean;
-  //   grade12Result?: number;
-  //   remark?: string;
-
-  //   studentPhoto?: File | null; // ← changed
-  //   document?: File | null;
-  // }) {
-  //   if (!id) return false;
-
-  //   setActionBusy(true);
-
-  //   try {
-  //     console.log(endPoints.applicantAccept, "what");
-  //     const formData = new FormData();
-
-  //     // JSON part – very important: named "request"
-  //     const requestPayload = {
-  //       username: data.username,
-  //       password: data.password,
-  //       dateEnrolledGC: data.dateEnrolledGC, // must be added
-  //       academicYearCode: data.academicYearCode, // must be added
-  //       batchClassYearSemesterId: data.batchClassYearSemesterId, // must be added
-  //       studentRecentStatusId: 1, // most systems use 1 = active
-  //       isTransfer: data.isTransfer,
-  //       grade12Result: data.grade12Result,
-  //       remark: data.remark || undefined,
-  //       // add dateEnrolledEC, exitExam* fields if your institution requires them
-  //     };
-
-  //     formData.append("request", JSON.stringify(requestPayload));
-
-  //     if (data.studentPhoto) {
-  //       formData.append("studentPhoto", data.studentPhoto);
-  //     }
-  //     if (data.document) {
-  //       formData.append("document", data.document);
-  //     }
-  //     console.log(endPoints.applicantAccept, "shkshka");
-  //     const token = localStorage.getItem("xy9a7b");
-  //     console.log(token, "good token");
-  //     const response = await apiClient.post(
-  //       endPoints.applicantAccept.replace(":id", id),
-  //       formData
-  //       // {
-  //       //   headers: {
-  //       //     "Content-Type": `application/json`,
-  //       //   },
-  //       // }
-  //       // {
-  //       //   // headers: { "Content-Type": "application/json" },
-  //       // }
-  //     );
-  //     console.log(endPoints.applicantAccept.replace(":id", id));
-  //     // On success → maybe navigate or show success alert
-  //     alert("Student registered successfully!\nUsername: " + data.username);
-  //     navigate("/registrar/applications"); // or wherever you want
-
-  //     return true;
-  //   } catch (err: any) {
-  //     console.error(err);
-  //     const msg = err.response?.data?.error || "Failed to accept application";
-  //     alert(msg); // improve: use toast / better alert component
-  //     toast.error("Accepting Student Failed", {
-  //       description: err,
-  //       duration: 6000,
-  //     });
-  //     return false;
-  //   } finally {
-  //     setActionBusy(false);
-  //   }
-  // }
   const acceptApplication = async (data: {
     username: string;
     password: string;
@@ -169,7 +228,14 @@ export default function ApplicantDetail() {
         remark: data.remark || undefined,
       };
 
-      formData.append("request", JSON.stringify(requestPayload));
+      // formData.append("request", JSON.stringify(requestPayload));
+
+      formData.append(
+        "request",
+        new Blob([JSON.stringify(requestPayload)], {
+          type: "application/json",
+        }),
+      );
 
       if (data.studentPhoto) {
         formData.append("studentPhoto", data.studentPhoto);
@@ -194,11 +260,11 @@ export default function ApplicantDetail() {
         {
           headers: {
             // Force what worked in Postman
-            "Content-Type": "application/json",
+            // "Content-Type": "application/json",
             // Force token so we bypass any interceptor issues
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       toast.success(`Student registered! Username: ${data.username}`);
@@ -268,7 +334,7 @@ export default function ApplicantDetail() {
   // Helper function to get display name from ID/code
   const getDisplayName = (
     type: string,
-    idOrCode: string | number | undefined
+    idOrCode: string | number | undefined,
   ) => {
     if (!idOrCode) return "N/A";
 
@@ -276,7 +342,7 @@ export default function ApplicantDetail() {
       case "department": {
         const department = dropdownData.departments.find(
           (dept: { dptID?: string; id?: string; deptName?: string }) =>
-            dept.dptID === idOrCode || dept.id === idOrCode
+            dept.dptID === idOrCode || dept.id === idOrCode,
         );
         return department?.deptName || idOrCode;
       }
@@ -284,21 +350,21 @@ export default function ApplicantDetail() {
       case "programModality": {
         const modality = dropdownData.programModalities.find(
           (mod: { modalityCode?: string; modality?: string }) =>
-            mod.modalityCode === idOrCode
+            mod.modalityCode === idOrCode,
         );
         return modality?.modality || idOrCode;
       }
 
       case "schoolBackground": {
         const background = dropdownData.schoolBackgrounds.find(
-          (bg: { id?: string; background?: string }) => bg.id === idOrCode
+          (bg: { id?: string; background?: string }) => bg.id === idOrCode,
         );
         return background?.background || idOrCode;
       }
 
       case "classYear": {
         const classYear = dropdownData.classYears.find(
-          (cy: { id?: string; classYear?: string }) => cy.id === idOrCode
+          (cy: { id?: string; classYear?: string }) => cy.id === idOrCode,
         );
         return classYear?.classYear || idOrCode;
       }
@@ -306,7 +372,7 @@ export default function ApplicantDetail() {
       case "semester": {
         const semester = dropdownData.semesters.find(
           (sem: { academicPeriodCode?: string; academicPeriod?: string }) =>
-            sem.academicPeriodCode === idOrCode
+            sem.academicPeriodCode === idOrCode,
         );
         return semester?.academicPeriod || `Semester ${idOrCode}`;
       }
@@ -323,6 +389,7 @@ export default function ApplicantDetail() {
         const url = endPoints.applicantDetail.replace(":id", id as string);
         const response = await apiService.get(url);
         setApplicant(response);
+        setStatus(response.applicationStatus?.toLowerCase() ?? null);
       } catch (error) {
         console.error("Error fetching applicant data:", error);
       } finally {
@@ -343,7 +410,7 @@ export default function ApplicantDetail() {
         const photoBlob: Blob = await apiService.get(
           endPoints.applicantPhoto.replace(":id", id as string),
           {},
-          { responseType: "blob", headers: { requiresAuth: true } }
+          { responseType: "blob", headers: { requiresAuth: true } },
         );
         if (
           photoBlob &&
@@ -361,7 +428,7 @@ export default function ApplicantDetail() {
         const docBlob: Blob = await apiService.get(
           endPoints.applicantDocument.replace(":id", id as string),
           {},
-          { responseType: "blob", headers: { requiresAuth: true } }
+          { responseType: "blob", headers: { requiresAuth: true } },
         );
         if (docBlob && docBlob.size > 0) {
           const url = URL.createObjectURL(docBlob);
@@ -573,14 +640,50 @@ export default function ApplicantDetail() {
   //   };
   //   openModal(<AcceptForm />);
   // }
+
+  // Reusable field wrapper — defined at module scope (outside any component)
+  const Field = ({
+    label,
+    required,
+    error,
+    hint,
+    children,
+  }: {
+    label: string;
+    required?: boolean;
+    error?: string;
+    hint?: string;
+    children: React.ReactNode;
+  }) => (
+    <div className="space-y-1.5">
+      <Label className="text-sm font-medium text-gray-800 dark:text-gray-200">
+        {label}
+        {required && <span className="text-red-500 ml-0.5">*</span>}
+      </Label>
+      {children}
+      {hint && !error && (
+        <p className="text-xs text-gray-500 dark:text-gray-400">{hint}</p>
+      )}
+      {error && <p className="text-xs text-red-500">{error}</p>}
+    </div>
+  );
+
   function openAcceptModal() {
     const AcceptForm = () => {
+      const [batchClassYearSemesters, setBatchClassYearSemesters] = useState<
+        Array<{ name: string; id: number }>
+      >([]);
+      const [
+        batchClassYearSemestersLoading,
+        setBatchClassYearSemestersLoading,
+      ] = useState(true);
+
       const [form, setForm] = useState({
         username: "",
         password: "",
-        dateEnrolledGC: "2026-09-11", // sensible default: around Ethiopian New Year 2019 EC
-        academicYearCode: "2018", // adjust to current Ethiopian year (see note below)
-        batchClassYearSemesterId: 15, // ← temporary hardcoded; replace with real select later
+        dateEnrolledGC: "2026-09-11",
+        academicYearCode: "2018",
+        batchClassYearSemesterId: 0,
         isTransfer: false,
         grade12Result: "",
         remark: "",
@@ -590,13 +693,45 @@ export default function ApplicantDetail() {
 
       const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
+      useEffect(() => {
+        let cancelled = false;
+
+        const fetchBatchClassYearSemesters = async () => {
+          try {
+            const response = await apiService.get<{
+              batchClassYearSemesters?: Array<{ name: string; id: number }>;
+            }>(endPoints.lookupsDropdown);
+
+            if (!cancelled) {
+              setBatchClassYearSemesters(
+                response.batchClassYearSemesters ?? [],
+              );
+            }
+          } catch (error) {
+            console.error("Error fetching batch class-year-semesters:", error);
+          } finally {
+            if (!cancelled) setBatchClassYearSemestersLoading(false);
+          }
+        };
+
+        fetchBatchClassYearSemesters();
+
+        return () => {
+          cancelled = true;
+        };
+      }, []);
+
       const validate = () => {
         const newErrors: typeof errors = {};
-        if (!form.username.trim()) newErrors.username = "Username is required";
-        if (!form.password.trim()) newErrors.password = "Password is required";
+        if (!form.username.trim()) newErrors.username = "Username is required.";
+        if (!form.password.trim()) newErrors.password = "Password is required.";
+        else if (form.password.length < 8)
+          newErrors.password = "Password must be at least 8 characters.";
         if (!form.dateEnrolledGC)
-          newErrors.dateEnrolledGC = "Enrollment date is required";
-        // Add more if needed (e.g. password strength, username format)
+          newErrors.dateEnrolledGC = "Enrollment date is required.";
+        // academicYearCode is now optional
+        if (!form.batchClassYearSemesterId)
+          newErrors.batchClassYearSemesterId = "Batch ID is required.";
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -617,151 +752,231 @@ export default function ApplicantDetail() {
       };
 
       return (
-        <div className="w-[92vw] sm:w-[580px] max-w-[95vw] max-h-[85vh] overflow-y-auto p-6 space-y-6 bg-white dark:bg-gray-950 rounded-lg shadow-xl">
-          {" "}
-          <h2 className="text-xl font-semibold">Accept & Register Applicant</h2>
-          {/* Required credentials */}
-          <div className="space-y-4">
-            <div>
-              <Label>Username (usually phone number)</Label>
-              <Input
-                value={form.username}
-                onChange={(e) => setForm({ ...form, username: e.target.value })}
-                placeholder="09xxxxxxxx or email"
-                className={errors.username ? "border-red-500" : ""}
-              />
-              {errors.username && (
-                <p className="text-red-500 text-sm mt-1">{errors.username}</p>
-              )}
-            </div>
-
-            <div>
-              <Label>Password</Label>
-              <Input
-                type="password"
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                placeholder="Enter secure password"
-                className={errors.password ? "border-red-500" : ""}
-              />
-              {errors.password && (
-                <p className="text-red-500 text-sm mt-1">{errors.password}</p>
-              )}
-            </div>
+        <div className="w-[92vw] sm:w-[620px] max-w-[95vw] max-h-[88vh] overflow-y-auto bg-white dark:bg-gray-950 rounded-xl shadow-2xl">
+          {/* Header */}
+          <div className="sticky top-0 z-10 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 px-6 py-5">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
+              To accept this applicant you have to fill this form
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Fields marked with <span className="text-red-500">*</span> are
+              required.
+            </p>
           </div>
-          {/* Enrollment info */}
-          <div className="space-y-4 pt-4 border-t">
-            <div>
-              <Label>Date Enrolled (Gregorian)</Label>
-              <Input
-                type="date"
-                value={form.dateEnrolledGC}
-                onChange={(e) =>
-                  setForm({ ...form, dateEnrolledGC: e.target.value })
-                }
-                className={errors.dateEnrolledGC ? "border-red-500" : ""}
-              />
-              {errors.dateEnrolledGC && (
-                <p className="text-red-500 text-sm mt-1">
-                  {errors.dateEnrolledGC}
+
+          {/* Body */}
+          <div className="px-6 py-6 space-y-8">
+            {/* Section: Account Credentials */}
+            <section className="space-y-5">
+              <div>
+                <h3 className="text-sm font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide">
+                  Account Credentials
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  Login details the student will use to access the portal.
                 </p>
-              )}
-            </div>
-
-            {/* You can later replace these with selects populated from dropdownData */}
-            <div>
-              <Label>Academic Year Code</Label>
-              <Input
-                value={form.academicYearCode}
-                onChange={(e) =>
-                  setForm({ ...form, academicYearCode: e.target.value })
-                }
-                placeholder="e.g. 2018 or 2025/26"
-              />
-            </div>
-
-            <div>
-              <Label>Batch / Class-Year-Semester ID</Label>
-              <Input
-                type="number"
-                value={form.batchClassYearSemesterId}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    batchClassYearSemesterId: Number(e.target.value) || 15,
-                  })
-                }
-                placeholder="ID from system"
-              />
-            </div>
-          </div>
-          {/* Optional fields */}
-          <div className="space-y-4 pt-4 border-t text-sm text-gray-600">
-            <div className="flex items-center space-x-2">
-              <input
-                id="isTransfer"
-                type="checkbox"
-                checked={form.isTransfer}
-                onChange={(e) =>
-                  setForm({ ...form, isTransfer: e.target.checked })
-                }
-                className="h-4 w-4"
-              />
-              <Label htmlFor="isTransfer">This is a transfer student</Label>
-            </div>
-
-            <div>
-              <Label>Grade 12 Result (if applicable)</Label>
-              <Input
-                type="number"
-                min={0}
-                max={700}
-                value={form.grade12Result}
-                onChange={(e) =>
-                  setForm({ ...form, grade12Result: e.target.value })
-                }
-                placeholder="0–700 or GPA"
-              />
-            </div>
-
-            <div>
-              <Label>Remark / Notes</Label>
-              <textarea
-                className="w-full px-3 py-2 border rounded-md h-20 bg-white dark:bg-gray-900"
-                value={form.remark}
-                onChange={(e) => setForm({ ...form, remark: e.target.value })}
-                placeholder="Documents verified, special notes..."
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label>Replace Student Photo (optional)</Label>
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      studentPhoto: e.target.files?.[0] ?? null,
-                    })
-                  }
-                />
               </div>
-              <div>
-                <Label>Replace/Upload Document (optional)</Label>
-                <Input
-                  type="file"
-                  accept=".pdf"
-                  onChange={(e) =>
-                    setForm({ ...form, document: e.target.files?.[0] ?? null })
-                  }
-                />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <Field
+                  label="Username"
+                  required
+                  error={errors.username}
+                  hint="Usually the student's phone number or email"
+                >
+                  <Input
+                    value={form.username}
+                    onChange={(e) =>
+                      setForm({ ...form, username: e.target.value })
+                    }
+                    placeholder="09xxxxxxxx"
+                    className={errors.username ? "border-red-500" : ""}
+                  />
+                </Field>
+
+                <Field
+                  label="Password"
+                  required
+                  error={errors.password}
+                  hint="Minimum 8 characters"
+                >
+                  <Input
+                    type="password"
+                    value={form.password}
+                    onChange={(e) =>
+                      setForm({ ...form, password: e.target.value })
+                    }
+                    placeholder="Enter a secure password"
+                    className={errors.password ? "border-red-500" : ""}
+                  />
+                </Field>
               </div>
-            </div>
+            </section>
+
+            {/* Section: Enrollment Details */}
+            <section className="space-y-5 pt-2 border-t border-gray-100 dark:border-gray-800">
+              <div>
+                <h3 className="text-sm font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide">
+                  Enrollment Details
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  When and where the student is being enrolled.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <Field
+                  label="Date Enrolled (Gregorian)"
+                  required
+                  error={errors.dateEnrolledGC}
+                >
+                  <Input
+                    type="date"
+                    value={form.dateEnrolledGC}
+                    onChange={(e) =>
+                      setForm({ ...form, dateEnrolledGC: e.target.value })
+                    }
+                    className={errors.dateEnrolledGC ? "border-red-500" : ""}
+                  />
+                </Field>
+
+                <Field
+                  label="Academic Year Code"
+                  hint="Optional · e.g. 2018 or 2025/26"
+                >
+                  <Input
+                    value={form.academicYearCode}
+                    onChange={(e) =>
+                      setForm({ ...form, academicYearCode: e.target.value })
+                    }
+                    placeholder="e.g. 2018"
+                  />
+                </Field>
+
+                <Field
+                  label="Batch / Class-Year-Semester ID"
+                  required
+                  error={errors.batchClassYearSemesterId}
+                  hint="Type to search — e.g. 'Computer Science 2017'"
+                >
+                  <SearchableSelect
+                    value={form.batchClassYearSemesterId}
+                    onChange={(id) =>
+                      setForm({ ...form, batchClassYearSemesterId: id })
+                    }
+                    options={batchClassYearSemesters}
+                    placeholder={
+                      batchClassYearSemestersLoading
+                        ? "Loading options..."
+                        : "Select batch / class year / semester"
+                    }
+                    disabled={batchClassYearSemestersLoading}
+                    hasError={!!errors.batchClassYearSemesterId}
+                  />
+                </Field>
+
+                <Field label="Grade 12 Result" hint="Optional · 0–700 or GPA">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={700}
+                    value={form.grade12Result}
+                    onChange={(e) =>
+                      setForm({ ...form, grade12Result: e.target.value })
+                    }
+                    placeholder="e.g. 520"
+                  />
+                </Field>
+              </div>
+
+              <label
+                htmlFor="isTransfer"
+                className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              >
+                <input
+                  id="isTransfer"
+                  type="checkbox"
+                  checked={form.isTransfer}
+                  onChange={(e) =>
+                    setForm({ ...form, isTransfer: e.target.checked })
+                  }
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <div>
+                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                    This is a transfer student
+                  </span>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Enable if the applicant is transferring from another
+                    institution
+                  </p>
+                </div>
+              </label>
+            </section>
+
+            {/* Section: Additional Information */}
+            <section className="space-y-5 pt-2 border-t border-gray-100 dark:border-gray-800">
+              <div>
+                <h3 className="text-sm font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide">
+                  Additional Information
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  All fields in this section are optional.
+                </p>
+              </div>
+
+              <Field label="Remark / Notes">
+                <textarea
+                  className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition resize-none"
+                  rows={3}
+                  value={form.remark}
+                  onChange={(e) => setForm({ ...form, remark: e.target.value })}
+                  placeholder="Documents verified, special notes..."
+                />
+              </Field>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <Field label="Replace Student Photo">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        studentPhoto: e.target.files?.[0] ?? null,
+                      })
+                    }
+                  />
+                  {form.studentPhoto && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      {form.studentPhoto.name}
+                    </p>
+                  )}
+                </Field>
+
+                <Field label="Replace / Upload Document">
+                  <Input
+                    type="file"
+                    accept=".pdf"
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        document: e.target.files?.[0] ?? null,
+                      })
+                    }
+                  />
+                  {form.document && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      {form.document.name}
+                    </p>
+                  )}
+                </Field>
+              </div>
+            </section>
           </div>
-          {/* Buttons */}
-          <div className="flex justify-end space-x-3 pt-6 border-t sticky bottom-0 bg-inherit z-10">
+
+          {/* Footer */}
+          <div className="sticky bottom-0 bg-white dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800 px-6 py-4 flex justify-end gap-3">
             <Button
               variant="outline"
               onClick={closeModal}
@@ -785,6 +1000,11 @@ export default function ApplicantDetail() {
   }
 
   async function handleRejectClick() {
+    const confirmed = window.confirm(
+      "Are you sure you want to reject this applicant?",
+    );
+    if (!confirmed) return;
+
     const payload: any = { status: "REJECTED" };
     if (remarks && remarks.trim()) payload.remark = remarks.trim();
     const ok = await callUpdateStatus(payload);
@@ -829,17 +1049,13 @@ export default function ApplicantDetail() {
             <span className="mr-2">&larr;</span>
             <span>Back to Applicant List</span>
           </Link>
-          <Button>
-            <Edit className="mr-2 h-4 w-4" />
-            Edit Applicant
-          </Button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Profile Picture and Basic Info */}
 
-        <Card className="lg:col-span-1">
+        <Card className={`lg:col-span-1 ${sectionBorderClass}`}>
           <CardHeader className="text-center">
             <div className="relative mx-auto">
               <Avatar className="w-32 h-32">
@@ -867,7 +1083,7 @@ export default function ApplicantDetail() {
             <Badge variant="secondary" className="mt-2">
               {getDisplayName(
                 "programModality",
-                applicantData.programModalityCode
+                applicantData.programModalityCode,
               )}
             </Badge>
           </CardHeader>
@@ -891,7 +1107,7 @@ export default function ApplicantDetail() {
         </Card>
 
         {/* Personal Information */}
-        <Card className="lg:col-span-2">
+        <Card className={`lg:col-span-2 ${sectionBorderClass}`}>
           <CardHeader>
             <CardTitle>Personal Information</CardTitle>
             <CardDescription>
@@ -1042,7 +1258,7 @@ export default function ApplicantDetail() {
       </div>
 
       {/* Academic Information */}
-      <Card>
+      <Card className={sectionBorderClass}>
         <CardHeader>
           <CardTitle className="flex items-center">
             <GraduationCap className="mr-2 h-5 w-5" />
@@ -1060,7 +1276,7 @@ export default function ApplicantDetail() {
                 id="departmentEnrolled"
                 value={getDisplayName(
                   "department",
-                  applicantData.departmentEnrolledId
+                  applicantData.departmentEnrolledId,
                 )}
                 readOnly
               />
@@ -1071,7 +1287,7 @@ export default function ApplicantDetail() {
                 id="programModality"
                 value={getDisplayName(
                   "programModality",
-                  applicantData.programModalityCode
+                  applicantData.programModalityCode,
                 )}
                 readOnly
               />
@@ -1082,7 +1298,7 @@ export default function ApplicantDetail() {
                 id="schoolBackground"
                 value={getDisplayName(
                   "schoolBackground",
-                  applicantData.schoolBackgroundId
+                  applicantData.schoolBackgroundId,
                 )}
                 readOnly
               />
@@ -1136,7 +1352,7 @@ export default function ApplicantDetail() {
       </Card>
 
       {/* Applicant Document */}
-      <Card>
+      <Card className={sectionBorderClass}>
         <CardHeader>
           <CardTitle className="flex items-center">
             <Download className="mr-2 h-5 w-5" /> Applicant Document
@@ -1170,7 +1386,7 @@ export default function ApplicantDetail() {
       </Card>
 
       {/* Emergency Contact */}
-      <Card>
+      <Card className={sectionBorderClass}>
         <CardHeader>
           <CardTitle>Emergency Contact</CardTitle>
           <CardDescription>Emergency contact information</CardDescription>
@@ -1244,7 +1460,7 @@ export default function ApplicantDetail() {
       </Card>
 
       {/* Acceptance/Rejection Form */}
-      <Card>
+      <Card className={sectionBorderClass}>
         <CardHeader>
           <CardTitle>Acceptance/Rejection</CardTitle>
           <CardDescription>
@@ -1264,7 +1480,9 @@ export default function ApplicantDetail() {
             <Button
               variant="destructive"
               onClick={handleRejectClick}
-              disabled={actionBusy || status === "rejected"}
+              disabled={
+                actionBusy || status === "rejected" || status === "accepted"
+              }
             >
               Reject Applicant
             </Button>
@@ -1285,8 +1503,8 @@ export default function ApplicantDetail() {
       </Card>
 
       {/* Password Creation Form (Shown only if accepted) */}
-      {status === "accepted" && (
-        <Card>
+      {/* {status === "accepted" && (
+        <Card className={sectionBorderClass}>
           <CardHeader>
             <CardTitle>Create Applicant Password</CardTitle>
             <CardDescription>
@@ -1323,7 +1541,7 @@ export default function ApplicantDetail() {
             <Button onClick={handlePasswordSubmit}>Set Password</Button>
           </CardContent>
         </Card>
-      )}
+      )} */}
     </div>
   );
 }

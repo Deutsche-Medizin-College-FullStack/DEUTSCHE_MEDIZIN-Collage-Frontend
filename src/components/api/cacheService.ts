@@ -78,6 +78,9 @@ export const CACHE_CONFIG: Record<string, CacheConfig> = {
   // Path parameter endpoints (with IDs)
   "/courses": { ttl: 7 * 24 * 60 * 60 * 1000, isPattern: true },
   "/students": { ttl: 7 * 24 * 60 * 60 * 1000, isPattern: true },
+
+  // Applications
+  [endPoints.applicantsList]: { ttl: 12 * 60 * 60 * 1000 }, // 1 day
 };
 
 const CACHE_STORE_NAME = "api-response-cache";
