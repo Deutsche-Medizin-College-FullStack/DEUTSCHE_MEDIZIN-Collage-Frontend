@@ -210,7 +210,7 @@ export default function LandingPage() {
                 </span>
               ) : windowWidth >= 768 ? (
                 <span className="text-lg font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">
-                  DHFM
+                  DHMC
                 </span>
               ) : (
                 <span className="text-lg font-bold text-gray-800 dark:text-gray-100">
