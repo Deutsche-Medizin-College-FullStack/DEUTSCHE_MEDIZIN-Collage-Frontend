@@ -1138,6 +1138,7 @@ export default function StudentCourseScoreTable() {
             Department
           </label>
           <Select
+            virtual={false}
             value={filters.departmentId || undefined}
             onChange={(value) => {
               // Reset course selection when department changes
@@ -1174,6 +1175,7 @@ export default function StudentCourseScoreTable() {
           </label>
 
           <Select
+            virtual={false}
             loading={coursesLoading}
             value={filters.courseId || undefined}
             onChange={(v) => handleFilterChange("courseId", v)}
@@ -1185,7 +1187,8 @@ export default function StudentCourseScoreTable() {
             allowClear
             showSearch
             className="w-full"
-            dropdownClassName="min-w-[340px] sm:min-w-[420px] md:min-w-[500px]" // wider for long names
+            popupMatchSelectWidth={false}
+            popupClassName="max-w-[90vw] sm:min-w-[420px] md:min-w-[500px]" // wider for long names, responsive on mobile
             filterOption={(input, option) =>
               (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
             }
@@ -1251,6 +1254,7 @@ export default function StudentCourseScoreTable() {
             Batch/Year/Semester
           </label>
           <Select
+            virtual={false}
             value={filters.bcysId || undefined}
             onChange={(v) => handleFilterChange("bcysId", v)}
             placeholder="All"
@@ -1269,6 +1273,7 @@ export default function StudentCourseScoreTable() {
         <div>
           <label className="block text-sm font-medium ...">Released</label>
           <Select
+            virtual={false}
             value={filters.isReleased === null ? undefined : filters.isReleased}
             onChange={(v) =>
               handleFilterChange("isReleased", v === undefined ? null : v)
@@ -1288,6 +1293,7 @@ export default function StudentCourseScoreTable() {
             Student Status
           </label>
           <Select
+            virtual={false}
             value={filters.studentStatusId || undefined}
             onChange={(v) => handleFilterChange("studentStatusId", v)}
             placeholder="All Statuses"
@@ -1343,6 +1349,7 @@ export default function StudentCourseScoreTable() {
             Student User Name
           </label>
           <Select
+            virtual={false}
             loading={studentListLoading}
             value={filters.studentId ?? undefined}
             onChange={(v) => handleFilterChange("studentId", v)}
@@ -1528,6 +1535,7 @@ export default function StudentCourseScoreTable() {
               )}
             </div>
             <Select
+              virtual={false}
               value={batchValues.courseSource || undefined}
               onChange={(v) =>
                 setBatchValues({ ...batchValues, courseSource: v })
@@ -1545,6 +1553,7 @@ export default function StudentCourseScoreTable() {
 
             {/* NEW: Batch ClassYear Semester Dropdown */}
             <Select
+              virtual={false}
               value={batchValues.bcysId || undefined}
               onChange={(v) => setBatchValues({ ...batchValues, bcysId: v })}
               placeholder="Batch/Year/Semester"
@@ -1560,12 +1569,15 @@ export default function StudentCourseScoreTable() {
 
             {/* Course Dropdown for Batch Update */}
             <Select
+              virtual={false}
               value={batchValues.courseId || undefined}
               onChange={(v) => setBatchValues({ ...batchValues, courseId: v })}
               placeholder="Change Course"
               allowClear
               className="w-48"
               showSearch
+              popupMatchSelectWidth={false}
+              popupClassName="max-w-[90vw] sm:min-w-[420px]"
               filterOption={(input, option) =>
                 (option?.label ?? "")
                   .toLowerCase()
@@ -1614,6 +1626,7 @@ export default function StudentCourseScoreTable() {
 
             {/* isReleased */}
             <Select
+              virtual={false}
               value={
                 batchValues.isReleased !== null
                   ? batchValues.isReleased
@@ -1819,6 +1832,7 @@ export default function StudentCourseScoreTable() {
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <Select
+                        virtual={false}
                         value={edits.courseId ?? item.course?.id}
                         onChange={(v) =>
                           handleEditFieldChange(item.key, "courseId", v)
@@ -1827,6 +1841,8 @@ export default function StudentCourseScoreTable() {
                         size="small"
                         placeholder="Select Course"
                         showSearch
+                        popupMatchSelectWidth={false}
+                        popupClassName="max-w-[90vw] sm:min-w-[360px]"
                         filterOption={(input, option) =>
                           (option?.label ?? "")
                             .toLowerCase()
@@ -1843,7 +1859,7 @@ export default function StudentCourseScoreTable() {
                             ) {
                               const selectedDept =
                                 filterOptions.departments.find(
-                                  (d) => d.id === Number(filters.departmentId),
+                                   (d) => d.id === Number(filters.departmentId),
                                 );
                               if (selectedDept) {
                                 return course.department === selectedDept.name;
@@ -1884,6 +1900,7 @@ export default function StudentCourseScoreTable() {
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <Select
+                        virtual={false}
                         value={edits.bcysId ?? item.batchClassYearSemester?.id}
                         onChange={(v) =>
                           handleEditFieldChange(item.key, "bcysId", v)
@@ -1901,6 +1918,7 @@ export default function StudentCourseScoreTable() {
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <Select
+                        virtual={false}
                         value={edits.courseSourceId ?? item.courseSource?.id}
                         onChange={(v) =>
                           handleEditFieldChange(item.key, "courseSourceId", v)
@@ -1938,6 +1956,7 @@ export default function StudentCourseScoreTable() {
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <Select
+                        virtual={false}
                         value={edits.isReleased ?? item.isReleased}
                         onChange={(v) =>
                           handleEditFieldChange(item.key, "isReleased", v)
