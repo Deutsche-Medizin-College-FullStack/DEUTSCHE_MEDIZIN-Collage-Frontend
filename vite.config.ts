@@ -14,7 +14,8 @@ export default defineConfig(({ mode }) => ({
       port: 5173,
       strictPort: false,
       allowedHosts: [
-        ".ngrok-free.app", // allow all ngrok URLs
+        // ".ngrok-free.app", // allow all ngrok URLs
+        "https://concise-skunk-preferably.ngrok-free.app",
       ],
       origin: "http://localhost:5173", // optional, helps Vite accept external requests
       headers: {
