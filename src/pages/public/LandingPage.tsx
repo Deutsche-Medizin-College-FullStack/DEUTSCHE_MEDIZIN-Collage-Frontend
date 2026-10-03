@@ -151,7 +151,17 @@ export default function LandingPage() {
   const infoRef = useRef(null);
   const infoView = useInView(infoRef, { margin: "-150px" });
   const [isOpen, setIsOpen] = useState(false);
-  const [windowWidth, setWindowWidth] = useState(0);
+  const [windowWidth, setWindowWidth] = useState(
+    typeof window !== "undefined" ? window.innerWidth : 1200
+  );
+  const [hoveredNav, setHoveredNav] = useState<string | null>(null);
+
+  const navLinks = [
+    { name: "Home", href: "#home" },
+    { name: "Mission", href: "#mission" },
+    { name: "Services", href: "#hero" },
+    { name: "Contact", href: "#contact" },
+  ];
 
   useEffect(() => {
     setWindowWidth(window.innerWidth);
@@ -193,10 +203,14 @@ export default function LandingPage() {
                 alt="Company Logo"
                 className="h-10 w-10 rounded-full object-cover shadow-sm"
               />
-              {/* Show full name based on screen size using JavaScript */}
-              {windowWidth >= 768 ? (
+              {/* Show title based on 3 screen modes: Desktop (>= 1024), Tablet (768 - 1023), Mobile (< 768) */}
+              {windowWidth >= 1024 ? (
                 <span className="text-lg font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">
                   Deutsche Hochschule für Medizin College, Ethiopia
+                </span>
+              ) : windowWidth >= 768 ? (
+                <span className="text-lg font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">
+                  DHMC
                 </span>
               ) : (
                 <span className="text-lg font-bold text-gray-800 dark:text-gray-100">
@@ -205,36 +219,36 @@ export default function LandingPage() {
               )}
             </div>
 
-            {/* Desktop Navigation - Using CSS media queries as fallback */}
+            {/* Desktop & Tablet Navigation */}
             <div
               style={{ display: windowWidth >= 768 ? "flex" : "none" }}
               className="items-center space-x-6 justify-end flex-grow"
             >
-              <nav className="flex items-center space-x-6">
-                <a
-                  href="#home"
-                  className="text-gray-700 dark:text-gray-200 font-medium hover:text-blue-500 dark:hover:text-blue-400 transition-colors duration-300"
-                >
-                  Home
-                </a>
-                <a
-                  href="#mission"
-                  className="text-gray-700 dark:text-gray-200 font-medium hover:text-blue-500 dark:hover:text-blue-400 transition-colors duration-300"
-                >
-                  Mission
-                </a>
-                <a
-                  href="#hero"
-                  className="text-gray-700 dark:text-gray-200 font-medium hover:text-blue-500 dark:hover:text-blue-400 transition-colors duration-300"
-                >
-                  Services
-                </a>
-                <a
-                  href="#contact"
-                  className="text-gray-700 dark:text-gray-200 font-medium hover:text-blue-500 dark:hover:text-blue-400 transition-colors duration-300"
-                >
-                  Contact
-                </a>
+              <nav
+                className="relative flex items-center space-x-6"
+                onMouseLeave={() => setHoveredNav(null)}
+              >
+                {navLinks.map((link) => (
+                  <a
+                    key={link.name}
+                    href={link.href}
+                    onMouseEnter={() => setHoveredNav(link.name)}
+                    className="relative py-1 text-gray-700 dark:text-gray-200 font-medium hover:text-blue-500 dark:hover:text-blue-400 transition-colors duration-300"
+                  >
+                    {link.name}
+                    {hoveredNav === link.name && (
+                      <motion.div
+                        layoutId="nav-hover-dash"
+                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 dark:bg-blue-400 rounded-full"
+                        transition={{
+                          type: "spring",
+                          stiffness: 400,
+                          damping: 30,
+                        }}
+                      />
+                    )}
+                  </a>
+                ))}
               </nav>
 
               {/* Desktop Utilities */}
