@@ -1,14 +1,46 @@
 import { useEffect, useMemo, useState } from "react";
-import { Table } from "antd";
+import { Table, Checkbox } from "antd";
+import { createPortal } from "react-dom";
 import { useNavigate, Link } from "react-router-dom";
+import {
+  ArrowDownAZ,
+  ArrowUpAZ,
+  ArrowUp,
+  ArrowDown,
+  Filter,
+  Search,
+  SearchX,
+  X,
+  ChevronDown,
+  RotateCcw,
+  SlidersHorizontal,
+} from "lucide-react";
 import { useModal } from "@/hooks/Modal";
 import { ImageModal } from "@/hooks/ImageModal";
 import apiService from "@/components/api/apiService";
 import endPoints from "@/components/api/endPoints";
-import { Checkbox } from "antd";
 import { useToast } from "@/hooks/use-toast";
 
 import { clearCacheForUrl } from "@/components/api/cacheService";
+
+
+/** Effectively "show everything" — must exceed any realistic student count. */
+const ALL_PAGE_SIZE = 999999;
+
+const PAGE_SIZE_CHOICES = [10, 20, 50, 100] as const;
+
+export type FilterColumnKey =
+  | "status"
+  | "batch"
+  | "originalBatch"
+  | "department"
+  | "accountStatus";
+
+export interface DropdownState {
+  columnKey: FilterColumnKey;
+  title: string;
+  rect: DOMRect;
+}
 
 interface FilterOption {
   id: string | number;
@@ -34,14 +66,379 @@ export interface DataTypes {
   isDisabled?: boolean;
 }
 
+interface ExcelDropdownPortalProps {
+  columnKey: FilterColumnKey;
+  title: string;
+  rect: DOMRect;
+  options: { value: string; label: string }[];
+  selectedValues: string[];
+  onApply: (newValues: string[]) => void;
+  onClear: () => void;
+  sortDirection: "asc" | "desc" | null;
+  onSort: (direction: "asc" | "desc" | null) => void;
+  onClose: () => void;
+  getItemCount: (val: string) => number;
+}
+
+function ExcelHeaderTrigger({
+  title,
+  columnKey,
+  isFiltered,
+  selectedCount,
+  sortDirection,
+  onOpen,
+}: {
+  title: string;
+  columnKey: FilterColumnKey;
+  isFiltered: boolean;
+  selectedCount: number;
+  sortDirection: "asc" | "desc" | null;
+  onOpen: (rect: DOMRect) => void;
+}) {
+  return (
+    <div
+      onClick={(e) => {
+        e.stopPropagation();
+        const rect = e.currentTarget.getBoundingClientRect();
+        onOpen(rect);
+      }}
+      className={`group flex items-center justify-between gap-2 cursor-pointer py-1.5 px-2 rounded-lg transition-all duration-200 select-none border ${
+        isFiltered
+          ? "bg-blue-50/90 dark:bg-blue-950/50 border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-100 shadow-2xs"
+          : sortDirection
+            ? "bg-indigo-50/90 dark:bg-indigo-950/50 border-indigo-200 dark:border-indigo-800 text-indigo-900 dark:text-indigo-100 shadow-2xs"
+            : "border-transparent hover:bg-gray-100 dark:hover:bg-gray-800/80 hover:border-gray-200 dark:hover:border-gray-700/80"
+      }`}
+      title={`Click to filter and sort by ${title}`}
+    >
+      <div className="flex items-center gap-1.5 min-w-0">
+        <span
+          className={`font-semibold text-xs tracking-wide uppercase transition-colors truncate ${
+            isFiltered
+              ? "text-blue-700 dark:text-blue-300 font-bold"
+              : sortDirection
+                ? "text-indigo-700 dark:text-indigo-300 font-bold"
+                : "text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400"
+          }`}
+        >
+          {title}
+        </span>
+        {sortDirection && (
+          <span
+            className={`inline-flex items-center gap-0.5 text-[9px] font-extrabold px-1.5 py-0.5 rounded leading-none ${
+              sortDirection === "asc"
+                ? "bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300"
+                : "bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300"
+            }`}
+          >
+            {sortDirection === "asc" ? (
+              <>
+                <ArrowUp className="w-2.5 h-2.5 stroke-[2.5]" />
+                ASC
+              </>
+            ) : (
+              <>
+                <ArrowDown className="w-2.5 h-2.5 stroke-[2.5]" />
+                DESC
+              </>
+            )}
+          </span>
+        )}
+      </div>
+
+      <div className="flex items-center gap-1 shrink-0">
+        {isFiltered ? (
+          <span className="inline-flex items-center gap-1 text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-blue-600 text-white dark:bg-blue-500 shadow-2xs">
+            <Filter className="w-2.5 h-2.5 fill-current" />
+            {selectedCount}
+          </span>
+        ) : (
+          <span className="w-5 h-5 rounded flex items-center justify-center text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300 group-hover:bg-gray-200/50 dark:group-hover:bg-gray-700/50 transition-colors">
+            <SlidersHorizontal className="w-3 h-3" />
+          </span>
+        )}
+        <ChevronDown
+          className={`w-3 h-3 transition-transform duration-200 ${
+            isFiltered
+              ? "text-blue-600 dark:text-blue-400 opacity-90"
+              : "text-gray-400 dark:text-gray-500 opacity-60 group-hover:opacity-100"
+          }`}
+        />
+      </div>
+    </div>
+  );
+}
+
+function ExcelFilterDropdownPortal({
+  columnKey,
+  title,
+  rect,
+  options,
+  selectedValues,
+  onApply,
+  onClear,
+  sortDirection,
+  onSort,
+  onClose,
+  getItemCount,
+}: ExcelDropdownPortalProps) {
+  const [pending, setPending] = useState<string[]>(selectedValues);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const visibleOptions = useMemo(() => {
+    if (!searchTerm.trim()) return options;
+    const q = searchTerm.toLowerCase();
+    return options.filter(
+      (o) =>
+        o.label.toLowerCase().includes(q) || o.value.toLowerCase().includes(q),
+    );
+  }, [options, searchTerm]);
+
+  const isAllVisibleSelected =
+    visibleOptions.length > 0 &&
+    visibleOptions.every((o) => pending.includes(o.value));
+  const isAnyVisibleSelected = visibleOptions.some((o) =>
+    pending.includes(o.value),
+  );
+  const isIndeterminate = isAnyVisibleSelected && !isAllVisibleSelected;
+
+  const toggleSelectAll = () => {
+    if (isAllVisibleSelected) {
+      const visibleVals = new Set(visibleOptions.map((o) => o.value));
+      setPending((prev) => prev.filter((v) => !visibleVals.has(v)));
+    } else {
+      const next = new Set(pending);
+      visibleOptions.forEach((o) => next.add(o.value));
+      setPending(Array.from(next));
+    }
+  };
+
+  const toggleValue = (val: string) => {
+    setPending((prev) =>
+      prev.includes(val) ? prev.filter((v) => v !== val) : [...prev, val],
+    );
+  };
+
+  const popoverWidth = 288;
+  const left = Math.max(
+    12,
+    Math.min(rect.left, window.innerWidth - popoverWidth - 16),
+  );
+  const availableBelow = window.innerHeight - rect.bottom - 16;
+  const top =
+    availableBelow < 320 && rect.top > 350
+      ? Math.max(16, rect.top - 440)
+      : Math.min(rect.bottom + 6, window.innerHeight - 440);
+
+  return createPortal(
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-40 bg-black/10 dark:bg-black/30 backdrop-blur-[0.5px]"
+        onClick={onClose}
+      />
+
+      {/* Popover */}
+      <div
+        className="excel-filter-dropdown fixed z-50 w-72 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl p-3 flex flex-col text-sm animate-in fade-in zoom-in-95 duration-100"
+        style={{ top, left, maxHeight: 450 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header bar */}
+        <div className="flex items-center justify-between pb-2 mb-2 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <Filter className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+            <span className="font-semibold text-gray-900 dark:text-white truncate">
+              {title} Filter & Sort
+            </span>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Sort section */}
+        <div className="space-y-1 mb-2.5 pb-2.5 border-b border-gray-200 dark:border-gray-700">
+          <div className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+            Order
+          </div>
+          <button
+            type="button"
+            onClick={() => onSort("asc")}
+            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
+              sortDirection === "asc"
+                ? "bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 font-semibold ring-1 ring-blue-500/30"
+                : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <ArrowDownAZ className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <span>Sort Ascending (A to Z)</span>
+            </div>
+            {sortDirection === "asc" && <span className="text-xs">✓</span>}
+          </button>
+          <button
+            type="button"
+            onClick={() => onSort("desc")}
+            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
+              sortDirection === "desc"
+                ? "bg-purple-50 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 font-semibold ring-1 ring-purple-500/30"
+                : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <ArrowUpAZ className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              <span>Sort Descending (Z to A)</span>
+            </div>
+            {sortDirection === "desc" && <span className="text-xs">✓</span>}
+          </button>
+          {sortDirection && (
+            <button
+              type="button"
+              onClick={() => onSort(null)}
+              className="w-full flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              <RotateCcw className="w-3 h-3" />
+              Clear Sort
+            </button>
+          )}
+        </div>
+
+        {/* Filter Values Header */}
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            Filter Options
+          </span>
+          <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+            {pending.length} / {options.length} selected
+          </span>
+        </div>
+
+        {/* Search Input */}
+        <div className="relative mb-2">
+          <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-gray-400 pointer-events-none" />
+          <input
+            type="text"
+            placeholder={`Search ${title.toLowerCase()}...`}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-8 pr-7 py-1 text-xs bg-gray-50 dark:bg-gray-900/80 border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm("")}
+              className="absolute right-2 top-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+
+        {/* Select All */}
+        <div
+          onClick={toggleSelectAll}
+          className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer select-none text-xs border-b border-gray-100 dark:border-gray-700 mb-1"
+        >
+          <Checkbox
+            checked={isAllVisibleSelected}
+            indeterminate={isIndeterminate}
+            onChange={toggleSelectAll}
+            onClick={(e) => e.stopPropagation()}
+          />
+          <span className="font-semibold text-gray-800 dark:text-gray-200">
+            (Select All{searchTerm ? " Matching" : ""})
+          </span>
+        </div>
+
+        {/* Option Checkboxes List */}
+        <div className="overflow-y-auto max-h-44 pr-1 space-y-0.5 custom-scrollbar">
+          {visibleOptions.length === 0 ? (
+            <div className="text-center py-4 text-xs text-gray-400 dark:text-gray-500">
+              No matching options
+            </div>
+          ) : (
+            visibleOptions.map((opt) => {
+              const isChecked = pending.includes(opt.value);
+              const count = getItemCount(opt.value);
+              return (
+                <div
+                  key={opt.value}
+                  onClick={() => toggleValue(opt.value)}
+                  className={`flex items-center justify-between px-2 py-1.5 rounded-md cursor-pointer select-none text-xs transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                    isChecked
+                      ? "bg-blue-50/70 dark:bg-blue-900/25 text-blue-900 dark:text-blue-100 font-medium"
+                      : "text-gray-700 dark:text-gray-300"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 min-w-0 mr-2">
+                    <Checkbox
+                      checked={isChecked}
+                      onChange={() => toggleValue(opt.value)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <span className="truncate" title={opt.label}>
+                      {opt.label}
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-gray-400 dark:text-gray-500 font-mono shrink-0">
+                    ({count})
+                  </span>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-2 pt-2.5 mt-2 border-t border-gray-200 dark:border-gray-700">
+          <button
+            type="button"
+            onClick={() => onApply(pending)}
+            className="flex-1 py-1.5 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
+          >
+            Apply Filter
+          </button>
+          <button
+            type="button"
+            onClick={onClear}
+            className="py-1.5 px-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-xs font-medium transition-colors"
+          >
+            Clear
+          </button>
+        </div>
+      </div>
+    </>,
+    document.body,
+  );
+}
+
 export default function RegistrarStudents() {
-  const [filters, setFilters] = useState({
-    department: "",
-    batch: [] as string[], // Changed to array for multiple selection
-    batchFilter: "", // Change from [] as string[] to ""
-    status: "",
-    accountStatus: "",
+  const [filters, setFilters] = useState<{
+    department: string[];
+    batch: string[]; // Current BCYS
+    originalBatch: string[]; // Original Batch
+    status: string[];
+    accountStatus: string[];
+  }>({
+    department: [],
+    batch: [],
+    originalBatch: [],
+    status: [],
+    accountStatus: [],
   });
+
+  const [sortConfig, setSortConfig] = useState<{
+    key: FilterColumnKey | null;
+    direction: "asc" | "desc" | null;
+  }>({
+    key: null,
+    direction: null,
+  });
+
+  const [activeDropdown, setActiveDropdown] = useState<DropdownState | null>(null);
 
   const [options, setOptions] = useState<{
     departments: FilterOption[];
@@ -411,26 +808,156 @@ export default function RegistrarStudents() {
     }
   };
 
-  /* ===================== Filtering ===================== */
-  const filteredData = useMemo(() => {
-    const search = searchText.toLowerCase();
+  /* ===================== Dropdown Close Listeners ===================== */
+  useEffect(() => {
+    if (!activeDropdown) return;
 
-    return students.filter((s: DataTypes) => {
-      const matchDepartment = filters.department
-        ? s.department === filters.department
-        : true;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setActiveDropdown(null);
+      }
+    };
+
+    const handleScrollOrResize = (e: Event) => {
+      const target = e.target as HTMLElement;
+      if (target?.closest?.(".excel-filter-dropdown")) return;
+      setActiveDropdown(null);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("scroll", handleScrollOrResize, true);
+    window.addEventListener("resize", handleScrollOrResize);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("scroll", handleScrollOrResize, true);
+      window.removeEventListener("resize", handleScrollOrResize);
+    };
+  }, [activeDropdown]);
+
+  /* ===================== Counts for Options ===================== */
+  const countsMap = useMemo(() => {
+    const map: Record<FilterColumnKey, Record<string, number>> = {
+      department: {},
+      batch: {},
+      originalBatch: {},
+      status: {},
+      accountStatus: { ENABLED: 0, DISABLED: 0 },
+    };
+
+    students.forEach((s) => {
+      if (s.department) {
+        map.department[s.department] = (map.department[s.department] || 0) + 1;
+      }
+      if (s.batch) {
+        map.batch[s.batch] = (map.batch[s.batch] || 0) + 1;
+      }
+      if (s.originalBatch) {
+        map.originalBatch[s.originalBatch] =
+          (map.originalBatch[s.originalBatch] || 0) + 1;
+      }
+      if (s.status) {
+        map.status[s.status] = (map.status[s.status] || 0) + 1;
+      }
+      if (s.isDisabled) {
+        map.accountStatus.DISABLED = (map.accountStatus.DISABLED || 0) + 1;
+      } else {
+        map.accountStatus.ENABLED = (map.accountStatus.ENABLED || 0) + 1;
+      }
+    });
+
+    return map;
+  }, [students]);
+
+  /* ===================== Column Options ===================== */
+  const columnOptions = useMemo<
+    Record<FilterColumnKey, { value: string; label: string }[]>
+  >(() => {
+    const deptOpts = options.departments.map((d) => ({
+      value: d.name,
+      label: d.name,
+    }));
+    const batchOpts = options.batchClassYearSemesters.map((b) => ({
+      value: b.name,
+      label: b.name,
+    }));
+    const origBatchOpts = options.batches.map((b) => ({
+      value: b.name,
+      label: `Batch ${b.name}`,
+    }));
+    const statusOpts = options.studentStatuses.map((s) => ({
+      value: s.name,
+      label: s.name.replaceAll("_", " "),
+    }));
+    const accountOpts = [
+      { value: "ENABLED", label: "Active" },
+      { value: "DISABLED", label: "Disabled" },
+    ];
+
+    const addDistinct = (
+      base: { value: string; label: string }[],
+      getter: (s: DataTypes) => { value: string; label: string } | null,
+    ) => {
+      const existing = new Set(base.map((o) => o.value));
+      students.forEach((s) => {
+        const item = getter(s);
+        if (item && item.value && !existing.has(item.value)) {
+          existing.add(item.value);
+          base.push(item);
+        }
+      });
+      return base;
+    };
+
+    return {
+      department: addDistinct(deptOpts, (s) =>
+        s.department && s.department !== "-"
+          ? { value: s.department, label: s.department }
+          : null,
+      ),
+      batch: addDistinct(batchOpts, (s) =>
+        s.batch && s.batch !== "-" ? { value: s.batch, label: s.batch } : null,
+      ),
+      originalBatch: addDistinct(origBatchOpts, (s) =>
+        s.originalBatch && s.originalBatch !== "-"
+          ? { value: s.originalBatch, label: `Batch ${s.originalBatch}` }
+          : null,
+      ),
+      status: addDistinct(statusOpts, (s) =>
+        s.status && s.status !== "Unknown"
+          ? { value: s.status, label: s.status.replaceAll("_", " ") }
+          : null,
+      ),
+      accountStatus: accountOpts,
+    };
+  }, [options, students]);
+
+  /* ===================== Filtering & Sorting ===================== */
+  const filteredAndSortedData = useMemo(() => {
+    const search = searchText.toLowerCase().trim();
+
+    const filtered = students.filter((s: DataTypes) => {
+      const matchDepartment =
+        filters.department.length > 0
+          ? filters.department.includes(s.department)
+          : true;
 
       const matchBatch =
         filters.batch.length > 0 ? filters.batch.includes(s.batch) : true;
 
-      const matchBatchFilter = filters.batchFilter
-        ? s.originalBatch === filters.batchFilter
-        : true;
-      const matchStatus = filters.status ? s.status === filters.status : true;
-      const matchAccountStatus = filters.accountStatus
-        ? (filters.accountStatus === "ENABLED" && !s.isDisabled) ||
-          (filters.accountStatus === "DISABLED" && s.isDisabled)
-        : true;
+      const matchOriginalBatch =
+        filters.originalBatch.length > 0
+          ? filters.originalBatch.includes(s.originalBatch)
+          : true;
+
+      const matchStatus =
+        filters.status.length > 0 ? filters.status.includes(s.status) : true;
+
+      const matchAccountStatus =
+        filters.accountStatus.length > 0
+          ? (filters.accountStatus.includes("ENABLED") && !s.isDisabled) ||
+            (filters.accountStatus.includes("DISABLED") && s.isDisabled)
+          : true;
 
       const searchable = [s.name, s.amharicName, s.id, s.department]
         .join(" ")
@@ -440,25 +967,63 @@ export default function RegistrarStudents() {
         searchable.includes(search) &&
         matchDepartment &&
         matchBatch &&
-        matchBatchFilter &&
+        matchOriginalBatch &&
         matchStatus &&
         matchAccountStatus
       );
     });
-  }, [students, filters, searchText]);
 
-  // Add this line right after filteredData:
+    if (sortConfig.key && sortConfig.direction) {
+      filtered.sort((a, b) => {
+        let aVal = "";
+        let bVal = "";
+
+        if (sortConfig.key === "accountStatus") {
+          aVal = a.isDisabled ? "Disabled" : "Active";
+          bVal = b.isDisabled ? "Disabled" : "Active";
+        } else if (sortConfig.key === "status") {
+          aVal = a.status || "";
+          bVal = b.status || "";
+        } else if (sortConfig.key === "batch") {
+          aVal = a.batch || "";
+          bVal = b.batch || "";
+        } else if (sortConfig.key === "originalBatch") {
+          aVal = a.originalBatch || "";
+          bVal = b.originalBatch || "";
+        } else if (sortConfig.key === "department") {
+          aVal = a.department || "";
+          bVal = b.department || "";
+        }
+
+        const cmp = aVal.localeCompare(bVal, undefined, {
+          numeric: true,
+          sensitivity: "base",
+        });
+        return sortConfig.direction === "asc" ? cmp : -cmp;
+      });
+    }
+
+    return filtered;
+  }, [students, filters, searchText, sortConfig]);
+
   const paginatedData = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
     const end = start + pageSize;
-    return filteredData.slice(start, end);
-  }, [filteredData, currentPage, pageSize]);
+    return filteredAndSortedData.slice(start, end);
+  }, [filteredAndSortedData, currentPage, pageSize]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters, searchText, sortConfig]);
 
   /* ===================== Format Selected Batches Display ===================== */
   const getBatchDisplayText = () => {
     if (filters.batch.length === 0) return "All Current BCYS";
     if (filters.batch.length === 1) return filters.batch[0];
-    if (filters.batch.length === options.batchClassYearSemesters.length)
+    if (
+      options.batchClassYearSemesters.length > 0 &&
+      filters.batch.length === options.batchClassYearSemesters.length
+    )
       return "All BCYS Selected";
     return `${filters.batch.length} Selected`;
   };
@@ -466,7 +1031,11 @@ export default function RegistrarStudents() {
   /* ===================== Table Columns ===================== */
   const columns = [
     {
-      title: "Photo",
+      title: (
+        <span className="text-xs font-bold text-gray-700 dark:text-gray-300 tracking-wide uppercase px-2 py-1 inline-block">
+          Photo
+        </span>
+      ),
       dataIndex: "photo",
       width: 80,
       render: (text: string) =>
@@ -487,9 +1056,13 @@ export default function RegistrarStudents() {
         ),
     },
     {
-      title: "ID",
+      title: (
+        <span className="text-xs font-bold text-gray-700 dark:text-gray-300 tracking-wide uppercase px-2 py-1 inline-block">
+          ID
+        </span>
+      ),
       dataIndex: "id",
-      width: 100,
+      width: 200,
       render: (_: any, r: DataTypes) => (
         <Link
           to={`/registrar/students/${r.key}`}
@@ -502,20 +1075,23 @@ export default function RegistrarStudents() {
     },
     {
       title: (
-        <div className="flex items-center gap-1">
-          <span>Name</span>
+        <div className="flex items-center gap-2 px-2 py-1">
+          <span className="text-xs font-bold text-gray-700 dark:text-gray-300 tracking-wide uppercase">
+            Name
+          </span>
           <button
             onClick={(e) => {
               e.stopPropagation();
               setShowAmharic(!showAmharic);
             }}
-            className="text-xs px-1 py-0.5 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
+            className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800 transition border border-blue-200/80 dark:border-blue-700/80"
+            title="Toggle between English and Amharic names"
           >
             {showAmharic ? "EN" : "AM"}
           </button>
         </div>
       ),
-      width: 160,
+      width: 200,
       render: (_: any, r: DataTypes) => (
         <span className="font-medium text-sm">
           {showAmharic ? r.amharicName : r.name}
@@ -523,9 +1099,25 @@ export default function RegistrarStudents() {
       ),
     },
     {
-      title: "Status",
+      title: (
+        <ExcelHeaderTrigger
+          title="Status"
+          columnKey="status"
+          isFiltered={
+            filters.status.length > 0 &&
+            filters.status.length < (columnOptions.status?.length || 0)
+          }
+          selectedCount={filters.status.length}
+          sortDirection={
+            sortConfig.key === "status" ? sortConfig.direction : null
+          }
+          onOpen={(rect) =>
+            setActiveDropdown({ columnKey: "status", title: "Status", rect })
+          }
+        />
+      ),
       dataIndex: "status",
-      width: 100,
+      width: 140,
       render: (t: string) => (
         <span className="px-2 py-1 rounded-full text-xs bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
           {t}
@@ -533,23 +1125,105 @@ export default function RegistrarStudents() {
       ),
     },
     {
-      title: "Current BCYS",
+      title: (
+        <ExcelHeaderTrigger
+          title="Current BCYS"
+          columnKey="batch"
+          isFiltered={
+            filters.batch.length > 0 &&
+            filters.batch.length < (columnOptions.batch?.length || 0)
+          }
+          selectedCount={filters.batch.length}
+          sortDirection={
+            sortConfig.key === "batch" ? sortConfig.direction : null
+          }
+          onOpen={(rect) =>
+            setActiveDropdown({
+              columnKey: "batch",
+              title: "Current BCYS",
+              rect,
+            })
+          }
+        />
+      ),
       dataIndex: "batch",
-      width: 100,
+      width: 160,
     },
     {
-      title: "Original Batch",
+      title: (
+        <ExcelHeaderTrigger
+          title="Batch"
+          columnKey="originalBatch"
+          isFiltered={
+            filters.originalBatch.length > 0 &&
+            filters.originalBatch.length <
+              (columnOptions.originalBatch?.length || 0)
+          }
+          selectedCount={filters.originalBatch.length}
+          sortDirection={
+            sortConfig.key === "originalBatch" ? sortConfig.direction : null
+          }
+          onOpen={(rect) =>
+            setActiveDropdown({
+              columnKey: "originalBatch",
+              title: "Original Batch",
+              rect,
+            })
+          }
+        />
+      ),
       dataIndex: "originalBatch",
-      width: 110,
+      width: 60,
     },
     {
-      title: "Department",
+      title: (
+        <ExcelHeaderTrigger
+          title="Department"
+          columnKey="department"
+          isFiltered={
+            filters.department.length > 0 &&
+            filters.department.length < (columnOptions.department?.length || 0)
+          }
+          selectedCount={filters.department.length}
+          sortDirection={
+            sortConfig.key === "department" ? sortConfig.direction : null
+          }
+          onOpen={(rect) =>
+            setActiveDropdown({
+              columnKey: "department",
+              title: "Department",
+              rect,
+            })
+          }
+        />
+      ),
       dataIndex: "department",
-      width: 140,
+      width: 170,
     },
     {
-      title: "Account",
-      width: 100,
+      title: (
+        <ExcelHeaderTrigger
+          title="Account"
+          columnKey="accountStatus"
+          isFiltered={
+            filters.accountStatus.length > 0 &&
+            filters.accountStatus.length <
+              (columnOptions.accountStatus?.length || 0)
+          }
+          selectedCount={filters.accountStatus.length}
+          sortDirection={
+            sortConfig.key === "accountStatus" ? sortConfig.direction : null
+          }
+          onOpen={(rect) =>
+            setActiveDropdown({
+              columnKey: "accountStatus",
+              title: "Account Status",
+              rect,
+            })
+          }
+        />
+      ),
+      width: 140,
       render: (_: any, r: DataTypes) => (
         <span
           className={`px-2 py-1 rounded-full text-xs ${
@@ -651,14 +1325,27 @@ export default function RegistrarStudents() {
         {/* Filters */}
         <div className="flex flex-wrap gap-2 items-center">
           {/* Department */}
+          {/* Department */}
           <select
             className="filter-select"
-            onChange={(e) =>
-              setFilters((p) => ({ ...p, department: e.target.value }))
+            onChange={(e) => {
+              const val = e.target.value;
+              setFilters((p) => ({ ...p, department: val ? [val] : [] }));
+            }}
+            value={
+              filters.department.length === 1
+                ? filters.department[0]
+                : filters.department.length > 1
+                  ? "__multiple__"
+                  : ""
             }
-            value={filters.department}
           >
             <option value="">All Departments</option>
+            {filters.department.length > 1 && (
+              <option value="__multiple__" disabled>
+                {filters.department.length} Departments Selected
+              </option>
+            )}
             {options.departments.map((d) => (
               <option key={d.id} value={d.name}>
                 {d.name}
@@ -669,12 +1356,24 @@ export default function RegistrarStudents() {
           {/* Original Batch Filter */}
           <select
             className="filter-select"
-            onChange={(e) =>
-              setFilters((p) => ({ ...p, batchFilter: e.target.value }))
+            onChange={(e) => {
+              const val = e.target.value;
+              setFilters((p) => ({ ...p, originalBatch: val ? [val] : [] }));
+            }}
+            value={
+              filters.originalBatch.length === 1
+                ? filters.originalBatch[0]
+                : filters.originalBatch.length > 1
+                  ? "__multiple__"
+                  : ""
             }
-            value={filters.batchFilter}
           >
             <option value="">All Batches</option>
+            {filters.originalBatch.length > 1 && (
+              <option value="__multiple__" disabled>
+                {filters.originalBatch.length} Batches Selected
+              </option>
+            )}
             {options.batches.map((b) => (
               <option key={b.id} value={b.name}>
                 Batch {b.name}
@@ -685,12 +1384,24 @@ export default function RegistrarStudents() {
           {/* Student Status */}
           <select
             className="filter-select"
-            onChange={(e) =>
-              setFilters((p) => ({ ...p, status: e.target.value }))
+            onChange={(e) => {
+              const val = e.target.value;
+              setFilters((p) => ({ ...p, status: val ? [val] : [] }));
+            }}
+            value={
+              filters.status.length === 1
+                ? filters.status[0]
+                : filters.status.length > 1
+                  ? "__multiple__"
+                  : ""
             }
-            value={filters.status}
           >
             <option value="">All Status</option>
+            {filters.status.length > 1 && (
+              <option value="__multiple__" disabled>
+                {filters.status.length} Statuses Selected
+              </option>
+            )}
             {options.studentStatuses.map((s) => (
               <option key={s.id} value={s.name}>
                 {s.name.replaceAll("_", " ")}
@@ -700,12 +1411,24 @@ export default function RegistrarStudents() {
 
           <select
             className="filter-select"
-            onChange={(e) =>
-              setFilters((p) => ({ ...p, accountStatus: e.target.value }))
+            onChange={(e) => {
+              const val = e.target.value;
+              setFilters((p) => ({ ...p, accountStatus: val ? [val] : [] }));
+            }}
+            value={
+              filters.accountStatus.length === 1
+                ? filters.accountStatus[0]
+                : filters.accountStatus.length > 1
+                  ? "__multiple__"
+                  : ""
             }
-            value={filters.accountStatus}
           >
             <option value="">All Account Status</option>
+            {filters.accountStatus.length > 1 && (
+              <option value="__multiple__" disabled>
+                {filters.accountStatus.length} Selected
+              </option>
+            )}
             {options.accountStatuses.map((a) => (
               <option key={a.id} value={String(a.name).toUpperCase()}>
                 {a.name.replaceAll("_", " ")}
@@ -800,23 +1523,29 @@ export default function RegistrarStudents() {
           </div>
 
           {/* Clear Filters */}
-          {(filters.department ||
+          {(filters.department.length > 0 ||
             filters.batch.length > 0 ||
-            filters.status ||
-            searchText) && (
+            filters.originalBatch.length > 0 ||
+            filters.status.length > 0 ||
+            filters.accountStatus.length > 0 ||
+            searchText ||
+            sortConfig.key) && (
             <button
               onClick={() => {
                 setFilters({
-                  department: "",
+                  department: [],
                   batch: [],
-                  batchFilter: "",
-                  status: "",
-                  accountStatus: "",
+                  originalBatch: [],
+                  status: [],
+                  accountStatus: [],
                 });
                 setSearchText("");
+                setSortConfig({ key: null, direction: null });
               }}
-              className="px-3 py-1.5 rounded-lg bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 text-sm text-gray-700 dark:text-gray-300"
+              className="px-3 py-1.5 rounded-lg bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 text-sm text-gray-700 dark:text-gray-300 flex items-center gap-1.5"
+              title="Reset all filters and sorting"
             >
+              <RotateCcw className="w-3.5 h-3.5" />
               Clear
             </button>
           )}
@@ -952,36 +1681,65 @@ export default function RegistrarStudents() {
         )}
 
         {/* Info Bar */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-          <div>
-            Showing{" "}
-            <span className="font-medium text-gray-900 dark:text-gray-200">
-              {paginatedData.length}
-            </span>{" "}
-            of{" "}
-            <span className="font-medium text-gray-900 dark:text-gray-200">
-              {filteredData.length}
-            </span>{" "}
-            students
-          </div>
-          {loading && (
-            <div className="text-blue-600 dark:text-blue-400 text-sm">
-              Loading...
-            </div>
-          )}
-        </div>
+<div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+  <div>
+    Showing{" "}
+    <span className="font-medium text-gray-900 dark:text-gray-200">
+      {paginatedData.length}
+    </span>{" "}
+    of{" "}
+    <span className="font-medium text-gray-900 dark:text-gray-200">
+      {filteredAndSortedData.length}
+    </span>{" "}
+    students
+    {(filters.department.length > 0 ||
+      filters.batch.length > 0 ||
+      filters.originalBatch.length > 0 ||
+      filters.status.length > 0 ||
+      filters.accountStatus.length > 0 ||
+      sortConfig.key) && (
+      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+        Filtered / Sorted
+      </span>
+    )}
+  </div>
+
+  <div className="flex items-center gap-3">
+    <label className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+      Show
+      <select
+        value={pageSize >= ALL_PAGE_SIZE ? "All" : String(pageSize)}
+        onChange={(e) => {
+          const v = e.target.value;
+          setPageSize(v === "All" ? ALL_PAGE_SIZE : Number(v));
+          setCurrentPage(1);
+        }}
+        className="filter-select"
+        style={{ minWidth: 78, height: 30, padding: "0 0.5rem" }}
+      >
+        {PAGE_SIZE_CHOICES.map((s) => (
+          <option key={s} value={String(s)}>
+            {s}
+          </option>
+        ))}
+        <option value="All">All</option>
+      </select>
+      per page
+    </label>
+
+    {loading && (
+      <div className="text-blue-600 dark:text-blue-400 text-sm">
+        Loading...
+      </div>
+    )}
+  </div>
+</div>
 
         {/* Table */}
         {loading ? (
           <div className="text-center py-8 text-gray-500 dark:text-gray-400">
             <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 dark:border-blue-400"></div>
             <p className="mt-2 text-sm">Loading students...</p>
-          </div>
-        ) : filteredData.length === 0 ? (
-          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-            <div className="text-3xl mb-2">📋</div>
-            <p className="text-base font-medium mb-1">No students found</p>
-            <p className="text-sm">Try adjusting your search or filters</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -990,10 +1748,50 @@ export default function RegistrarStudents() {
               columns={columns}
               rowSelection={rowSelection}
               rowKey="key"
+              locale={{
+                emptyText: (
+                  <div className="py-16 px-4 flex flex-col items-center justify-center text-center">
+                    <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-950/50 border border-blue-100 dark:border-blue-900/50 flex items-center justify-center mb-4 shadow-2xs">
+                      <SearchX className="w-8 h-8 text-blue-500 dark:text-blue-400" />
+                    </div>
+                    <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-1">
+                      No Students Found
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm mb-5">
+                      We couldn't find any student records matching your current filter criteria or search query.
+                    </p>
+                    {(filters.department.length > 0 ||
+                      filters.batch.length > 0 ||
+                      filters.originalBatch.length > 0 ||
+                      filters.status.length > 0 ||
+                      filters.accountStatus.length > 0 ||
+                      searchText ||
+                      sortConfig.key) && (
+                      <button
+                        onClick={() => {
+                          setFilters({
+                            department: [],
+                            batch: [],
+                            originalBatch: [],
+                            status: [],
+                            accountStatus: [],
+                          });
+                          setSearchText("");
+                          setSortConfig({ key: null, direction: null });
+                        }}
+                        className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-xs transition-all hover:scale-105 active:scale-95"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        Reset All Filters & Sort
+                      </button>
+                    )}
+                  </div>
+                ),
+              }}
               pagination={{
                 current: currentPage,
                 pageSize: pageSize,
-                total: filteredData.length,
+                total: filteredAndSortedData.length,
                 showSizeChanger: true,
                 showQuickJumper: true,
                 showTotal: (total, range) =>
@@ -1007,10 +1805,10 @@ export default function RegistrarStudents() {
                     setCurrentPage(1); // Reset to first page when changing page size
                   }
                 },
-                onShowSizeChange: (current, size) => {
-                  setPageSize(size);
-                  setCurrentPage(1); // Reset to first page when changing page size
-                },
+                // onShowSizeChange: (current, size) => {
+                //   setPageSize(size);
+                //   setCurrentPage(1); // Reset to first page when changing page size
+                // },
               }}
               onRow={(r) => ({
                 onClick: (event) => {
@@ -1034,7 +1832,7 @@ export default function RegistrarStudents() {
                 }
                 return `student-row active-row ${selectedClass}`.trim();
               }}
-              scroll={{ x: 800 }}
+              scroll={{ x: 1050 }}
             />
           </div>
         )}
@@ -1045,6 +1843,51 @@ export default function RegistrarStudents() {
         <div
           className="fixed inset-0 z-40"
           onClick={() => setShowBatchDropdown(false)}
+        />
+      )}
+
+      {/* Excel Filter Dropdown Portal */}
+      {activeDropdown && (
+        <ExcelFilterDropdownPortal
+          columnKey={activeDropdown.columnKey}
+          title={activeDropdown.title}
+          rect={activeDropdown.rect}
+          options={columnOptions[activeDropdown.columnKey] || []}
+          selectedValues={filters[activeDropdown.columnKey] || []}
+          onApply={(newValues) => {
+            setFilters((prev) => ({
+              ...prev,
+              [activeDropdown.columnKey]:
+                newValues.length ===
+                (columnOptions[activeDropdown.columnKey]?.length || 0)
+                  ? []
+                  : newValues,
+            }));
+            setActiveDropdown(null);
+          }}
+          onClear={() => {
+            setFilters((prev) => ({
+              ...prev,
+              [activeDropdown.columnKey]: [],
+            }));
+            setActiveDropdown(null);
+          }}
+          sortDirection={
+            sortConfig.key === activeDropdown.columnKey
+              ? sortConfig.direction
+              : null
+          }
+          onSort={(direction) => {
+            setSortConfig(
+              direction
+                ? { key: activeDropdown.columnKey, direction }
+                : { key: null, direction: null },
+            );
+          }}
+          onClose={() => setActiveDropdown(null)}
+          getItemCount={(val) =>
+            countsMap[activeDropdown.columnKey]?.[val] || 0
+          }
         />
       )}
 
@@ -1139,19 +1982,20 @@ export default function RegistrarStudents() {
   }
   
   .compact-table .ant-table-thead > tr > th {
-    background: #f9fafb !important;
-    border-bottom: 1px solid #e5e7eb !important;
-    color: #374151 !important;
-    font-weight: 600 !important;
-    padding: 0.5rem 0.75rem !important;
+    background: #f8fafc !important;
+    border-bottom: 2px solid #e2e8f0 !important;
+    color: #334155 !important;
+    font-weight: 700 !important;
+    padding: 0.5rem 0.625rem !important;
     white-space: nowrap;
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
+    letter-spacing: 0.025em;
   }
   
   .dark .compact-table .ant-table-thead > tr > th {
-    background: #111827 !important;
-    border-bottom: 1px solid #374151 !important;
-    color: #e5e7eb !important;
+    background: #0f172a !important;
+    border-bottom: 2px solid #334155 !important;
+    color: #e2e8f0 !important;
   }
   
   .compact-table .ant-table-tbody > tr > td {
@@ -1164,115 +2008,103 @@ export default function RegistrarStudents() {
     border-bottom: 1px solid #374151 !important;
   }
 
+  /* Empty State / Placeholder Styles for Dark Mode */
+  .compact-table .ant-table-placeholder {
+    background: transparent !important;
+  }
+  .compact-table .ant-table-placeholder > td {
+    background: #ffffff !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    padding: 0 !important;
+  }
+  .dark .compact-table .ant-table-placeholder > td {
+    background: #111827 !important;
+    border-bottom: 1px solid #374151 !important;
+    padding: 0 !important;
+  }
+  .compact-table .ant-table-tbody > tr.ant-table-placeholder:hover > td {
+    background: #ffffff !important;
+  }
+  .dark .compact-table .ant-table-tbody > tr.ant-table-placeholder:hover > td {
+    background: #111827 !important;
+  }
+  .dark .compact-table .ant-empty {
+    color: #9ca3af !important;
+  }
+
   /* Selected rows */
+  .compact-table .ant-table-tbody > tr.selected-row > td,
   .compact-table .ant-table-tbody > tr.ant-table-row-selected > td {
-    background: #dbeafe !important;
+    background-color: #dbeafe !important;
   }
 
+  .compact-table .ant-table-tbody > tr.selected-row:hover > td,
   .compact-table .ant-table-tbody > tr.ant-table-row-selected:hover > td {
-    background: #bfdbfe !important;
+    background-color: #bfdbfe !important;
   }
 
+  .dark .compact-table .ant-table-tbody > tr.selected-row > td,
   .dark .compact-table .ant-table-tbody > tr.ant-table-row-selected > td {
-    background: rgba(30, 64, 175, 0.28) !important;
+    background-color: rgba(30, 64, 175, 0.3) !important;
     color: #eff6ff !important;
   }
 
+  .dark .compact-table .ant-table-tbody > tr.selected-row:hover > td,
   .dark .compact-table .ant-table-tbody > tr.ant-table-row-selected:hover > td {
-    background: rgba(30, 64, 175, 0.38) !important;
+    background-color: rgba(30, 64, 175, 0.42) !important;
     color: #eff6ff !important;
   }
 
-  .compact-table .ant-table-tbody > tr.ant-table-row-selected .ant-table-cell-row-hover {
-    background: inherit !important;
+  /* Student Row Base Styles */
+  .student-row {
+    transition: background-color 0.15s ease !important;
+    color: #111827 !important;
   }
 
-  .compact-table .ant-table-tbody > tr.ant-table-row-selected td {
+  .dark .student-row {
+    color: #f3f4f6 !important;
+  }
+
+  .student-row td {
     color: inherit !important;
   }
 
-  .selected-row > td {
-    background: #dbeafe !important;
+  /* Default Active Row Background */
+  .compact-table .ant-table-tbody > tr.active-row > td {
+    background-color: #ffffff !important;
   }
 
-  .selected-row:hover > td {
-    background: #bfdbfe !important;
-  }
-
-  .dark .selected-row > td {
-    background: rgba(30, 64, 175, 0.28) !important;
-    color: #eff6ff !important;
-  }
-
-  .dark .selected-row:hover > td {
-    background: rgba(30, 64, 175, 0.38) !important;
-    color: #eff6ff !important;
-  }
-  
-  /* Student Row Styles */
-.student-row {
-  position: relative !important;
-  border-left: 4px solid transparent !important;
-  transition: all 0.2s ease !important;
-  color: #111827 !important; /* Dark text for light mode */
-}
-
-.dark .student-row {
-  color: #f3f4f6 !important; /* Light text for dark mode */
-}
-
-/* Ensure cell text inherits the color */
-.student-row td {
-  color: inherit !important;
-}
-  
-  /* Active row base background */
-  .active-row {
-    background-color: white !important;
-  }
-  
-  .dark .active-row {
+  .dark .compact-table .ant-table-tbody > tr.active-row > td {
     background-color: #1f2937 !important;
   }
-  
-  /* Disabled row base background */
-  .disabled-row {
-    background-color: #fef2f2 !important;
+
+  /* Disabled Student Row Background */
+  .compact-table .ant-table-tbody > tr.disabled-row > td {
+    background-color: #fff5f5 !important;
   }
-  
-  .dark .disabled-row {
-    background-color: rgba(127, 29, 29, 0.2) !important;
+
+  .dark .compact-table .ant-table-tbody > tr.disabled-row > td {
+    background-color: rgba(127, 29, 29, 0.16) !important;
   }
-  
-  /* Hover effects */
-  .active-row:hover {
-    background-color: #f9fafb !important;
-    border-left: 4px solid #22c55e !important;
-  }
-  
-  .dark .active-row:hover {
-    background-color: #2d3748 !important;
-    border-left: 4px solid #22c55e !important;
-  }
-  
-  .disabled-row:hover {
-    background-color: #fee2e2 !important;
-    border-left: 4px solid #ef4444 !important;
-  }
-  
-  .dark .disabled-row:hover {
-    background-color: rgba(127, 29, 29, 0.4) !important;
-    border-left: 4px solid #ef4444 !important;
-  }
-  
-  /* Remove Ant Design's default hover */
+
+  /* Clean, Simple Row Hover */
+  .compact-table .ant-table-tbody > tr.active-row:hover > td,
   .compact-table .ant-table-tbody > tr.ant-table-row:hover > td {
-    background: transparent !important;
+    background-color: #f8fafc !important;
   }
-  
-  /* Ensure rows have proper positioning */
-  .compact-table .ant-table-tbody > tr {
-    position: relative !important;
+
+  .dark .compact-table .ant-table-tbody > tr.active-row:hover > td,
+  .dark .compact-table .ant-table-tbody > tr.ant-table-row:hover > td {
+    background-color: #283548 !important;
+  }
+
+  /* Disabled Row Hover */
+  .compact-table .ant-table-tbody > tr.disabled-row:hover > td {
+    background-color: #fee2e2 !important;
+  }
+
+  .dark .compact-table .ant-table-tbody > tr.disabled-row:hover > td {
+    background-color: rgba(127, 29, 29, 0.28) !important;
   }
   
   /* Compact Pagination */

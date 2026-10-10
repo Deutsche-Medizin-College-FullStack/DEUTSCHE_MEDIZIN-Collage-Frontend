@@ -31,6 +31,7 @@ import {
   CheckCircle,
   Clock,
   CreditCard,
+  FileText,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -882,6 +883,20 @@ export default function StudentProfile() {
           <Button variant="outline" onClick={() => navigate(-1)}>
             ← Back
           </Button>
+          {Boolean(studentData?.hasDocument) && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                // Backend endpoint for viewing/downloading document not yet implemented
+              }}
+              className="flex items-center gap-2 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950/40"
+              title="View or download student document"
+            >
+              <FileText className="w-4 h-4" />
+              View Document
+            </Button>
+          )}
           {isEditable &&
             (editMode ? (
               <>
@@ -1001,6 +1016,24 @@ export default function StudentProfile() {
                 <Badge variant="outline">Transfer</Badge>
               )}
             </div>
+
+            {Boolean(studentData?.hasDocument) && (
+              <div className="mt-3 flex justify-center">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    // Backend endpoint for viewing/downloading document not yet implemented
+                  }}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950/40"
+                  title="View or download student document"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  View Document
+                </Button>
+              </div>
+            )}
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
