@@ -80,6 +80,8 @@ const endPoints = {
   studentsSlip: "/students/slip-production",
   getAllStudentsCGPA_VD: "/vice-deans/get-all-students-cgpa",
   studentsAcademicProgress: "/students/:userId/academic-progress",
+  studentDocument: (id: string | number) => `/students/${id}/document`,
+  studentDocumentPath: "/students/:id/document",
 
   /* =======================     Assessments & Grading  ======================== */
   gradingSystem: "/grading-systems",
