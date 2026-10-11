@@ -32,9 +32,11 @@ import {
   Clock,
   CreditCard,
   FileText,
+  Loader2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import apiClient from "@/components/api/apiClient";
 import apiService from "@/components/api/apiService";
 import endPoints from "@/components/api/endPoints";
 import {
@@ -64,6 +66,86 @@ export default function StudentProfile() {
   // Add sample data for demo (replace with actual API call later)
   const [academicProgressionData, setAcademicProgressionData] = useState(null);
   const [loadingProgression, setLoadingProgression] = useState(false);
+  const [loadingDocument, setLoadingDocument] = useState(false);
+
+  const handleViewDocument = async () => {
+    const studentId = studentData?.id || id;
+    if (!studentId) {
+      toast({
+        title: "Error",
+        description: "Student ID is required to fetch document",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Open a blank tab synchronously to prevent browser popup blockers
+    const newWindow = window.open("about:blank", "_blank");
+    if (newWindow) {
+      newWindow.document.title = "Loading Student Document...";
+      newWindow.document.body.innerHTML = `
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:system-ui,-apple-system,sans-serif;color:#334155;background:#f8fafc;">
+          <div style="border:4px solid #e2e8f0;border-top:4px solid #2563eb;border-radius:50%;width:36px;height:36px;animation:spin 1s linear infinite;margin-bottom:16px;"></div>
+          <style>@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}</style>
+          <div style="font-size:16px;font-weight:600;">Loading Student Document...</div>
+          <div style="font-size:13px;color:#64748b;margin-top:6px;">Please wait while the PDF is being retrieved.</div>
+        </div>
+      `;
+    }
+
+    try {
+      setLoadingDocument(true);
+      const url =
+        typeof endPoints.studentDocument === "function"
+          ? endPoints.studentDocument(studentId)
+          : `/students/${studentId}/document`;
+
+      const response = await apiClient.get(url, {
+        responseType: "blob",
+        headers: {
+          Accept: "application/pdf",
+        },
+      });
+
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const fileUrl = URL.createObjectURL(blob);
+
+      if (newWindow && !newWindow.closed) {
+        newWindow.location.href = fileUrl;
+      } else {
+        window.open(fileUrl, "_blank");
+      }
+    } catch (err: any) {
+      console.error("Error fetching student document:", err);
+      if (newWindow && !newWindow.closed) {
+        newWindow.close();
+      }
+
+      let errorMessage = "Failed to retrieve student document";
+      if (err.response?.data instanceof Blob) {
+        try {
+          const text = await err.response.data.text();
+          const parsed = JSON.parse(text);
+          if (parsed.error) errorMessage = parsed.error;
+          else if (parsed.message) errorMessage = parsed.message;
+        } catch {
+          // Keep fallback
+        }
+      } else if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
+      toast({
+        title: "Document Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingDocument(false);
+    }
+  };
 
   const [editMode, setEditMode] = useState(false);
   const [passwordForm, setPasswordForm] = useState(false);
@@ -887,14 +969,17 @@ export default function StudentProfile() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => {
-                // Backend endpoint for viewing/downloading document not yet implemented
-              }}
+              onClick={handleViewDocument}
+              disabled={loadingDocument}
               className="flex items-center gap-2 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950/40"
               title="View or download student document"
             >
-              <FileText className="w-4 h-4" />
-              View Document
+              {loadingDocument ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <FileText className="w-4 h-4" />
+              )}
+              {loadingDocument ? "Opening..." : "View Document"}
             </Button>
           )}
           {isEditable &&
@@ -1023,14 +1108,17 @@ export default function StudentProfile() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    // Backend endpoint for viewing/downloading document not yet implemented
-                  }}
+                  onClick={handleViewDocument}
+                  disabled={loadingDocument}
                   className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950/40"
                   title="View or download student document"
                 >
-                  <FileText className="w-3.5 h-3.5" />
-                  View Document
+                  {loadingDocument ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <FileText className="w-3.5 h-3.5" />
+                  )}
+                  {loadingDocument ? "Opening..." : "View Document"}
                 </Button>
               </div>
             )}
