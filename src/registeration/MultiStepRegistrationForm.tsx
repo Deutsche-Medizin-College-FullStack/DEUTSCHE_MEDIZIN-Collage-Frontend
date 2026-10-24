@@ -893,37 +893,69 @@ const PersonalInformationStep = ({
       <Group title="6. Emergency Contact">
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-            Full Name (English):
+            Full Name (English): *
           </label>
           <div>
             <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-              Full Name
+              Full Name *
             </label>
             <input
               type="text"
               name="emergencyFullName"
               value={formData.emergencyFullName || ""}
+              onBlur={() => setFieldTouched("emergencyFullName")}
               onChange={handleInputChange}
               placeholder="Enter emergency contact full name"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputClass(
+                "emergencyFullName",
+                "Emergency contact full name (English)",
+                "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2",
+              )}
             />
+            {getRequiredError(
+              "emergencyFullName",
+              "Emergency contact full name",
+            ) && (
+              <p className="mt-1 text-xs text-red-500">
+                {getRequiredError(
+                  "emergencyFullName",
+                  "Emergency contact full name",
+                )}
+              </p>
+            )}
           </div>
 
           <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2 mt-4">
-            Full Name (Amharic):
+            Full Name (Amharic): *
           </label>
           <div>
             <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-              Full Name
+              Full Name *
             </label>
             <input
               type="text"
               name="emergencyFullNameAMH"
               value={formData.emergencyFullNameAMH || ""}
+              onBlur={() => setFieldTouched("emergencyFullNameAMH")}
               onChange={handleInputChange}
-              placeholder="የአስቸኳይ ጊዜ አድራሻ ሙሉ ስም"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="የአስቸኳይ ጊዜ ተጠሪ ሙሉ ስም"
+              className={inputClass(
+                "emergencyFullNameAMH",
+                "Emergency contact full name (Amharic)",
+                "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2",
+              )}
             />
+            {getRequiredError(
+              "emergencyFullNameAMH",
+              "Amharic emergency contact full name",
+            ) && (
+              <p className="mt-1 text-xs text-red-500">
+                {getRequiredError(
+                  "emergencyFullNameAMH",
+                  "Amharic emergency contact full name",
+                )}
+              </p>
+            )}
           </div>
 
           <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2 mt-4">
@@ -944,15 +976,31 @@ const PersonalInformationStep = ({
             </div>
             <div>
               <label className="block text-xs text-gray-500 dark:text-gray-100 mb-1">
-                Contact Person Phone Number
+                Contact Person Phone Number *
               </label>
               <input
                 type="text"
                 name="contactPersonPhoneNumber"
                 value={formData.contactPersonPhoneNumber}
+                onBlur={() => setFieldTouched("contactPersonPhoneNumber")}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={inputClass(
+                  "contactPersonPhoneNumber",
+                  "Contact person phone number",
+                  "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2",
+                )}
               />
+              {getRequiredError(
+                "contactPersonPhoneNumber",
+                "Contact person phone number",
+              ) && (
+                <p className="mt-1 text-xs text-red-500">
+                  {getRequiredError(
+                    "contactPersonPhoneNumber",
+                    "Contact person phone number",
+                  )}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -2040,6 +2088,8 @@ const MultiStepRegistrationForm = () => {
           // Emergency Contact
           emergencyFullName: "",
           emergencyFullNameAMH: "",
+          contactPersonPhoneNumber: "",
+          contactPersonRelation: "",
         };
   });
 
@@ -2061,17 +2111,61 @@ const MultiStepRegistrationForm = () => {
     }
   }, []);
 
+  const getMissingFields = (step: number, data: any): string[] => {
+    const missing: string[] = [];
+    if (step === 1) {
+      if (!data.firstName) missing.push("First Name (English)");
+      if (!data.middleName) missing.push("Middle / Father Name (English)");
+      if (!data.lastName) missing.push("Last / Grandfather Name (English)");
+      if (!data.firstNameAMH) missing.push("First Name (Amharic)");
+      if (!data.middleNameAMH) missing.push("Middle / Father Name (Amharic)");
+      if (!data.lastNameAMH) missing.push("Last / Grandfather Name (Amharic)");
+      if (!data.sex) missing.push("Gender / Sex");
+      if (!data.age) missing.push("Age");
+      if (!data.phoneNo) missing.push("Phone Number");
+      if (!data.placeOfBirthRegionCode) missing.push("Place of Birth Region");
+      if (!data.placeOfBirthZoneCode) missing.push("Place of Birth Zone");
+      if (!data.placeOfBirthWoredaCode) missing.push("Place of Birth Woreda");
+      if (!data.birthDateGC) missing.push("Birth Date");
+      if (!data.currentAddressRegionCode) missing.push("Current Address Region");
+      if (!data.currentAddressZoneCode) missing.push("Current Address Zone");
+      if (!data.currentAddressWoredaCode) missing.push("Current Address Woreda");
+      if (!data.emergencyFullName) missing.push("Emergency Contact Full Name (English)");
+      if (!data.emergencyFullNameAMH) missing.push("Emergency Contact Full Name (Amharic)");
+      if (!data.contactPersonPhoneNumber) missing.push("Contact Person Phone Number");
+    } else if (step === 2) {
+      if (!data.schoolBackgroundId) missing.push("School Background");
+      if (!data.departmentEnrolledId) missing.push("Department");
+      if (!data.programModalityCode) missing.push("Program Modality");
+      if (!data.classYearId) missing.push("Class Year");
+      if (!data.semesterCode) missing.push("Semester");
+    }
+    return missing;
+  };
+
+  const isStepValid = (step: number, data: any) => {
+    return getMissingFields(step, data).length === 0;
+  };
+
   const nextStep = () => {
-    if (!isStepValid(currentStep, formData)) {
-      setErrorMessage("Please complete all required fields before continuing.");
+    const missing = getMissingFields(currentStep, formData);
+    if (missing.length > 0) {
+      const missingList =
+        missing.length <= 3
+          ? missing.join(", ")
+          : `${missing.slice(0, 3).join(", ")} and ${missing.length - 3} more field${missing.length - 3 > 1 ? "s" : ""}`;
+      const msg = `Please complete the following required fields: ${missingList}`;
+      setErrorMessage(msg);
       toast({
-        title: "Missing required information",
-        description:
-          "Please fill in the highlighted fields before moving to the next step.",
+        title: "Missing Required Information",
+        description: msg,
         variant: "destructive",
+        duration: Infinity,
       });
       return;
     }
+
+    setErrorMessage("");
 
     if (currentStep < totalSteps) {
       setCurrentStep((s) => s + 1);
@@ -2235,6 +2329,25 @@ const MultiStepRegistrationForm = () => {
   };
 
   const handleSubmit = async () => {
+    const missingStep1 = getMissingFields(1, formData);
+    const missingStep2 = getMissingFields(2, formData);
+    const allMissing = [...missingStep1, ...missingStep2];
+    if (allMissing.length > 0) {
+      const missingList =
+        allMissing.length <= 3
+          ? allMissing.join(", ")
+          : `${allMissing.slice(0, 3).join(", ")} and ${allMissing.length - 3} more`;
+      const msg = `Incomplete form. Please fill required fields: ${missingList}`;
+      setErrorMessage(msg);
+      toast({
+        title: "Incomplete Registration Form",
+        description: msg,
+        variant: "destructive",
+        duration: Infinity,
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     setErrorMessage("");
 
@@ -2399,47 +2512,14 @@ const MultiStepRegistrationForm = () => {
         title: "Submission failed",
         description: errorMsg,
         variant: "destructive",
+        duration: Infinity,
       });
       throw error;
     } finally {
       setIsSubmitting(false);
     }
   };
-  const isStepValid = (step, formData) => {
-    switch (step) {
-      case 1:
-        return (
-          !!formData.firstName &&
-          !!formData.middleName &&
-          !!formData.lastName &&
-          !!formData.firstNameAMH &&
-          !!formData.middleNameAMH &&
-          !!formData.lastNameAMH &&
-          !!formData.sex &&
-          !!formData.age &&
-          !!formData.phoneNo &&
-          !!formData.placeOfBirthRegionCode &&
-          !!formData.placeOfBirthZoneCode &&
-          !!formData.placeOfBirthWoredaCode &&
-          !!formData.birthDateGC &&
-          !!formData.currentAddressRegionCode &&
-          !!formData.currentAddressZoneCode &&
-          !!formData.currentAddressWoredaCode
-        );
-      case 2:
-        return (
-          !!formData.schoolBackgroundId &&
-          !!formData.departmentEnrolledId &&
-          !!formData.programModalityCode &&
-          !!formData.classYearId &&
-          !!formData.semesterCode
-        );
-      case 3:
-        return true;
-      default:
-        return true;
-    }
-  };
+
   const renderStep = () => {
     switch (currentStep) {
       case 1:

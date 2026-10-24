@@ -9,6 +9,7 @@ type ToasterToast = {
   description?: React.ReactNode;
   action?: React.ReactNode;
   variant?: "default" | "destructive";
+  duration?: number;
 };
 
 const TOAST_LIMIT = 1;
@@ -132,10 +133,12 @@ function toast({ ...props }: Toast) {
   if (props.variant === "destructive") {
     sonnerToast.error(props.title as string, {
       description: props.description as string,
+      duration: props.duration ?? Infinity,
     });
   } else {
     sonnerToast.success(props.title as string, {
       description: props.description as string,
+      duration: props.duration,
     });
   }
 
