@@ -1138,14 +1138,21 @@ export default function Transcript_Generate() {
           doc.setTextColor(0, 0, 0);
 
           // Courses table
-          const coursesData = leftCopy.courses.map((c, j) => [
-            (j + 1).toString(),
-            c.courseCode || "",
-            c.courseTitle || "",
-            c.totalCrHrs?.toFixed(2) || "0",
-            c.letterGrade || "",
-            c.gradePoint?.toFixed(2) || "0",
-          ]);
+          const totalCreditHours = leftCopy.courses.reduce(
+            (sum, course) => sum + (course.totalCrHrs || 0),
+            0,
+          );
+          const coursesData = [
+            ...leftCopy.courses.map((c, j) => [
+              (j + 1).toString(),
+              c.courseCode || "",
+              c.courseTitle || "",
+              c.totalCrHrs?.toFixed(2) || "0",
+              c.letterGrade || "",
+              c.gradePoint?.toFixed(2) || "0",
+            ]),
+            ["", "", "Total Crs", totalCreditHours.toFixed(2), "", ""],
+          ];
 
           autoTable(doc, {
             startY: currentY,
@@ -1172,6 +1179,11 @@ export default function Transcript_Generate() {
               3: { cellWidth: 8, halign: "center" },
               4: { cellWidth: 7, halign: "center" },
               5: { cellWidth: 10, halign: "center" },
+            },
+            didParseCell: (data) => {
+              if (data.row.index === coursesData.length - 1) {
+                data.cell.styles.fontStyle = "bold";
+              }
             },
             margin: { left: margin, right: pageWidth - margin - columnWidth },
           });
@@ -1214,14 +1226,21 @@ export default function Transcript_Generate() {
           doc.setTextColor(0, 0, 0);
 
           // Courses table
-          const coursesData = rightCopy.courses.map((c, j) => [
-            (j + 1).toString(),
-            c.courseCode || "",
-            c.courseTitle || "",
-            c.totalCrHrs?.toFixed(2) || "0",
-            c.letterGrade || "",
-            c.gradePoint?.toFixed(2) || "0",
-          ]);
+          const totalCreditHours = rightCopy.courses.reduce(
+            (sum, course) => sum + (course.totalCrHrs || 0),
+            0,
+          );
+          const coursesData = [
+            ...rightCopy.courses.map((c, j) => [
+              (j + 1).toString(),
+              c.courseCode || "",
+              c.courseTitle || "",
+              c.totalCrHrs?.toFixed(2) || "0",
+              c.letterGrade || "",
+              c.gradePoint?.toFixed(2) || "0",
+            ]),
+            ["", "", "Total Crs", totalCreditHours.toFixed(2), "", ""],
+          ];
 
           autoTable(doc, {
             startY: currentY,
@@ -1248,6 +1267,11 @@ export default function Transcript_Generate() {
               3: { cellWidth: 8, halign: "center" },
               4: { cellWidth: 7, halign: "center" },
               5: { cellWidth: 10, halign: "center" },
+            },
+            didParseCell: (data) => {
+              if (data.row.index === coursesData.length - 1) {
+                data.cell.styles.fontStyle = "bold";
+              }
             },
             margin: { left: rightX, right: margin },
           });
@@ -1948,11 +1972,50 @@ export default function Transcript_Generate() {
             row.getCell(startColumn + 3).numFmt = "0.00";
             row.getCell(startColumn + 5).numFmt = "0.00";
           });
-          const summaryRow = courseStartRow + Math.max(copy.courses.length, 1);
           const totalCredit = copy.courses.reduce(
             (sum, course) => sum + (course.totalCrHrs || 0),
             0,
           );
+          const totalCreditRow =
+            courseStartRow + Math.max(copy.courses.length, 1);
+          worksheet.mergeCells(
+            totalCreditRow,
+            startColumn,
+            totalCreditRow,
+            startColumn + 2,
+          );
+          worksheet.getCell(totalCreditRow, startColumn).value = "Total Crs";
+          applyStyle(worksheet.getCell(totalCreditRow, startColumn), {
+            fill: colors.gray,
+            bold: true,
+            size: 7,
+            horizontal: "right",
+            border: thinBorder,
+          });
+          worksheet.getCell(totalCreditRow, startColumn + 3).value =
+            totalCredit;
+          applyStyle(worksheet.getCell(totalCreditRow, startColumn + 3), {
+            fill: colors.gray,
+            bold: true,
+            size: 7,
+            horizontal: "center",
+            border: thinBorder,
+          });
+          worksheet.getCell(totalCreditRow, startColumn + 3).numFmt = "0.00";
+          worksheet.mergeCells(
+            totalCreditRow,
+            startColumn + 4,
+            totalCreditRow,
+            endColumn,
+          );
+          applyStyle(worksheet.getCell(totalCreditRow, startColumn + 4), {
+            fill: colors.gray,
+            bold: true,
+            size: 7,
+            border: thinBorder,
+          });
+
+          const summaryRow = totalCreditRow + 1;
           const totalPoints = copy.courses.reduce(
             (sum, course) => sum + (course.gradePoint || 0),
             0,
@@ -3560,6 +3623,10 @@ function TranscriptView({ transcript }: { transcript: RealTranscript }) {
           const academicYearStr = getAcademicYearString(copy.academicYear);
           const semesterName = copy.semester?.name || "First Semester";
           const classYearName = copy.classyear?.name || "I";
+          const totalCreditHours = copy.courses.reduce(
+            (sum, course) => sum + (course.totalCrHrs || 0),
+            0,
+          );
 
           return (
             <div
@@ -3616,6 +3683,23 @@ function TranscriptView({ transcript }: { transcript: RealTranscript }) {
                     </tr>
                   ))}
                 </tbody>
+                <tfoot>
+                  <tr className="font-bold bg-gray-100 dark:bg-gray-700">
+                    <td
+                      colSpan={3}
+                      className="border border-gray-300 dark:border-gray-600 px-2 py-1 text-right text-xs text-gray-700 dark:text-gray-300"
+                    >
+                      Total Crs
+                    </td>
+                    <td className="border border-gray-300 dark:border-gray-600 px-2 py-1 text-center text-xs text-gray-700 dark:text-gray-300">
+                      {totalCreditHours.toFixed(2)}
+                    </td>
+                    <td
+                      colSpan={2}
+                      className="border border-gray-300 dark:border-gray-600"
+                    />
+                  </tr>
+                </tfoot>
               </table>
               <div
                 className="bg-orange-500 dark:bg-orange-600 text-white px-3 py-3 text-xs"
