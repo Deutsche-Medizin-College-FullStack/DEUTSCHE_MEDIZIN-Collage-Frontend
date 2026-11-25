@@ -1142,6 +1142,10 @@ export default function Transcript_Generate() {
             (sum, course) => sum + (course.totalCrHrs || 0),
             0,
           );
+          const totalPoints = leftCopy.courses.reduce(
+            (sum, course) => sum + (course.gradePoint || 0),
+            0,
+          );
           const coursesData = [
             ...leftCopy.courses.map((c, j) => [
               (j + 1).toString(),
@@ -1151,7 +1155,7 @@ export default function Transcript_Generate() {
               c.letterGrade || "",
               c.gradePoint?.toFixed(2) || "0",
             ]),
-            ["", "", "Total Crs", totalCreditHours.toFixed(2), "", ""],
+            ["", "", "Total", totalCreditHours.toFixed(2), "", totalPoints.toFixed(2)],
           ];
 
           autoTable(doc, {
@@ -1230,6 +1234,10 @@ export default function Transcript_Generate() {
             (sum, course) => sum + (course.totalCrHrs || 0),
             0,
           );
+          const totalPoints = rightCopy.courses.reduce(
+            (sum, course) => sum + (course.gradePoint || 0),
+            0,
+          );
           const coursesData = [
             ...rightCopy.courses.map((c, j) => [
               (j + 1).toString(),
@@ -1239,7 +1247,7 @@ export default function Transcript_Generate() {
               c.letterGrade || "",
               c.gradePoint?.toFixed(2) || "0",
             ]),
-            ["", "", "Total Crs", totalCreditHours.toFixed(2), "", ""],
+            ["", "", "Total", totalCreditHours.toFixed(2), "", totalPoints.toFixed(2)],
           ];
 
           autoTable(doc, {
@@ -1976,6 +1984,10 @@ export default function Transcript_Generate() {
             (sum, course) => sum + (course.totalCrHrs || 0),
             0,
           );
+          const totalPoints = copy.courses.reduce(
+            (sum, course) => sum + (course.gradePoint || 0),
+            0,
+          );
           const totalCreditRow =
             courseStartRow + Math.max(copy.courses.length, 1);
           worksheet.mergeCells(
@@ -1984,7 +1996,7 @@ export default function Transcript_Generate() {
             totalCreditRow,
             startColumn + 2,
           );
-          worksheet.getCell(totalCreditRow, startColumn).value = "Total Crs";
+          worksheet.getCell(totalCreditRow, startColumn).value = "Total";
           applyStyle(worksheet.getCell(totalCreditRow, startColumn), {
             fill: colors.gray,
             bold: true,
@@ -2002,24 +2014,24 @@ export default function Transcript_Generate() {
             border: thinBorder,
           });
           worksheet.getCell(totalCreditRow, startColumn + 3).numFmt = "0.00";
-          worksheet.mergeCells(
-            totalCreditRow,
-            startColumn + 4,
-            totalCreditRow,
-            endColumn,
-          );
           applyStyle(worksheet.getCell(totalCreditRow, startColumn + 4), {
             fill: colors.gray,
             bold: true,
             size: 7,
             border: thinBorder,
           });
+          worksheet.getCell(totalCreditRow, startColumn + 5).value =
+            totalPoints;
+          applyStyle(worksheet.getCell(totalCreditRow, startColumn + 5), {
+            fill: colors.gray,
+            bold: true,
+            size: 7,
+            horizontal: "center",
+            border: thinBorder,
+          });
+          worksheet.getCell(totalCreditRow, startColumn + 5).numFmt = "0.00";
 
           const summaryRow = totalCreditRow + 1;
-          const totalPoints = copy.courses.reduce(
-            (sum, course) => sum + (course.gradePoint || 0),
-            0,
-          );
           worksheet.mergeCells(summaryRow, startColumn, summaryRow, endColumn);
           worksheet.getCell(summaryRow, startColumn).value =
             `SGPA: ${copy.semesterGPA.toFixed(2)} | CGPA: ${copy.semesterCGPA.toFixed(2)} | Status: ${copy.status}`;
@@ -3627,6 +3639,10 @@ function TranscriptView({ transcript }: { transcript: RealTranscript }) {
             (sum, course) => sum + (course.totalCrHrs || 0),
             0,
           );
+          const totalPoints = copy.courses.reduce(
+            (sum, course) => sum + (course.gradePoint || 0),
+            0,
+          );
 
           return (
             <div
@@ -3689,15 +3705,15 @@ function TranscriptView({ transcript }: { transcript: RealTranscript }) {
                       colSpan={3}
                       className="border border-gray-300 dark:border-gray-600 px-2 py-1 text-right text-xs text-gray-700 dark:text-gray-300"
                     >
-                      Total Crs
+                      Total
                     </td>
                     <td className="border border-gray-300 dark:border-gray-600 px-2 py-1 text-center text-xs text-gray-700 dark:text-gray-300">
                       {totalCreditHours.toFixed(2)}
                     </td>
-                    <td
-                      colSpan={2}
-                      className="border border-gray-300 dark:border-gray-600"
-                    />
+                    <td className="border border-gray-300 dark:border-gray-600 px-2 py-1" />
+                    <td className="border border-gray-300 dark:border-gray-600 px-2 py-1 text-center text-xs text-gray-700 dark:text-gray-300">
+                      {totalPoints.toFixed(2)}
+                    </td>
                   </tr>
                 </tfoot>
               </table>
